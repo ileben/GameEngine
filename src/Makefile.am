@@ -26,6 +26,7 @@ GE_HEADS =\
 	geShape.h\
 	geStaticMesh.h\
 	geTexture.h\
+	geUnClass.h\
 	geUVMesh.h\
 	geVectors.h\
 	widgets/geFpsLabel.h\
