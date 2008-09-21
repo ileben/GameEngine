@@ -19,3 +19,10 @@ missing
 *.la
 *~
 TexPainter
+TexPainter_DEBUG.exe
+TexPainter_RELEASE.exe
+libGameEngine.dll
+*.ncb
+*.Ivan.user
+projects/visualc8/Debug
+projects/visualc8/Release
