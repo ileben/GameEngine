@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="windows-1250"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="8.00"
 	Name="TexPainter"
 	ProjectGUID="{C286DEF5-CA7D-4555-933D-B1AC8A497C99}"
 	RootNamespace="TestCollision"
@@ -94,6 +94,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				CommandLine="copy $(TargetPath) $(SolutionDir)\..\..\test\$(TargetName)_DEBUG.exe"
 			/>
 		</Configuration>
 		<Configuration
@@ -174,6 +175,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				CommandLine="copy $(TargetPath) $(SolutionDir)\..\..\test\$(TargetName)_RELEASE.exe"
 			/>
 		</Configuration>
 	</Configurations>
