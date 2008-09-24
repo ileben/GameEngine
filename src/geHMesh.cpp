@@ -129,8 +129,8 @@ namespace GE
   Sets classes to be used when entities are constructed
   -----------------------------------------------------*/
 
-  void HMesh::setClasses(ClassName cnVertex, ClassName cnHedge,
-                         ClassName cnEdge, ClassName cnFace)
+  void HMesh::setClasses(ClassPtr cnVertex, ClassPtr cnHedge,
+                         ClassPtr cnEdge, ClassPtr cnFace)
   {
     classVertex = cnVertex;
     classHalfEdge = cnHedge;

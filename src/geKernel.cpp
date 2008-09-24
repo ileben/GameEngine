@@ -86,10 +86,65 @@ GE_PFGLSWAPINTERVAL glSwapInterval = NULL;
 namespace GE
 {
   DEFINE_CLASS (Kernel);
-  
+
+  /*
+  -------------------------------------
+  Singleton
+  -------------------------------------*/
+
   Kernel* Kernel::Instance = NULL;
-    
-  /*------------------------------------------------
+  
+  /*
+  -------------------------------------
+  Kernel-managed memory
+  -------------------------------------*/
+
+  KernelBuffer::KernelBuffer (int newSize)
+  {
+    refcount = 0;
+    size = newSize;
+    data = malloc (newSize);
+  }
+  
+  KernelBuffer::~KernelBuffer ()
+  {
+    free (data);
+  }
+  
+  void KernelBuffer::reference ()
+  {
+    refcount++;
+  }
+  
+  void KernelBuffer::dereference ()
+  {
+    refcount--;
+  }
+  
+  KernelBuffer* Kernel::createBuffer (int size)
+  {
+    KernelBuffer *buf = new KernelBuffer (size);
+    buffers.add (buf);
+    return buf;
+  }
+
+  void Kernel::refBuffer (KernelBuffer *buf)
+  {
+    buf->reference ();
+  }
+
+  void Kernel::derefBuffer (KernelBuffer* buf)
+  {
+    buf->dereference ();
+    if (buf->refcount <= 0)
+    {
+      buffers.remove (buf);
+      delete buf;
+    }
+  }
+  
+  /*
+  --------------------------------------------------
   Returns address for a named procedure natively
   --------------------------------------------------*/
   
@@ -105,7 +160,8 @@ namespace GE
     #endif
   }
   
-  /*------------------------------------------------
+  /*
+  --------------------------------------------------
   Returns true if named extension is supported
   --------------------------------------------------*/
   
@@ -134,13 +190,14 @@ namespace GE
     return 0;
   }
   
-  /*-------------------------------------------------------
+  /*
+  --------------------------------------------------------
   Loads all the used OpenGL extensions. The extension
   names are first searched for in the opengl extensions
   string to check whether they are supported by the
   hardware. The missing procedure addresses are then
   queried for if not defined in the opengl headers.
-  ---------------------------------------------------------*/
+  --------------------------------------------------------*/
   
   void Kernel::loadExtensions()
   {
@@ -292,8 +349,9 @@ namespace GE
     #endif
   }
   
-  /*------------------------------------------------
-  Constructor for a single instance
+  /*
+  --------------------------------------------------
+  Constructor for the single instance
   --------------------------------------------------*/
   
   Kernel::Kernel()
@@ -309,18 +367,22 @@ namespace GE
   Kernel::~Kernel()
   {
   }
-  
-  Object* Kernel::spawn (ClassName cn)
+  /*
+  void* Kernel::spawnFromPackage (ClassPtr cn)
   {
-    Object *obj = (Object*) New (cn);
-    //obj->initProperties ();
-    objects.pushBack (obj);
+    IClass::FromFile (cn);
+  }
+  */
+  void* Kernel::spawn (ClassPtr cn)
+  {
+    void *obj = New (cn);
+    objects.pushBack (ObjectPtr (cn,obj));
     return obj;
   }
   
-  Object* Kernel::spawn (const char *classString)
+  void* Kernel::spawn (const char *classString)
   {
-    ClassName cn = ClassFromString (classString);
+    ClassPtr cn = ClassFromString (classString);
     if (cn == NULL) return NULL;
     return spawn (cn);
   }

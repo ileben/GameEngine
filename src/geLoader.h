@@ -34,26 +34,26 @@ namespace GE
     void load3ds(const OCC::String &filename);
 
     //Classes to use when creating objects
-    ClassName uvMeshClass;
-    ClassName dMeshClass;
-    ClassName sMeshClass;
+    ClassPtr uvMeshClass;
+    ClassPtr dMeshClass;
+    ClassPtr sMeshClass;
 
   public:
     Loader();
     ~Loader();
 
     //Setters for class names
-    void setUVMeshClass(ClassName name);
-    void setDMeshClass(ClassName name);
-    void setSMeshClass(ClassName name);
+    void setUVMeshClass(ClassPtr name);
+    void setDMeshClass(ClassPtr name);
+    void setSMeshClass(ClassPtr name);
 
     //Loads any file with prober sub-routine
     virtual bool loadFile(const OCC::String &filename);
     
     //Getters for loaded stuff
     Group* getRoot();
-    Actor* getFirstObject(ClassName type);
-    Resource* getFirstResource(ClassName type);
+    Actor* getFirstObject(ClassPtr type);
+    Resource* getFirstResource(ClassPtr type);
     const OCC::ArrayList<Resource*>* getResources();
     
     void retainObject(Actor *obj);

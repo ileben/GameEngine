@@ -29,16 +29,16 @@ namespace GE
    * Setters for class names
    *------------------------------------*/
 
-  void Loader::setUVMeshClass(ClassName name) {
+  void Loader::setUVMeshClass(ClassPtr name) {
     //TODO: check whether given class is really derived from UVMesh
     uvMeshClass = name;
   }
 
-  void Loader::setDMeshClass(ClassName name) {
+  void Loader::setDMeshClass(ClassPtr name) {
     dMeshClass = name;
   }
 
-  void Loader::setSMeshClass(ClassName name) {
+  void Loader::setSMeshClass(ClassPtr name) {
     sMeshClass = name;
   }
 
@@ -63,7 +63,7 @@ namespace GE
    * of given type or NULL if none found
    *-------------------------------------*/
 
-  Resource* Loader::getFirstResource (ClassName type)
+  Resource* Loader::getFirstResource (ClassPtr type)
   {
     //Search for first resource of given type
     for (ArrayList<Resource*>::Iterator it=resources.begin(); it!=resources.end(); ++it)
@@ -78,7 +78,7 @@ namespace GE
    * of given type or NULL if none found
    *-------------------------------------*/
 
-  Actor* Loader::getFirstObject (ClassName type)
+  Actor* Loader::getFirstObject (ClassPtr type)
   {
     //Search for first object of given type
     for (ArrayList<Actor*>::Iterator it=objects.begin(); it!=objects.end(); ++it)

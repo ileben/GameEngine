@@ -24,3 +24,5 @@ specification (export / import) to affect these macros
 #endif
 
 #undef CLASS_DLL_ACTION
+
+#pragma warning(pop)

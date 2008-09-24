@@ -148,16 +148,16 @@ namespace GE
     /*-----------------------------------------------
     Classes to be used when entities are constructed
     ------------------------------------------------*/
-
+    
   private:
-    ClassName classVertex;
-    ClassName classHalfEdge;
-    ClassName classEdge;
-    ClassName classFace;
-
+    ClassPtr classVertex;
+    ClassPtr classHalfEdge;
+    ClassPtr classEdge;
+    ClassPtr classFace;
+    
   public:
-    void setClasses(ClassName cnVertex, ClassName cnHedge,
-                    ClassName cnEdge, ClassName cnFace);
+    void setClasses(ClassPtr cnVertex, ClassPtr cnHedge,
+                    ClassPtr cnEdge, ClassPtr cnFace);
     
     /*------------------------------------------------
     Main data collections, holding all the entities

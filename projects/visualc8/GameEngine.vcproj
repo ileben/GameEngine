@@ -409,6 +409,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\geUnClass.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\geUVMesh.h"
 				>
 			</File>

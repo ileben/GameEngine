@@ -7,7 +7,7 @@ namespace GE
 {
   CTable* IClass::classes = NULL;
   
-  IClass::IClass (const char *newName)
+  IClass::IClass (const char *newName) : creator (NULL)
   {
     //Store the name string
     name = newName;
@@ -48,9 +48,9 @@ namespace GE
     return &properties;
   }
   
-  GE_API_ENTRY void* Safecast (ClassName to, ClassName from, void *instance)
+  GE_API_ENTRY void* Safecast (ClassPtr to, ClassPtr from, void *instance)
   {
-    ClassName super = from;
+    ClassPtr super = from;
     
     //Return early if same class
     if (to == from)
@@ -73,34 +73,34 @@ namespace GE
   }
   
   void
-  IClass::SaveText (IClass *desc, void *obj, OCC::ByteString &buf)
+  IClass::SaveText (const ObjectPtr &ptr, OCC::ByteString &buf)
   {
-    PTable *props = desc->getProperties ();
+    PTable *props = ptr.cls->getProperties ();
     
     for (int p=0; p<props->size(); ++p)
     {
       buf += props->at(p)->getName();
       buf += " = ";
-      props->at(p)->saveText (obj, buf);
+      props->at(p)->saveText (ptr.obj, buf);
       buf += "\n";
     }
   }
   
   void
-  IClass::SaveBinary (IClass *desc, void *obj, OCC::ByteString &buf)
+  IClass::SaveBinary (const ObjectPtr &ptr, OCC::ByteString &buf)
   {
-    PTable *props = desc->getProperties ();
+    PTable *props = ptr.cls->getProperties ();
     
     for (int p=0; p<props->size(); ++p)
     {
-      props->at(p)->saveBinary (obj, buf);
+      props->at(p)->saveBinary (ptr.obj, buf);
     }
   }
   
   typedef TextParser <ByteString> ByteParser;
   
   int
-  IClass::LoadText (IClass *desc, void *obj, const OCC::ByteString &buf, int index)
+  IClass::LoadText (const ObjectPtr &ptr, const OCC::ByteString &buf, int index)
   {
     ByteParser parser;
     parser.begin (&buf, index);
@@ -133,13 +133,13 @@ namespace GE
         printf ("Loading var: '%s'\n", propName.buffer());
         
         //Search for the property with same name
-        PTable *props = desc->getProperties();
+        PTable *props = ptr.cls->getProperties();
         for (int p=0; p < props->size(); ++p) {
           if (parser.compareToken (props->at(p)->getName())) {
             
             //Let the property load itself
             printf ("Found property '%s'\n", propName.buffer());
-            int propEnd = props->at(p)->loadText (obj, buf, parser.getIndex());
+            int propEnd = props->at(p)->loadText (ptr.obj, buf, parser.getIndex());
             parser.fw (propEnd - parser.getIndex());
             break; }}
       }
@@ -153,9 +153,16 @@ namespace GE
   }
   
   int
-  IClass::LoadBinary (IClass *desc, void *obj, const OCC::ByteString &buf, int index)
+  IClass::LoadBinary (const ObjectPtr &ptr, const OCC::ByteString &buf, int index)
   {
     return index;
+  }
+  
+  void
+  IClass::Create (const ObjectPtr &ptr, void *data, int size)
+  {
+    if (ptr.cls->creator)
+      ptr.cls->creator->create (ptr.obj, data, size);
   }
   
 }//namespace GE

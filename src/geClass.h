@@ -1,3 +1,6 @@
+#pragma warning(push)
+#pragma warning(disable:4251)
+
 /*
 ----------------------------------------------------------------
 DECLARE_DLL_SPEC should be #defined to the keyword specifiying
@@ -26,21 +29,27 @@ class CLASS_DLL_ACTION ClassDesc : public Interface <Name > { public: \
   typedef Name ThisClass; \
   typedef Super SuperClass; \
   \
-  ClassDesc (const char *newName) : Interface <Name > (newName) { \
+  ClassDesc (const char *cname) : Interface <Name > (cname) { \
+    
+    #define DECLARE_CREATOR( func ) \
+    creator = new Creator <ThisClass> (&ThisClass::func);
+    
+    #define DECLARE_PROPERTY( Type, pname ) \
+    properties.pushBack (new TypeProperty <Type, ThisClass> (&ThisClass::pname, #pname));
     
     #define DECLARE_END \
   } \
-  IClass* getSuper () { \
-    return SuperClass::GetClassDesc (); \
+  ClassPtr getSuper () { \
+    return SuperClass::GetClassPtr(); \
   } \
 }; \
 \
 static ClassDesc classDesc; \
 \
-static IClass* GetClassDesc() { \
+static ClassPtr GetClassPtr() { \
   return &classDesc; \
 } \
-virtual IClass* GetInstanceClassDesc() { \
+virtual ClassPtr GetInstanceClassPtr() { \
   return &classDesc; \
 } \
 private:
@@ -53,7 +62,6 @@ private:
 #define DECLARE_SUBABSTRACT( Name, Super ) __DECLARE( IAbstract, Name, Super )
 
 #define DEFINE_CLASS( Name ) Name::ClassDesc Name::classDesc (#Name)
-
 
 /*
 -------------------------------------------------------------
@@ -71,8 +79,53 @@ namespace GE
   class IClass;
   class Property;
   
+  typedef IClass* ClassPtr;
   typedef OCC::ArrayList <Property*> PTable;
-  typedef std::map<std::string, IClass*> CTable;
+  typedef std::map<std::string, ClassPtr> CTable;
+  
+  /*
+  --------------------------------------------------------
+  A generic reference to an object, holding a pointer to
+  its class descriptor and a pointer to an instance.
+  This is a workaround for not using any specific base
+  such as "Object". It allows for third-party classes or
+  their custom subclasses to have the class interface
+  attached to them.
+  --------------------------------------------------------*/
+  
+  class ObjectPtr
+  {
+  public:
+    ClassPtr cls;
+    void *obj;
+    
+    ObjectPtr () {}
+    ObjectPtr (ClassPtr c, void *o) {cls=c; o=o;}
+    ObjectPtr (const ObjectPtr &p) {cls=p.cls; obj=p.obj;}
+    template <class T> ObjectPtr (T *o) {cls=o->GetInstanceClassPtr(); obj=o;}
+  };
+  
+  /*
+  ----------------------------------------------------------
+  A simple helper class to store member function pointer to
+  the create callback of the class in the template argument
+  ----------------------------------------------------------*/
+  
+  class ICreator { public:
+    virtual void create (void *obj, void *data, int size) = 0;
+  };
+  
+  template <class C> class Creator : public ICreator { public:
+    
+    typedef void (C::*CreateFunc) (void *data, int size);
+    CreateFunc createCallback;
+    
+    Creator (CreateFunc f)
+      { createCallback = f; }
+    
+    void create (void *obj, void *data, int size)
+      { (((C*)obj)->*createCallback) (data, size); }
+  };
   
   /*
   --------------------------------------------------------------
@@ -86,23 +139,25 @@ namespace GE
     static CTable* classes;
     
   public:
-    static IClass* FromString (const char *name);
+    static ClassPtr FromString (const char *name);
     
   protected:
     OCC::CharString name;
     PTable properties;
+    ICreator *creator;
     
   public:
     IClass (const char *newName);
     const char* getString ();
     PTable *getProperties ();
+    virtual ClassPtr getSuper() = 0;
     virtual void* getInstance() = 0;
-    virtual IClass* getSuper() = 0;
     
-    static void SaveText (IClass *desc, void *obj, OCC::ByteString &buf);
-    static void SaveBinary (IClass *desc, void *obj, OCC::ByteString &buf);
-    static int LoadText (IClass *desc, void *obj, const OCC::ByteString &buf, int index);
-    static int LoadBinary (IClass *desc, void *obj, const OCC::ByteString &buf, int index);
+    static void SaveText (const ObjectPtr &ptr, OCC::ByteString &buf);
+    static void SaveBinary (const ObjectPtr &ptr, OCC::ByteString &buf);
+    static int LoadText (const ObjectPtr &ptr, const OCC::ByteString &buf, int index);
+    static int LoadBinary (const ObjectPtr &ptr, const OCC::ByteString &buf, int index);
+    static void Create (const ObjectPtr &ptr, void *buf, int size);
   };
   
   /*
@@ -126,13 +181,11 @@ namespace GE
   End-user macros to beautify class management
   --------------------------------------------------------------*/
   
-  typedef IClass* ClassName;
-  
   //IClass* from a given class
-  #define Class( Name ) Name::GetClassDesc()
+  #define Class( Name ) Name::GetClassPtr()
   
   //IClass* from an object instance
-  #define ClassOf( instance ) (instance)->GetInstanceClassDesc()
+  #define ClassOf( instance ) (instance)->GetInstanceClassPtr()
   
   //IClass* from string
   #define ClassFromString( name ) IClass::FromString(name)
@@ -143,7 +196,7 @@ namespace GE
   #define New( iclass ) iclass->getInstance()
   
   //safecasting an instance pointer to another type
-  GE_API_ENTRY void* Safecast (ClassName to, ClassName from, void *instance);
+  GE_API_ENTRY void* Safecast (ClassPtr to, ClassPtr from, void *instance);
   #define SafeCastName( name, instance ) \
   (void*) Safecast (name, ClassOf(instance), instance)
   #define SafeCast( Name, instance ) \

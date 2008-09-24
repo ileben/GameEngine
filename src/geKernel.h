@@ -6,6 +6,37 @@
 namespace GE
 {
   typedef void (*PFVOID)();
+
+  /*
+  -------------------------------------
+  Forward declarations
+  -------------------------------------*/
+  class Kernel;
+  
+  /*
+  -------------------------------------
+  Kernel-managed memory
+  -------------------------------------*/
+
+  class GE_API_ENTRY KernelBuffer
+  {
+    friend class Kernel;
+
+  private:
+    int refcount;
+    int size;
+    void *data;
+    
+    KernelBuffer (int newSize);
+    ~KernelBuffer ();
+    void reference ();
+    void dereference ();
+  };
+  
+  /*
+  --------------------------------------------
+  Kernel interface (singleton!)
+  --------------------------------------------*/
   
   class GE_API_ENTRY Kernel
   {
@@ -28,15 +59,20 @@ namespace GE
     int maxElementsVertices;
     void loadExtensions ();
     
-    OCC::ArrayList<Object*> objects;
+    OCC::ArrayList<ObjectPtr> objects;
+    OCC::ArraySet<KernelBuffer*> buffers;
     
   public:
     
     Kernel();
     ~Kernel();
     
-    Object* spawn (ClassName className);
-    Object* spawn (const char *classString);
+    KernelBuffer* createBuffer (int size);
+    void refBuffer (KernelBuffer* buf);
+    void derefBuffer (KernelBuffer *buf);
+    
+    void* spawn (ClassPtr classPtr);
+    void* spawn (const char *classString);
     void enableVerticalSync (bool on);
   };
 }

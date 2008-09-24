@@ -10,24 +10,22 @@ using namespace OCC;
 
 class Testy : public Object
 {
+public:
   DECLARE_SUBCLASS (Testy, Object);
-  properties.pushBack (new TypeProperty <int, Testy> (&Testy::a, "a"));
-  properties.pushBack (new TypeProperty <int, Testy> (&Testy::b, "b"));
+  DECLARE_PROPERTY (int, a);
+  DECLARE_PROPERTY (int, b);
+  DECLARE_CREATOR (createMe);
   DECLARE_END;
   
 public:
   
   int a;
   int b;
-  
-  /*
-  PROPBEGIN (Object);
-  PROPERTY  (a);
-  PROPERTY  (b);
-  PROPEND;
-  
-  DEFAULT (int, a, 33);
-  DEFAULT (int, b, 44); */
+
+  void createMe (void *data, int size)
+  {
+    printf ("Creating Testy!\n");
+  }
 };
 
 DEFINE_CLASS (Testy);
@@ -36,7 +34,7 @@ DEFINE_CLASS (Testy);
 class SubTesty : public Testy
 {
   DECLARE_SUBCLASS (SubTesty, Testy);
-  properties.pushBack (new TypeProperty <int, SubTesty> (&SubTesty::c, "c"));
+  DECLARE_PROPERTY (int, c);
   DECLARE_END;
   
 public:
@@ -733,13 +731,14 @@ int main (int argc, char **argv)
   testy->a = 33;
   testy->b = 44;
   
-  IClass::SaveText (ClassOf(testy), testy, btesty);
+  IClass::SaveText (testy, btesty);
   printf ("Testy:\n%s", btesty.buffer());
   
   ByteString ttesty =
     "a = 100; b = 200\n";
   
-  IClass::LoadText (ClassOf(testy), testy, ttesty, 0);
+  IClass::LoadText (testy, ttesty, 0);
+  IClass::Create (testy, NULL, 0);
   printf ("testy->a: %d\n", testy->a);
   printf ("testy->b: %d\n", testy->b);
   
