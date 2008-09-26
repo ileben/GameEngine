@@ -11,6 +11,14 @@
 
 #endif// defined(WIN32)
 
+//External headers
+#include <cstdlib>
+#include <cassert>
+#include <cmath>
+#include <list>
+#include <OpenCC/OpenCC.h>
+
+
 #if defined(WIN32)
 #  define GE_DLL_EXPORT __declspec(dllexport)
 #  define GE_DLL_IMPORT __declspec(dllimport)
@@ -36,20 +44,61 @@ namespace GE
   typedef unsigned int         Uint32;
   typedef long long            Int64;
   typedef unsigned long long   Uint64;
-
+  typedef std::size_t          UintP;
+  
   typedef float      Float32;
   typedef double     Float64;
   typedef Float32    Float;
-  
-  #include <math.h>
 
   #define PI 3.1415926535f
-  #define COS(a)  ((Float)cos(a))
-  #define SIN(a)  ((Float)sin(a))
-  #define ACOS(a) ((Float)acos(a))
-  #define SQRT(a) ((Float)sqrt(a))
+  #define COS(a)  ((Float)std::cos(a))
+  #define SIN(a)  ((Float)std::sin(a))
+  #define ACOS(a) ((Float)std::acos(a))
+  #define SQRT(a) ((Float)std::sqrt(a))
   #define ASSERT  assert
   #define INLINE  inline
+
+  /*
+  ----------------------------------------------
+  Miscelaneous utility functions
+  ----------------------------------------------*/
+
+  class GE_API_ENTRY Util
+  {
+  public:
+    inline static void PtrSet (void *pptr, UintP address);
+    inline static void PtrAdd (void *pptr, UintP offset);
+    inline static void PtrSub (void *pptr, UintP offset);
+    inline static UintP PtrDist (void *ptrFrom, void *ptrTo);
+    inline static void* PtrOff (void *ptr, UintP offset);
+  };
+  
+  void Util::PtrSet (void *pptr, UintP address)
+  {
+    *((UintP*)pptr) = address;
+  }
+  
+  void Util::PtrAdd (void *pptr, UintP offset)
+  {
+    *((UintP*)pptr) += offset;
+  }
+  
+  void Util::PtrSub (void *pptr, UintP offset)
+  {
+    *((UintP*)pptr) -= offset;
+  }
+
+  UintP Util::PtrDist (void *ptr1, void *ptr2)
+  {
+    return ((UintP)ptr2) - ((UintP)ptr1);
+  }
+
+  void* Util::PtrOff (void *ptr, UintP offset)
+  {
+    void *ptrout = ptr;
+    PtrAdd (&ptrout, offset);
+    return ptrout;
+  }
 }
 
 #endif// __GEDEFS_H

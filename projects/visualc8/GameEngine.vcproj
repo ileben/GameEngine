@@ -255,6 +255,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\geSerialize.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\geShader.cpp"
 				>
 			</File>
@@ -264,6 +268,14 @@
 			</File>
 			<File
 				RelativePath="..\..\src\geShape.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\geSkelAnim_Res.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\geSkinPolyMesh_Res.cpp"
 				>
 			</File>
 			<File
@@ -389,6 +401,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\geSerialize.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\geShader.h"
 				>
 			</File>
@@ -398,6 +414,18 @@
 			</File>
 			<File
 				RelativePath="..\..\src\geShape.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\geSkelAnim_Res.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\geSkeleton_Res.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\geSkinPolyMesh_Res.h"
 				>
 			</File>
 			<File

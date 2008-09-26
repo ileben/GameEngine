@@ -4,26 +4,24 @@
 //General definitions
 #include "geDefs.h"
 
-//External headers
-#include <list>
-#include <assert.h>
-#include <OpenCC/OpenCC.h>
-
-//General definitions
-#include "geDefs.h"
-
-//Add DLL interface to class declarations
-#define CLASS_DLL_ACTION GE_API_ENTRY
-
 //Class management
+#define CLASS_DLL_ACTION GE_API_ENTRY
 #include "geClass.h"
 #include "geProperty.h"
 
-//API headers - scene tree
+//Miscelaneous
 #include "geVectors.h"
 #include "geMatrix.h"
 #include "geObject.h"
+
+//Resources
 #include "geResource.h"
+#include "geSerialize.h"
+#include "geSkinPolyMesh_Res.h"
+#include "geSkeleton_Res.h"
+#include "geSkelAnim_Res.h"
+
+//Actors
 #include "geHmesh.h"
 #include "geUVMesh.h"
 #include "geDynamicMesh.h"
@@ -36,12 +34,12 @@
 #include "geShape.h"
 #include "geCamera.h"
 
-//API headers - widgets
+//Widgets
 #include "widgets/geWidget.h"
 #include "widgets/geLabel.h"
 #include "widgets/geFpsLabel.h"
 
-//API headers - loading & rendering
+//Loading & rendering
 #include "geRenderer.h"
 #include "geLoader.h"
 #include "geLoad3ds.h"
