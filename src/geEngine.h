@@ -17,6 +17,7 @@
 //Resources
 #include "geResource.h"
 #include "geSerialize.h"
+#include "geArrayList_Res.h"
 #include "geSkinPolyMesh_Res.h"
 #include "geSkeleton_Res.h"
 #include "geSkelAnim_Res.h"

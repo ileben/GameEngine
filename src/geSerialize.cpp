@@ -3,9 +3,35 @@
 
 namespace GE
 {
+  /*
+  -----------------------------------------------------------
+  These functions are to be called from within the resources
+  getPointers () function. They mark other resources within
+  the current one to be processed, or other external data
+  held by this resource, such as a pointer to a resources,
+  a pointer to an array of them, or general data on the heap.
+  
+  The byte offset to the serialized conterpart of the
+  pointers or resources within the current resource
+  structure are calculated from the serialized offset of the
+  currently processed resource and the offset of the member
+  variable within its structure.
+
+  Note that a resource member variable doesn't have a
+  pointer to it so it doesn't need to store its offset.
+  On the other hand a resource pointer member variable
+  can't have the serialized resource offset set at the
+  time it is specified. It is only set later on when the
+  resource is being processed and the current copy offset
+  is known (but before new pointers are obtained from that
+  resource).
+  -----------------------------------------------------------*/
+
   void SerializeManager::resource (void *ptr)
   {
     ResPtrInfo ri;
+    ri.count = 1;
+    ri.offset = current->offset + Util::PtrDist (current->ptr, ptr);
     ri.ptr = (IResource*)ptr;
     ri.dynamic = false;
     ri.detached = false;
@@ -16,22 +42,25 @@ namespace GE
   void SerializeManager::resourcePtr (void *pptr)
   {
     ResPtrInfo ri;
+    ri.count = 1;
+    ri.offset = 0;
     ri.ptr = *((IResource**)pptr);
     ri.dynamic = true;
     ri.detached = false;
-    ri.ptroffset = offset + Util::PtrDist (current, pptr);
+    ri.ptroffset = current->offset + Util::PtrDist (current->ptr, pptr);
     resQueue.pushBack (ri);
   }
   
-  void SerializeManager::resourceArray (void *pptr, UintP size)
+  void SerializeManager::resourceArray (void *pptr, UintP count)
   {
-    DynPtrInfo di;
-    di.ptr = *((void**)pptr);
-    di.size = size;
-    di.isarray = true;
-    di.ofptr = false;
-    di.ptroffset = offset + Util::PtrDist (current, pptr);
-    dynQueue.pushBack (di);
+    ResPtrInfo ri;
+    ri.count = count;
+    ri.offset = 0;
+    ri.ptr = *((IResource**)pptr);
+    ri.dynamic = true;
+    ri.detached = false;
+    ri.ptroffset = current->offset + Util::PtrDist (current->ptr, pptr);
+    resQueue.pushBack (ri);
   }
   
   void SerializeManager::resourcePtrArray (void *pptr, UintP size)
@@ -40,8 +69,7 @@ namespace GE
     di.ptr = *((void**)pptr);
     di.size = size;
     di.isarray = true;
-    di.ofptr = true;
-    di.ptroffset = offset + Util::PtrDist (current, pptr);
+    di.ptroffset = current->offset + Util::PtrDist (current->ptr, pptr);
     dynQueue.pushBack (di);
   }
   
@@ -51,20 +79,25 @@ namespace GE
     di.ptr = *((void**)pptr);
     di.size = size;
     di.isarray = false;
-    di.ofptr = false;
-    di.ptroffset = offset + Util::PtrDist (current, pptr);
+    di.ptroffset = current->offset + Util::PtrDist (current->ptr, pptr);
     dynQueue.pushBack (di);
   }
+
+  /*
+  --------------------------------------------------
+  These are the functions that form the core of the
+  serialization algorithm.
+  --------------------------------------------------*/
 
   void SerializeManager::copy (void *ptr, UintP size)
   {
     if (!simulate)
     {
-      //Copy [size] bytes of data to buffer at current offset
+      //Copy [size] bytes of data to buffer at copy offset
       std::memcpy (data + offset, ptr, size);
     }
     
-    //Advance current offset
+    //Advance copy offset
     offset += size;
   }
   
@@ -72,19 +105,23 @@ namespace GE
   {
     if (!simulate)
     {
-      //Make pointer at given offset point to current offset
+      //Make pointer at given offset point to copy offset
       void *pptr = data + ptrOffset;
       Util::PtrSet (pptr, offset);
     }
     
     //Add to the list of adjusted pointers
-    ptrList.pushBack (ptrOffset);
+    PtrHeader ph;
+    ph.offset = ptrOffset;
+    ptrList.pushBack (ph);
   }
   
   void SerializeManager::run (IResource *root)
   {
     //Push root info to queue
     ResPtrInfo ri;
+    ri.count = 1;
+    ri.offset = 0;
     ri.ptr = (IResource*)root;
     ri.dynamic = true;
     ri.detached = true;
@@ -96,30 +133,38 @@ namespace GE
       //Pop first resource info off the stack
       ResPtrInfo ri = resQueue.first();
       resQueue.popFront();
-      current = ri.ptr;
+      current = &ri;
       
-      //--- We are now at the header of the resource
-      
-      //Store the offset to resource header
-      resList.pushBack (offset);
-       
-      //Copy resource ID
-      Uint32 id = ri.ptr->getID();
-      copy (&id, sizeof (Uint32));       
-      
-      //--- We are now at the actual start of the resource class
-      
-      //Get new pointer info from the class
-      ri.ptr->getPointers (this);    
+      //Get class info
+      Uint32 clsID = ri.ptr->getID ();
+      UintP clsSize = ri.ptr->getSize();
       
       //Is the resource on the heap?
       if (ri.dynamic)
       {
+        //Add to list of classes
+        ClsHeader ch;
+        ch.id = clsID;
+        ch.count = ri.count;
+        ch.offset = offset;
+        clsList.pushBack (ch);
+        
+        //Set the resource offset
+        ri.offset = offset;
+        
         //Adjust the in-data pointer to resource
         if (!ri.detached) adjust (ri.ptroffset);
         
         //Copy resource data
-        copy (ri.ptr, ri.ptr->getSize());
+        copy (ri.ptr, ri.count * clsSize);
+      }
+      
+      //Get new pointer info from the class
+      for (UintP r=0; r<ri.count; ++r)
+      {
+        ri.ptr->getPointers (this);
+        ri.offset += clsSize;
+        Util::PtrAdd (&ri.ptr, clsSize);
       }
       
       while (!dynQueue.empty())
@@ -127,44 +172,24 @@ namespace GE
         //Pop first dynamic info off the stack
         DynPtrInfo di = dynQueue.first();
         dynQueue.popFront();
-
+        
         if (di.isarray)
         {
-          if (di.ofptr)
-          {
-            //It points to an array of pointers to resources
-            IResource **resources = (IResource**) di.ptr;
-            int numResources = (int)di.size;
-            di.size *= sizeof (IResource*);
-            
-            //Add resource info for every pointer in the array
-            for (int r=0; r<numResources; ++r) {
-              ResPtrInfo ri;
-              ri.ptr = resources[r];
-              ri.dynamic = true;
-              ri.detached = false;
-              ri.ptroffset = offset + r * sizeof (IResource*);
-              resQueue.pushBack (ri);
-            }
-
-          }else{
-
-            //It points to an array of resources.
-            //Get size off the first resource.
-            IResource *resources = (IResource*) di.ptr;
-            UintP resSize = resources[0].getSize();
-            int numResources = (int)di.size;
-            di.size *= resSize;
-            
-            //Add resource info for every resource in the array
-            for (int r=0; r<numResources; ++r) {
-              ResPtrInfo ri;
-              ri.ptr = (IResource*) Util::PtrOff (resources, r*resSize);
-              ri.dynamic = false;
-              ri.detached = false;
-              ri.ptroffset = 0;
-              resQueue.pushBack (ri);
-            }
+          //It points to an array of pointers to resources
+          IResource **resources = (IResource**) di.ptr;
+          UintP numResources = di.size;
+          di.size *= sizeof (IResource*);
+          
+          //Add resource info for every pointer in the array
+          for (UintP r=0; r<numResources; ++r) {
+            ResPtrInfo ri;
+            ri.count = 1;
+            ri.offset = 0;
+            ri.ptr = resources[r];
+            ri.dynamic = true;
+            ri.detached = false;
+            ri.ptroffset = offset + r * sizeof (IResource*);
+            resQueue.pushBack (ri);
           }
         }
         
@@ -184,14 +209,16 @@ namespace GE
     resQueue.clear ();
     dynQueue.clear ();
     ptrList.clear ();
-    resList.clear ();
+    clsList.clear ();
     offset = 0;
     
     //Simulation run
     run (root);
     
     //Allocate data
-    UintP introSize = (resList.size() + 1 + ptrList.size() + 1) * sizeof (UintP); 
+    UintP introSize =
+      (sizeof(UintP) + clsList.size() * sizeof (ClsHeader) +
+       sizeof(UintP) + ptrList.size() * sizeof (PtrHeader));
     UintP dataSize = introSize + offset;
     data = (Uint8*) std::malloc (offset);
     *outData = data;
@@ -201,61 +228,57 @@ namespace GE
     resQueue.clear ();
     dynQueue.clear ();
     ptrList.clear ();
-    resList.clear ();
+    clsList.clear ();
     simulate = false;
     offset = introSize;
-
+     
     //Real run
     run (root);
     
     //Back to start of data
     offset = 0;
     
-    //Store resource list
-    UintP numResources = resList.size();
-    copy (&numResources, sizeof (numResources));
-    copy (resList.buffer(), resList.size() * sizeof (UintP));
+    //Store class list
+    UintP numClasses = clsList.size();
+    copy (&numClasses, sizeof (UintP));
+    copy (clsList.buffer(), clsList.size() * sizeof (ClsHeader));
     
     //Store pointer list
     UintP numPointers = ptrList.size();
-    copy (&numPointers, sizeof (numPointers));
-    copy (ptrList.buffer(), ptrList.size() * sizeof (UintP));
+    copy (&numPointers, sizeof (UintP));
+    copy (ptrList.buffer(), ptrList.size() * sizeof (PtrHeader));
   }
-
+  
   IResource* SerializeManager::load (void *data)
   {
     IResource *root = NULL;
 
     //Get the number of resources
-    UintP *resList = (UintP*) data;
-    UintP numResources = *resList;
-    ++resList;
+    UintP *numClasses = (UintP*) data;
+    ClsHeader *clsList = (ClsHeader*) (numClasses + 1);
     
-    for (UintP r=0; r<numResources; ++r, ++resList)
+    //Get the list of class headers
+    for (UintP c=0; c<*numClasses; ++c)
     {
-      //Get the pointer to the class ID and resource data
-      UintP offset = *resList;
-      Uint32 *pID = (Uint32*) Util::PtrOff (data, offset);
-      IResource *pRes = (IResource*) Util::PtrOff (data, offset + 4);
-      if (r == 0) root = pRes;
-
-      //Construct resource in-place
-      switch (*pID) {
-      case 0: new (pRes) TestResource ();
+      //Get the pointer to the resource
+      void *pres = Util::PtrOff (data, clsList[c].offset);
+      if (c == 0) root = (IResource*) pres;
+      
+      //Construct resource (array) in-place
+      switch (clsList[c].id) {
+      case 0: new (pres) TestResource [clsList[c].count];
       }
     }
-
+    
     //Get the number of pointers
-    UintP *ptrList = resList;
-    UintP numPointers = *ptrList;
-    ++ptrList;
-
-    for (UintP p=0; p<numPointers; ++p, ++ptrList)
+    UintP *numPointers = (UintP*) (clsList + *numClasses);
+    PtrHeader *ptrList = (PtrHeader*) (numPointers + 1);
+    
+    for (UintP p=0; p<*numPointers; ++p, ++ptrList)
     {
       //Get the pointer to the pointer
-      UintP offset = *ptrList;
-      void *pptr = Util::PtrOff (data, offset);
-
+      void *pptr = Util::PtrOff (data, ptrList[p].offset);
+      
       //Add the base data address to it
       Util::PtrAdd (pptr, (UintP)data);
     }

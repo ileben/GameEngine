@@ -7,14 +7,14 @@ namespace GE
   -----------------------------------
   Resource
   -----------------------------------*/
-
+  
   struct GE_API_ENTRY SkinPolyMeshVertex
   {
     Vector3 point;
     Int32 boneIndex[4];
     Int32 weight[4];
   };
-
+  
   struct GE_API_ENTRY SkinPolyMeshFace
   {
     Int32 numCorners;
@@ -22,34 +22,22 @@ namespace GE
     Int32 materialId;
   };
   
-  class GE_API_ENTRY SkinPolyMesh
-  {
-    friend class SkinPolyMesh_Factory;
-    
-  private:
-    Int32                numVerts;
-    Int32                numFaces;
-    SkinPolyMeshVertex  *verts;
-    SkinPolyMeshFace    *faces;
-    Int32               *indices;
-    
-  public:
-    SkinPolyMesh ();
-  };
-
-  /*
-  -----------------------------------
-  Factory
-  -----------------------------------*/
-  
-  class GE_API_ENTRY SkinPolyMesh_Factory
+  class GE_API_ENTRY SkinPolyMesh : public IResource
   {
   public:
-    OCC::ArrayList <SkinPolyMeshVertex>   verts;
-    OCC::ArrayList <SkinPolyMeshFace>     faces;
-    OCC::ArrayList <Int32>                indices;
-
-    void create (void **outMem, UintP *outSize);
+    
+    ArrayList_Res <SkinPolyMeshVertex, false>   verts;
+    ArrayList_Res <SkinPolyMeshFace, false>     faces;
+    ArrayList_Res <Int32, false>                indices;
+    
+    Uint32 getID() { return 2; }
+    UintP getSize() { return sizeof (IResource); }
+    void getPointers (SerializeManager *sm)
+    {
+      sm->resource (&verts);
+      sm->resource (&faces);
+      sm->resource (&indices);
+    }
   };
 
 }//namespace GE

@@ -3,6 +3,7 @@
 
 namespace GE
 {
+  /*
   void SkinPolyMesh_Factory::create (void **outMem, UintP *outSize)
   {
     //Calculate sizes
@@ -40,6 +41,6 @@ namespace GE
     Util::PtrAdd (&verts,   (UintP)this);
     Util::PtrAdd (&faces,   (UintP)this);
     Util::PtrAdd (&indices, (UintP)this);
-  }
+  }*/
 
 }//namespace GE
