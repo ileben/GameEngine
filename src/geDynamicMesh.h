@@ -20,18 +20,6 @@ namespace GE
     SHADING_SMOOTH       = 2
   };
   
-  /*=========================================================
-   *
-   * MaterialId is an index into sub-material array.
-   * Max value is clamped to one less then max representable
-   * so it is possible to hit the end value when iterating
-   * over the array using MaterialId type.
-   *
-   *=========================================================*/
-  
-  typedef Uint8 MaterialId;
-  #define GE_MAX_MATERIAL_ID 255
-  
 
   /*===========================================================
    *

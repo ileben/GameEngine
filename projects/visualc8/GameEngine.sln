@@ -17,6 +17,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestHmesh", "TestHmesh.vcpr
 		{50875983-6762-4033-9505-170485253426} = {50875983-6762-4033-9505-170485253426}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestSkin", "TestSkin.vcproj", "{EF39294F-D40F-44CF-84EF-87070456ED22}"
+	ProjectSection(ProjectDependencies) = postProject
+		{50875983-6762-4033-9505-170485253426} = {50875983-6762-4033-9505-170485253426}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -35,6 +40,10 @@ Global
 		{E7D85EDE-059C-4BE1-9B5E-8A2AC894E3A2}.Release|Win32.ActiveCfg = Release|Win32
 		{817D9579-DC33-44C2-B65C-E4001EF5AB33}.Debug|Win32.ActiveCfg = Debug|Win32
 		{817D9579-DC33-44C2-B65C-E4001EF5AB33}.Release|Win32.ActiveCfg = Release|Win32
+		{EF39294F-D40F-44CF-84EF-87070456ED22}.Debug|Win32.ActiveCfg = Debug|Win32
+		{EF39294F-D40F-44CF-84EF-87070456ED22}.Debug|Win32.Build.0 = Debug|Win32
+		{EF39294F-D40F-44CF-84EF-87070456ED22}.Release|Win32.ActiveCfg = Release|Win32
+		{EF39294F-D40F-44CF-84EF-87070456ED22}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

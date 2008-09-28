@@ -3,6 +3,7 @@
 
 //General definitions
 #include "geDefs.h"
+#include "geUtil.h"
 
 //Class management
 #define CLASS_DLL_ACTION GE_API_ENTRY
@@ -22,15 +23,17 @@
 #include "geSkeleton_Res.h"
 #include "geSkelAnim_Res.h"
 
-//Actors
-#include "geHmesh.h"
-#include "geUVMesh.h"
-#include "geDynamicMesh.h"
-#include "geStaticMesh.h"
 #include "geTexture.h"
 #include "geShaders.h"
 #include "geShader.h"
 #include "geMaterial.h"
+#include "geHmesh.h"
+#include "geUVMesh.h"
+#include "geDynamicMesh.h"
+#include "geStaticMesh.h"
+
+//Actors
+#include "geActor.h"
 #include "geScene.h"
 #include "geShape.h"
 #include "geCamera.h"

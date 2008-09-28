@@ -14,7 +14,7 @@ namespace GE
   {
     Vector3 point;
     Int32 boneIndex[4];
-    Int32 weight[4];
+    Int32 boneWeight[4];
   };
   
   struct GE_API_ENTRY SkinPolyMeshFace

@@ -580,15 +580,16 @@ namespace GE
   Adding a face is the only direct function allowing  mesh
   construction so this is where we need to check  for
   possible user errors. These can include:
-  
-  1) Wrong (opposite) indices orientation in relation to
-     an existing edge
-  
-  2) An edge already shared by two faces
 
-  3) Operation would make one of the vertices singular
+  1) Operation would make one of the vertices singular
      - it doesn't lie on mesh border prior to face addition
 
+  2) Operation would make the edge shared by 3 faces
+     - the edge doesn't lie on the mesh border
+  
+  3) Wrong (opposite) indices orientation in relation to
+     an existing edge
+    
   4) Operation would make one of the vertices singular
      - a corner with both edges shared which completes a
      manifold (full face circle), but with another manifold
@@ -599,7 +600,7 @@ namespace GE
   {
     //Check for invalid input
     if (count < 3) return NULL;
-   
+    /*
     //Walk pairs of vertices
     for (int i1=0; i1<count; ++i1) {
       int i2 = (i1+1)%count;
@@ -620,15 +621,16 @@ namespace GE
           h2.begin(vertices[i2], h1->twinHedge());
           firstShared = *h1; }
       }
-
+      
       //If edge not shared the vertex must be on border
-      //and not completely surrounded by faces
+      //else this will result in a singular vertex
       if (firstShared == NULL) {
         if (anyBorder) continue;
         else return NULL;
       }
 
-      //The shared edge must be on border
+      //The shared edge must be on border else this edge
+      //will belong to more than 2 faces after addition
       if (firstShared->parentFace() != NULL)
         return NULL;
 
@@ -643,8 +645,58 @@ namespace GE
         if (firstShared->nextHedge() != *h2)
           return NULL;
     }
+    */
 
+    //Walk pairs of vertices
+    for (int i1=0; i1<count; ++i1) {
+      int i2 = (i1+1)%count;
+      int i3 = (i2+1)%count;
 
+      bool anyBorder = false;
+      HMesh::VertHedgeIter hOut;
+      HMesh::VertHedgeBackIter hIn;
+      HMesh::HalfEdge *hShared = NULL;
+
+      //A lone vertex with no adjacent face is ok
+      if (vertices[i2]->outHedge() == NULL) continue;
+      
+      //Walk all round the v2 half edges
+      for (hOut.begin(vertices[i2]); !hOut.end(); ++hOut) {
+        //Search for an existing outgoing edge from v2 to v3
+        if (hOut->dstVertex() == vertices[i3]) {
+          hShared = *hOut; }
+        //Search for a border edge
+        if (hOut->parentFace() == NULL)
+          anyBorder = true;
+      }
+      
+      //v2 must be on the border
+      //-- resolves condition (1)
+      if (!anyBorder)
+        return NULL;
+      
+      //Everyhing fine if edge (v2,v3) doesn't exist yet
+      if (hShared == NULL) continue;
+      
+      //The shared edge must be on the border
+      //-- resolves conditions (2),(3)
+      if (hShared->parentFace() != NULL)
+        return NULL;
+      
+      //Walk backwards over the manifold around v2 until another
+      //border reached
+      for (hIn.begin (vertices[i2], hShared->twinHedge()); !hIn.end(); ++hIn)
+        if (hIn->parentFace() == NULL)
+          break;
+      
+      //If edge (v1,v2) is the only other border edge around v2 then
+      //there must not be another patch inbetween (v1,v2) and (v2,v3)
+      //-- resolves condition (4)
+      if (hIn->srcVertex() == vertices[i1])
+        if (hIn->nextHedge() != hShared)
+          return NULL;
+    }
+    
     //Create new face of specified class
     Face *face = (Face*)New(classFace);
         

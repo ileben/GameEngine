@@ -4,8 +4,8 @@
 using namespace GE;
 using namespace OCC;
 
-#include <stdlib.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cstdio>
 
 
 class Testy : public Object
@@ -558,7 +558,7 @@ void display()
   renderer.setCamera(&cam3D);
 
   //draw model
-  renderer.drawShape(zekko);
+  renderer.drawActor(zekko);
   
   
   //2D view (right)

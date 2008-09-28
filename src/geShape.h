@@ -22,12 +22,14 @@ namespace GE
     friend class Renderer;
     friend class SaverObj;
 
-  private:
+  protected:
     UMesh *uvMesh;
     SMesh *statMesh;
     DMesh *dynMesh;
-    Material *material;
     bool useDynamic;
+    
+    virtual void renderDynamic (MaterialId materialId);
+    virtual void renderStatic (MaterialId materialId);
     
   public:
     Shape();
@@ -35,11 +37,11 @@ namespace GE
     void setUV(UMesh *mesh);
     void setStatic(SMesh *mesh);
     void setDynamic(DMesh *mesh);
-    void setMaterial(Material *material);
     UMesh* getUV();
     SMesh* getStatic();
     DMesh* getDynamic();
-    Material* getMaterial();
+    
+    virtual void render (MaterialId materialId);
   };
 }
 

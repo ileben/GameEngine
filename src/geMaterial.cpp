@@ -522,6 +522,11 @@ namespace GE
         subMaterials.popBack();
     }
   }
+
+  int MultiMaterial::getNumSubMaterials ()
+  {
+    return subMaterials.size();
+  }
   
   /*
   --------------------------------------------------

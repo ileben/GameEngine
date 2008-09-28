@@ -33,7 +33,7 @@ namespace GE
     DECLARE_SUBCLASS (SMesh, Resource); DECLARE_END;
     friend class Renderer;
     
-  protected:
+  public:
     
     struct IndexGroup
     {

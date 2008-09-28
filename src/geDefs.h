@@ -57,48 +57,6 @@ namespace GE
   #define SQRT(a) ((Float)std::sqrt(a))
   #define ASSERT  assert
   #define INLINE  inline
-
-  /*
-  ----------------------------------------------
-  Miscelaneous utility functions
-  ----------------------------------------------*/
-
-  class GE_API_ENTRY Util
-  {
-  public:
-    inline static void PtrSet (void *pptr, UintP address);
-    inline static void PtrAdd (void *pptr, UintP offset);
-    inline static void PtrSub (void *pptr, UintP offset);
-    inline static UintP PtrDist (void *ptrFrom, void *ptrTo);
-    inline static void* PtrOff (void *ptr, UintP offset);
-  };
-  
-  void Util::PtrSet (void *pptr, UintP address)
-  {
-    *((UintP*)pptr) = address;
-  }
-  
-  void Util::PtrAdd (void *pptr, UintP offset)
-  {
-    *((UintP*)pptr) += offset;
-  }
-  
-  void Util::PtrSub (void *pptr, UintP offset)
-  {
-    *((UintP*)pptr) -= offset;
-  }
-
-  UintP Util::PtrDist (void *ptr1, void *ptr2)
-  {
-    return ((UintP)ptr2) - ((UintP)ptr1);
-  }
-
-  void* Util::PtrOff (void *ptr, UintP offset)
-  {
-    void *ptrout = ptr;
-    PtrAdd (&ptrout, offset);
-    return ptrout;
-  }
 }
 
 #endif// __GEDEFS_H
