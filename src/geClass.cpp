@@ -6,25 +6,62 @@ using namespace OCC::TextParserCommon;
 namespace GE
 {
   CTable* IClass::classes = NULL;
+  ITable* IClass::classesByID = NULL;
   
-  IClass::IClass (const char *newName) : creator (NULL)
+  IClass::IClass () : size(0), creator (NULL)
   {
-    //Store the name string
-    name = newName;
-    
+  }
+
+  const ClassID& IClass::getID ()
+  {
+    return id;
+  }
+
+  const char* IClass::getString ()
+  {
+    return name.buffer();
+  }
+
+  UintP IClass::getSize ()
+  {
+    return size;
+  }
+  
+  PTable* IClass::getProperties ()
+  {
+    return &properties;
+  }
+  
+  void IClass::Classify (ClassPtr cls)
+  {
     //Make sure CTable is initialised
     if (IClass::classes == NULL)
       classes = new CTable;
     
-    //Make sure the name is not registered yet
-    CTable::iterator it = IClass::classes->find (newName);
+    //Check that the name is not registered yet
+    const char *cname = cls->name.buffer ();
+    CTable::iterator it = IClass::classes->find (cname);
     ASSERT (it == IClass::classes->end());
     
-    //Map name string to class descriptor
-    (*IClass::classes) [newName] = this;
+    //Map name string to class pointer
+    (*IClass::classes) [cname] = cls;
+    
+    if (cls->id != 0)
+    {
+      //Make sure ITable is initialised
+      if (IClass::classesByID == NULL)
+        classesByID = new ITable;
+
+      //Check that the id is not registered yet
+      ITable::iterator it = IClass::classesByID->find (cls->id);
+      ASSERT (it == IClass::classesByID->end());
+      
+      //Map id to class pointer
+      (*IClass::classesByID) [cls->id] = cls;
+    }
   }
   
-  IClass* IClass::FromString (const char *name)
+  ClassPtr IClass::FromString (const char *name)
   {
     //Make sure CTable is initialised
     if (IClass::classes == NULL)
@@ -35,19 +72,19 @@ namespace GE
     if (it == IClass::classes->end()) return NULL;
     return it->second;
   }
-  
-  const char* IClass::getString ()
+
+  ClassPtr IClass::FromID (ClassID id)
   {
-    //Return the name string
-    return name.buffer();
+    //Make sure ITable is initialised
+    if (IClass::classesByID == NULL)
+      classesByID = new ITable;
+    
+    //Find a class descriptor matching the id
+    ITable::iterator it = IClass::classesByID->find (id);
+    if (it == IClass::classesByID->end()) return NULL;
+    return it->second;
   }
-  
-  PTable* IClass::getProperties ()
-  {
-    //Return PTable
-    return &properties;
-  }
-  
+
   GE_API_ENTRY void* Safecast (ClassPtr to, ClassPtr from, void *instance)
   {
     ClassPtr super = from;

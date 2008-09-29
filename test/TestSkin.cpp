@@ -1,7 +1,5 @@
 #include <geEngine.h>
 #include <geGLHeaders.h>
-#undef CLASS_DLL_ACTION
-#define CLASS_DLL_ACTION
 #include <geClass.h>
 using namespace GE;
 using namespace OCC;
@@ -68,6 +66,9 @@ enum CameraMode
   CAMERA_MODE_ORBIT,
   CAMERA_MODE_ZOOM
 };
+
+ByteString data;
+MaxCharacter_Res *character;
 
 SPolyActor *actor;
 FpsLabel lblFps;
@@ -192,6 +193,35 @@ void keyboard (unsigned char key, int x, int y)
   }
 }
 
+void renderAxes ()
+{
+  StandardMaterial mat;
+  mat.setUseLighting (false);
+  mat.begin ();
+
+  glMatrixMode (GL_MODELVIEW);
+  glPushMatrix ();
+  glScalef (100, 100, 100);
+  
+  glBegin (GL_LINES);
+  glColor3f  (1, 0, 0);
+  glVertex3f (0, 0, 0);
+  glVertex3f (1, 0, 0);
+
+  glColor3f  (0, 1, 0);
+  glVertex3f (0, 0, 0);
+  glVertex3f (0, 1, 0);
+
+  glColor3f  (0, 0, 1);
+  glVertex3f (0, 0, 0);
+  glVertex3f (0, 0, 1);
+  glEnd ();
+
+  glPopMatrix ();
+  
+  mat.end ();
+}
+
 void display ()
 {
   renderer.begin();
@@ -202,6 +232,7 @@ void display ()
   
   //draw model
   renderer.drawActor (actor);
+  renderAxes ();
   
   //Frames per second
   renderer.setViewport (0,0,resX, resY);
@@ -260,6 +291,13 @@ void initGlut (int argc, char **argv)
   glEnable(GL_LIGHT0);
 }
 
+class VertColorMaterial : public StandardMaterial { public:
+  virtual void begin ()  {
+    StandardMaterial::begin ();
+    glEnable (GL_COLOR_MATERIAL);
+  }
+};
+
 void SPolyActor::renderDynamic (MaterialId matid)
 {
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -311,6 +349,7 @@ void SPolyActor::renderDynamic (MaterialId matid)
 
 DMesh* loadPackage (String fileName)
 {
+  
   FileRef file = new File (fileName);
   if (!file->open ("rb"))
   {
@@ -319,13 +358,23 @@ DMesh* loadPackage (String fileName)
     return 0;
   }
   
-  ByteString data = file->read (file->getSize());
+  data = file->read (file->getSize());
   file->close();
   
   SerializeManager sm;
-  SkinPolyMesh_Res *inMesh =
-    (SkinPolyMesh_Res*) sm.deserialize ((void*)data.buffer());
+  character = (MaxCharacter_Res*) sm.deserialize ((void*)data.buffer());  
+  SkinPolyMesh_Res *inMesh = character->mesh;
   
+  /*
+  void *data; UintP size;
+  SkinPolyMesh_Res outMesh;
+
+  SerializeManager sm;
+  sm.serialize (&outMesh, &data, &size);
+  
+  SkinPolyMesh_Res *inMesh =
+    (SkinPolyMesh_Res*) sm.deserialize (data);
+  */
   printf ("Imported %d verts, %d faces, %d indices\n",
           inMesh->verts->size(),
           inMesh->faces->size(),
@@ -367,15 +416,47 @@ DMesh* loadPackage (String fileName)
   return polyMesh;
 }
 
-class VertColorMaterial : public StandardMaterial { public:
-  virtual void begin ()  {
-    StandardMaterial::begin ();
-    glEnable (GL_COLOR_MATERIAL);
+void applyFK ()
+{
+  Skeleton_Res *skel = character->skeleton;
+  int cindex = 1;
+
+  ArrayList <Matrix4x4> worldMats;
+  
+  for (int b=0; b<skel->bones->size(); ++b)
+  {
+    SkeletonBone *parent = &skel->bones->at(b);
+    for (Uint32 c=0; c<parent->numChildren; ++c)
+    {
+      SkeletonBone *child = &skel->bones->at (cindex++);
+      child->poseRot = parent->poseRot * child->poseRot;
+    }
+    
+    Matrix4x4 worldMat;
+    worldMat.fromQuaternion (parent->poseRot);
+    worldMats.pushBack (worldMat);
   }
-};
+
+  SPolyMesh *mesh = (SPolyMesh*) actor->getDynamic ();
+  for (SPolyMesh::VertIter v(mesh); !v.end(); ++v)
+  {
+    Vector3 result (0,0,0);
+    
+    for (int i=0; i<4; ++i)
+    {
+      Uint32 boneIndex = v->boneIndex[i];
+      SkeletonBone *bone = &skel->bones->at (boneIndex);
+      Matrix4x4 &worldMat = worldMats [boneIndex];
+      Vector3 fraction = worldMat * bone->poseInv * v->point;
+      result += fraction * v->boneWeight[i];
+    }
+
+    v->point = result;
+  }
+}
 
 int main (int argc, char **argv)
-{  
+{
   //Initialize GLUT
   initGlut(argc, argv);
   
@@ -399,10 +480,11 @@ int main (int argc, char **argv)
   //StandardMaterial mat;
   //mat.setCullBack (false);
   //mat.setUseLighting (false);
-
+  
   actor = new SPolyActor;
   actor->setMaterial (&mat);
-  actor->setDynamic (loadPackage ("bub4.pak"));
+  actor->setDynamic (loadPackage ("bub.pak"));
+  //applyFK ();
   
   lblFps.setLocation (Vector2 (0.0f,(Float)resY));
   lblFps.setColor (Vector3 (1.0f,1.0f,1.0f));

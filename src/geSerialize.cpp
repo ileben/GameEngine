@@ -36,32 +36,22 @@ namespace GE
   -----------------------------------------------------------*/
   
 
-  void SerializeManager::resourcePtr (void *pptr)
-  {
-    ResPtrInfo ri;
-    ri.count = 1;
-    ri.offset = 0;
-    ri.ptr = *((IResource**)pptr);
-    ri.detached = false;
-    ri.ptroffset = current->offset + Util::PtrDist (current->ptr, pptr);
-    resQueue.pushBack (ri);
-  }
-  
-  void SerializeManager::arrayPtr (void *pptr, UintP count)
+  void SerializeManager::resourcePtr (ClassPtr cls, void **pptr, UintP count)
   {
     ResPtrInfo ri;
     ri.count = count;
     ri.offset = 0;
-    ri.ptr = *((IResource**)pptr);
+    ri.cls = cls;
+    ri.ptr = *pptr;
     ri.detached = false;
     ri.ptroffset = current->offset + Util::PtrDist (current->ptr, pptr);
     resQueue.pushBack (ri);
   }
   
-  void SerializeManager::dynamicPtr (void *pptr, UintP size)
+  void SerializeManager::dynamicPtr (void **pptr, UintP size)
   {
     DynPtrInfo di;
-    di.ptr = *((void**)pptr);
+    di.ptr = *(pptr);
     di.size = size;
     di.ptroffset = current->offset + Util::PtrDist (current->ptr, pptr);
     dynQueue.pushBack (di);
@@ -100,13 +90,14 @@ namespace GE
     ptrList.pushBack (ph);
   }
   
-  void SerializeManager::run (IResource *root)
+  void SerializeManager::run (ClassPtr rootCls, void *rootPtr)
   {
     //Push root info to queue
     ResPtrInfo ri;
+    ri.cls = rootCls;
+    ri.ptr = rootPtr;
     ri.count = 1;
-    ri.offset = 0;
-    ri.ptr = (IResource*)root;
+    ri.offset = 0;    
     ri.detached = true;
     ri.ptroffset = 0;
     resQueue.pushBack (ri);
@@ -119,8 +110,8 @@ namespace GE
       current = &ri;
       
       //Get class info
-      Uint32 clsID = ri.ptr->getID ();
-      UintP clsSize = ri.ptr->getSize();
+      ClassID clsID = ri.cls->getID();
+      UintP clsSize = ri.cls->getSize();
       
       //Add to list of classes
       ClsHeader ch;
@@ -142,7 +133,7 @@ namespace GE
       for (UintP r=0; r<ri.count; ++r)
       {
         //For each resource in the array
-        ri.ptr->getPointers (this);
+        ((IResource*)ri.ptr)->getPointers (this);
         ri.offset += clsSize;
         Util::PtrAdd (&ri.ptr, clsSize);
       }
@@ -162,7 +153,7 @@ namespace GE
     }
   }
   
-  void SerializeManager::serialize (IResource *root, void **outData, UintP *outSize)
+  void SerializeManager::serialize (ClassPtr cls, void *root, void **outData, UintP *outSize)
   {
     //Reset
     simulate = true;
@@ -173,7 +164,7 @@ namespace GE
     offset = 0;
     
     //Simulation run
-    run (root);
+    run (cls, root);
     
     //Allocate data
     UintP introSize =
@@ -193,7 +184,7 @@ namespace GE
     offset = introSize;
      
     //Real run
-    run (root);
+    run (cls, root);
     
     //Back to start of data
     offset = 0;
@@ -238,12 +229,14 @@ namespace GE
       if (c == 0) root = (IResource*) pres;
       
       //Construct resource (array) in-place
-      switch (clsList[c].id) {
-      case 1: new (pres) ArrayList_Res <int, false> (this); break;
-      case 2: new (pres) SkinPolyMesh_Res (this); break;
+      ClassPtr cls = ClassFromID (clsList[c].id);
+      for (UintP i=0; i<clsList[c].count; ++i)
+      {
+        cls->newDeserialized (pres, this);
+        Util::PtrAdd (pres, cls->getSize());
       }
     }
-
+    
     return root;
   }
 

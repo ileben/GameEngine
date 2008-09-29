@@ -707,52 +707,7 @@ void initGlut(int argc, char **argv)
 }
 
 int main (int argc, char **argv)
-{
-  SkinPolyMesh_Res outMesh;
-
-  void *data;
-  UintP size;
-  
-  SerializeManager sm;
-  sm.serialize (&outMesh, &data, &size);
-  
-  SkinPolyMesh_Res *inMesh =
-    (SkinPolyMesh_Res*) sm.deserialize (data);
-  
-  CharString str;
-  str.format ("Imported %d verts, %d faces, %d indices",
-              inMesh->verts->size(),
-              inMesh->faces->size(),
-              inMesh->indices->size());
-  
-  printf (str.buffer());
-
-  /*
-  int z = 1;
-
-  TestResource *root = new TestResource;
-  root->a = z++;
-  root->count = 2;
-  root->moreResources = new TestResource[2];
-  
-  for (int i=0; i<root->count; ++i)
-  {
-    root->moreResources [i] .a = z++;
-    root->moreResources [i] .count = 0;
-    root->moreResources [i] .moreResources = NULL;
-  }
-  
-  void *data;
-  UintP size;
-  
-  SerializeManager *sm = new SerializeManager;
-  sm->serialize (root, &data, &size);
-  
-  TestResource *newRoot = (TestResource*) sm->load (data);
-  */
-  getchar ();
-  return 0;
-  
+{  
   //Initialize GLUT
   initGlut(argc, argv);
   

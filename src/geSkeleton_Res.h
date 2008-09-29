@@ -3,40 +3,28 @@
 
 namespace GE
 {
-  /*
-  -----------------------------------
-  Resource
-  -----------------------------------*/
-
   struct GE_API_ENTRY SkeletonBone
   {
-    Int32      numChildren;
-    Matrix4x4  poseInverse;
+    Uint32     numChildren;
+    Quaternion poseRot;
+    Matrix4x4  poseInv;
   };
+
+  typedef ArrayList_Res <SkeletonBone,false> ArrayList_Res_SB;
   
-  class GE_API_ENTRY Skeleton_Res
+  class GE_API_ENTRY Skeleton_Res : public IResource
   {
-    friend class  Skeleton_Factory;
+    DECLARE_SERIAL_CLASS (Skeleton_Res);
+    DECLARE_END;
     
-  private:
-    Int32          numBones;
-    SkeletonBone  *bones;
-
   public:
-    Skeleton_Res ();
-  };
-  
-  /*
-  -----------------------------------
-  Factory
-  -----------------------------------*/
+    ArrayList_Res_SB *bones;
 
-  class GE_API_ENTRY Skeleton_Factory
-  {
-  public:
-    OCC::ArrayList<SkeletonBone*> bones;
-
-    void create (void **outMem, UintP *outSize);
+    Skeleton_Res () { bones = new ArrayList_Res_SB; }
+    ~Skeleton_Res () { delete bones; }
+    
+    Skeleton_Res (SerializeManager *sm) {}
+    void getPointers (SerializeManager *sm) { sm->resourcePtr (&bones); }
   };
   
 }//namespace GE

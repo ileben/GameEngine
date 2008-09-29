@@ -191,6 +191,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\geArrayList_Res.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\geCamera.cpp"
 				>
 			</File>
@@ -276,6 +280,10 @@
 			</File>
 			<File
 				RelativePath="..\..\src\geSkelAnim_Res.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\geSkeleton_Res.cpp"
 				>
 			</File>
 			<File

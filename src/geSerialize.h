@@ -6,21 +6,18 @@ namespace GE
 
   class SerializeManager;
   
-  class GE_API_ENTRY IResource
-  {
-  public:
-    virtual Uint32 getID () = 0;
-    virtual UintP getSize () = 0;
+  class GE_API_ENTRY IResource { public:
     virtual void getPointers (SerializeManager *sm) = 0;
   };
-
+  
   class GE_API_ENTRY SerializeManager
   {
   private:
 
     struct ResPtrInfo
     {
-      IResource  *ptr;        //pointer to the resource
+      ClassPtr    cls;        //class of the resource
+      void       *ptr;        //pointer to the resource
       UintP       count;      //number of resources in the array
       UintP       offset;     //offset to the serialized resource
       bool        detached;   //if true there is no pointer to this resource
@@ -36,11 +33,11 @@ namespace GE
 
     struct ClsHeader
     {
-      Uint32 id;
+      ClassID id;
       UintP  count;
       UintP  offset;
     };
-
+    
     struct PtrHeader
     {
       UintP offset;
@@ -57,14 +54,23 @@ namespace GE
     
     void copy (void *ptr, UintP size);
     void adjust (UintP ptrOffset);
-    void run (IResource *root);
+    void run (ClassPtr rootCls, void *rootPtr);
 
   public:
     
-    void resourcePtr (void *pptr);
-    void arrayPtr (void *pptr, UintP count);
-    void dynamicPtr (void *pptr, UintP size);
-    void serialize (IResource *root, void **outData, UintP *outSize);
+    void serialize (ClassPtr cls, void *root, void **outData, UintP *outSize);
+    void resourcePtr (ClassPtr cls, void **pptr, UintP count);    
+    void dynamicPtr (void **pptr, UintP size);
+    
+    template <class R> void serialize (R *root, void **outData, UintP *outSize)
+      { serialize (ClassOf(root), root, outData, outSize); }
+    
+    template <class R> void resourcePtr (R **pptr, UintP count=1)
+      { resourcePtr (ClassOf(*pptr), (void**)pptr, count); }
+    
+    template <class D> void dynamicPtr (D **pptr, UintP size)
+      { dynamicPtr ((void**)pptr, size); }
+    
     IResource* deserialize (void *data);
   };
 

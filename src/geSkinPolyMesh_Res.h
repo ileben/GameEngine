@@ -26,14 +26,15 @@ namespace GE
   
   class GE_API_ENTRY SkinPolyMesh_Res : public IResource
   {
+    DECLARE_SERIAL_CLASS (SkinPolyMesh_Res);
+    DECLARE_END;
+    
   public:
     
     ArrayList_Res <SkinPolyMeshVertex, false>   *verts;
     ArrayList_Res <SkinPolyMeshFace, false>     *faces;
     ArrayList_Res <Int32, false>                *indices;
-        
-    Uint32 getID() { return 2; }
-    UintP getSize() { return sizeof (SkinPolyMesh_Res); }
+    
     void getPointers (SerializeManager *sm)
     {
       sm->resourcePtr (&verts);
@@ -41,7 +42,8 @@ namespace GE
       sm->resourcePtr (&indices);
     }
     
-    SkinPolyMesh_Res (SerializeManager *sm) {}
+    SkinPolyMesh_Res (SerializeManager *sm)
+    {}
 
     SkinPolyMesh_Res()
     {
@@ -56,6 +58,40 @@ namespace GE
       delete faces;
       delete indices;
     }
+  };
+
+  /*
+  -----------------------------------
+  Resource
+  -----------------------------------*/
+
+  class Skeleton_Res;
+  
+  class GE_API_ENTRY MaxCharacter_Res : public IResource
+  {
+    DECLARE_SERIAL_CLASS (MaxCharacter_Res)
+    DECLARE_END;
+
+  public:
+    
+    SkinPolyMesh_Res *mesh;
+    Skeleton_Res *skeleton;
+
+    void getPointers (SerializeManager *sm)
+    {
+      if (mesh != NULL)
+        sm->resourcePtr (&mesh);
+      if (skeleton != NULL)
+        sm->resourcePtr (&skeleton);
+    }
+    
+    MaxCharacter_Res ()
+    {
+      mesh = NULL;
+      skeleton = NULL;
+    }
+    
+    MaxCharacter_Res (SerializeManager *sm) {}
   };
 
 }//namespace GE
