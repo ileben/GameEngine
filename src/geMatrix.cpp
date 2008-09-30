@@ -100,6 +100,33 @@ namespace GE
          0, 0, k, 0,
          0, 0, 0, 1);
   }
+
+  Vector4 Matrix4x4::getColumn (int col)
+  {
+    return Vector4 (m[col][0],
+                    m[col][1],
+                    m[col][2],
+                    m[col][3]);
+  }
+  
+  void Matrix4x4::setColumn (int col, const Vector4 &v)
+  {
+    m[col][0] = v.x;
+    m[col][1] = v.y;
+    m[col][2] = v.z;
+    m[col][3] = v.w;
+  }
+  
+  void Matrix4x4::set (const Vector4 &col1,
+                       const Vector4 &col2,
+                       const Vector4 &col3,
+                       const Vector4 &col4)
+  {
+    set (col1.x, col2.x, col3.x, col4.x,
+         col1.y, col2.y, col3.y, col4.y,
+         col1.z, col2.z, col3.z, col4.z,
+         col1.w, col2.w, col3.w, col4.w);
+  }
   
   void Matrix4x4::fromAxisAngle (Float x, Float y, Float z, Float radang)
   {

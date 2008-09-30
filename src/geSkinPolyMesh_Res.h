@@ -13,8 +13,8 @@ namespace GE
   struct GE_API_ENTRY SkinPolyMeshVertex
   {
     Vector3 point;
-    Int32 boneIndex[4];
-    Int32 boneWeight[4];
+    Uint32  boneIndex[4];
+    Float32 boneWeight[4];
   };
   
   struct GE_API_ENTRY SkinPolyMeshFace

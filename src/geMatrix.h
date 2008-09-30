@@ -15,7 +15,7 @@ namespace GE
   #endif
   
   template <int s>
-  class GE_API_ENTRY SquareMatrix
+  class SquareMatrix
   {
   public:
     Float m[s][s];
@@ -192,6 +192,13 @@ namespace GE
               Float m01, Float m11, Float m21, Float m31,
               Float m02, Float m12, Float m22, Float m32,
               Float m03, Float m13, Float m23, Float m33);
+    
+    Vector4 getColumn (int col);
+    void setColumn (int col, const Vector4 &v);
+    void set (const Vector4 &col1,
+              const Vector4 &col2,
+              const Vector4 &col3,
+              const Vector4 &col4);
     
     void fromAxisAngle (Float x, Float y, Float z, Float radang);
     void fromAxisAngle (const Vector3 &axis, Float radang);

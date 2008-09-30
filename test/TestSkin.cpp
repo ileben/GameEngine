@@ -182,10 +182,12 @@ void keyboard (unsigned char key, int x, int y)
   {
   case '+':
     boneColorIndex++;
+    printf ("BoneIndex: %d\n", boneColorIndex);
     break;
   case '-':
     if (boneColorIndex > 0)
       boneColorIndex--;
+    printf ("BoneIndex: %d\n", boneColorIndex);
     break;
   case 27:
     //Quit on escape
@@ -419,39 +421,48 @@ DMesh* loadPackage (String fileName)
 void applyFK ()
 {
   Skeleton_Res *skel = character->skeleton;
+  ArrayList <Matrix4x4> fkMats;
+  ArrayList <Matrix4x4> skinMats;
   int cindex = 1;
-
-  ArrayList <Matrix4x4> worldMats;
   
+  //Root FK matrix = local matrix
+  Matrix4x4 rootWorld;
+  rootWorld.fromQuaternion (skel->bones->first().localRot);
+  rootWorld.setColumn (3, skel->bones->first().localTra);
+  fkMats.pushBack (rootWorld);
+  
+  //Walk all the bones
   for (int b=0; b<skel->bones->size(); ++b)
   {
+    //Final skin matrix = FK matrix * world matrix inverse
     SkeletonBone *parent = &skel->bones->at(b);
+    skinMats.pushBack (fkMats[b] * parent->worldInv);
+    
+    //Walk the children
     for (Uint32 c=0; c<parent->numChildren; ++c)
     {
+      //Child FK matrix = parent FK matrix * local matrix
       SkeletonBone *child = &skel->bones->at (cindex++);
-      child->poseRot = parent->poseRot * child->poseRot;
+      
+      Matrix4x4 childLocal;
+      childLocal.fromQuaternion (child->localRot);
+      childLocal.setColumn (3, child->localTra);
+      fkMats.pushBack (fkMats[b] * childLocal);
     }
-    
-    Matrix4x4 worldMat;
-    worldMat.fromQuaternion (parent->poseRot);
-    worldMats.pushBack (worldMat);
   }
-
-  SPolyMesh *mesh = (SPolyMesh*) actor->getDynamic ();
-  for (SPolyMesh::VertIter v(mesh); !v.end(); ++v)
+  
+  SkinPolyMesh_Res *mesh = character->mesh;
+  SPolyMesh *dmesh = (SPolyMesh*) actor->getDynamic ();
+  int vindex = 0;
+  
+  for (SPolyMesh::VertIter v(dmesh); !v.end(); ++v, ++vindex)
   {
-    Vector3 result (0,0,0);
-    
+    v->point.set (0,0,0);
     for (int i=0; i<4; ++i)
     {
-      Uint32 boneIndex = v->boneIndex[i];
-      SkeletonBone *bone = &skel->bones->at (boneIndex);
-      Matrix4x4 &worldMat = worldMats [boneIndex];
-      Vector3 fraction = worldMat * bone->poseInv * v->point;
-      result += fraction * v->boneWeight[i];
+      Vector3 &posePoint = mesh->verts->at(vindex).point;
+      v->point += skinMats[v->boneIndex[i]] * posePoint * v->boneWeight[i];
     }
-
-    v->point = result;
   }
 }
 
@@ -484,7 +495,16 @@ int main (int argc, char **argv)
   actor = new SPolyActor;
   actor->setMaterial (&mat);
   actor->setDynamic (loadPackage ("bub.pak"));
-  //applyFK ();
+  applyFK ();
+  
+  Matrix4x4 rot; rot.setRotationZ (Util::DegToRad (45));
+  Quaternion qrot; qrot.fromMatrix (rot);
+  rot.fromQuaternion (qrot);
+
+  //character->skeleton->bones->at(16).local = 
+    //character->skeleton->bones->at(16).local * rot;
+  
+  applyFK ();
   
   lblFps.setLocation (Vector2 (0.0f,(Float)resY));
   lblFps.setColor (Vector3 (1.0f,1.0f,1.0f));
