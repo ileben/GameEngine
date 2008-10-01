@@ -236,6 +236,13 @@ namespace GE
       }
     }
   }
+
+  Matrix4x4 Quaternion::toMatrix ()
+  {
+    Matrix4x4 m;
+    m.fromQuaternion (*this);
+    return m;
+  }
   
   /*
   ---------------------------------------------

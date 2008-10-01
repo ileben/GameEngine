@@ -205,6 +205,7 @@ namespace GE
     
     void fromQuaternion (Float x, Float y, Float z, Float w);
     void fromQuaternion (const Quaternion &q);
+    Quaternion toQuaternion ();
     
     Matrix4x4& operator*= (const Matrix4x4 &r);
     Matrix4x4 operator* (const Matrix4x4 &r) const;

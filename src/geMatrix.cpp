@@ -157,6 +157,13 @@ namespace GE
   {
     fromQuaternion (q.x, q.y, q.z, q.w);
   }
+
+  Quaternion Matrix4x4::toQuaternion ()
+  {
+    Quaternion q;
+    q.fromMatrix (*this);
+    return q;
+  }
   
   Matrix4x4& Matrix4x4::operator*= (const Matrix4x4 &R)
   {

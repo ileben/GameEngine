@@ -497,12 +497,11 @@ int main (int argc, char **argv)
   actor->setDynamic (loadPackage ("bub.pak"));
   applyFK ();
   
-  Matrix4x4 rot; rot.setRotationZ (Util::DegToRad (45));
-  Quaternion qrot; qrot.fromMatrix (rot);
-  rot.fromQuaternion (qrot);
+  Quaternion qrot;
+  qrot.fromAxisAngle (0,0,1, Util::DegToRad (30));
 
-  //character->skeleton->bones->at(16).local = 
-    //character->skeleton->bones->at(16).local * rot;
+  character->skeleton->bones->at(16).localRot = 
+    qrot * character->skeleton->bones->at(16).localRot;
   
   applyFK ();
   

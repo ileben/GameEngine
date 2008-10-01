@@ -186,6 +186,7 @@ namespace GE
     void fromAxisAngle (Float x, Float y, Float z, Float radang);
     void fromAxisAngle (const Vector3 &axis, Float radang);
     void fromMatrix (const Matrix4x4 &m);
+    Matrix4x4 toMatrix ();
   };
 
   Quaternion GE_API_ENTRY operator* (const Quaternion &q1, const Quaternion &q2);
