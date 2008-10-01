@@ -1,4 +1,6 @@
 GE_HEADS =\
+	geActor.h\
+	geArrayList_Res.h\
 	geCamera.h\
 	geClass.h\
 	geDefs.h\
@@ -21,9 +23,13 @@ GE_HEADS =\
 	geResource.h\
 	geSaveObj.h\
 	geScene.h\
+	geSerialize.h\
 	geShaders.h\
 	geShader.h\
 	geShape.h\
+	geSkelAnim_Res.h\
+	geSkeleton_Res.h\
+	geSkinPolyMesh_Res.h\
 	geStaticMesh.h\
 	geTexture.h\
 	geUnClass.h\
@@ -34,10 +40,12 @@ GE_HEADS =\
 	widgets/geWidget.h
 
 lib_LTLIBRARIES = libGameEngine.la
-libGameEngine_la_CXXFLAGS = -I${prefix}/include -Winline
+libGameEngine_la_CXXFLAGS = -I${prefix}/include
 libGameEngine_la_LDFLAGS = -L${prefix}/lib
 libGameEngine_la_SOURCES =\
 	${GE_HEADS}\
+	geActor.cpp\
+	geArrayList_Res.cpp\
 	geCamera.cpp\
 	geClass.cpp\
 	geDMesh.cpp\
@@ -55,9 +63,12 @@ libGameEngine_la_SOURCES =\
 	geResource.cpp\
 	geSaveObj.cpp\
 	geScene.cpp\
+	geSerialize.cpp\
 	geShaders.cpp\
 	geShader.cpp\
 	geShape.cpp\
+	geSkelAnim_Res.cpp\
+	geSkinPolyMesh_Res.cpp\
 	geSMesh.cpp\
 	geTexture.cpp\
 	geUVMesh.cpp\

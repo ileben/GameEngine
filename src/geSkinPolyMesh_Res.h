@@ -31,9 +31,9 @@ namespace GE
     
   public:
     
-    ArrayList_Res <SkinPolyMeshVertex, false>   *verts;
-    ArrayList_Res <SkinPolyMeshFace, false>     *faces;
-    ArrayList_Res <Int32, false>                *indices;
+    ArrayList_Res <SkinPolyMeshVertex>   *verts;
+    ArrayList_Res <SkinPolyMeshFace>     *faces;
+    ArrayList_Res <Int32>                *indices;
     
     void getPointers (SerializeManager *sm)
     {
@@ -47,9 +47,9 @@ namespace GE
 
     SkinPolyMesh_Res()
     {
-      verts = new ArrayList_Res <SkinPolyMeshVertex, false> ();
-      faces = new ArrayList_Res <SkinPolyMeshFace, false> ();
-      indices = new ArrayList_Res <Int32, false> ();
+      verts = new ArrayList_Res <SkinPolyMeshVertex> ();
+      faces = new ArrayList_Res <SkinPolyMeshFace> ();
+      indices = new ArrayList_Res <Int32> ();
     }
     
     ~SkinPolyMesh_Res()

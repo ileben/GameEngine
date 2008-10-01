@@ -10,7 +10,6 @@
 #  include <X11/Xos.h>
 #  include <X11/Xatom.h>
 #  include <X11/keysym.h>
-#  include <X11/Xmu/StdCmap.h>
 #endif
 
 #include <stdio.h>

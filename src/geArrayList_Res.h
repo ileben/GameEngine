@@ -4,7 +4,7 @@
 namespace GE
 {
   
-	template <class T, bool resourceElements>
+	template <class T>
   class ArrayList_Res : public IResource
 	{
     DECLARE_SERIAL_CLASS (ArrayList_Res);

@@ -13,6 +13,8 @@
 
 //External headers
 #include <cstdlib>
+#include <cstdio>
+#include <cstring>
 #include <cassert>
 #include <cmath>
 #include <list>

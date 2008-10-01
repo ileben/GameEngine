@@ -12,7 +12,7 @@ namespace GE
     Matrix4x4  local;
   };
   
-  typedef ArrayList_Res <SkeletonBone,false> ArrayList_Res_SB;
+  typedef ArrayList_Res <SkeletonBone> ArrayList_Res_SB;
   
   class GE_API_ENTRY Skeleton_Res : public IResource
   {

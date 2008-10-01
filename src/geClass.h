@@ -30,9 +30,9 @@ class CLASS_DLL_ACTION ClassDesc : public Interface <Name > { public: \
   typedef Super SuperClass; \
   \
   ClassDesc (const char *cname, ClassID cid) { \
-    name = cname; \
-    id = cid; \
-    size = sizeof (Name);
+    this->name = cname; \
+    this->id = cid; \
+    this->size = sizeof (Name);
     
     #define DECLARE_CREATOR( func ) \
     creator = new Creator <ThisClass> (&ThisClass::func);
@@ -309,8 +309,8 @@ namespace GE
   --------------------------------------------------------
   Known class IDs
   --------------------------------------------------------*/
-
-  #define CLSID_ARRAYLIST_RES_I32    ClassID (0x66fd1aa8, 0xc068, 0x4072, 0x8699a02e75e1a55d)
+  #define CLSID_ARRAYLIST_RES_I32    ClassID (0x66fd1aa8, 0xc068, 0x4072, 0x75e1a55d)
+//  #define CLSID_ARRAYLIST_RES_I32    ClassID (0x66fd1aa8, 0xc068, 0x4072, 0x8699a02e75e1a55d)
   #define CLSID_ARRAYLIST_RES_SPMV   ClassID (0x515566aa, 0x2d91, 0x484f, 0xbff8163332271bbc)
   #define CLSID_ARRAYLIST_RES_SPMF   ClassID (0xeb0aeac2, 0xa1d0, 0x42cc, 0x883687e9ca802c0f)
   #define CLSID_SKINPOLYMESH_RES     ClassID (0xb9a1c7cd, 0xcf04, 0x46b3, 0x837765467e60293b)
@@ -318,7 +318,7 @@ namespace GE
   #define CLSID_ARRAYLIST_RES_SB     ClassID (0xd33ab9dd, 0x4431, 0x4c2b, 0xaf271711f5e30ad5)
   #define CLSID_SKELETON_RES         ClassID (0x4b2c0c9a, 0xa47f, 0x4675, 0x88e0bf3aa5955a16)
 
-  #define CLSID_MAXCHARACTER_RES  ClassID (0xc0db7169, 0x65dd, 0x4375, 0xa4b2d9a505703db8)
+  #define CLSID_MAXCHARACTER_RES     ClassID (0xc0db7169, 0x65dd, 0x4375, 0xa4b2d9a505703db8)
 
 
 }//namespace GE
