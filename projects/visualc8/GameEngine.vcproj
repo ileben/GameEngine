@@ -191,7 +191,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geArrayList_Res.cpp"
+				RelativePath="..\..\src\geDynArrayList.cpp"
 				>
 			</File>
 			<File
@@ -203,7 +203,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geDMesh.cpp"
+				RelativePath="..\..\src\gePolyMesh.cpp"
 				>
 			</File>
 			<File
@@ -279,15 +279,15 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geSkelAnim_Res.cpp"
+				RelativePath="..\..\src\geSkinAnim.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geSkeleton_Res.cpp"
+				RelativePath="..\..\src\geSkinPose.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geSkinPolyMesh_Res.cpp"
+				RelativePath="..\..\src\geSkinMesh.cpp"
 				>
 			</File>
 			<File
@@ -333,7 +333,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geArrayList_Res.h"
+				RelativePath="..\..\src\geDynArrayList.h"
 				>
 			</File>
 			<File
@@ -349,7 +349,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geDynamicMesh.h"
+				RelativePath="..\..\src\gePolyMesh.h"
 				>
 			</File>
 			<File
@@ -437,15 +437,15 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geSkelAnim_Res.h"
+				RelativePath="..\..\src\geSkinAnim.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geSkeleton_Res.h"
+				RelativePath="..\..\src\geSkinPose.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geSkinPolyMesh_Res.h"
+				RelativePath="..\..\src\geSkinMesh.h"
 				>
 			</File>
 			<File
