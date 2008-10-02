@@ -11,7 +11,7 @@ namespace GE
     root = NULL;
     uvMeshClass = Class(UMesh);
     dMeshClass = Class(PolyMesh);
-    sMeshClass = Class(SMesh);
+    sMeshClass = Class(TriMesh);
   }
 
   Loader::~Loader()

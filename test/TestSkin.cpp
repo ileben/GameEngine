@@ -48,17 +48,16 @@ public:
   }
 };
 
-class SPolyActor : public Shape
-{
-public:
-  virtual void renderDynamic (MaterialId materialId);
-};
-
 DEFINE_CLASS (SPolyMesh);
 DEFINE_CLASS (SPolyMesh::Vertex);
 DEFINE_CLASS (SPolyMesh::HalfEdge);
 DEFINE_CLASS (SPolyMesh::Edge);
 DEFINE_CLASS (SPolyMesh::Face);
+
+
+class SPolyActor : public PolyMeshActor { public:
+  virtual void renderMesh (MaterialId materialId);
+};
 
 
 enum CameraMode
@@ -257,7 +256,7 @@ void findCenter ()
   int count = 0;
   center.set (0,0,0);
 
-  PolyMesh *mesh = actor->getDynamic();
+  PolyMesh *mesh = actor->getMesh();
   for (PolyMesh::VertIter v(mesh); !v.end(); ++v) {
     center += v->point;
     count++;
@@ -304,12 +303,12 @@ class VertColorMaterial : public StandardMaterial { public:
   }
 };
 
-void SPolyActor::renderDynamic (MaterialId matid)
+void SPolyActor::renderMesh (MaterialId matid)
 {
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   
-  UMesh::FaceIter uf(uvMesh);
-  for (SPolyMesh::FaceIter f(dynMesh); !f.end(); ++f, ++uf) {
+  UMesh::FaceIter uf(texMesh);
+  for (SPolyMesh::FaceIter f(polyMesh); !f.end(); ++f, ++uf) {
     
     //Check if this face belongs to current material
     if (f->materialId() != matid && matid != GE_ANY_MATERIAL_ID)
@@ -318,21 +317,16 @@ void SPolyActor::renderDynamic (MaterialId matid)
     glBegin(GL_POLYGON);
     
     //Use face normal for all vertices in flat mode
-    if (dynMesh->getShadingModel() == SHADING_FLAT)
+    if (polyMesh->getShadingModel() == SHADING_FLAT)
       glNormal3fv ((Float*)&f->normal);
-    
-    /* //TODO: Remove when sure that no mesh file can break HMesh
-    glColor4f(0.8f, 0.8f, 0.8f, 0.5f);
-    for(DMesh::FaceHedgeIter fh(*f); !fh.end(); ++fh)
-      if (fh->tag.id == 0) glColor4f(1.0f, 0.0f, 0.0f, 0.5f);*/
     
     UMesh::FaceVertIter uv(*uf);
     for(SPolyMesh::FaceHedgeIter h(*f); !h.end(); ++h, ++uv) {
       
       //Interpolate per-vertex normals in smooth mode
-      if (dynMesh->getShadingModel() == SHADING_SMOOTH)
+      if (polyMesh->getShadingModel() == SHADING_SMOOTH)
         glNormal3fv ((Float*)&h->smoothNormal()->coord);
-
+      
       SPolyMesh::Vertex *vert = h->dstVertex();
       glColor3f (1,1,1);
       for (int b=0; b<4; ++b) {
@@ -464,10 +458,10 @@ void applyFK (int frame)
   }
   
   SkinMesh *mesh = character->mesh;
-  SPolyMesh *dmesh = (SPolyMesh*) actor->getDynamic ();
+  SPolyMesh *pmesh = (SPolyMesh*) actor->getMesh ();
   int vindex = 0;
   
-  for (SPolyMesh::VertIter v(dmesh); !v.end(); ++v, ++vindex)
+  for (SPolyMesh::VertIter v(pmesh); !v.end(); ++v, ++vindex)
   {
     v->point.set (0,0,0);
     for (int i=0; i<4; ++i)
@@ -545,10 +539,10 @@ int main (int argc, char **argv)
   cam3D.setNearClipPlane(10.0f);
   cam3D.setFarClipPlane(1000.0f);
   
-  VertColorMaterial mat;
+  //VertColorMaterial mat;
   //StandardMaterial mat;
-  //PhongMaterial mat;
-  //mat.setSpecularity (0.5);
+  PhongMaterial mat;
+  mat.setSpecularity (0.5);
   
   //StandardMaterial mat;
   //mat.setCullBack (false);
@@ -556,15 +550,8 @@ int main (int argc, char **argv)
   
   actor = new SPolyActor;
   actor->setMaterial (&mat);
-  actor->setDynamic (loadPackage ("bub3.pak"));
+  actor->setMesh (loadPackage ("bub3.pak"));
   applyFK (1);
-  
-  //Quaternion qrot;
-  //qrot.fromAxisAngle (0,0,1, Util::DegToRad (30));
-  //character->skeleton->bones->at(16).localRot = 
-  //  qrot * character->skeleton->bones->at(16).localRot;
-  
-  //applyFK ();
   
   lblFps.setLocation (Vector2 (0.0f,(Float)resY));
   lblFps.setColor (Vector3 (1.0f,1.0f,1.0f));

@@ -33,7 +33,7 @@ namespace GE
   
   class GE_API_ENTRY PolyMesh : public HMesh
   {
-    friend class SMesh;
+    friend class TriMesh;
     friend class LoaderObj;
     friend class Renderer;
     DECLARE_SUBCLASS (PolyMesh, HMesh);

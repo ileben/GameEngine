@@ -93,13 +93,13 @@ namespace GE
   void LoaderObj::newShape(const ByteString &name)
   {
     //Create new shape with given id
-    shape = new Shape();
+    shape = new PolyMeshActor;
     umesh = (UMesh*) New(uvMeshClass);
     mesh = (PolyMesh*) New(dMeshClass);
     
-    shape->setId(name);
-    shape->setUV(umesh);
-    shape->setDynamic(mesh);
+    shape->setId (name);
+    shape->setMesh (mesh);
+    shape->setTexMesh (umesh);
 
     resources.pushBack(umesh);
     resources.pushBack(mesh);

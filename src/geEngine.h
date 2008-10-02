@@ -36,6 +36,7 @@
 #include "geActor.h"
 #include "geScene.h"
 #include "geShape.h"
+#include "geTriMeshActor.h"
 #include "geCamera.h"
 
 //Widgets

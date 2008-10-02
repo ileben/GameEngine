@@ -5,130 +5,62 @@ using namespace OCC;
 
 namespace GE
 {
-  DEFINE_CLASS (Shape);
+  DEFINE_CLASS (PolyMeshActor);
   
-  Shape::Shape()
+  PolyMeshActor::PolyMeshActor()
   {
-    uvMesh = NULL;
-    statMesh = NULL;
-    dynMesh = NULL;
-    useDynamic = true;
+    texMesh = NULL;
+    polyMesh = NULL;
   }
 
-  Shape::~Shape()
+  PolyMeshActor::~PolyMeshActor()
   {
-    if (uvMesh != NULL)
-      uvMesh->dereference();
-    if (statMesh != NULL)
-      statMesh->dereference();
-    if (dynMesh != NULL)
-      dynMesh->dereference();
+    if (texMesh != NULL)
+      texMesh->dereference();
+    if (polyMesh != NULL)
+      polyMesh->dereference();
   }
 
-  void Shape::setUV(UMesh *mesh)
+  void PolyMeshActor::setTexMesh (UMesh *newMesh)
   {
-    if (uvMesh != NULL)
-      uvMesh->dereference();
+    if (texMesh != NULL)
+      texMesh->dereference();
 
-    uvMesh = mesh;
-    uvMesh->reference();
+    texMesh = newMesh;
+    texMesh->reference();
   }
 
-  UMesh* Shape::getUV() {
-    return uvMesh;
-  }
-
-  void Shape::setStatic(SMesh *mesh)
+  UMesh* PolyMeshActor::getTexMesh ()
   {
-    if (statMesh != NULL)
-      statMesh->dereference();
-
-    statMesh = mesh;
-    statMesh->reference();
-    useDynamic = false;
+    return texMesh;
   }
 
-  SMesh* Shape::getStatic() {
-    return statMesh;
-  }
-
-  void Shape::setDynamic(PolyMesh *mesh)
+  void PolyMeshActor::setMesh (PolyMesh *newMesh)
   {
-    if (dynMesh != NULL)
-      dynMesh->dereference();
+    if (polyMesh != NULL)
+      polyMesh->dereference();
 
-    dynMesh = mesh;
-    dynMesh->reference();
-    useDynamic = true;
+    polyMesh = newMesh;
+    polyMesh->reference();
   }
 
-  PolyMesh* Shape::getDynamic() {
-    return dynMesh;
-  }
-
-  void Shape::render (MaterialId materialId)
+  PolyMesh* PolyMeshActor::getMesh ()
   {
-    //Check if mesh set
-    if (useDynamic) {
-      if (dynMesh == NULL) return;
-    }else if (statMesh == NULL) return;
-
-    //Draw proper mesh
-    if (useDynamic)
-      renderDynamic (materialId);
-    else renderStatic (materialId);
-    //drawStatMesh (shape->statMesh, 0, shape->statMesh->indices.size());
-
+    return polyMesh;
   }
 
-  void Shape::renderStatic (MaterialId materialId)
+  void PolyMeshActor::render (MaterialId materialId)
   {
-    //Walk material index groups
-    for (LinkedList<SMesh::IndexGroup>::Iterator
-         g = statMesh->groups.begin ();
-         g != statMesh->groups.end (); ++g)
-    {
-      //Check if the material id matches
-      if (g->materialId == materialId || materialId == GE_ANY_MATERIAL_ID)
-      {
-        glPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
-        
-        glInterleavedArrays (GL_T2F_N3F_V3F, 0, statMesh->data.buffer());
-        glDrawElements (GL_TRIANGLES, g->count, GL_UNSIGNED_INT,
-                        statMesh->indices.buffer() + g->start);
-        
-        glDisableClientState (GL_VERTEX_ARRAY);
-        glDisableClientState (GL_NORMAL_ARRAY);
-        glDisableClientState (GL_TEXTURE_COORD_ARRAY);
-
-        break;
-      }
-    }
+    if (polyMesh != NULL)
+      renderMesh (materialId);
   }
 
-  void Shape::renderDynamic (MaterialId matid)
+  void PolyMeshActor::renderMesh (MaterialId matid)
   {
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-    /* //TODO: Remove when sure that no mesh file can break HMesh
-    for (int pass=1; pass<=2; ++pass) {
     
-      if (pass == 1) {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        glEnable(GL_COLOR_MATERIAL);
-        //glDisable(GL_CULL_FACE);
-        glDisable(GL_DEPTH_TEST);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glEnable(GL_BLEND);
-
-      }else if (pass == 2) {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        glEnable(GL_DEPTH_TEST);
-      } */
-
-    
-    UMesh::FaceIter uf(uvMesh);
-    for (PolyMesh::FaceIter f(dynMesh); !f.end(); ++f, ++uf) {
+    UMesh::FaceIter uf (texMesh);
+    for (PolyMesh::FaceIter f(polyMesh); !f.end(); ++f, ++uf) {
       
       //Check if this face belongs to current material
       if (f->materialId() != matid && matid != GE_ANY_MATERIAL_ID)
@@ -137,19 +69,14 @@ namespace GE
       glBegin(GL_POLYGON);
       
       //Use face normal for all vertices in flat mode
-      if (dynMesh->getShadingModel() == SHADING_FLAT)
+      if (polyMesh->getShadingModel() == SHADING_FLAT)
         glNormal3fv ((Float*)&f->normal);
-      
-      /* //TODO: Remove when sure that no mesh file can break HMesh
-      glColor4f(0.8f, 0.8f, 0.8f, 0.5f);
-      for(DMesh::FaceHedgeIter fh(*f); !fh.end(); ++fh)
-        if (fh->tag.id == 0) glColor4f(1.0f, 0.0f, 0.0f, 0.5f);*/
       
       UMesh::FaceVertIter uv(*uf);
       for(PolyMesh::FaceHedgeIter h(*f); !h.end(); ++h, ++uv) {
         
         //Interpolate per-vertex normals in smooth mode
-        if (dynMesh->getShadingModel() == SHADING_SMOOTH)
+        if (polyMesh->getShadingModel() == SHADING_SMOOTH)
           glNormal3fv ((Float*)&h->smoothNormal()->coord);
         
         //UV coordinates
@@ -162,8 +89,6 @@ namespace GE
       
       glEnd();
     }
-    
-    //}
 
     /*
     glDisable(GL_LIGHTING);
@@ -208,9 +133,8 @@ namespace GE
       Vector3 top = (*f)->center + (*f)->normal;
       glVertex3fv((Float*)&(*f)->center);
       glVertex3fv((Float*)&top);
-    }*/
-    
+    }
 
-    glEnd();
+    glEnd(); */
   }
 }

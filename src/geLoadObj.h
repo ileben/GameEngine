@@ -49,9 +49,9 @@ namespace GE
     void command_UVW();
     void command_SmoothGroup();
 
-    Shape *shape;
     UMesh *umesh;
     PolyMesh *mesh;
+    PolyMeshActor *shape;
     VertArray verts;
     UVertArray uverts;
     SNormalArray snormals;

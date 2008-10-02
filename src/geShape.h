@@ -16,30 +16,28 @@ namespace GE
    * rendered.
    *----------------------------------------------*/
 
-  class GE_API_ENTRY Shape : public Actor
+  class GE_API_ENTRY PolyMeshActor : public Actor
   {
-    DECLARE_SUBCLASS (Shape, Actor); DECLARE_END;
     friend class Renderer;
     friend class SaverObj;
+    DECLARE_SUBCLASS (PolyMeshActor, Actor);
+    DECLARE_END;
 
   protected:
-    UMesh *uvMesh;
-    SMesh *statMesh;
-    PolyMesh *dynMesh;
-    bool useDynamic;
+    UMesh *texMesh;
+    PolyMesh *polyMesh;
     
-    virtual void renderDynamic (MaterialId materialId);
-    virtual void renderStatic (MaterialId materialId);
+    virtual void renderMesh (MaterialId materialId);
     
   public:
-    Shape();
-    ~Shape();
-    void setUV(UMesh *mesh);
-    void setStatic(SMesh *mesh);
-    void setDynamic(PolyMesh *mesh);
-    UMesh* getUV();
-    SMesh* getStatic();
-    PolyMesh* getDynamic();
+    PolyMeshActor();
+    ~PolyMeshActor();
+
+    void setMesh (PolyMesh *mesh);
+    void setTexMesh (UMesh *mesh);
+
+    PolyMesh* getMesh();
+    UMesh* getTexMesh ();
     
     virtual void render (MaterialId materialId);
   };

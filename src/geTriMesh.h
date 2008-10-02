@@ -28,10 +28,11 @@ namespace GE
   
   typedef Uint32 StaticId;
 
-  class GE_API_ENTRY SMesh : public Resource
+  class GE_API_ENTRY TriMesh : public Resource
   {
-    DECLARE_SUBCLASS (SMesh, Resource); DECLARE_END;
     friend class Renderer;
+    DECLARE_SUBCLASS (TriMesh, Resource);
+    DECLARE_END;
     
   public:
     
@@ -47,7 +48,7 @@ namespace GE
     OCC::LinkedList<IndexGroup> groups;
 
   public:
-    void fromDynamic(PolyMesh *m, UMesh *uv);
+    void fromPoly (PolyMesh *m, UMesh *uv);
   };
 
 

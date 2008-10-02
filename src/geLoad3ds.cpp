@@ -209,11 +209,11 @@ namespace GE
     resources.pushBack(mesh);
     
     //Create new shape object
-    Shape *shape = new Shape;
-    shape->setId(id);
-    shape->setDynamic(mesh);
-    objects.pushBack(shape);
-    root->addChild(shape);
+    PolyMeshActor *shape = new PolyMeshActor;
+    shape->setId (id);
+    shape->setMesh (mesh);
+    objects.pushBack (shape);
+    root->addChild (shape);
 
     //Temporary lists
     VertArray verts;

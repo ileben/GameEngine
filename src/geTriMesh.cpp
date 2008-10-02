@@ -6,7 +6,7 @@ using namespace OCC;
 
 namespace GE
 {
-  DEFINE_CLASS (SMesh);
+  DEFINE_CLASS (TriMesh);
   
   
   struct UniqueVertex
@@ -38,7 +38,7 @@ namespace GE
   halfedges' algorithm helper tags.
   --------------------------------------------------*/
 
-  void SMesh::fromDynamic (PolyMesh *m, UMesh *um)
+  void TriMesh::fromPoly (PolyMesh *m, UMesh *um)
   {
     PolyMesh::FaceIter f;
     PolyMesh::FaceHedgeIter h;

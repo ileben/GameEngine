@@ -81,7 +81,7 @@ namespace GE
     }
   }
 
-  void SaverObj::writeShape(Shape *shape)
+  void SaverObj::writeShape(PolyMeshActor *shape)
   {
     //Group name
     file->write("g ");
@@ -89,21 +89,21 @@ namespace GE
     file->write("\n");
     
     //Dynamic mesh
-    if (shape->dynMesh != NULL)
-      writeDynMesh(shape->dynMesh, shape->uvMesh);
+    if (shape->polyMesh != NULL)
+      writeDynMesh (shape->polyMesh, shape->texMesh);
   }
 
   bool SaverObj::saveFile(const String &filename)
   {
     //Try to open file
     FileRef module = File::GetModule();
-    file = module->getRelativeFile(filename);
+    file = module->getRelativeFile (filename);
     if (!file->open("wb")) return false;
-
+    
     //Walk objects to save
     for (int i=0; i<objects.size(); ++i) {
-      if (ClassOf(objects[i]) == Class(Shape)) {
-        writeShape((Shape*)objects[i]); }
+      if (ClassOf (objects[i]) == Class (PolyMeshActor)) {
+        writeShape ((PolyMeshActor*) objects[i]); }
     }
 
     file->close();

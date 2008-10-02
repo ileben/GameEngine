@@ -191,10 +191,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geDynArrayList.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\src\geCamera.cpp"
 				>
 			</File>
@@ -203,7 +199,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\gePolyMesh.cpp"
+				RelativePath="..\..\src\geDynArrayList.cpp"
 				>
 			</File>
 			<File
@@ -240,6 +236,10 @@
 			</File>
 			<File
 				RelativePath="..\..\src\geObject.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\gePolyMesh.cpp"
 				>
 			</File>
 			<File
@@ -283,11 +283,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\geSkinMesh.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\geSkinPose.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geSkinMesh.cpp"
+				RelativePath="..\..\src\geTexture.cpp"
 				>
 			</File>
 			<File
@@ -295,7 +299,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geTexture.cpp"
+				RelativePath="..\..\src\geTriMeshActor.cpp"
 				>
 			</File>
 			<File
@@ -333,10 +337,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geDynArrayList.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\src\geCamera.h"
 				>
 			</File>
@@ -349,7 +349,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\gePolyMesh.h"
+				RelativePath="..\..\src\geDynArrayList.h"
 				>
 			</File>
 			<File
@@ -401,6 +401,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\gePolyMesh.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\geProperty.h"
 				>
 			</File>
@@ -441,11 +445,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\geSkinMesh.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\geSkinPose.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geSkinMesh.h"
+				RelativePath="..\..\src\geTexture.h"
 				>
 			</File>
 			<File
@@ -453,7 +461,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geTexture.h"
+				RelativePath="..\..\src\geTriMeshActor.h"
 				>
 			</File>
 			<File

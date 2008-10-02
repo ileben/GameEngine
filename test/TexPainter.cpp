@@ -110,9 +110,9 @@ enum CameraMode
 Image imgDiff;
 Texture *texDiff = NULL;
 Texture *texSpec = NULL;
-Shape *zekko = NULL;
+PolyMeshActor *zekko = NULL;
 EUMesh *uvmesh = NULL;
-SMesh smesh;
+TriMesh smesh;
 FpsLabel lblFps;
 
 Camera3D cam3D;
@@ -400,8 +400,8 @@ void drag3D(int x, int y)
     //printf ("Side:"); printVector (cam3D.getSide());
     //printf ("\n");
     
-    printf ("------------------------\n");
-    printMatrix (cam3D.getMatrix());
+    //printf ("------------------------\n");
+    //printMatrix (cam3D.getMatrix());
     
     Vector2 diff = Vector2((Float)x,(Float)y) - lastMouse3D;
     float eyeDist = (cam3D.getEye() - center).norm();
@@ -663,7 +663,7 @@ void findCenter()
 {
   int count = 0;
   center.set(0,0,0);
-  PolyMesh *mesh = zekko->getDynamic();
+  PolyMesh *mesh = zekko->getMesh();
   for (PolyMesh::VertIter v(mesh); !v.end(); ++v) {
     center += v->point;
     count++;
@@ -752,30 +752,31 @@ int main (int argc, char **argv)
   int end = OCC::Time::GetTicks();
   printf("Time: %d\n", end - start);
   
-  zekko = (Shape*)ldr.getFirstObject(Class(Shape));
-  uvmesh = (EUMesh*)ldr.getFirstResource(Class(UMesh));
-  PolyMesh *dmesh = (PolyMesh*)ldr.getFirstResource(Class(PolyMesh));
-  if (zekko == NULL) return EXIT_FAILURE;
-  if (uvmesh == NULL) return EXIT_FAILURE;
+  PolyMesh *dmesh;
+  uvmesh = (EUMesh*) ldr.getFirstResource (Class(UMesh));
+  dmesh = (PolyMesh*)ldr.getFirstResource(Class(PolyMesh));
+  zekko = (PolyMeshActor*) ldr.getFirstObject (Class(PolyMeshActor));
   if (dmesh == NULL) return EXIT_FAILURE;
+  if (uvmesh == NULL) return EXIT_FAILURE;
+  if (zekko == NULL) return EXIT_FAILURE;
   
   //Check if UV mesh type correct
-  printf ("uvmesh = %s\n", StringOf (ClassOf (zekko->getUV ())));
+  printf ("uvmesh = %s\n", StringOf (ClassOf (zekko->getTexMesh())));
   
   printf ("uvmesh %s EUMesh\n",
-          SafeCast (EUMesh, zekko->getUV ()) ?
+          SafeCast (EUMesh, zekko->getTexMesh()) ?
           "IS" : "is NOT");
   
   printf ("uvmesh %s UMesh\n",
-          SafeCast (UMesh, zekko->getUV ()) ?
+          SafeCast (UMesh, zekko->getTexMesh()) ?
           "IS" : "is NOT");
   
   printf ("uvmesh %s Resource\n",
-          SafeCast (Resource, zekko->getUV ()) ?
+          SafeCast (Resource, zekko->getTexMesh()) ?
           "IS" : "is NOT");
   
   printf ("uvmesh %s PolyMesh\n",
-          SafeCast (PolyMesh, zekko->getUV ()) ?
+          SafeCast (PolyMesh, zekko->getTexMesh()) ?
           "IS" : "is NOT");
   
   //Setup camera
@@ -795,7 +796,7 @@ int main (int argc, char **argv)
 
   //Convert to static mesh
   //dmesh->updateNormals();
-  smesh.fromDynamic(dmesh, uvmesh);
+  smesh.fromPoly (dmesh, uvmesh);
   //zekko->setStatic(&smesh);
   
   //Load texture image

@@ -41,8 +41,8 @@ namespace GE
   class GE_API_ENTRY Kernel
   {
     DECLARE_CLASS (Kernel); DECLARE_END;
-    friend class SMesh;
     friend class Renderer;
+    friend class TriMesh;
     
   private:
     
