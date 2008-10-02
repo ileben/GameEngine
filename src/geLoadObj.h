@@ -17,7 +17,7 @@ namespace GE
     typedef OCC::ArrayList <Vector3> Vec3Array;
     typedef Vec3Array::Iterator Vec3ArrayIter;
 
-    typedef OCC::ArrayList <UMesh::Vertex*> UVertArray;
+    typedef OCC::ArrayList <TexMesh::Vertex*> UVertArray;
     typedef UVertArray::Iterator UVertArrayIter;
 
     typedef OCC::ArrayList <PolyMesh::Vertex*> VertArray;
@@ -49,7 +49,7 @@ namespace GE
     void command_UVW();
     void command_SmoothGroup();
 
-    UMesh *umesh;
+    TexMesh *umesh;
     PolyMesh *mesh;
     PolyMeshActor *shape;
     VertArray verts;

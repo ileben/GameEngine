@@ -12,7 +12,7 @@ namespace GE
     objects.pushBack(o);
   }
 
-  void SaverObj::writeDynMesh (PolyMesh *mesh, UMesh *umesh)
+  void SaverObj::writeDynMesh (PolyMesh *mesh, TexMesh *umesh)
   {
     int id = 0;
     int normalCount = 0;
@@ -29,7 +29,7 @@ namespace GE
     
 
     //Output and index UV vertices
-    id = 0; for (UMesh::VertIter u(umesh); !u.end(); ++u) {
+    id = 0; for (TexMesh::VertIter u(umesh); !u.end(); ++u) {
       file->write( ByteString::Format(
         "vt %f %f %f\n", u->point.x, 1.0f-u->point.y, 1.0f) );
       u->tag.id = ++id; }
@@ -54,7 +54,7 @@ namespace GE
     //will simply not be exported)
     
     Uint32 lastSmoothGroups = 0;
-    UMesh::FaceIter uf(umesh);
+    TexMesh::FaceIter uf(umesh);
     for (PolyMesh::FaceIter f(mesh); !f.end(); ++f, ++uf) {
     
       if (f->smoothGroups != lastSmoothGroups) {
@@ -63,7 +63,7 @@ namespace GE
       
       file->write("f");
     
-      UMesh::FaceHedgeIter uh(*uf);
+      TexMesh::FaceHedgeIter uh(*uf);
       for (PolyMesh::FaceHedgeIter h(*f); !h.end(); ++h, ++uh) {
       
         if (!uh.end()) {

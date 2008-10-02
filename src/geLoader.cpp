@@ -9,7 +9,7 @@ namespace GE
   Loader::Loader()
   {
     root = NULL;
-    uvMeshClass = Class(UMesh);
+    uvMeshClass = Class(TexMesh);
     dMeshClass = Class(PolyMesh);
     sMeshClass = Class(TriMesh);
   }

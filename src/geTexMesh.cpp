@@ -4,9 +4,9 @@ using namespace OCC;
 
 namespace GE
 {
-  DEFINE_CLASS (UMesh);
-  DEFINE_CLASS (UMesh::Vertex);
-  DEFINE_CLASS (UMesh::HalfEdge);
-  DEFINE_CLASS (UMesh::Edge);
-  DEFINE_CLASS (UMesh::Face);
+  DEFINE_CLASS (TexMesh);
+  DEFINE_CLASS (TexMesh::Vertex);
+  DEFINE_CLASS (TexMesh::HalfEdge);
+  DEFINE_CLASS (TexMesh::Edge);
+  DEFINE_CLASS (TexMesh::Face);
 }

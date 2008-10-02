@@ -24,7 +24,7 @@ namespace GE
     OCC::FileRef file;
 
   private:
-    void writeDynMesh (PolyMesh *mesh, UMesh *umesh);
+    void writeDynMesh (PolyMesh *mesh, TexMesh *umesh);
     void writeShape (PolyMeshActor *shape);
 
   public:

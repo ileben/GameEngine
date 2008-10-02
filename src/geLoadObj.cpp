@@ -94,7 +94,7 @@ namespace GE
   {
     //Create new shape with given id
     shape = new PolyMeshActor;
-    umesh = (UMesh*) New(uvMeshClass);
+    umesh = (TexMesh*) New(uvMeshClass);
     mesh = (PolyMesh*) New(dMeshClass);
     
     shape->setId (name);
@@ -199,7 +199,7 @@ namespace GE
         //Create new UV vertex if first time referenced
         if (uvertOk) {
           if (uverts[iuvert] == NULL) {
-            uverts[iuvert] = (UMesh::Vertex*)umesh->addVertex();
+            uverts[iuvert] = (TexMesh::Vertex*)umesh->addVertex();
             uverts[iuvert]->point = ucoords[iuvert].xy(); }
           faceUverts.pushBack(uverts[iuvert]); }
 

@@ -307,7 +307,7 @@ void SPolyActor::renderMesh (MaterialId matid)
 {
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   
-  UMesh::FaceIter uf(texMesh);
+  TexMesh::FaceIter uf(texMesh);
   for (SPolyMesh::FaceIter f(polyMesh); !f.end(); ++f, ++uf) {
     
     //Check if this face belongs to current material
@@ -320,7 +320,7 @@ void SPolyActor::renderMesh (MaterialId matid)
     if (polyMesh->getShadingModel() == SHADING_FLAT)
       glNormal3fv ((Float*)&f->normal);
     
-    UMesh::FaceVertIter uv(*uf);
+    TexMesh::FaceVertIter uv(*uf);
     for(SPolyMesh::FaceHedgeIter h(*f); !h.end(); ++h, ++uv) {
       
       //Interpolate per-vertex normals in smooth mode

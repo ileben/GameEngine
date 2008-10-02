@@ -24,7 +24,7 @@ namespace GE
     DECLARE_END;
 
   protected:
-    UMesh *texMesh;
+    TexMesh *texMesh;
     PolyMesh *polyMesh;
     
     virtual void renderMesh (MaterialId materialId);
@@ -34,10 +34,10 @@ namespace GE
     ~PolyMeshActor();
 
     void setMesh (PolyMesh *mesh);
-    void setTexMesh (UMesh *mesh);
+    void setTexMesh (TexMesh *mesh);
 
     PolyMesh* getMesh();
-    UMesh* getTexMesh ();
+    TexMesh* getTexMesh ();
     
     virtual void render (MaterialId materialId);
   };

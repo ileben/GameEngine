@@ -38,12 +38,12 @@ namespace GE
   halfedges' algorithm helper tags.
   --------------------------------------------------*/
 
-  void TriMesh::fromPoly (PolyMesh *m, UMesh *um)
+  void TriMesh::fromPoly (PolyMesh *m, TexMesh *um)
   {
     PolyMesh::FaceIter f;
     PolyMesh::FaceHedgeIter h;
-    UMesh::FaceIter uf;
-    UMesh::FaceHedgeIter uh;
+    TexMesh::FaceIter uf;
+    TexMesh::FaceHedgeIter uh;
     ArrayList<UniqueVertex> uniqVerts;
     StaticId nextStaticId = 0;
 
@@ -99,7 +99,7 @@ namespace GE
             data.pushBack(0.0f);
             data.pushBack(0.0f);
           }else{
-            UMesh::Vertex *uv = (UMesh::Vertex*)vfh->tag.ptr;
+            TexMesh::Vertex *uv = (TexMesh::Vertex*)vfh->tag.ptr;
             data.pushBack(uv->point.x);
             data.pushBack(uv->point.y); }
           

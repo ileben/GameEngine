@@ -21,7 +21,7 @@ namespace GE
       polyMesh->dereference();
   }
 
-  void PolyMeshActor::setTexMesh (UMesh *newMesh)
+  void PolyMeshActor::setTexMesh (TexMesh *newMesh)
   {
     if (texMesh != NULL)
       texMesh->dereference();
@@ -30,7 +30,7 @@ namespace GE
     texMesh->reference();
   }
 
-  UMesh* PolyMeshActor::getTexMesh ()
+  TexMesh* PolyMeshActor::getTexMesh ()
   {
     return texMesh;
   }
@@ -59,7 +59,7 @@ namespace GE
   {
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     
-    UMesh::FaceIter uf (texMesh);
+    TexMesh::FaceIter uf (texMesh);
     for (PolyMesh::FaceIter f(polyMesh); !f.end(); ++f, ++uf) {
       
       //Check if this face belongs to current material
@@ -72,7 +72,7 @@ namespace GE
       if (polyMesh->getShadingModel() == SHADING_FLAT)
         glNormal3fv ((Float*)&f->normal);
       
-      UMesh::FaceVertIter uv(*uf);
+      TexMesh::FaceVertIter uv(*uf);
       for(PolyMesh::FaceHedgeIter h(*f); !h.end(); ++h, ++uv) {
         
         //Interpolate per-vertex normals in smooth mode

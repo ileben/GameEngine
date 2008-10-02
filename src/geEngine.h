@@ -28,15 +28,15 @@
 #include "geShader.h"
 #include "geMaterial.h"
 #include "geHmesh.h"
-#include "geUVMesh.h"
 #include "gePolyMesh.h"
+#include "geTexMesh.h"
 #include "geTriMesh.h"
 
 //Actors
 #include "geActor.h"
 #include "geScene.h"
-#include "geShape.h"
 #include "geTriMeshActor.h"
+#include "gePolyMeshActor.h"
 #include "geCamera.h"
 
 //Widgets

@@ -53,35 +53,35 @@ public:
 DEFINE_CLASS (SubTesty);
 
 
-class EUMesh : public UMesh
+class ETexMesh : public TexMesh
 {
-  DECLARE_SUBCLASS (EUMesh, UMesh);
+  DECLARE_SUBCLASS (ETexMesh, TexMesh);
   DECLARE_END;
   
 public:
 
   class Vertex; class HalfEdge; class Edge; class Face;
 
-  class Vertex : public VertexBase<EUMesh, UMesh> {
-    DECLARE_SUBCLASS (Vertex, UMesh::Vertex); DECLARE_END;
+  class Vertex : public VertexBase <ETexMesh,TexMesh> {
+    DECLARE_SUBCLASS (Vertex, TexMesh::Vertex); DECLARE_END;
   public:
     bool selected;
     Vertex() : selected(false) {};
   };
 
-  class HalfEdge : public HalfEdgeBase<EUMesh, UMesh> {
-    DECLARE_SUBCLASS (HalfEdge, UMesh::HalfEdge); DECLARE_END;
+  class HalfEdge : public HalfEdgeBase <ETexMesh,TexMesh> {
+    DECLARE_SUBCLASS (HalfEdge, TexMesh::HalfEdge); DECLARE_END;
   };
 
-  class Edge : public EdgeBase<EUMesh, UMesh> {
-    DECLARE_SUBCLASS (Edge, UMesh::Edge); DECLARE_END;
+  class Edge : public EdgeBase <ETexMesh,TexMesh> {
+    DECLARE_SUBCLASS (Edge, TexMesh::Edge); DECLARE_END;
   };
 
-  class Face : public FaceBase<EUMesh, UMesh> {
-    DECLARE_SUBCLASS (Face, UMesh::Face); DECLARE_END;
+  class Face : public FaceBase <ETexMesh,TexMesh> {
+    DECLARE_SUBCLASS (Face, TexMesh::Face); DECLARE_END;
   };
 
-  EUMesh() {
+  ETexMesh() {
     setClasses(
       Class(Vertex),
       Class(HalfEdge),
@@ -93,11 +93,11 @@ public:
   #include "geHmeshAdjiter.h"
 };
 
-DEFINE_CLASS (EUMesh);
-DEFINE_CLASS (EUMesh::Vertex);
-DEFINE_CLASS (EUMesh::HalfEdge);
-DEFINE_CLASS (EUMesh::Edge);
-DEFINE_CLASS (EUMesh::Face);
+DEFINE_CLASS (ETexMesh);
+DEFINE_CLASS (ETexMesh::Vertex);
+DEFINE_CLASS (ETexMesh::HalfEdge);
+DEFINE_CLASS (ETexMesh::Edge);
+DEFINE_CLASS (ETexMesh::Face);
 
 
 enum CameraMode
@@ -111,7 +111,7 @@ Image imgDiff;
 Texture *texDiff = NULL;
 Texture *texSpec = NULL;
 PolyMeshActor *zekko = NULL;
-EUMesh *uvmesh = NULL;
+ETexMesh *uvmesh = NULL;
 TriMesh smesh;
 FpsLabel lblFps;
 
@@ -133,7 +133,7 @@ const char *eraseTitle = "Texture Painter (erase)";
 int *brushSize = &paintSize;
 bool paint = true;
 
-LinkedList<EUMesh::Vertex*> selection;
+LinkedList<ETexMesh::Vertex*> selection;
 bool edit = false;
 
 Vector2 mouse2D;
@@ -164,7 +164,7 @@ void saveImage()
   imgUV.create(imgDiff.getWidth(), imgDiff.getHeight(), COLOR_FORMAT_RGB, white);
 
   //Draw UV mesh
-  for (EUMesh::EdgeIter e(uvmesh); !e.end(); ++e) {
+  for (ETexMesh::EdgeIter e(uvmesh); !e.end(); ++e) {
     Vector2 uv1 = e->vertex1()->point;
     Vector2 uv2 = e->vertex2()->point;
     uv1.x *= imgDiff.getWidth(); uv1.y *= imgDiff.getHeight();
@@ -225,7 +225,7 @@ void drawPixel(int x, int y)
   texDiff->updateRegion(0,0, &imgDiff);
 }
 
-void selectVertex(EUMesh::Vertex *v)
+void selectVertex(ETexMesh::Vertex *v)
 {
   v->selected = true;
   selection.pushBack(v);
@@ -233,14 +233,14 @@ void selectVertex(EUMesh::Vertex *v)
 
 void clearSelection()
 {
-  for (LinkedList<EUMesh::Vertex*>::Iterator s=selection.begin();
+  for (LinkedList<ETexMesh::Vertex*>::Iterator s=selection.begin();
     s!=selection.end(); ++s) (*s)->selected = false;
   selection.clear();
 }
 
-EUMesh::Vertex* pickVertex(int x, int y)
+ETexMesh::Vertex* pickVertex(int x, int y)
 {
-  for (EUMesh::VertIter v(uvmesh); !v.end(); ++v) {
+  for (ETexMesh::VertIter v(uvmesh); !v.end(); ++v) {
     int vx = (int)(v->point.x * resX2D);
     int vy = (int)(v->point.y * resY);
     if (::abs(vx - x) <= 5 && ::abs(vy - y) <= 5)
@@ -255,7 +255,7 @@ void moveVertex(int x, int y)
   Vector2 diff((float)(x - lastMouse2D.x)/resX2D,
                 (float)(y - lastMouse2D.y)/resY);
 
-  for (LinkedList<EUMesh::Vertex*>::Iterator s=selection.begin();
+  for (LinkedList<ETexMesh::Vertex*>::Iterator s=selection.begin();
     s!=selection.end(); ++s) {
 
     (*s)->point.x += diff.x;
@@ -266,7 +266,7 @@ void moveVertex(int x, int y)
 void grabVertexUp(int x, int y)
 {
   Uint32 mods = glutGetModifiers();
-  EUMesh::Vertex *v = pickVertex(x,y);
+  ETexMesh::Vertex *v = pickVertex(x,y);
 
   //Just skip if no vertex hit
   if (v == NULL) return;
@@ -283,7 +283,7 @@ void grabVertexUp(int x, int y)
 void grabVertexDown(int x, int y)
 {
   int mods = glutGetModifiers();
-  EUMesh::Vertex *v = pickVertex(x,y);
+  ETexMesh::Vertex *v = pickVertex(x,y);
   
   //Clear selection if clicked out
   if (v == NULL) {
@@ -600,7 +600,7 @@ void display()
   glColor3f(0,1,0);
   glDisable(GL_TEXTURE_2D);
   glBegin(GL_LINES);
-  for (EUMesh::EdgeIter e(uvmesh); !e.end(); ++e) {
+  for (ETexMesh::EdgeIter e(uvmesh); !e.end(); ++e) {
   Vector2 uv1 = e->vertex1()->point;
   Vector2 uv2 = e->vertex2()->point;
   uv1.x *= resX2D; uv1.y *= resY;
@@ -613,7 +613,7 @@ void display()
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   glBegin(GL_QUADS);
   float R = 1.0f;
-  for (EUMesh::VertIter v(uvmesh); !v.end(); ++v) {
+  for (ETexMesh::VertIter v(uvmesh); !v.end(); ++v) {
     
     Vector2 uv = (*v)->point;
     uv.x *= resX2D; uv.y *= resY;
@@ -745,7 +745,7 @@ int main (int argc, char **argv)
   //Load shape model
   LoaderObj ldr;
   FileRef f = new File("zekko.obj");
-  ldr.setUVMeshClass(Class(EUMesh));
+  ldr.setUVMeshClass(Class(ETexMesh));
   
   int start = OCC::Time::GetTicks();
   ldr.loadFile(f->getPathName());
@@ -753,7 +753,7 @@ int main (int argc, char **argv)
   printf("Time: %d\n", end - start);
   
   PolyMesh *dmesh;
-  uvmesh = (EUMesh*) ldr.getFirstResource (Class(UMesh));
+  uvmesh = (ETexMesh*) ldr.getFirstResource (Class(TexMesh));
   dmesh = (PolyMesh*)ldr.getFirstResource(Class(PolyMesh));
   zekko = (PolyMeshActor*) ldr.getFirstObject (Class(PolyMeshActor));
   if (dmesh == NULL) return EXIT_FAILURE;
@@ -763,12 +763,12 @@ int main (int argc, char **argv)
   //Check if UV mesh type correct
   printf ("uvmesh = %s\n", StringOf (ClassOf (zekko->getTexMesh())));
   
-  printf ("uvmesh %s EUMesh\n",
-          SafeCast (EUMesh, zekko->getTexMesh()) ?
+  printf ("uvmesh %s ETexMesh\n",
+          SafeCast (ETexMesh, zekko->getTexMesh()) ?
           "IS" : "is NOT");
   
-  printf ("uvmesh %s UMesh\n",
-          SafeCast (UMesh, zekko->getTexMesh()) ?
+  printf ("uvmesh %s TexMesh\n",
+          SafeCast (TexMesh, zekko->getTexMesh()) ?
           "IS" : "is NOT");
   
   printf ("uvmesh %s Resource\n",
