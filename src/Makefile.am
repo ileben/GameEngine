@@ -1,16 +1,14 @@
 GE_HEADS =\
 	geActor.h\
-	geArrayList_Res.h\
 	geCamera.h\
 	geClass.h\
 	geDefs.h\
-	geDMeshIters.h\
-	geDynamicMesh.h\
+	geDynArrayList.h\
 	geEngine.h\
 	geGLHeaders.h\
+	geHmesh.h\
 	geHmeshAdjiter.h\
 	geHmeshDataiter.h\
-	geHmesh.h\
 	geKernel.h\
 	geLoad3ds.h\
 	geLoadObj.h\
@@ -18,6 +16,9 @@ GE_HEADS =\
 	geMaterial.h\
 	geMatrix.h\
 	geObject.h\
+	gePolyMesh.h\
+	gePolyMeshIters.h\
+	gePolyMeshActor.h\
 	geProperty.h\
 	geRenderer.h\
 	geResource.h\
@@ -26,14 +27,15 @@ GE_HEADS =\
 	geSerialize.h\
 	geShaders.h\
 	geShader.h\
-	geShape.h\
-	geSkelAnim_Res.h\
-	geSkeleton_Res.h\
-	geSkinPolyMesh_Res.h\
-	geStaticMesh.h\
+	geSkinAnim.h\
+	geSkinMesh.h\
+	geSkinPose.h\
 	geTexture.h\
+	geTexMesh.h\
+	geTriMesh.h\
+	geTriMeshActor.h\
 	geUnClass.h\
-	geUVMesh.h\
+	geUtil.h\
 	geVectors.h\
 	widgets/geFpsLabel.h\
 	widgets/geLabel.h\
@@ -45,10 +47,9 @@ libGameEngine_la_LDFLAGS = -L${prefix}/lib
 libGameEngine_la_SOURCES =\
 	${GE_HEADS}\
 	geActor.cpp\
-	geArrayList_Res.cpp\
 	geCamera.cpp\
 	geClass.cpp\
-	geDMesh.cpp\
+	geDynArrayList.cpp\
 	geHMesh.cpp\
 	geKernel.cpp\
 	geLoad3ds.cpp\
@@ -58,6 +59,8 @@ libGameEngine_la_SOURCES =\
 	geMaterial.cpp\
 	geMatrix.cpp\
 	geObject.cpp\
+	gePolyMesh.cpp\
+	gePolyMeshActor.cpp\
 	geProperty.cpp\
 	geRenderer.cpp\
 	geResource.cpp\
@@ -66,12 +69,13 @@ libGameEngine_la_SOURCES =\
 	geSerialize.cpp\
 	geShaders.cpp\
 	geShader.cpp\
-	geShape.cpp\
-	geSkelAnim_Res.cpp\
-	geSkinPolyMesh_Res.cpp\
-	geSMesh.cpp\
+	geSkinAnim.cpp\
+	geSkinMesh.cpp\
+	geSkinPose.cpp\
 	geTexture.cpp\
-	geUVMesh.cpp\
+	geTexMesh.cpp\
+	geTriMesh.cpp\
+	geTriMeshActor.cpp\
 	geVectors.cpp\
 	widgets/geFpsLabel.cpp\
 	widgets/geLabel.cpp\

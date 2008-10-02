@@ -303,7 +303,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geUVMesh.cpp"
+				RelativePath="..\..\src\geTexMesh.cpp"
 				>
 			</File>
 			<File
@@ -473,7 +473,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geUVMesh.h"
+				RelativePath="..\..\src\geTexMesh.h"
 				>
 			</File>
 			<File
