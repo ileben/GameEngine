@@ -26,7 +26,7 @@ namespace GE
     
     SkinPose (SM *sm) {}
     void serialize (void *sm) {
-      ((SM*)sm)->resourcePtr (Class(GenArrayList), (void**)&bones, 1); }
+      ((SM*)sm)->resourcePtr (Class(GenArrayList), (void**)&bones); }
   };
   
 }//namespace GE

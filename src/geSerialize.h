@@ -37,15 +37,64 @@ namespace GE
     {
       UintP offset;
     };
+
+    class State
+    {
+    public:
+      Uint8 *data;
+      UintP offset;
+      ResPtrInfo *current;
+      OCC::LinkedList <ResPtrInfo> resQueue;
+      OCC::LinkedList <DynPtrInfo> dynQueue;
+      OCC::ArrayList <ClsHeader> clsList;
+      OCC::ArrayList <PtrHeader> ptrList;
+      SerializeManager *sm;
+      bool simulate;
+      
+      virtual void memberData (void *ptr, UintP size) = 0;
+      virtual void resourcePtr (ClassPtr cls, void **pptr) = 0;
+      virtual void resourcePtrPtr (ClassPtr cls, void ***pptr, UintP count) = 0;
+      virtual void dynamicPtr (void **pptr, UintP size) = 0;
+      virtual void run (ClassPtr rootCls, void *rootPtr) = 0;
+      
+      void rootPtr (ClassPtr cls, void *ptr);
+      void store (void *ptr, UintP size);
+      void load (void *ptr, UintP size);
+      void reset (UintP startOffset, bool realRun);
+    };
+
+    class StateSerial : public State
+    { public:
+      virtual void memberData (void *ptr, UintP size);
+      virtual void resourcePtr (ClassPtr cls, void **pptr);
+      virtual void resourcePtrPtr (ClassPtr cls, void ***pptr, UintP count);
+      virtual void dynamicPtr (void **pptr, UintP size);
+      virtual void run (ClassPtr rootCls, void *rootPtr);
+      void adjust (UintP ptrOffset);
+    };
+
+    class StateSave : public StateSerial
+    { public:
+      virtual void memberData (void *ptr, UintP size);
+      virtual void resourcePtr (ClassPtr cls, void **pptr);
+      virtual void resourcePtrPtr (ClassPtr cls, void ***pptr, UintP count);
+      virtual void dynamicPtr (void **pptr, UintP size);
+      virtual void run (ClassPtr rootCls, void *rootPtr);
+    };
+
+    class StateLoad : public StateSerial
+    { public:
+      virtual void memberData (void *ptr, UintP size);
+      virtual void resourcePtr (ClassPtr cls, void **pptr);
+      virtual void resourcePtrPtr (ClassPtr cls, void ***pptr, UintP count);
+      virtual void dynamicPtr (void **pptr, UintP size);
+      virtual void run (ClassPtr rootCls, void *rootPtr);
+    };
     
-    Uint8 *data;
-    UintP  offset;
-    ResPtrInfo *current;
-    OCC::LinkedList <ResPtrInfo> resQueue;
-    OCC::LinkedList <DynPtrInfo> dynQueue;
-    OCC::ArrayList <ClsHeader> clsList;
-    OCC::ArrayList <PtrHeader> ptrList;
-    bool simulate;
+    StateSerial stateSerial;
+    StateSave stateSave;
+    StateLoad stateLoad;
+    State *state;
     
     void copy (void *ptr, UintP size);
     void adjust (UintP ptrOffset);
@@ -54,15 +103,16 @@ namespace GE
   public:
     
     void serialize (ClassPtr cls, void *root, void **outData, UintP *outSize);
-    void resourcePtr (ClassPtr cls, void **pptr, UintP count);
+    void resourcePtr (ClassPtr cls, void **pptr);
     void resourcePtrPtr (ClassPtr cls, void ***pptr, UintP count);
     void dynamicPtr (void **pptr, UintP size);
+    void memberData (void *ptr, UintP size);
     
     template <class TR> void serialize (TR *root, void **outData, UintP *outSize)
       { serialize (Class(TR), root, outData, outSize); }
     
-    template <class TR> void resourcePtr (TR **pptr, UintP count=1)
-      { resourcePtr (Class(TR), (void**)pptr, count); }
+    template <class TR> void resourcePtr (TR **pptr)
+      { resourcePtr (Class(TR), (void**)pptr); }
     
     template <class TR> void resourcePtrPtr (TR ***pptr, UintP count=1)
       { resourcePtrPtr (Class(TR), (void***)pptr, count); }

@@ -471,7 +471,7 @@ void applyFK (int frame)
     }
   }
 }
-/*
+
 class DD
 {
   DECLARE_SERIAL_CLASS (DD);
@@ -500,12 +500,12 @@ public:
   CC (SM *sm) {}
   void serialize (void *sm)
   {
-    ((SM*)sm)->resourcePtr (Class(GenArrayList), (void**)&list, 1);
+    ((SM*)sm)->resourcePtr (Class(GenArrayList), (void**)&list);
   }
 };
 
 DEFINE_CLASS (CC);
-*/
+
 
 int main (int argc, char **argv)
 {

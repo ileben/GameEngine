@@ -32,7 +32,7 @@ namespace GE
     SkinTrack () { keys = new DynArrayList <SkinKey>; }
     ~SkinTrack () { delete keys; }
     void serialize (void *sm) {
-      ((SM*)sm)->resourcePtr (Class(GenArrayList), (void**)&keys, 1); }
+      ((SM*)sm)->resourcePtr (Class(GenArrayList), (void**)&keys); }
   };
 
   /*
@@ -54,7 +54,7 @@ namespace GE
     SkinAnim () { tracks = new ResPtrArrayList <SkinTrack*>; }
     ~SkinAnim () { delete tracks; }
     void serialize (void *sm) {
-      ((SM*)sm)->resourcePtr (Class(GenArrayList), (void**)&tracks, 1); }
+      ((SM*)sm)->resourcePtr (Class(GenArrayList), (void**)&tracks); }
   };
 };
 

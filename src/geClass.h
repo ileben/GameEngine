@@ -141,9 +141,10 @@ namespace GE
     virtual void      invokeCallback (ClassEvent e, void *obj, void *param) = 0;
     
     //Layer-3 (IAbstract, IReal, ISerial)
-    virtual void* newInstance () = 0;
+    virtual void* newInstance (int count=1) = 0;
     virtual void* newInPlace (void *pwhere) = 0;
-    virtual void* newDeserialized (void *pmem, SerializeManager *sm) = 0;
+    virtual void* newSerialInstance (SerializeManager *sm) = 0;
+    virtual void* newSerialInPlace (void *pwhere, SerializeManager *sm) = 0;
     
     //Utilities
     static ClassPtr FromString (const char *name);
@@ -216,39 +217,48 @@ namespace GE
   template <class Name, class Super > class IAbstract
     : public IClass2 <Name, Super > { public:
   
-    void* newInstance ()
+    void* newInstance (int count=1)
       { return NULL; }
 
-    void* newInPlace (void *pmem)
+    void* newInPlace (void *pwhere)
       { return NULL; }
 
-    void* newDeserialized (void *pmem, SerializeManager *sm)
+    void* newSerialInstance (SerializeManager *sm)
+      { return NULL; }
+
+    void* newSerialInPlace (void *pwhere, SerializeManager *sm)
       { return NULL; }
   };
 
   template <class Name, class Super > class IReal
     : public IClass2 <Name, Super> { public:
     
-    void* newInstance ()
-      { return (void*) new Name; }
+    void* newInstance (int count=1)
+      { return (void*) new Name [count]; }
     
     void* newInPlace (void *pwhere)
       { return (void*) new (pwhere) Name; }
+
+    void* newSerialInstance (SerializeManager *sm)
+      { return NULL; }
     
-    void* newDeserialized (void *pwhere, SerializeManager *sm)
+    void* newSerialInPlace (void *pwhere, SerializeManager *sm)
       { return NULL; }
   };
   
   template <class Name, class Super > class ISerial
     : public IClass2 <Name, Super > { public:
-
-    void* newInstance ()
-      { return (void*) new Name; }
+    
+    void* newInstance (int count=1)
+      { return (void*) new Name [count]; }
     
     void* newInPlace (void *pwhere)
       { return (void*) new (pwhere) Name; }
     
-    void* newDeserialized (void *pwhere, SerializeManager *sm)
+    void* newSerialInstance (SerializeManager *sm)
+      { return (void*) new Name (sm); }
+    
+    void* newSerialInPlace (void *pwhere, SerializeManager *sm)
       { return (void*) new (pwhere) Name (sm); }
   };
   

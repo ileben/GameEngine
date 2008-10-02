@@ -31,9 +31,9 @@ namespace GE
     
     void serialize (void *sm)
     {
-      ((SM*)sm)->resourcePtr (Class(GenArrayList), (void**)&verts, 1);
-      ((SM*)sm)->resourcePtr (Class(GenArrayList), (void**)&faces, 1);
-      ((SM*)sm)->resourcePtr (Class(GenArrayList), (void**)&indices, 1);
+      ((SM*)sm)->resourcePtr (Class(GenArrayList), (void**)&verts);
+      ((SM*)sm)->resourcePtr (Class(GenArrayList), (void**)&faces);
+      ((SM*)sm)->resourcePtr (Class(GenArrayList), (void**)&indices);
     }
     
     SkinMesh (SM *sm)
