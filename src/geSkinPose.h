@@ -3,7 +3,7 @@
 
 namespace GE
 {
-  struct GE_API_ENTRY SkelBone
+  struct GE_API_ENTRY SkinBone
   {
     Uint32     numChildren;
     Matrix4x4  worldInv;
@@ -12,19 +12,19 @@ namespace GE
     Matrix4x4  local;
   };
   
-  class GE_API_ENTRY Skeleton
+  class GE_API_ENTRY SkinPose
   {
-    DECLARE_SERIAL_CLASS (Skeleton);
+    DECLARE_SERIAL_CLASS (SkinPose);
     DECLARE_CALLBACK (CLSEVT_SERIALIZE, serialize);
     DECLARE_END;
     
   public:
-    DynArrayList<SkelBone> *bones;
+    DynArrayList<SkinBone> *bones;
 
-    Skeleton () { bones = new DynArrayList<SkelBone>; }
-    ~Skeleton () { delete bones; }
+    SkinPose () { bones = new DynArrayList<SkinBone>; }
+    ~SkinPose () { delete bones; }
     
-    Skeleton (SM *sm) {}
+    SkinPose (SM *sm) {}
     void serialize (void *sm) {
       ((SM*)sm)->resourcePtr (Class(GenArrayList), (void**)&bones, 1); }
   };

@@ -25,7 +25,7 @@ namespace GE
   protected:
     UMesh *uvMesh;
     SMesh *statMesh;
-    DMesh *dynMesh;
+    PolyMesh *dynMesh;
     bool useDynamic;
     
     virtual void renderDynamic (MaterialId materialId);
@@ -36,10 +36,10 @@ namespace GE
     ~Shape();
     void setUV(UMesh *mesh);
     void setStatic(SMesh *mesh);
-    void setDynamic(DMesh *mesh);
+    void setDynamic(PolyMesh *mesh);
     UMesh* getUV();
     SMesh* getStatic();
-    DMesh* getDynamic();
+    PolyMesh* getDynamic();
     
     virtual void render (MaterialId materialId);
   };

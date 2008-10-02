@@ -18,10 +18,10 @@
 //Resources
 #include "geResource.h"
 #include "geSerialize.h"
-#include "geArrayList_Res.h"
-#include "geSkinPolyMesh_Res.h"
-#include "geSkeleton_Res.h"
-#include "geSkelAnim_Res.h"
+#include "geDynArrayList.h"
+#include "geSkinMesh.h"
+#include "geSkinPose.h"
+#include "geSkinAnim.h"
 
 #include "geTexture.h"
 #include "geShaders.h"
@@ -29,7 +29,7 @@
 #include "geMaterial.h"
 #include "geHmesh.h"
 #include "geUVMesh.h"
-#include "geDynamicMesh.h"
+#include "gePolyMesh.h"
 #include "geStaticMesh.h"
 
 //Actors

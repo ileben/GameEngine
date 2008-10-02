@@ -38,11 +38,11 @@ namespace GE
   halfedges' algorithm helper tags.
   --------------------------------------------------*/
 
-  void SMesh::fromDynamic(DMesh *m, UMesh *um)
+  void SMesh::fromDynamic (PolyMesh *m, UMesh *um)
   {
-    DMesh::FaceIter f;
+    PolyMesh::FaceIter f;
+    PolyMesh::FaceHedgeIter h;
     UMesh::FaceIter uf;
-    DMesh::FaceHedgeIter h;
     UMesh::FaceHedgeIter uh;
     ArrayList<UniqueVertex> uniqVerts;
     StaticId nextStaticId = 0;
@@ -59,14 +59,14 @@ namespace GE
       }}
 
     //Walk all the vertices of the mesh
-    for (DMesh::VertIter v(m); !v.end(); ++v) {
+    for (PolyMesh::VertIter v(m); !v.end(); ++v) {
 
       //An array for unique vertices
       uniqVerts.clear();
 
       //Walk adjacent faces and output unique vertex variants
-      for (DMesh::VertFaceIter vf(*v); !vf.end(); ++vf) {
-        DMesh::HalfEdge *vfh = vf.hedgeToVertex();
+      for (PolyMesh::VertFaceIter vf(*v); !vf.end(); ++vf) {
+        PolyMesh::HalfEdge *vfh = vf.hedgeToVertex();
 
         //Walk existing vertex variants
         bool existingFound = false;
@@ -132,11 +132,11 @@ namespace GE
       grp.count = 0;
       
       //Walk faces of current material
-      for (DMesh::MaterialFaceIter mf(m, *mid); !mf.end(); ++mf) {
+      for (PolyMesh::MaterialFaceIter mf(m, *mid); !mf.end(); ++mf) {
         
-        DMesh::HalfEdge *cur = mf->firstHedge();
-        DMesh::HalfEdge *prev = cur->prevHedge();
-        DMesh::HalfEdge *next = cur->nextHedge();
+        PolyMesh::HalfEdge *cur = mf->firstHedge();
+        PolyMesh::HalfEdge *prev = cur->prevHedge();
+        PolyMesh::HalfEdge *next = cur->nextHedge();
         
         do { //Triangulate face
           

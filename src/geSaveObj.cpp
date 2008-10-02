@@ -7,16 +7,16 @@ namespace GE
   DEFINE_CLASS (Saver);
   DEFINE_CLASS (SaverObj);
   
-  void Saver::addObject(Object *o)
+  void Saver::addObject (Object *o)
   {
     objects.pushBack(o);
   }
 
-  void SaverObj::writeDynMesh(DMesh *mesh, UMesh *umesh)
+  void SaverObj::writeDynMesh (PolyMesh *mesh, UMesh *umesh)
   {
     int id = 0;
     int normalCount = 0;
-    DMesh::VertIter v;
+    PolyMesh::VertIter v;
 
     //Output and index vertices
     for (v.begin(mesh); !v.end(); ++v) {
@@ -39,7 +39,7 @@ namespace GE
     
     
     //Output and index vertex normals
-    id =0; for (DMesh::SmoothNormalIter s(mesh); !s.end(); ++s) {
+    id =0; for (PolyMesh::SmoothNormalIter s(mesh); !s.end(); ++s) {
       file->write( ByteString::Format(
         "vn %f %f %f\n", s->coord.x, s->coord.y, s->coord.z));
       s->tag.id = ++id; }
@@ -55,7 +55,7 @@ namespace GE
     
     Uint32 lastSmoothGroups = 0;
     UMesh::FaceIter uf(umesh);
-    for (DMesh::FaceIter f(mesh); !f.end(); ++f, ++uf) {
+    for (PolyMesh::FaceIter f(mesh); !f.end(); ++f, ++uf) {
     
       if (f->smoothGroups != lastSmoothGroups) {
         file->write( ByteString::Format("s %d\n", f->smoothGroups) );
@@ -64,7 +64,7 @@ namespace GE
       file->write("f");
     
       UMesh::FaceHedgeIter uh(*uf);
-      for (DMesh::FaceHedgeIter h(*f); !h.end(); ++h, ++uh) {
+      for (PolyMesh::FaceHedgeIter h(*f); !h.end(); ++h, ++uh) {
       
         if (!uh.end()) {
         

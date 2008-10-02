@@ -52,7 +52,7 @@ namespace GE
     return statMesh;
   }
 
-  void Shape::setDynamic(DMesh *mesh)
+  void Shape::setDynamic(PolyMesh *mesh)
   {
     if (dynMesh != NULL)
       dynMesh->dereference();
@@ -62,7 +62,7 @@ namespace GE
     useDynamic = true;
   }
 
-  DMesh* Shape::getDynamic() {
+  PolyMesh* Shape::getDynamic() {
     return dynMesh;
   }
 
@@ -128,7 +128,7 @@ namespace GE
 
     
     UMesh::FaceIter uf(uvMesh);
-    for (DMesh::FaceIter f(dynMesh); !f.end(); ++f, ++uf) {
+    for (PolyMesh::FaceIter f(dynMesh); !f.end(); ++f, ++uf) {
       
       //Check if this face belongs to current material
       if (f->materialId() != matid && matid != GE_ANY_MATERIAL_ID)
@@ -146,7 +146,7 @@ namespace GE
         if (fh->tag.id == 0) glColor4f(1.0f, 0.0f, 0.0f, 0.5f);*/
       
       UMesh::FaceVertIter uv(*uf);
-      for(DMesh::FaceHedgeIter h(*f); !h.end(); ++h, ++uv) {
+      for(PolyMesh::FaceHedgeIter h(*f); !h.end(); ++h, ++uv) {
         
         //Interpolate per-vertex normals in smooth mode
         if (dynMesh->getShadingModel() == SHADING_SMOOTH)

@@ -9,13 +9,13 @@ namespace GE
    * Arrays used by the loader
    *-------------------------------*/
 
-  typedef OCC::ArrayList<DMesh::Vertex*> VertArray;
+  typedef OCC::ArrayList <PolyMesh::Vertex*> VertArray;
   typedef VertArray::Iterator VertArrayIter;
 
-  typedef OCC::ArrayList<DMesh::Face*> FaceArray;
+  typedef OCC::ArrayList <PolyMesh::Face*> FaceArray;
   typedef FaceArray::Iterator FaceArrayIter;
 
-  typedef OCC::ArrayList<Vector2> UVArray;
+  typedef OCC::ArrayList <Vector2> UVArray;
 
   /*---------------------------------------
    * Stores a single 3ds chunk file layout
@@ -43,25 +43,25 @@ namespace GE
     //Chunk stack
     ChunkInfo topChunk;
     OCC::ArrayList<ChunkInfo> chunkStack;
-    void readChunkInfo(ChunkInfo *chunk);
-    void pushChunk(const ChunkInfo &chunk);
-    void popChunk();
-    bool isChunkDone();
+    void readChunkInfo (ChunkInfo *chunk);
+    void pushChunk (const ChunkInfo &chunk);
+    void popChunk ();
+    bool isChunkDone ();
 
     //Helpers
     OCC::String readString();
 
     //Chunk processors
-    void chunk_EDITOR();
-    void chunk_OBJECT();
-    void chunk_MESH(const OCC::String &id);
-    void chunk_MESH_VERTEX_LIST(DMesh *mesh, VertArray *verts);
-    void chunk_MESH_TEX_COORD_LIST(DMesh *mesh, UVArray *uvcoords);
-    void chunk_MESH_FACE_LIST(DMesh *mesh, VertArray *verts, UVArray *uvcoords, FaceArray *faces);
-    void chunk_MESH_FACE_SMOOTH_GROUP_LIST(DMesh *mesh, FaceArray *faces);
-    void chunk_CAMERA(const OCC::String &id);
-    void chunk_LIGHT(const OCC::String &id);
-    void chunk_KEYFRAMER();
+    void chunk_EDITOR ();
+    void chunk_OBJECT ();
+    void chunk_MESH (const OCC::String &id);
+    void chunk_MESH_VERTEX_LIST (PolyMesh *mesh, VertArray *verts);
+    void chunk_MESH_TEX_COORD_LIST (PolyMesh *mesh, UVArray *uvcoords);
+    void chunk_MESH_FACE_LIST (PolyMesh *mesh, VertArray *verts, UVArray *uvcoords, FaceArray *faces);
+    void chunk_MESH_FACE_SMOOTH_GROUP_LIST (PolyMesh *mesh, FaceArray *faces);
+    void chunk_CAMERA (const OCC::String &id);
+    void chunk_LIGHT (const OCC::String &id);
+    void chunk_KEYFRAMER ();
 
   public:
     

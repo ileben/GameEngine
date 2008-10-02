@@ -5,7 +5,7 @@ using namespace OCC;
 namespace GE
 {
 
-  DEFINE_SERIAL_CLASS (SkelAnim,   CLSID_SKELANIM);
-  DEFINE_SERIAL_CLASS (SkelTrack,  CLSID_SKELTRACK);
+  DEFINE_SERIAL_CLASS (SkinAnim,   CLSID_SKINANIM);
+  DEFINE_SERIAL_CLASS (SkinTrack,  CLSID_SKINTRACK);
 
 }//namespace GE

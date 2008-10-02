@@ -4,7 +4,7 @@
 namespace GE
 {
 
-  DEFINE_SERIAL_CLASS (Skeleton, CLSID_SKELETON);
+  DEFINE_SERIAL_CLASS (SkinPose, CLSID_SKINPOSE);
 
 
 }//namespace GE

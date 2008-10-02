@@ -31,12 +31,12 @@ namespace GE
    *
    *===========================================================*/
   
-  class GE_API_ENTRY DMesh : public HMesh
+  class GE_API_ENTRY PolyMesh : public HMesh
   {
     friend class SMesh;
     friend class LoaderObj;
     friend class Renderer;
-    DECLARE_SUBCLASS (DMesh, HMesh);
+    DECLARE_SUBCLASS (PolyMesh, HMesh);
     DECLARE_END;
     
   private:
@@ -94,13 +94,13 @@ namespace GE
     class Face;
 
     
-    class GE_API_ENTRY Vertex : public VertexBase <DMesh,HMesh> {
+    class GE_API_ENTRY Vertex : public VertexBase <PolyMesh,HMesh> {
       DECLARE_SUBCLASS (Vertex, HMesh::Vertex); DECLARE_END;
     public:
       Vector3 point;
     };
 
-    class GE_API_ENTRY Edge : public EdgeBase <DMesh,HMesh> {
+    class GE_API_ENTRY Edge : public EdgeBase <PolyMesh,HMesh> {
       DECLARE_SUBCLASS (Edge, HMesh::Edge); DECLARE_END;
     };
 
@@ -112,7 +112,7 @@ namespace GE
     two faces are not in the same smoothing group
     -------------------------------------------------------*/
 
-    class GE_API_ENTRY HalfEdge : public HalfEdgeBase <DMesh,HMesh> {
+    class GE_API_ENTRY HalfEdge : public HalfEdgeBase <PolyMesh,HMesh> {
       DECLARE_SUBCLASS (HalfEdge, HMesh::HalfEdge); DECLARE_END;
     public:
       SmoothNormal *snormal;
@@ -127,9 +127,9 @@ namespace GE
     array.
     ----------------------------------------------------*/
 
-    class GE_API_ENTRY Face : public FaceBase <DMesh,HMesh> {
+    class GE_API_ENTRY Face : public FaceBase <PolyMesh,HMesh> {
       DECLARE_SUBCLASS (Face, HMesh::Face); DECLARE_END;
-      friend class DMesh;
+      friend class PolyMesh;
     private:
       Uint8 matId;
     public:
@@ -143,12 +143,12 @@ namespace GE
     //Data and adjancency iterators
     #include "geHmeshDataiter.h"
     #include "geHmeshAdjiter.h"
-    #include "geDMeshIters.h"
+    #include "gePolyMeshIters.h"
 
 
   public:
 
-    DMesh();
+    PolyMesh();
     
     //When true causes smoothing groups to be taken
     //into account when calculating vertex normals

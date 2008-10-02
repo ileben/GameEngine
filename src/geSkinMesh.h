@@ -3,30 +3,30 @@
 
 namespace GE
 {
-  struct GE_API_ENTRY SkinPolyVertex
+  struct GE_API_ENTRY SkinVertex
   {
     Vector3 point;
     Uint32  boneIndex[4];
     Float32 boneWeight[4];
   };
   
-  struct GE_API_ENTRY SkinPolyFace
+  struct GE_API_ENTRY SkinFace
   {
     Int32 numCorners;
     Int32 smoothGroups;
     Int32 materialId;
   };
   
-  class GE_API_ENTRY SkinPolyMesh_Res
+  class GE_API_ENTRY SkinMesh
   {
-    DECLARE_SERIAL_CLASS (SkinPolyMesh_Res);
+    DECLARE_SERIAL_CLASS (SkinMesh);
     DECLARE_CALLBACK (CLSEVT_SERIALIZE, serialize);
     DECLARE_END;
     
   public:
     
-    DynArrayList <SkinPolyVertex> *verts;
-    DynArrayList <SkinPolyFace> *faces;
+    DynArrayList <SkinVertex> *verts;
+    DynArrayList <SkinFace> *faces;
     DynArrayList <Uint32> *indices;
     
     void serialize (void *sm)
@@ -36,17 +36,17 @@ namespace GE
       ((SM*)sm)->resourcePtr (Class(GenArrayList), (void**)&indices, 1);
     }
     
-    SkinPolyMesh_Res (SM *sm)
+    SkinMesh (SM *sm)
     {}
     
-    SkinPolyMesh_Res()
+    SkinMesh ()
     {
-      verts = new DynArrayList <SkinPolyVertex> ();
-      faces = new DynArrayList <SkinPolyFace> ();
+      verts = new DynArrayList <SkinVertex> ();
+      faces = new DynArrayList <SkinFace> ();
       indices = new DynArrayList <Uint32> ();
     }
     
-    ~SkinPolyMesh_Res()
+    ~SkinMesh ()
     {
       delete verts;
       delete faces;
@@ -59,8 +59,8 @@ namespace GE
   Resource
   -----------------------------------*/
 
-  class Skeleton;
-  class SkelAnim;
+  class SkinPose;
+  class SkinAnim;
   
   class GE_API_ENTRY MaxCharacter
   {
@@ -70,25 +70,25 @@ namespace GE
 
   public:
     
-    SkinPolyMesh_Res *mesh;
-    Skeleton *skeleton;
-    SkelAnim *animation;
+    SkinMesh *mesh;
+    SkinPose *pose;
+    SkinAnim *anim;
     
     void serialize (void *sm)
     {
       if (mesh != NULL)
         ((SM*)sm)->resourcePtr (&mesh);
-      if (skeleton != NULL)
-        ((SM*)sm)->resourcePtr (&skeleton);
-      if (animation != NULL)
-        ((SM*)sm)->resourcePtr (&animation);
+      if (pose != NULL)
+        ((SM*)sm)->resourcePtr (&pose);
+      if (anim != NULL)
+        ((SM*)sm)->resourcePtr (&anim);
     }
     
     MaxCharacter ()
     {
       mesh = NULL;
-      skeleton = NULL;
-      animation = NULL;
+      pose = NULL;
+      anim = NULL;
     }
     
     MaxCharacter (SM *sm) {}

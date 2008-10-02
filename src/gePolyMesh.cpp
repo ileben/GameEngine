@@ -4,18 +4,18 @@ using namespace OCC;
 
 namespace GE
 {
-  DEFINE_CLASS (DMesh);
-  DEFINE_CLASS (DMesh::Vertex);
-  DEFINE_CLASS (DMesh::HalfEdge);
-  DEFINE_CLASS (DMesh::Edge);
-  DEFINE_CLASS (DMesh::Face);
+  DEFINE_CLASS (PolyMesh);
+  DEFINE_CLASS (PolyMesh::Vertex);
+  DEFINE_CLASS (PolyMesh::HalfEdge);
+  DEFINE_CLASS (PolyMesh::Edge);
+  DEFINE_CLASS (PolyMesh::Face);
 
-  typedef DMesh::Vertex Vertex;
-  typedef DMesh::HalfEdge HalfEdge;
-  typedef DMesh::Edge Edge;
-  typedef DMesh::Face Face;
+  typedef PolyMesh::Vertex Vertex;
+  typedef PolyMesh::HalfEdge HalfEdge;
+  typedef PolyMesh::Edge Edge;
+  typedef PolyMesh::Face Face;
 
-  DMesh::DMesh()
+  PolyMesh::PolyMesh()
   {
     
     setClasses(
@@ -37,17 +37,17 @@ namespace GE
   is called.
   --------------------------------------------------*/
 
-  void DMesh::insertHalfEdge(HMesh::HalfEdge *he)
+  void PolyMesh::insertHalfEdge(HMesh::HalfEdge *he)
   {
     HMesh::insertHalfEdge(he);
-    ((DMesh::HalfEdge*)he)->snormal = &dummySmoothNormal;
+    ((PolyMesh::HalfEdge*)he)->snormal = &dummySmoothNormal;
   }
   
   /*--------------------------------------------------
   Material ID handling
   ----------------------------------------------------*/
   
-  void DMesh::addMaterialId(MaterialId m)
+  void PolyMesh::addMaterialId(MaterialId m)
   {
     facesPerMaterial[m]++;
     if (facesPerMaterial[m] == 1)
@@ -55,26 +55,26 @@ namespace GE
         materialsUsed.pushFront(m);
   }
   
-  void DMesh::subMaterialId(MaterialId m)
+  void PolyMesh::subMaterialId(MaterialId m)
   {
     facesPerMaterial[m]--;
     if (facesPerMaterial[m] == 0)
       materialsUsed.remove(m);
   }
   
-  void DMesh::insertFace(HMesh::Face *f)
+  void PolyMesh::insertFace(HMesh::Face *f)
   {
     HMesh::insertFace(f);
-    addMaterialId(((DMesh::Face*)f)->materialId());
+    addMaterialId(((PolyMesh::Face*)f)->materialId());
   }
   
-  ListHandle DMesh::deleteFace(HMesh::Face *f)
+  ListHandle PolyMesh::deleteFace(HMesh::Face *f)
   {
-    subMaterialId(((DMesh::Face*)f)->materialId());
+    subMaterialId(((PolyMesh::Face*)f)->materialId());
     return HMesh::deleteFace(f);
   }
   
-  void DMesh::setMaterialId(Face *f, MaterialId id)
+  void PolyMesh::setMaterialId(Face *f, MaterialId id)
   {
     if (id == f->materialId()) return;
     subMaterialId(f->materialId());
@@ -87,7 +87,7 @@ namespace GE
   Calculates face normal from first three vertices
   --------------------------------------------------*/
 
-  void DMesh::updateFaceNormal(Face *f)
+  void PolyMesh::updateFaceNormal(Face *f)
   {
     Vector3 &p1 = f->firstHedge()->dstVertex()->point;
     Vector3 &p2 = f->firstHedge()->nextHedge()->dstVertex()->point;
@@ -105,7 +105,7 @@ namespace GE
   each adjacent face.
   -------------------------------------------------*/
 
-  void DMesh::updateVertNormal(Vertex *vert)
+  void PolyMesh::updateVertNormal(Vertex *vert)
   {
     int count = 0;
     Vector3 sum;
@@ -184,9 +184,9 @@ namespace GE
   of the adjacent faces.
   -------------------------------------------------*/
 
-  void DMesh::updateVertNormalGroups(Vertex *vert)
+  void PolyMesh::updateVertNormalGroups(Vertex *vert)
   {
-    DMesh::VertFaceIter f;
+    PolyMesh::VertFaceIter f;
     ArraySet<SmoothGroup> groups(8);
     int g = 0;
 
@@ -250,21 +250,21 @@ namespace GE
   Updates face and vertex normals for the whole mesh
   ----------------------------------------------------*/
 
-  void DMesh::updateNormals()
+  void PolyMesh::updateNormals()
   {
     smoothNormals.clear();
 
-    for (DMesh::FaceIter f(this); !f.end(); ++f)
+    for (PolyMesh::FaceIter f(this); !f.end(); ++f)
       updateFaceNormal(*f);
 
     if (useSmoothGroups) {
 
-      for (DMesh::VertIter v(this); !v.end(); ++v)
+      for (PolyMesh::VertIter v(this); !v.end(); ++v)
         updateVertNormalGroups(*v);
 
     }else{
 
-      for (DMesh::VertIter v(this); !v.end(); ++v)
+      for (PolyMesh::VertIter v(this); !v.end(); ++v)
         updateVertNormal(*v);
     }
   }

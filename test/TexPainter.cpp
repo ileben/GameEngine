@@ -663,8 +663,8 @@ void findCenter()
 {
   int count = 0;
   center.set(0,0,0);
-  DMesh *mesh = zekko->getDynamic();
-  for (DMesh::VertIter v(mesh); !v.end(); ++v) {
+  PolyMesh *mesh = zekko->getDynamic();
+  for (PolyMesh::VertIter v(mesh); !v.end(); ++v) {
     center += v->point;
     count++;
   }
@@ -754,7 +754,7 @@ int main (int argc, char **argv)
   
   zekko = (Shape*)ldr.getFirstObject(Class(Shape));
   uvmesh = (EUMesh*)ldr.getFirstResource(Class(UMesh));
-  DMesh *dmesh = (DMesh*)ldr.getFirstResource(Class(DMesh));
+  PolyMesh *dmesh = (PolyMesh*)ldr.getFirstResource(Class(PolyMesh));
   if (zekko == NULL) return EXIT_FAILURE;
   if (uvmesh == NULL) return EXIT_FAILURE;
   if (dmesh == NULL) return EXIT_FAILURE;
@@ -774,8 +774,8 @@ int main (int argc, char **argv)
           SafeCast (Resource, zekko->getUV ()) ?
           "IS" : "is NOT");
   
-  printf ("uvmesh %s DMesh\n",
-          SafeCast (DMesh, zekko->getUV ()) ?
+  printf ("uvmesh %s PolyMesh\n",
+          SafeCast (PolyMesh, zekko->getUV ()) ?
           "IS" : "is NOT");
   
   //Setup camera
@@ -788,7 +788,7 @@ int main (int argc, char **argv)
   findCenter();
   
   //Set half bunny green
-  for (DMesh::FaceIter f(dmesh); !f.end(); ++f) {
+  for (PolyMesh::FaceIter f(dmesh); !f.end(); ++f) {
     //f->smoothGroups = 0x1;
     if (f->firstHedge()->dstVertex()->point.y > center.y)
       dmesh->setMaterialId(*f, 1); }

@@ -9,31 +9,31 @@ using namespace OCC;
 
 void applyFK (int frame);
 
-class SPolyMesh : public DMesh
+class SPolyMesh : public PolyMesh
 {
-  DECLARE_SUBCLASS (SPolyMesh, DMesh); DECLARE_END;
+  DECLARE_SUBCLASS (SPolyMesh, PolyMesh); DECLARE_END;
 
 public:
 
   class Vertex; class HalfEdge; class Edge; class Face;
 
-  class Vertex : public VertexBase <SPolyMesh,DMesh> {
-    DECLARE_SUBCLASS (Vertex, DMesh::Vertex); DECLARE_END;
+  class Vertex : public VertexBase <SPolyMesh,PolyMesh> {
+    DECLARE_SUBCLASS (Vertex, PolyMesh::Vertex); DECLARE_END;
   public:
     Uint32 boneIndex [4];
     Float boneWeight [4];
   };
   
-  class HalfEdge : public HalfEdgeBase <SPolyMesh,DMesh> {
-    DECLARE_SUBCLASS (HalfEdge, DMesh::HalfEdge); DECLARE_END;
+  class HalfEdge : public HalfEdgeBase <SPolyMesh,PolyMesh> {
+    DECLARE_SUBCLASS (HalfEdge, PolyMesh::HalfEdge); DECLARE_END;
   };
   
-  class Edge : public EdgeBase <SPolyMesh,DMesh> {
-    DECLARE_SUBCLASS (Edge, DMesh::Edge); DECLARE_END;
+  class Edge : public EdgeBase <SPolyMesh,PolyMesh> {
+    DECLARE_SUBCLASS (Edge, PolyMesh::Edge); DECLARE_END;
   };
   
-  class Face : public FaceBase <SPolyMesh,DMesh> {
-    DECLARE_SUBCLASS (Face, DMesh::Face); DECLARE_END;
+  class Face : public FaceBase <SPolyMesh,PolyMesh> {
+    DECLARE_SUBCLASS (Face, PolyMesh::Face); DECLARE_END;
   };
   
   #include "geHmeshDataiter.h"
@@ -257,8 +257,8 @@ void findCenter ()
   int count = 0;
   center.set (0,0,0);
 
-  DMesh *mesh = actor->getDynamic();
-  for (DMesh::VertIter v(mesh); !v.end(); ++v) {
+  PolyMesh *mesh = actor->getDynamic();
+  for (PolyMesh::VertIter v(mesh); !v.end(); ++v) {
     center += v->point;
     count++;
   }
@@ -353,7 +353,7 @@ void SPolyActor::renderDynamic (MaterialId matid)
   }
 }
 
-DMesh* loadPackage (String fileName)
+PolyMesh* loadPackage (String fileName)
 {
   
   FileRef file = new File (fileName);
@@ -369,7 +369,7 @@ DMesh* loadPackage (String fileName)
   
   SerializeManager sm;
   character = (MaxCharacter*) sm.deserialize ((void*)data.buffer());  
-  SkinPolyMesh_Res *inMesh = character->mesh;
+  SkinMesh *inMesh = character->mesh;
   
   /*
   void *data; UintP size;
@@ -412,7 +412,7 @@ DMesh* loadPackage (String fileName)
       corners [c] = verts [vertIndex];
     }
     
-    DMesh::Face *face = (DMesh::Face*) polyMesh->addFace (corners, numCorners);
+    SPolyMesh::Face *face = (SPolyMesh::Face*) polyMesh->addFace (corners, numCorners);
     if (face != NULL) face->smoothGroups = inMesh->faces->at(f).smoothGroups;
 
     delete[] corners;
@@ -424,8 +424,8 @@ DMesh* loadPackage (String fileName)
 
 void applyFK (int frame)
 {
-  Skeleton *skel = character->skeleton;
-  SkelAnim *anim = character->animation;
+  SkinPose *pose = character->pose;
+  SkinAnim *anim = character->anim;
   ArrayList <Matrix4x4> fkMats;
   ArrayList <Matrix4x4> skinMats;
   int cindex = 1;
@@ -437,22 +437,22 @@ void applyFK (int frame)
   Matrix4x4 rootWorld;
   //rootWorld.fromQuaternion (skel->bones->first().localRot);
   rootWorld.fromQuaternion (anim->tracks->first()->keys->at(frame).value);
-  rootWorld.setColumn (3, skel->bones->first().localTra);
+  rootWorld.setColumn (3, pose->bones->first().localTra);
   fkMats.pushBack (rootWorld);
   
   //Walk all the bones
-  for (int b=0; b<skel->bones->size(); ++b)
+  for (int b=0; b<pose->bones->size(); ++b)
   {
     //Final skin matrix = FK matrix * world matrix inverse
-    SkelBone *parent = &skel->bones->at(b);
+    SkinBone *parent = &pose->bones->at(b);
     skinMats.pushBack (fkMats[b] * parent->worldInv);
     
     //Walk the children
     for (Uint32 c=0; c<parent->numChildren; ++c)
     {
       //Child FK matrix = parent FK matrix * local matrix
-      SkelBone *child = &skel->bones->at (cindex);
-      SkelTrack *track = anim->tracks->at (cindex);
+      SkinBone *child = &pose->bones->at (cindex);
+      SkinTrack *track = anim->tracks->at (cindex);
       cindex++;
       
       Matrix4x4 childLocal;
@@ -463,7 +463,7 @@ void applyFK (int frame)
     }
   }
   
-  SkinPolyMesh_Res *mesh = character->mesh;
+  SkinMesh *mesh = character->mesh;
   SPolyMesh *dmesh = (SPolyMesh*) actor->getDynamic ();
   int vindex = 0;
   
@@ -477,7 +477,7 @@ void applyFK (int frame)
     }
   }
 }
-
+/*
 class DD
 {
   DECLARE_SERIAL_CLASS (DD);
@@ -511,10 +511,11 @@ public:
 };
 
 DEFINE_CLASS (CC);
-
+*/
 
 int main (int argc, char **argv)
 {
+  /*
   CC cc;
   for (int d=0; d<5; ++d) {
     cc.list->pushBack (new DD);
@@ -526,7 +527,8 @@ int main (int argc, char **argv)
   UintP size;
   sm.serialize (&cc, &data, &size);
 
-  //CC *ccc = (CC*) sm.deserialize (data);
+  CC *ccc = (CC*) sm.deserialize (data);
+  */
 
   //Initialize GLUT
   initGlut(argc, argv);

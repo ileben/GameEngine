@@ -24,8 +24,8 @@ namespace GE
     OCC::FileRef file;
 
   private:
-    void writeDynMesh(DMesh *mesh, UMesh *umesh);
-    void writeShape(Shape *shape);
+    void writeDynMesh (PolyMesh *mesh, UMesh *umesh);
+    void writeShape (Shape *shape);
 
   public:
     bool saveFile(const OCC::String &filename);

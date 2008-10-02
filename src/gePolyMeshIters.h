@@ -7,7 +7,7 @@
 
 class SmoothNormalIter
 {
-  DMesh *mesh;
+  PolyMesh *mesh;
   int cur;
 
 public:
@@ -18,12 +18,12 @@ public:
     cur = 0;
   }
 
-  SmoothNormalIter(DMesh *mesh)
+  SmoothNormalIter (PolyMesh *mesh)
   {
     begin(mesh);
   }
 
-  void begin(DMesh *mesh)
+  void begin (PolyMesh *mesh)
   {
     this->mesh = mesh;
     cur = 0;
@@ -58,23 +58,23 @@ public:
 
 class MaterialFaceIter
 {
-  DMesh *mesh;
+  PolyMesh *mesh;
   ListHandle cur;
   Uint8 materialId;
   
 public:
   
-  MaterialFaceIter(DMesh *mesh, Uint8 materialId)
+  MaterialFaceIter (PolyMesh *mesh, Uint8 materialId)
   {
     begin(mesh, materialId);
   }
   
-  MaterialFaceIter(const MaterialFaceIter &it)
+  MaterialFaceIter (const MaterialFaceIter &it)
   {
     begin(it);
   }
   
-  void begin(DMesh *mesh, Uint8 materialId)
+  void begin (PolyMesh *mesh, Uint8 materialId)
   {
     this->mesh = mesh;
     this->materialId = materialId;
@@ -85,7 +85,7 @@ public:
       ++(*this);
   }
   
-  void begin(const MaterialFaceIter &it)
+  void begin (const MaterialFaceIter &it)
   {
     mesh = it.mesh;
     cur = it.cur;

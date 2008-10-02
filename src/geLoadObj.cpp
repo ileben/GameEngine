@@ -95,7 +95,7 @@ namespace GE
     //Create new shape with given id
     shape = new Shape();
     umesh = (UMesh*) New(uvMeshClass);
-    mesh = (DMesh*) New(dMeshClass);
+    mesh = (PolyMesh*) New(dMeshClass);
     
     shape->setId(name);
     shape->setUV(umesh);
@@ -192,7 +192,7 @@ namespace GE
 
         //Create new vertex if first time referenced
         if (verts[ivert] == NULL) {
-          verts[ivert] = (DMesh::Vertex*)mesh->addVertex();
+          verts[ivert] = (PolyMesh::Vertex*)mesh->addVertex();
           verts[ivert]->point = points[ivert]; }
         faceVerts.pushBack(verts[ivert]);
 
@@ -206,7 +206,7 @@ namespace GE
         //Create new SmoothNormal if first time referenced
         if (normalOk) {
           if (snormals[inormal] == NULL) {
-            mesh->smoothNormals.pushBack( DMesh::SmoothNormal( ncoords[inormal] ));
+            mesh->smoothNormals.pushBack (PolyMesh::SmoothNormal (ncoords[inormal]));
             snormals[inormal] = &mesh->smoothNormals.last(); }
           faceSnormals.pushBack(snormals[inormal]); }
       }
@@ -217,7 +217,7 @@ namespace GE
     
     //Create mesh face if at least triangle
     if (faceVerts.size() < 3) return;
-    DMesh::Face *face = (DMesh::Face*)mesh->addFace(
+    PolyMesh::Face *face = (PolyMesh::Face*)mesh->addFace(
       (HMesh::Vertex**)faceVerts.buffer(), faceVerts.size());
     if (face == NULL) return;
     face->smoothGroups = smoothGroup;
@@ -227,8 +227,8 @@ namespace GE
       umesh->addFace((HMesh::Vertex**)faceUverts.buffer(), faceUverts.size());
 
     //Apply normals to mesh face
-    DMesh::HalfEdge *h = face->hedgeTo(faceVerts[0]);
-    int i=0; for (DMesh::HedgeLoopIter l(h); !l.end(); ++l, ++i) {
+    PolyMesh::HalfEdge *h = face->hedgeTo(faceVerts[0]);
+    int i=0; for (PolyMesh::HedgeLoopIter l(h); !l.end(); ++l, ++i) {
        
       //Check if normal coord present and store
       if (i < faceSnormals.size())

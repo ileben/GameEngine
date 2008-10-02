@@ -10,7 +10,7 @@ namespace GE
   {
     root = NULL;
     uvMeshClass = Class(UMesh);
-    dMeshClass = Class(DMesh);
+    dMeshClass = Class(PolyMesh);
     sMeshClass = Class(SMesh);
   }
 

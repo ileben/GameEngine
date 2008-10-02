@@ -88,7 +88,7 @@ namespace GE
     return str;
   }
 
-  void Loader3ds::chunk_MESH_FACE_SMOOTH_GROUP_LIST(DMesh *mesh, FaceArray *faces)
+  void Loader3ds::chunk_MESH_FACE_SMOOTH_GROUP_LIST (PolyMesh *mesh, FaceArray *faces)
   {
     //Just read all smoothgroups and apply to faces
     for (int i=0; i<faces->size(); ++i) {
@@ -98,8 +98,8 @@ namespace GE
     }
   }
 
-  void Loader3ds::chunk_MESH_FACE_LIST(DMesh *mesh, VertArray *verts,
-                                       UVArray *uvcoords, FaceArray *faces)
+  void Loader3ds::chunk_MESH_FACE_LIST (PolyMesh *mesh, VertArray *verts,
+                                        UVArray *uvcoords, FaceArray *faces)
   {
     //Read number of faces
     Int16 faceCount = 0;
@@ -122,11 +122,11 @@ namespace GE
       if (i3 < 0 || i3 >= verts->size()) return;
 
       //Add face to mesh
-      DMesh::Vertex* v[3] = {
+      PolyMesh::Vertex* v[3] = {
         verts->elementAt(i1),
         verts->elementAt(i2),
         verts->elementAt(i3) };
-      DMesh::Face* face = (DMesh::Face*)mesh->addFace((HMesh::Vertex**)v, 3);
+      PolyMesh::Face* face = (PolyMesh::Face*)mesh->addFace((HMesh::Vertex**)v, 3);
       faces->pushBack(face);
 
       //Make sure indices are in UV range
@@ -161,7 +161,7 @@ namespace GE
     }
   }
 
-  void Loader3ds::chunk_MESH_TEX_COORD_LIST(DMesh *mesh, UVArray *uvcoords)
+  void Loader3ds::chunk_MESH_TEX_COORD_LIST (PolyMesh *mesh, UVArray *uvcoords)
   {
     //Read number of UV vertices
     Int16 pointCount;
@@ -180,7 +180,7 @@ namespace GE
     }
   }
 
-  void Loader3ds::chunk_MESH_VERTEX_LIST(DMesh *mesh, VertArray *verts)
+  void Loader3ds::chunk_MESH_VERTEX_LIST (PolyMesh *mesh, VertArray *verts)
   {
     //Read number of vertices
     Int16 pointCount = 0;
@@ -196,16 +196,16 @@ namespace GE
       if (file->readLE(&z, 4) != 4) break;
 
       //Add to mesh
-      DMesh::Vertex* vert = (DMesh::Vertex*)mesh->addVertex();
+      PolyMesh::Vertex* vert = (PolyMesh::Vertex*)mesh->addVertex();
       vert->point.set(-x,z,y);
       verts->pushBack( vert );
     }
   }
 
-  void Loader3ds::chunk_MESH(const String &id)
+  void Loader3ds::chunk_MESH (const String &id)
   { 
     //Create new mesh resource
-    DMesh *mesh = new DMesh;
+    PolyMesh *mesh = new PolyMesh;
     resources.pushBack(mesh);
     
     //Create new shape object
@@ -229,13 +229,13 @@ namespace GE
 
       switch(subChunk.id) {
       case CHUNK_MESH_VERTEX_LIST:
-        chunk_MESH_VERTEX_LIST(mesh, &verts);
+        chunk_MESH_VERTEX_LIST (mesh, &verts);
         break;
       case CHUNK_MESH_TEX_COORD_LIST:
-        chunk_MESH_TEX_COORD_LIST(mesh, &uvcoords);
+        chunk_MESH_TEX_COORD_LIST (mesh, &uvcoords);
         break;
       case CHUNK_MESH_FACE_LIST:
-        chunk_MESH_FACE_LIST(mesh, &verts, &uvcoords, &faces);
+        chunk_MESH_FACE_LIST (mesh, &verts, &uvcoords, &faces);
         break;
       default:;
       }
@@ -252,7 +252,7 @@ namespace GE
     mesh->updateNormals();
   }
 
-  void Loader3ds::chunk_OBJECT()
+  void Loader3ds::chunk_OBJECT ()
   {
     //get object name
     String id = readString();
@@ -275,7 +275,7 @@ namespace GE
     }   
   }
 
-  void Loader3ds::chunk_EDITOR()
+  void Loader3ds::chunk_EDITOR ()
   {
     //Process sub-chukns
     while(!isChunkDone()) {
@@ -295,11 +295,11 @@ namespace GE
     }
   }
 
-  void Loader3ds::chunk_KEYFRAMER()
+  void Loader3ds::chunk_KEYFRAMER ()
   {
   }
 
-  bool Loader3ds::loadFile(const String &filename)
+  bool Loader3ds::loadFile (const String &filename)
   {
     //Try to open file
     FileRef module = File::GetModule();

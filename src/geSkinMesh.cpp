@@ -3,8 +3,8 @@
 
 namespace GE
 {
-  DEFINE_SERIAL_CLASS (SkinPolyMesh_Res, CLSID_SKINPOLYMESH_RES);
-  DEFINE_SERIAL_CLASS (MaxCharacter,     CLSID_MAXCHARACTER);
+  DEFINE_SERIAL_CLASS (SkinMesh,       CLSID_SKINMESH);
+  DEFINE_SERIAL_CLASS (MaxCharacter,   CLSID_MAXCHARACTER);
   
   /*
   void SkinPolyMesh_Factory::create (void **outMem, UintP *outSize)

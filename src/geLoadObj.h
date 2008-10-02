@@ -14,16 +14,16 @@ namespace GE
   {
     DECLARE_SUBCLASS (LoaderObj, Loader); DECLARE_END;
 
-    typedef OCC::ArrayList<Vector3> Vec3Array;
+    typedef OCC::ArrayList <Vector3> Vec3Array;
     typedef Vec3Array::Iterator Vec3ArrayIter;
 
-    typedef OCC::ArrayList<UMesh::Vertex*> UVertArray;
+    typedef OCC::ArrayList <UMesh::Vertex*> UVertArray;
     typedef UVertArray::Iterator UVertArrayIter;
 
-    typedef OCC::ArrayList<DMesh::Vertex*> VertArray;
+    typedef OCC::ArrayList <PolyMesh::Vertex*> VertArray;
     typedef VertArray::Iterator VertArrayIter;
 
-    typedef OCC::ArrayList<DMesh::SmoothNormal*> SNormalArray;
+    typedef OCC::ArrayList <PolyMesh::SmoothNormal*> SNormalArray;
     typedef SNormalArray::Iterator SNormalArrayIter;
 
     OCC::FileRef file;
@@ -51,7 +51,7 @@ namespace GE
 
     Shape *shape;
     UMesh *umesh;
-    DMesh *mesh;
+    PolyMesh *mesh;
     VertArray verts;
     UVertArray uverts;
     SNormalArray snormals;

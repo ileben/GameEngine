@@ -47,7 +47,7 @@ namespace GE
     OCC::LinkedList<IndexGroup> groups;
 
   public:
-    void fromDynamic(DMesh *m, UMesh *uv);
+    void fromDynamic(PolyMesh *m, UMesh *uv);
   };
 
 
