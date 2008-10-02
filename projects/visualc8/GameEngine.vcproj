@@ -291,7 +291,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geSMesh.cpp"
+				RelativePath="..\..\src\geTriMesh.cpp"
 				>
 			</File>
 			<File
@@ -449,7 +449,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geStaticMesh.h"
+				RelativePath="..\..\src\geTriMesh.h"
 				>
 			</File>
 			<File

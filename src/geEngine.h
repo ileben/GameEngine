@@ -30,7 +30,7 @@
 #include "geHmesh.h"
 #include "geUVMesh.h"
 #include "gePolyMesh.h"
-#include "geStaticMesh.h"
+#include "geTriMesh.h"
 
 //Actors
 #include "geActor.h"
