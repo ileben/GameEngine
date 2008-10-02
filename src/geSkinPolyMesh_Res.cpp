@@ -3,13 +3,8 @@
 
 namespace GE
 {
-  typedef ArrayList_Res <SkinPolyMeshVertex> ArrayList_Res_SPMV;
-  typedef ArrayList_Res <SkinPolyMeshFace> ArrayList_Res_SPMF;
-  
-  template <> DEFINE_SERIAL_CLASS (ArrayList_Res_SPMV,   CLSID_ARRAYLIST_RES_SPMV);
-  template <> DEFINE_SERIAL_CLASS (ArrayList_Res_SPMF,   CLSID_ARRAYLIST_RES_SPMF);
-  template <> DEFINE_SERIAL_CLASS (SkinPolyMesh_Res,     CLSID_SKINPOLYMESH_RES);
-  template <> DEFINE_SERIAL_CLASS (MaxCharacter_Res,     CLSID_MAXCHARACTER_RES);
+  DEFINE_SERIAL_CLASS (SkinPolyMesh_Res, CLSID_SKINPOLYMESH_RES);
+  DEFINE_SERIAL_CLASS (MaxCharacter,     CLSID_MAXCHARACTER);
   
   /*
   void SkinPolyMesh_Factory::create (void **outMem, UintP *outSize)

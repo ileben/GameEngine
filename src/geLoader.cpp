@@ -50,7 +50,7 @@ namespace GE
   {
     //delete children if group
     if (ClassOf(obj) == Class(Group)) {
-      const ArrayList<Actor*> *children = ((Group*)obj)->getChildren();
+      const OCC::ArrayList<Actor*> *children = ((Group*)obj)->getChildren();
       for (ArrayList<Actor*>::Iterator it=children->begin();
            it!=children->end(); ++it) deleteObject(*it);
     }
@@ -93,7 +93,7 @@ namespace GE
    * list of all the loaded resources
    *-------------------------------------*/
 
-  const ArrayList<Resource*>* Loader::getResources()
+  const OCC::ArrayList<Resource*>* Loader::getResources()
   {
     return &resources;
   }

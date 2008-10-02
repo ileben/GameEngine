@@ -3,7 +3,7 @@
 
 /*
 ----------------------------------------------------------------
-DECLARE_DLL_SPEC should be #defined to the keyword specifiying
+DECLARE_DLL_SPEC should be #defined to a keyword specifiying
 dll export or import action for the current declaration!
 ----------------------------------------------------------------*/
 
@@ -11,65 +11,7 @@ dll export or import action for the current declaration!
 #  define CLASS_DLL_ACTION
 #endif
 
-/*
-----------------------------------------------------------------
-"Registering" a class means adding a nested descriptor class to
-it and static and non-static functions to obtain a unique
-instantiation of it. A descriptor is statically allocated for
-each class so it doesn't take up memory in each instance. The
-uniqueness of the descriptor instance allows checking for class
-type to be implemented by comparing the class factory pointer.
-----------------------------------------------------------------*/
 
-#define __DECLARE( Interface, Name, Super ) \
-public: \
-\
-class CLASS_DLL_ACTION ClassDesc : public Interface <Name > { public: \
-  \
-  typedef Name ThisClass; \
-  typedef Super SuperClass; \
-  \
-  ClassDesc (const char *cname, ClassID cid) { \
-    this->name = cname; \
-    this->id = cid; \
-    this->size = sizeof (Name);
-    
-    #define DECLARE_CREATOR( func ) \
-    creator = new Creator <ThisClass> (&ThisClass::func);
-    
-    #define DECLARE_PROPERTY( Type, pname ) \
-    properties.pushBack (new TypeProperty <Type, ThisClass> (&ThisClass::pname, #pname));
-    
-    #define DECLARE_END \
-    IClass::Classify (this); \
-  } \
-  ClassPtr getSuper () { \
-    return SuperClass::GetClassPtr(); \
-  } \
-}; \
-\
-static ClassDesc classDesc; \
-\
-static ClassPtr GetClassPtr() { \
-  return &classDesc; \
-} \
-virtual ClassPtr GetInstanceClassPtr() { \
-  return &classDesc; \
-} \
-private:
-
-
-#define DECLARE_CLASS( Name ) __DECLARE( IReal, Name, Name )
-#define DECLARE_SUBCLASS( Name, Super ) __DECLARE( IReal, Name, Super )
-
-#define DECLARE_ABSTRACT( Name ) __DECLARE( IAbstract, Name, Name )
-#define DECLARE_SUBABSTRACT( Name, Super ) __DECLARE( IAbstract, Name, Super )
-
-#define DECLARE_SERIAL_CLASS( Name ) __DECLARE( ISerial, Name, Name )
-#define DECLARE_SERIAL_SUBCLASS( Name ) __DECLARE( ISerial, Name, Name )
-
-#define DEFINE_CLASS( Name ) Name::ClassDesc Name::classDesc (#Name, ClassID())
-#define DEFINE_SERIAL_CLASS( Name, ID ) Name::ClassDesc Name::classDesc (#Name, ID);
 
 /*
 -------------------------------------------------------------
@@ -83,11 +25,6 @@ The rest can only be #included once.
 
 namespace GE
 {
-
-  class IClass;
-  class Property;
-  class SerializeManager;
-
   /*
   -----------------------------------------------
   ClassID is a UUID
@@ -127,27 +64,21 @@ namespace GE
       return false;
     }
   };
+
   /*
-  inline bool operator == (const ClassID &c, int zero)
-    { return (c.d1==0 && c.d2==0 && c.d3==0 && c.d4==0); }
-  
-  inline bool operator != (const ClassID &c, int zero)
-    { return ! (operator == (c, 0)); }
-  
-  inline bool operator < (const ClassID &c1, const ClassID &c2)
+  ------------------------------------------------------
+  Forward declarations and such
+  ------------------------------------------------------*/
+
+  enum ClassEvent
   {
-    if (c1.d1 < c2.d1) return true;
-    if (c1.d1 > c2.d1) return false;
-    
-    if (c1.d2 < c2.d2) return true;
-    if (c1.d2 > c2.d2) return false;
-    
-    if (c1.d3 < c2.d3) return true;
-    if (c1.d3 > c2.d3) return false;
-    
-    if (c1.d4 < c2.d4) return true;
-    return false;
-  } */
+    CLSEVT_CREATE,
+    CLSEVT_SERIALIZE
+  };
+  
+  class IClass;
+  class Property;
+  class SerializeManager;
   
   typedef IClass* ClassPtr;
   typedef OCC::ArrayList <Property*> PTable;
@@ -177,83 +108,126 @@ namespace GE
   };
   
   /*
-  ----------------------------------------------------------
-  A simple helper class to store member function pointer to
-  the create callback of the class in the template argument
-  ----------------------------------------------------------*/
-  
-  class ICreator { public:
-    virtual void create (void *obj, void *data, int size) = 0;
-  };
-  
-  template <class C> class Creator : public ICreator { public:
-    
-    typedef void (C::*CreateFunc) (void *data, int size);
-    CreateFunc createCallback;
-    
-    Creator (CreateFunc f)
-      { createCallback = f; }
-    
-    void create (void *obj, void *data, int size)
-      { (((C*)obj)->*createCallback) (data, size); }
-  };
-  
-  /*
   --------------------------------------------------------------
-  Base class descriptor interface to be able to use the generic
-  pointer to point to any class descriptor
+  Base class descriptor interface
   --------------------------------------------------------------*/
   
   class GE_API_ENTRY IClass
   {
   private:
+
     static CTable* classes;
     static ITable* classesByID;
-  public:
-    static ClassPtr FromString (const char *name);
-    static ClassPtr FromID (ClassID id);
     
   protected:
+
     ClassID id;
-    UintP size;
     OCC::CharString name;
     PTable properties;
-    ICreator *creator;
-    
     static void Classify (ClassPtr cls);
     
   public:
-    IClass ();
-    const ClassID& getID ();
-    const char* getString ();
-    UintP getSize();
-    PTable *getProperties ();
-    virtual ClassPtr getSuper() = 0;
     
+    IClass ();
+
+    //Base layer
+    const ClassID&  getID ();
+    const char *    getString ();
+    PTable *        getProperties ();
+    
+    //Layer-2 (IClass2)
+    virtual UintP     getSize() = 0;
+    virtual ClassPtr  getSuper() = 0;
+    virtual void      invokeCallback (ClassEvent e, void *obj, void *param) = 0;
+    
+    //Layer-3 (IAbstract, IReal, ISerial)
     virtual void* newInstance () = 0;
     virtual void* newInPlace (void *pwhere) = 0;
     virtual void* newDeserialized (void *pmem, SerializeManager *sm) = 0;
     
+    //Utilities
+    static ClassPtr FromString (const char *name);
+    static ClassPtr FromID (ClassID id);
+    static void* Safecast (ClassPtr to, ClassPtr from, void *instance);
     static void SaveText (const ObjectPtr &ptr, OCC::ByteString &buf);
     static void SaveBinary (const ObjectPtr &ptr, OCC::ByteString &buf);
     static int LoadText (const ObjectPtr &ptr, const OCC::ByteString &buf, int index);
     static int LoadBinary (const ObjectPtr &ptr, const OCC::ByteString &buf, int index);
     static void Create (const ObjectPtr &ptr, void *buf, int size);
   };
+
+  /*
+  ---------------------------------------------------------------
+  A templated class descriptor layer that implements functions
+  requiring the class to be known, such as getting the size
+  or the parent class as well as performs the delegation role.
+  ---------------------------------------------------------------*/
+
+  template <class Name, class Super > class IClass2 : public IClass
+  {
+  public://Miscellaneous
+
+    UintP getSize()
+      { return sizeof (Name); }
+    
+    ClassPtr getSuper()
+      { return Super::GetClassPtr(); }
+
+  public://Callback datatypes
+    
+    typedef void (Name::*ClassEventFunc) (void *param);
+    
+  private:
+    
+    struct CallbackInfo
+    {
+      ClassEvent     evnt;
+      ClassEventFunc func;
+    };
+
+    OCC::ArrayList <CallbackInfo> funcs;
+    
+  public://Callback management
+
+    void registerCallback (ClassEvent e, ClassEventFunc func)
+    {
+      CallbackInfo ccinfo = {e, func};
+      funcs.pushBack (ccinfo);
+    }
+
+    void invokeCallback (ClassEvent e, void *obj, void *param)
+    {
+      Name *nobj = (Name*) obj;
+      for (int f=0; f<funcs.size(); ++f) {
+        if (funcs[f].evnt = e) {
+          (nobj->*funcs[f].func) (param);
+          break;
+        }}
+    }
+  };
   
   /*
-  -------------------------------------------------------------------
-  Templated glue-class to be able to allow instantiation of concrete
-  class types but avoid compile errors for abstract classes.
-  -------------------------------------------------------------------*/
+  --------------------------------------------------------------------
+  A templated ClassDesc layer that implements instantiation functions
+  according to whether the class can be instantiated at all and
+  whether it can be serialized or not.
+  --------------------------------------------------------------------*/
   
-  template <class Name > class IAbstract : public IClass { public:
-    void* newInstance () { return NULL; }
-    void* newInPlace (void *pmem) { return NULL; }
-    void* newDeserialized (void *pmem, SerializeManager *sm) { return NULL; }
+  template <class Name, class Super > class IAbstract
+    : public IClass2 <Name, Super > { public:
+  
+    void* newInstance ()
+      { return NULL; }
+
+    void* newInPlace (void *pmem)
+      { return NULL; }
+
+    void* newDeserialized (void *pmem, SerializeManager *sm)
+      { return NULL; }
   };
 
-  template <class Name > class IReal : public IClass { public:
+  template <class Name, class Super > class IReal
+    : public IClass2 <Name, Super> { public:
     
     void* newInstance ()
       { return (void*) new Name; }
@@ -265,7 +239,8 @@ namespace GE
       { return NULL; }
   };
   
-  template <class Name > class ISerial : public IClass { public:
+  template <class Name, class Super > class ISerial
+    : public IClass2 <Name, Super > { public:
 
     void* newInstance ()
       { return (void*) new Name; }
@@ -277,49 +252,117 @@ namespace GE
       { return (void*) new (pwhere) Name (sm); }
   };
   
+}//namespace GE
+#endif //__GECLASS_H
+
+
+/*
+----------------------------------------------------------------
+The final layer of the class descriptor implementation, which
+is to be tailored appropriately by the user, via the defined
+macros.
+
+"Registering" a class means adding a nested descriptor class to
+it and static and non-static functions to obtain a unique
+instantiation of it. A descriptor is statically allocated for
+each class so it doesn't take up memory in each instance. The
+uniqueness of the descriptor instance allows checking for class
+type to be implemented by comparing the class factory pointer.
+----------------------------------------------------------------*/
+
+#define __DECLARE( Interface, Name, Super ) \
+public: \
+\
+class CLASS_DLL_ACTION ClassDesc : public Interface <Name, Super > { public: \
+  \
+  typedef Name ThisClass; \
+  typedef Super SuperClass; \
+  \
+  ClassDesc (const char *cname, ClassID cid) { \
+    this->name = cname; \
+    this->id = cid;
+    
+    #define DECLARE_CALLBACK( evnt, func ) \
+    registerCallback (evnt, &ThisClass::func);
+    
+    #define DECLARE_PROPERTY( Type, pname ) \
+    properties.pushBack (new TypeProperty <Type, ThisClass> (&ThisClass::pname, #pname));
+    
+    #define DECLARE_END \
+    IClass::Classify (this); \
+  } \
+}; \
+\
+static ClassDesc classDesc; \
+\
+static ClassPtr GetClassPtr() { \
+  return &classDesc; \
+} \
+virtual ClassPtr GetInstanceClassPtr() { \
+  return &classDesc; \
+} \
+private:
+
+
+#define DECLARE_CLASS( Name ) __DECLARE( IReal, Name, Name )
+#define DECLARE_SUBCLASS( Name, Super ) __DECLARE( IReal, Name, Super )
+
+#define DECLARE_ABSTRACT( Name ) __DECLARE( IAbstract, Name, Name )
+#define DECLARE_SUBABSTRACT( Name, Super ) __DECLARE( IAbstract, Name, Super )
+
+#define DECLARE_SERIAL_CLASS( Name ) __DECLARE( ISerial, Name, Name )
+#define DECLARE_SERIAL_SUBCLASS( Name ) __DECLARE( ISerial, Name, Name )
+
+#define DEFINE_CLASS( Name ) Name::ClassDesc Name::classDesc (#Name, ClassID())
+#define DEFINE_SERIAL_CLASS( Name, ID ) Name::ClassDesc Name::classDesc (#Name, ID)
+#define DEFINE_TEMPL_CLASS( Name ) template <> Name::ClassDesc Name::classDesc (#Name, ClassID())
+#define DEFINE_SERIAL_TEMPL_CLASS( Name, ID ) template <> Name::ClassDesc Name::classDesc (#Name, ID)
+
+
+
+#ifndef __GECLASS_H_TWO
+#define __GECLASS_H_TWO
+namespace GE
+{
   /*
   --------------------------------------------------------------
   End-user macros to beautify class management
   --------------------------------------------------------------*/
-  
+
   //ClassPtr from a given class
   #define Class( Name ) Name::GetClassPtr()
-  
+
   //ClasPtr from an object instance
   #define ClassOf( instance ) (instance)->GetInstanceClassPtr()
-  
+
   //ClassPtr from string
   #define ClassFromString( name ) IClass::FromString(name)
   #define ClassFromID( id ) IClass::FromID(id)
-  
+
   //operations on a stored IClass*
   #define SuperOf( iclass ) (iclass)->getSuper()
   #define StringOf( iclass ) (iclass)->getString()
   #define New( iclass ) iclass->newInstance()
-  
-  //safecasting an instance pointer to another type
-  GE_API_ENTRY void* Safecast (ClassPtr to, ClassPtr from, void *instance);
-  #define SafeCastName( name, instance ) \
-  (void*) Safecast (name, ClassOf(instance), instance)
-  #define SafeCast( Name, instance ) \
-  (Name*) Safecast (Class(Name), ClassOf(instance), instance)
 
-  
+  //safecasting an instance pointer to another type
+  #define SafeCastName( name, instance ) \
+  (void*) IClass::Safecast (name, ClassOf(instance), instance)
+  #define SafeCast( Name, instance ) \
+  (Name*) IClass::Safecast (Class(Name), ClassOf(instance), instance)
+
+
   /*
   --------------------------------------------------------
   Known class IDs
   --------------------------------------------------------*/
-  #define CLSID_ARRAYLIST_RES_I32    ClassID (0x66fd1aa8, 0xc068, 0x4072, 0x75e1a55d)
-//  #define CLSID_ARRAYLIST_RES_I32    ClassID (0x66fd1aa8, 0xc068, 0x4072, 0x8699a02e75e1a55d)
-  #define CLSID_ARRAYLIST_RES_SPMV   ClassID (0x515566aa, 0x2d91, 0x484f, 0xbff8163332271bbc)
-  #define CLSID_ARRAYLIST_RES_SPMF   ClassID (0xeb0aeac2, 0xa1d0, 0x42cc, 0x883687e9ca802c0f)
+
+  #define CLSID_GENARRAYLIST         ClassID (0x66fd1aa8, 0xc068, 0x4072, 0x8699a02e75e1a55d)
   #define CLSID_SKINPOLYMESH_RES     ClassID (0xb9a1c7cd, 0xcf04, 0x46b3, 0x837765467e60293b)
-
-  #define CLSID_ARRAYLIST_RES_SB     ClassID (0xd33ab9dd, 0x4431, 0x4c2b, 0xaf271711f5e30ad5)
-  #define CLSID_SKELETON_RES         ClassID (0x4b2c0c9a, 0xa47f, 0x4675, 0x88e0bf3aa5955a16)
-
-  #define CLSID_MAXCHARACTER_RES     ClassID (0xc0db7169, 0x65dd, 0x4375, 0xa4b2d9a505703db8)
+  #define CLSID_SKELETON             ClassID (0x4b2c0c9a, 0xa47f, 0x4675, 0x88e0bf3aa5955a16)
+  #define CLSID_SKELANIM             ClassID (0xf8b465a8, 0x8729, 0x4406, 0x973c8a80f8950480)
+  #define CLSID_SKELTRACK            ClassID (0x8ff2d758, 0xa624, 0x445a, 0x87197d3e14bb22c5)
+  #define CLSID_MAXCHARACTER         ClassID (0xc0db7169, 0x65dd, 0x4375, 0xa4b2d9a505703db8)
 
 
 }//namespace GE
-#endif //__GECLASS_H
+#endif//__GECLASS_H_TWO

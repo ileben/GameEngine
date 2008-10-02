@@ -4,36 +4,29 @@
 namespace GE
 {
   /*
-  -----------------------------------------------------------
-  These functions are to be called from within getPointers ()
-  function of a resource. They mark pointers to other
-  resources within the current one to recurse into, or a
-  dynamically allocated block of data to be copied in.
+  ----------------------------------------------------------
+  These functions are to be called from within the
+  CLSEVT_SERIALIZE callback function of a resource.
+  They mark pointers to other resources within the current
+  one to recurse into, or a dynamically allocated block of
+  data to be copied in.
   
   The byte offset to the serialized conterpart of the
   pointers or are calculated from the serialized offset
   of the currently processed resource and the offset of the
   pointer member variable within its structure.
 
-  There are two exceptions which cannot be serialized
+  There is an exception which cannot be serialized
   directly though:
 
-  - Automatic resource member variable: even if we did
+  - Automatic resource member variable. Even if we did
     recurse into it at serialization stage, we don't have
     any control over its construction when unserializing.
     Only the default constructor will be called so the
     resource itself will have no idea whether it's been
     constructed on the heap or in-place.
 
-  - Pointer to an array of pointers: this construct is
-    common in implementations of variable-size lists.
-    If you wan't to serialize the resource pointed to by
-    the pointers in the array, instead create an
-    intermediate resource to recurse into and then create
-    a direct array of those. This intermediate resource
-    should then store the pointer to the resource you
-    originally wanted to serialize.
-  -----------------------------------------------------------*/
+  ---------------------------------------------------------*/
   
 
   void SerializeManager::resourcePtr (ClassPtr cls, void **pptr, UintP count)
@@ -43,6 +36,20 @@ namespace GE
     ri.offset = 0;
     ri.cls = cls;
     ri.ptr = *pptr;
+    ri.isptrptr = false;
+    ri.detached = false;
+    ri.ptroffset = current->offset + Util::PtrDist (current->ptr, pptr);
+    resQueue.pushBack (ri);
+  }
+
+  void SerializeManager::resourcePtrPtr (ClassPtr cls, void ***pptr, UintP count)
+  {
+    ResPtrInfo ri;
+    ri.count = count;
+    ri.offset = 0;
+    ri.cls = cls;
+    ri.ptr = *pptr;
+    ri.isptrptr = true;
     ri.detached = false;
     ri.ptroffset = current->offset + Util::PtrDist (current->ptr, pptr);
     resQueue.pushBack (ri);
@@ -93,14 +100,15 @@ namespace GE
   void SerializeManager::run (ClassPtr rootCls, void *rootPtr)
   {
     //Push root info to queue
-    ResPtrInfo ri;
-    ri.cls = rootCls;
-    ri.ptr = rootPtr;
-    ri.count = 1;
-    ri.offset = 0;    
-    ri.detached = true;
-    ri.ptroffset = 0;
-    resQueue.pushBack (ri);
+    ResPtrInfo riroot;
+    riroot.cls = rootCls;
+    riroot.ptr = rootPtr;
+    riroot.count = 1;
+    riroot.offset = 0;
+    riroot.isptrptr = false;
+    riroot.detached = true;
+    riroot.ptroffset = 0;
+    resQueue.pushBack (riroot);
     
     while (!resQueue.empty())
     {
@@ -108,34 +116,61 @@ namespace GE
       ResPtrInfo ri = resQueue.first();
       resQueue.popFront();
       current = &ri;
-      
-      //Get class info
-      ClassID clsID = ri.cls->getID();
-      UintP clsSize = ri.cls->getSize();
-      
-      //Add to list of classes
-      ClsHeader ch;
-      ch.id = clsID;
-      ch.count = ri.count;
-      ch.offset = offset;
-      clsList.pushBack (ch);
-      
-      //Set the resource offset
-      ri.offset = offset;
-      
-      //Adjust the in-data pointer to resource
-      if (!ri.detached) adjust (ri.ptroffset);
-      
-      //Copy resource data
-      copy (ri.ptr, ri.count * clsSize);
-      
-      //Get new pointer info from the class
-      for (UintP r=0; r<ri.count; ++r)
+
+      if (ri.isptrptr)
       {
-        //For each resource in the array
-        ((IResource*)ri.ptr)->getPointers (this);
-        ri.offset += clsSize;
-        Util::PtrAdd (&ri.ptr, clsSize);
+        //Adjust the in-data pointer to the resource
+        if (!ri.detached) adjust (ri.ptroffset);
+        
+        //Walk the array of pointers to resources
+        void **pptr = (void**)ri.ptr;
+        for (UintP p=0; p<ri.count; ++p)
+        {
+          //Enqueue each pointer to resource
+          ResPtrInfo rinew;
+          rinew.cls = ri.cls;
+          rinew.ptr = pptr[p];
+          rinew.count = 1;
+          rinew.offset = 0;
+          rinew.isptrptr = false;
+          rinew.detached = false;
+          rinew.ptroffset = offset;
+          resQueue.pushBack (rinew);
+          
+          //Leave space for in-data pointer
+          offset += sizeof (void*);
+        }
+      }
+      else
+      {      
+        //Get class info
+        ClassID clsID = ri.cls->getID();
+        UintP clsSize = ri.cls->getSize();
+        
+        //Add to list of classes
+        ClsHeader ch;
+        ch.id = clsID;
+        ch.count = ri.count;
+        ch.offset = offset;
+        clsList.pushBack (ch);
+        
+        //Set the resource offset
+        ri.offset = offset;
+        
+        //Adjust the in-data pointer to resource
+        if (!ri.detached) adjust (ri.ptroffset);
+        
+        //Copy resource data
+        copy (ri.ptr, ri.count * clsSize);
+        
+        //Walk the array of resources
+        for (UintP r=0; r<ri.count; ++r)
+        {
+          //Get new pointers from each resource
+          ri.cls->invokeCallback (CLSEVT_SERIALIZE, ri.ptr, this);
+          Util::PtrAdd (&ri.ptr, clsSize);
+          ri.offset += clsSize;
+        }
       }
       
       while (!dynQueue.empty())
@@ -200,9 +235,9 @@ namespace GE
     copy (clsList.buffer(), clsList.size() * sizeof (ClsHeader));
   }
   
-  IResource* SerializeManager::deserialize (void *data)
+  void* SerializeManager::deserialize (void *data)
   {
-    IResource *root = NULL;
+    void *root = NULL;
     
     //Get the number of pointers
     UintP *numPointers = (UintP*) (data);
@@ -226,7 +261,7 @@ namespace GE
     {
       //Get the pointer to the resource
       void *pres = Util::PtrOff (data, clsList[c].offset);
-      if (c == 0) root = (IResource*) pres;
+      if (c == 0) root = pres;
       
       //Construct resource (array) in-place
       ClassPtr cls = ClassFromID (clsList[c].id);

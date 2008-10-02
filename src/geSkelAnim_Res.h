@@ -5,54 +5,57 @@ namespace GE
 {
   /*
   -----------------------------------
-  Resource
+  Animation key
   -----------------------------------*/
 
-  struct SkelAnimKey
+  struct SkelKey
   {
     Float32     time;
     Quaternion  value;
   };
 
-  struct SkelAnimTrack
-  {
-    Int32         numKeys;
-    SkelAnimKey  *keys;
-  };
+  /*
+  -----------------------------------
+  Track is a set of keys
+  -----------------------------------*/
   
-  class GE_API_ENTRY SkelAnim_Res
+  class GE_API_ENTRY SkelTrack
   {
-    friend class SkelAnim_Factory;
-
-  private:
-    Float32         duration;
-    Int32           numTracks;
-    SkelAnimTrack  *tracks;
-
+    DECLARE_SERIAL_CLASS (SkelTrack);
+    DECLARE_CALLBACK (CLSEVT_SERIALIZE, serialize);
+    DECLARE_END;
+    
   public:
-    SkelAnim_Res ();
+    DynArrayList <SkelKey> *keys;
+    
+    SkelTrack (SM *sm) {}
+    SkelTrack () { keys = new DynArrayList <SkelKey>; }
+    ~SkelTrack () { delete keys; }
+    void serialize (void *sm) {
+      ((SM*)sm)->resourcePtr (Class(GenArrayList), (void**)&keys, 1); }
   };
 
   /*
   -----------------------------------
-  Factory
+  Animation is a set of tracks
   -----------------------------------*/
   
-  class GE_API_ENTRY SkelAnimTrack_Factory
+  class GE_API_ENTRY SkelAnim
   {
-  public:
-    OCC::ArrayList <SkelAnimKey*>  keys;
-  };
+    DECLARE_SERIAL_CLASS (SkelAnim);
+    DECLARE_CALLBACK (CLSEVT_SERIALIZE, serialize);
+    DECLARE_END;
 
-  class GE_API_ENTRY SkelAnim_Factory
-  {
   public:
-    Float32                                  duration;
-    OCC::ArrayList <SkelAnimTrack_Factory*>  tracks;
-
-    void create (void **outMem, UintP *outSize);
+    Float32 duration;
+    ResPtrArrayList <SkelTrack*> *tracks;
+    
+    SkelAnim (SM *sm) {}
+    SkelAnim () { tracks = new ResPtrArrayList <SkelTrack*>; }
+    ~SkelAnim () { delete tracks; }
+    void serialize (void *sm) {
+      ((SM*)sm)->resourcePtr (Class(GenArrayList), (void**)&tracks, 1); }
   };
-  
 };
 
 #endif//__GESKELANIM_H

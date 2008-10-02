@@ -7,6 +7,7 @@ using namespace OCC;
 #include <cstdlib>
 #include <cstdio>
 
+void applyFK (int frame);
 
 class SPolyMesh : public DMesh
 {
@@ -68,7 +69,7 @@ enum CameraMode
 };
 
 ByteString data;
-MaxCharacter_Res *character;
+MaxCharacter *character;
 
 SPolyActor *actor;
 FpsLabel lblFps;
@@ -79,6 +80,7 @@ Renderer renderer;
 bool down3D;
 Vector2 lastMouse3D;
 int boneColorIndex = 0;
+int frame = 0;
 
 int resY = 512;
 int resX = 512;
@@ -181,13 +183,15 @@ void keyboard (unsigned char key, int x, int y)
   switch (key)
   {
   case '+':
-    boneColorIndex++;
-    printf ("BoneIndex: %d\n", boneColorIndex);
+    //boneColorIndex++;
+    //printf ("BoneIndex: %d\n", boneColorIndex);
+    if (frame < 61) applyFK (++frame);
     break;
   case '-':
-    if (boneColorIndex > 0)
-      boneColorIndex--;
-    printf ("BoneIndex: %d\n", boneColorIndex);
+    //if (boneColorIndex > 0)
+    //  boneColorIndex--;
+    //printf ("BoneIndex: %d\n", boneColorIndex);
+    if (frame > 0) applyFK (--frame);
     break;
   case 27:
     //Quit on escape
@@ -364,7 +368,7 @@ DMesh* loadPackage (String fileName)
   file->close();
   
   SerializeManager sm;
-  character = (MaxCharacter_Res*) sm.deserialize ((void*)data.buffer());  
+  character = (MaxCharacter*) sm.deserialize ((void*)data.buffer());  
   SkinPolyMesh_Res *inMesh = character->mesh;
   
   /*
@@ -418,16 +422,21 @@ DMesh* loadPackage (String fileName)
   return polyMesh;
 }
 
-void applyFK ()
+void applyFK (int frame)
 {
-  Skeleton_Res *skel = character->skeleton;
+  Skeleton *skel = character->skeleton;
+  SkelAnim *anim = character->animation;
   ArrayList <Matrix4x4> fkMats;
   ArrayList <Matrix4x4> skinMats;
   int cindex = 1;
+
+  int numTracks = anim->tracks->size();
+  int numKeys = anim->tracks->first()->keys->size();
   
   //Root FK matrix = local matrix
   Matrix4x4 rootWorld;
-  rootWorld.fromQuaternion (skel->bones->first().localRot);
+  //rootWorld.fromQuaternion (skel->bones->first().localRot);
+  rootWorld.fromQuaternion (anim->tracks->first()->keys->at(frame).value);
   rootWorld.setColumn (3, skel->bones->first().localTra);
   fkMats.pushBack (rootWorld);
   
@@ -435,17 +444,20 @@ void applyFK ()
   for (int b=0; b<skel->bones->size(); ++b)
   {
     //Final skin matrix = FK matrix * world matrix inverse
-    SkeletonBone *parent = &skel->bones->at(b);
+    SkelBone *parent = &skel->bones->at(b);
     skinMats.pushBack (fkMats[b] * parent->worldInv);
     
     //Walk the children
     for (Uint32 c=0; c<parent->numChildren; ++c)
     {
       //Child FK matrix = parent FK matrix * local matrix
-      SkeletonBone *child = &skel->bones->at (cindex++);
+      SkelBone *child = &skel->bones->at (cindex);
+      SkelTrack *track = anim->tracks->at (cindex);
+      cindex++;
       
       Matrix4x4 childLocal;
-      childLocal.fromQuaternion (child->localRot);
+      //childLocal.fromQuaternion (child->localRot);
+      childLocal.fromQuaternion (track->keys->at(frame).value);
       childLocal.setColumn (3, child->localTra);
       fkMats.pushBack (fkMats[b] * childLocal);
     }
@@ -466,8 +478,56 @@ void applyFK ()
   }
 }
 
+class DD
+{
+  DECLARE_SERIAL_CLASS (DD);
+  DECLARE_CALLBACK (CLSEVT_SERIALIZE, serialize);
+  DECLARE_END;
+public:
+  int d;
+  DD () {}
+  DD (SM *sm) {}
+  void serialize (void *sm)
+  {
+    int poke = 1;
+  }
+};
+
+DEFINE_CLASS (DD);
+
+class CC
+{
+  DECLARE_SERIAL_CLASS (CC);
+  DECLARE_CALLBACK (CLSEVT_SERIALIZE, serialize);
+  DECLARE_END;
+public:
+  ResPtrArrayList<DD*> *list;
+  CC () {list = new ResPtrArrayList<DD*>;}
+  CC (SM *sm) {}
+  void serialize (void *sm)
+  {
+    ((SM*)sm)->resourcePtr (Class(GenArrayList), (void**)&list, 1);
+  }
+};
+
+DEFINE_CLASS (CC);
+
+
 int main (int argc, char **argv)
 {
+  CC cc;
+  for (int d=0; d<5; ++d) {
+    cc.list->pushBack (new DD);
+    cc.list->last()->d = d;
+  }
+
+  SM sm;
+  void *data;
+  UintP size;
+  sm.serialize (&cc, &data, &size);
+
+  //CC *ccc = (CC*) sm.deserialize (data);
+
   //Initialize GLUT
   initGlut(argc, argv);
   
@@ -494,16 +554,15 @@ int main (int argc, char **argv)
   
   actor = new SPolyActor;
   actor->setMaterial (&mat);
-  actor->setDynamic (loadPackage ("bub.pak"));
-  applyFK ();
+  actor->setDynamic (loadPackage ("bub3.pak"));
+  applyFK (1);
   
-  Quaternion qrot;
-  qrot.fromAxisAngle (0,0,1, Util::DegToRad (30));
-
-  character->skeleton->bones->at(16).localRot = 
-    qrot * character->skeleton->bones->at(16).localRot;
+  //Quaternion qrot;
+  //qrot.fromAxisAngle (0,0,1, Util::DegToRad (30));
+  //character->skeleton->bones->at(16).localRot = 
+  //  qrot * character->skeleton->bones->at(16).localRot;
   
-  applyFK ();
+  //applyFK ();
   
   lblFps.setLocation (Vector2 (0.0f,(Float)resY));
   lblFps.setColor (Vector3 (1.0f,1.0f,1.0f));

@@ -14,7 +14,7 @@ public:
   DECLARE_SUBCLASS (Testy, Object);
   DECLARE_PROPERTY (int, a);
   DECLARE_PROPERTY (int, b);
-  DECLARE_CREATOR (createMe);
+  DECLARE_CALLBACK (CLSEVT_CREATE, createMe);
   DECLARE_END;
   
 public:
@@ -22,7 +22,7 @@ public:
   int a;
   int b;
 
-  void createMe (void *data, int size)
+  void createMe (void *param)
   {
     printf ("Creating Testy!\n");
   }

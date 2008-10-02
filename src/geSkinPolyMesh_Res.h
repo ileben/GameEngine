@@ -3,53 +3,47 @@
 
 namespace GE
 {
-  /*
-  -----------------------------------
-  Resource
-  -----------------------------------*/
-  
-  class SerializeManager;
-
-  struct GE_API_ENTRY SkinPolyMeshVertex
+  struct GE_API_ENTRY SkinPolyVertex
   {
     Vector3 point;
     Uint32  boneIndex[4];
     Float32 boneWeight[4];
   };
   
-  struct GE_API_ENTRY SkinPolyMeshFace
+  struct GE_API_ENTRY SkinPolyFace
   {
     Int32 numCorners;
     Int32 smoothGroups;
     Int32 materialId;
   };
   
-  class GE_API_ENTRY SkinPolyMesh_Res : public IResource
+  class GE_API_ENTRY SkinPolyMesh_Res
   {
     DECLARE_SERIAL_CLASS (SkinPolyMesh_Res);
+    DECLARE_CALLBACK (CLSEVT_SERIALIZE, serialize);
     DECLARE_END;
     
   public:
     
-    ArrayList_Res <SkinPolyMeshVertex>   *verts;
-    ArrayList_Res <SkinPolyMeshFace>     *faces;
-    ArrayList_Res <Int32>                *indices;
+    DynArrayList <SkinPolyVertex> *verts;
+    DynArrayList <SkinPolyFace> *faces;
+    DynArrayList <Uint32> *indices;
     
-    void getPointers (SerializeManager *sm)
+    void serialize (void *sm)
     {
-      sm->resourcePtr (&verts);
-      sm->resourcePtr (&faces);
-      sm->resourcePtr (&indices);
+      ((SM*)sm)->resourcePtr (Class(GenArrayList), (void**)&verts, 1);
+      ((SM*)sm)->resourcePtr (Class(GenArrayList), (void**)&faces, 1);
+      ((SM*)sm)->resourcePtr (Class(GenArrayList), (void**)&indices, 1);
     }
     
-    SkinPolyMesh_Res (SerializeManager *sm)
+    SkinPolyMesh_Res (SM *sm)
     {}
-
+    
     SkinPolyMesh_Res()
     {
-      verts = new ArrayList_Res <SkinPolyMeshVertex> ();
-      faces = new ArrayList_Res <SkinPolyMeshFace> ();
-      indices = new ArrayList_Res <Int32> ();
+      verts = new DynArrayList <SkinPolyVertex> ();
+      faces = new DynArrayList <SkinPolyFace> ();
+      indices = new DynArrayList <Uint32> ();
     }
     
     ~SkinPolyMesh_Res()
@@ -65,33 +59,39 @@ namespace GE
   Resource
   -----------------------------------*/
 
-  class Skeleton_Res;
+  class Skeleton;
+  class SkelAnim;
   
-  class GE_API_ENTRY MaxCharacter_Res : public IResource
+  class GE_API_ENTRY MaxCharacter
   {
-    DECLARE_SERIAL_CLASS (MaxCharacter_Res)
+    DECLARE_SERIAL_CLASS (MaxCharacter)
+    DECLARE_CALLBACK (CLSEVT_SERIALIZE, serialize);
     DECLARE_END;
 
   public:
     
     SkinPolyMesh_Res *mesh;
-    Skeleton_Res *skeleton;
-
-    void getPointers (SerializeManager *sm)
+    Skeleton *skeleton;
+    SkelAnim *animation;
+    
+    void serialize (void *sm)
     {
       if (mesh != NULL)
-        sm->resourcePtr (&mesh);
+        ((SM*)sm)->resourcePtr (&mesh);
       if (skeleton != NULL)
-        sm->resourcePtr (&skeleton);
+        ((SM*)sm)->resourcePtr (&skeleton);
+      if (animation != NULL)
+        ((SM*)sm)->resourcePtr (&animation);
     }
     
-    MaxCharacter_Res ()
+    MaxCharacter ()
     {
       mesh = NULL;
       skeleton = NULL;
+      animation = NULL;
     }
     
-    MaxCharacter_Res (SerializeManager *sm) {}
+    MaxCharacter (SM *sm) {}
   };
 
 }//namespace GE

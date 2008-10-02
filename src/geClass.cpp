@@ -8,7 +8,7 @@ namespace GE
   CTable* IClass::classes = NULL;
   ITable* IClass::classesByID = NULL;
   
-  IClass::IClass () : size(0), creator (NULL)
+  IClass::IClass ()
   {
   }
 
@@ -20,11 +20,6 @@ namespace GE
   const char* IClass::getString ()
   {
     return name.buffer();
-  }
-
-  UintP IClass::getSize ()
-  {
-    return size;
   }
   
   PTable* IClass::getProperties ()
@@ -85,7 +80,8 @@ namespace GE
     return it->second;
   }
 
-  GE_API_ENTRY void* Safecast (ClassPtr to, ClassPtr from, void *instance)
+  void*
+  IClass::Safecast (ClassPtr to, ClassPtr from, void *instance)
   {
     ClassPtr super = from;
     
@@ -198,8 +194,7 @@ namespace GE
   void
   IClass::Create (const ObjectPtr &ptr, void *data, int size)
   {
-    if (ptr.cls->creator)
-      ptr.cls->creator->create (ptr.obj, data, size);
+    ptr.cls->invokeCallback (CLSEVT_CREATE, ptr.obj, data);
   }
   
 }//namespace GE

@@ -4,12 +4,6 @@
 namespace GE
 {
 
-  class SerializeManager;
-  
-  class GE_API_ENTRY IResource { public:
-    virtual void getPointers (SerializeManager *sm) = 0;
-  };
-  
   class GE_API_ENTRY SerializeManager
   {
   private:
@@ -20,7 +14,8 @@ namespace GE
       void       *ptr;        //pointer to the resource
       UintP       count;      //number of resources in the array
       UintP       offset;     //offset to the serialized resource
-      bool        detached;   //if true there is no pointer to this resource
+      bool        isptrptr;   //if true its a pointer to an array of pointers
+      bool        detached;   //if true the pointer is not to be adjusted (e.g. root)
       UintP       ptroffset;  //offset to the serialized pointer to this resource
     };
     
@@ -59,20 +54,26 @@ namespace GE
   public:
     
     void serialize (ClassPtr cls, void *root, void **outData, UintP *outSize);
-    void resourcePtr (ClassPtr cls, void **pptr, UintP count);    
+    void resourcePtr (ClassPtr cls, void **pptr, UintP count);
+    void resourcePtrPtr (ClassPtr cls, void ***pptr, UintP count);
     void dynamicPtr (void **pptr, UintP size);
     
-    template <class R> void serialize (R *root, void **outData, UintP *outSize)
-      { serialize (ClassOf(root), root, outData, outSize); }
+    template <class TR> void serialize (TR *root, void **outData, UintP *outSize)
+      { serialize (Class(TR), root, outData, outSize); }
     
-    template <class R> void resourcePtr (R **pptr, UintP count=1)
-      { resourcePtr (ClassOf(*pptr), (void**)pptr, count); }
+    template <class TR> void resourcePtr (TR **pptr, UintP count=1)
+      { resourcePtr (Class(TR), (void**)pptr, count); }
     
-    template <class D> void dynamicPtr (D **pptr, UintP size)
+    template <class TR> void resourcePtrPtr (TR ***pptr, UintP count=1)
+      { resourcePtrPtr (Class(TR), (void***)pptr, count); }
+    
+    template <class TD> void dynamicPtr (TD **pptr, UintP size)
       { dynamicPtr ((void**)pptr, size); }
     
-    IResource* deserialize (void *data);
+    void* deserialize (void *data);
   };
+
+  typedef SerializeManager SM;
 
 }//namespace GE
 #endif//__GESERIALIZE_H

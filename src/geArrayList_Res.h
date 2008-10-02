@@ -3,32 +3,32 @@
 
 namespace GE
 {
-  
-	template <class T>
-  class ArrayList_Res : public IResource
+	template <class T> class DynArrayList
 	{
-    DECLARE_SERIAL_CLASS (ArrayList_Res);
-    DECLARE_END;
-    
   public:
     
-    virtual Uint32 getID () { return 1; }
-    virtual UintP getSize () { return sizeof (ArrayList_Res); }
-    virtual void getPointers (SerializeManager *sm)
+    virtual void serialize (void *sm)
     {
       if (_size != 0)
-      {
-        //if (resourceElements)
-          //sm->resourcePtr (&elements, size());
-        //else
-          sm->dynamicPtr (&elements, size() * sizeof (T));
-      }
+        ((SM*)sm)->dynamicPtr (&elements, size() * sizeof (T));
+    }
+    
+    DynArrayList (SerializeManager *sm)
+    {
+      _begin.element = elements;
+      _end.element = elements;
     }
     
   public:
+
+    /*
+    ------------------------------
+    Bi-directional iterator
+    ------------------------------*/
+
     class Iterator
     {
-      friend class ArrayList_Res;
+      friend class DynArrayList;
       T *element;
 
       Iterator(T* e) {
@@ -113,12 +113,13 @@ namespace GE
     Iterator _begin;
     Iterator _end;
 
-    /*-----------------------------------------
-     * Enlarges the array capacity at element
-     * insertion by the factor of 2. This
-     * yields an ammortized complexity of O(1)
-     * for element insertion.
-     *-----------------------------------------*/
+    /*
+    -----------------------------------------
+    Enlarges the array capacity at element
+    insertion by the factor of 2. This
+    yields an ammortized complexity of O(1)
+    for element insertion.
+    -----------------------------------------*/
     
 		void allocMore()
 		{
@@ -142,18 +143,13 @@ namespace GE
     T& last() const {return elements[_size-1];}
     bool empty() const {return _size == 0;}
     
-    /*--------------------------------------
-     * Default constructor. Initializes the
-     * array with storage for 1 element
-     *--------------------------------------*/
-
-    ArrayList_Res (SerializeManager *sm)
-    {
-      _begin.element = elements;
-      _end.element = elements;
-    }
+    /*
+    --------------------------------------
+    Default constructor. Initializes the
+    array with storage for 1 element
+    --------------------------------------*/
     
-		ArrayList_Res()
+		DynArrayList()
 		{
 			_size = 0;
 			max_size = 1;
@@ -162,12 +158,13 @@ namespace GE
       _end.element = elements;
 		}
 
-    /*-----------------------------------
-     * Constructor to initialize the
-     * array with given capacity.
-     *-----------------------------------*/
+    /*
+    -----------------------------------
+    Constructor to initialize the
+    array with given capacity.
+    -----------------------------------*/
 		
-		ArrayList_Res(int newCapacity)
+		DynArrayList(int newCapacity)
 		{
 			_size = 0;
 			max_size = newCapacity;
@@ -176,11 +173,12 @@ namespace GE
       _end.element = elements;
 		}
 
-    /*-------------------------------------
-     * Destructor deletes all the elements
-     *-------------------------------------*/
+    /*
+    -------------------------------------
+    Destructor deletes all the elements
+    -------------------------------------*/
 		
-		virtual ~ArrayList_Res()
+		virtual ~DynArrayList()
 		{
 			clear();		
 			delete[] elements;
@@ -202,11 +200,12 @@ namespace GE
       _end.element = elements + _size;
     }
 
-    /*---------------------------------------------
-     * Assures that the capacity of the array
-     * is at least [n]. All the elements become
-     * invalid and size of the array is reset to 0.
-     *---------------------------------------------*/
+    /*
+    ---------------------------------------------
+    Assures that the capacity of the array
+    is at least [n]. All the elements become
+    invalid and size of the array is reset to 0.
+    ---------------------------------------------*/
 
     void reserve(int n)
     {
@@ -222,12 +221,13 @@ namespace GE
       _end.element = elements;
     }
 
-    /*------------------------------------------
-     * Assures that the capacity of the array
-     * is at least [n]. In case of reallocation
-     * the existing elements are copied and size
-     * is always preserved.
-     *------------------------------------------*/
+    /*
+    ------------------------------------------
+    Assures that the capacity of the array
+    is at least [n]. In case of reallocation
+    the existing elements are copied and size
+    is always preserved.
+    ------------------------------------------*/
 
     void reserveAndCopy(int n)
     {
@@ -245,10 +245,11 @@ namespace GE
       _end.element = elements + _size;
     }
 
-    /*-------------------------------------------
-     * Getter functions to return information
-     * about the current array state.
-     *-------------------------------------------*/
+    /*
+    -------------------------------------------
+    Getter functions to return information
+    about the current array state.
+    -------------------------------------------*/
 
     int capacity() const
     {
@@ -265,10 +266,11 @@ namespace GE
 			return elements;
 		}
 
-    /*---------------------------------------
-     * Invalidates all the items and resets
-     * array size to 0.
-     *---------------------------------------*/
+    /*
+    ---------------------------------------
+    Invalidates all the items and resets
+    array size to 0.
+    ---------------------------------------*/
 		
 		void clear()
 		{   
@@ -367,11 +369,55 @@ namespace GE
 			return -1;
 		}
     
-    int indexOf(const Iterator &it) const
+    UintP indexOf(const Iterator &it) const
     {
-      return it.element - elements;
+      return (UintP) (it.element - elements);
     }
 	};
+  
+	template <class T>
+  class ResArrayList : public DynArrayList <T>
+	{
+  public:
+    
+    ResArrayList ()
+      : DynArrayList <T> () {}
+    
+    ResArrayList (SM *sm)
+      : DynArrayList <T> (sm) {}
+    
+    virtual void serialize (void *sm) {
+      if (_size != 0) ((SM*)sm)->resourcePtr (&elements, size());
+    }
+  };
+  
+	template <class T>
+  class ResPtrArrayList : public DynArrayList <T>
+	{
+  public:
+    
+    ResPtrArrayList ()
+      : DynArrayList <T> () {}
+
+    ResPtrArrayList (SM *sm)
+      : DynArrayList <T> (sm) {}
+    
+    virtual void serialize (void *sm) {
+      if (_size != 0) ((SM*)sm)->resourcePtrPtr (&elements, size());
+    }
+  };
+
+  //Generic serializable ArraysList
+  class GE_API_ENTRY GenArrayList : public DynArrayList <void*>
+  {
+    DECLARE_SERIAL_CLASS (GenArrayList);
+    DECLARE_CALLBACK (CLSEVT_SERIALIZE, serialize);
+    DECLARE_END;
+
+  public:
+    GenArrayList () : DynArrayList<void*> () {}
+    GenArrayList (SM *sm) : DynArrayList<void*> (sm) {}
+  };
 
 }//namespace GE
 #endif //__GEARRAYLIST_RES_H
