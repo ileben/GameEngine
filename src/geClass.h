@@ -371,12 +371,12 @@ namespace GE
   Known class IDs
   --------------------------------------------------------*/
 
-  #define CLSID_GENARRAYLIST         ClassID (0x66fd1aa8, 0xc068, 0x4072, 0x8699a02e75e1a55d)
-  #define CLSID_SKINMESH             ClassID (0xb9a1c7cd, 0xcf04, 0x46b3, 0x837765467e60293b)
-  #define CLSID_SKINPOSE             ClassID (0x4b2c0c9a, 0xa47f, 0x4675, 0x88e0bf3aa5955a16)
-  #define CLSID_SKINANIM             ClassID (0xf8b465a8, 0x8729, 0x4406, 0x973c8a80f8950480)
-  #define CLSID_SKINTRACK            ClassID (0x8ff2d758, 0xa624, 0x445a, 0x87197d3e14bb22c5)
-  #define CLSID_MAXCHARACTER         ClassID (0xc0db7169, 0x65dd, 0x4375, 0xa4b2d9a505703db8)
+  #define CLSID_GENARRAYLIST         ClassID (0x66fd1aa8u, 0xc068, 0x4072, 0x8699a02e75e1a55dull)
+  #define CLSID_SKINMESH             ClassID (0xb9a1c7cdu, 0xcf04, 0x46b3, 0x837765467e60293bull)
+  #define CLSID_SKINPOSE             ClassID (0x4b2c0c9au, 0xa47f, 0x4675, 0x88e0bf3aa5955a16ull)
+  #define CLSID_SKINANIM             ClassID (0xf8b465a8u, 0x8729, 0x4406, 0x973c8a80f8950480ull)
+  #define CLSID_SKINTRACK            ClassID (0x8ff2d758u, 0xa624, 0x445a, 0x87197d3e14bb22c5ull)
+  #define CLSID_MAXCHARACTER         ClassID (0xc0db7169u, 0x65dd, 0x4375, 0xa4b2d9a505703db8ull)
 
 
 }//namespace GE

@@ -113,45 +113,45 @@ namespace GE
     array with storage for 1 element
     --------------------------------------*/
     
-		GenArrayList (UintP eltSize, ClassPtr eltCls)
-		{
+    GenArrayList (UintP eltSize, ClassPtr eltCls)
+    {
       this->eltSize = (Uint32) eltSize;
       this->eltClsID = (eltCls ? eltCls->getID () : ClassID(0));
       this->eltCls = eltCls;
       
-			sz = 0;
-			cap = 1;
+      sz = 0;
+      cap = 1;
       elements = (Uint8*) std::malloc (cap * eltSize);
-		}
+    }
 
     /*
     -----------------------------------
     Constructor to initialize the
     array with given capacity.
     -----------------------------------*/
-		
-		GenArrayList (UintP eltSize, ClassPtr eltCls, UintP newCap)
-		{
+    
+    GenArrayList (UintP eltSize, ClassPtr eltCls, UintP newCap)
+    {
       this->eltSize = (Uint32) eltSize;
       this->eltClsID = (eltCls ? eltCls->getID () : ClassID(0));
       this->eltCls = eltCls;
       
-			sz = 0;
-			cap = (Uint32) newCap;
+      sz = 0;
+      cap = (Uint32) newCap;
       elements = (Uint8*) std::malloc (cap * eltSize);
-		}
-
+    }
+      
     /*
     -------------------------------------
     Dtor
     -------------------------------------*/
 		
-		virtual ~GenArrayList()
+    virtual ~GenArrayList()
     {
       destruct (elements, sz);
       std::free (elements);
-		}
-
+    }
+      
     /*
     ---------------------------------------------
     Assures that the capacity of the array
@@ -200,30 +200,30 @@ namespace GE
     Invalidates all the items and resets
     array size to 0.
     ---------------------------------------*/
-		
-		void clear()
-		{
+    
+    void clear()
+    {
       destruct (elements, sz);
-			sz = 0;
-		}
-
+      sz = 0;
+    }
+    
     /*
     ------------------------------------------------------
     Enlarges the array capacity at element insertion by
     the factor of 2. This yields an ammortized complexity
     of O(1) for element insertion.
     ------------------------------------------------------*/
-		
-		void insertAt (UintP index, const void *newElt)
-		{
+    
+    void insertAt (UintP index, const void *newElt)
+    {
       void *copyElt = (void*) newElt;      
       bool cloned = false;
-
+      
       //Clamp insertion point to size
-			if (index > sz) index = sz;
+      if (index > sz) index = sz;
       
       //Will any moving take place?
-			if (sz == cap || index < sz)
+      if (sz == cap || index < sz)
       {
         //It might be a reference to our own element
         //so better clone it before reallocation
@@ -241,70 +241,70 @@ namespace GE
       
       //Shift forward the elements above the index
       if (index < sz)
-			  for (UintP i=sz-1; i>=index; i--)
+        for (UintP i=sz-1; i>=index; i--)
           copy (elements + (i+1)*eltSize, elements + i*eltSize, 1);
-			
+      
       //Copy the new element at [index]
       copy (elements + index*eltSize, copyElt, 1);
-			sz++;
+      sz++;
       
       //Delete the clone
       if (cloned) {
         destruct (copyElt, 1);
         std::free (copyElt);
       }
-		}
+    }
     
-		void removeAt (UintP index)
-		{
+    void removeAt (UintP index)
+    {
       //Prevent invalid removal
       if (index >= sz) return;
-
+      
       //Shift backwards the elements above the index
-			for (UintP i=index; i<sz-1; i++)
+      for (UintP i=index; i<sz-1; i++)
         copy (elements + i*eltSize, elements + (i+1)*eltSize, 1);
       
       //Destruct the last element
       destruct (elements + sz*eltSize, 1);
-			sz--;
-		}
-
-		void setAt (UintP index, const void *newElt)
-		{
-      copy (elements + index, newElt, 1);
-		}
+      sz--;
+    }
     
-		void pushBack (const void *newElt)
-		{
+    void setAt (UintP index, const void *newElt)
+    {
+      copy (elements + index, newElt, 1);
+    }
+    
+    void pushBack (const void *newElt)
+    {
       insertAt (sz, newElt);
-		}
+    }
     
     void popBack ()
     {
       removeAt (sz-1);
     }
-
+    
     int capacity() const
     {
       return cap;
     }
     
-		int size() const
-		{
-			return sz;
-		}
-
+    int size() const
+    {
+      return sz;
+    }
+    
     bool empty() const
     {
       return sz == 0;
     }
-		
-		void* buffer() const
-		{
-			return elements;
-		}
-	};
-
+    
+    void* buffer() const
+    {
+      return elements;
+    }
+  };
+  
   /*
   -----------------------------------------------------
   A serializable array list with non-class elements
@@ -316,30 +316,30 @@ namespace GE
     
     DynArrayList ()
       : GenArrayList (sizeof(T), NULL)
-    {}
+      {}
     
     DynArrayList (int newCap)
       : GenArrayList (sizeof(T), NULL, newCap)
-    {}
-
+      {}
+    
     
     DynArrayList (UintP eltSize, ClassPtr eltCls)
       : GenArrayList (eltSize, eltCls)
-    {}
+      {}
     
     DynArrayList (UintP eltSize, ClassPtr eltCls, UintP newCap)
       : GenArrayList (eltSize, eltCls, newCap)
-    {}
+      {}
     
-		void pushBack (const T &newElt)
-		{
+    void pushBack (const T &newElt)
+    {
       GenArrayList::pushBack (&newElt);
-		}
-
-		void setAt (int index, const T &newElt)
-		{
+    }
+    
+    void setAt (int index, const T &newElt)
+    {
       GenArrayList::setAt (index, &newElt);
-		}
+    }
     
     T& first() const
     {
@@ -351,65 +351,65 @@ namespace GE
       return ((T*)elements) [sz-1];
     }
     
-		T& elementAt (int index) const
-		{
-			return ((T*)elements) [index];
-		}
-
+    T& elementAt (int index) const
+    {
+      return ((T*)elements) [index];
+    }
+    
     T& at (int index) const
     {
       return ((T*)elements) [index];
     }
-		
-		T& operator[](int index) const
-		{
-			return ((T*)elements) [index];	
+    
+    T& operator[](int index) const
+    {
+      return ((T*)elements) [index];	
     }
     
-		T* buffer() const
-		{
-			return (T*) elements;
-		}
-		
-		bool contains (const T &el) const
-		{
-			return (indexOf(el) != -1);
-		}
-		
-		int indexOf (const T &el) const
-		{
-			for (int i=0; i<sz; i++)
-				if (((T*)elements) [i] == el)
-					return i;
-      
-			return -1;
-		}
+    T* buffer() const
+    {
+      return (T*) elements;
+    }
     
-		void remove (const T &el)
-		{
-			int i = indexOf(el);
-			if (i > -1)	removeAt(i);
-		}
+    bool contains (const T &el) const
+    {
+      return (indexOf(el) != -1);
+    }
+    
+    int indexOf (const T &el) const
+    {
+      for (int i=0; i<sz; i++)
+        if (((T*)elements) [i] == el)
+          return i;
+      
+      return -1;
+    }
+    
+    void remove (const T &el)
+    {
+      int i = indexOf(el);
+      if (i > -1)	removeAt(i);
+    }
   };
-
+  
   /*
   ------------------------------------------------
   A typical array list (non-serializable!)
   ------------------------------------------------*/
   
-	template <class T>
-  class ResArrayList : public DynArrayList <T>
-	{
+  template <class T>
+    class ResArrayList : public DynArrayList <T>
+  {
   public:
-
+    
     ResArrayList ()
-      : DynArrayList (sizeof(T), NULL)
-    {}
-    
-    ResArrayList (int newCap)
-      : DynArrayList (sizeof(T), NULL newCap)
-    {}
-    
+      : DynArrayList <T> (sizeof(T), NULL)
+      {}
+        
+    ResArrayList (UintP newCap)
+      : DynArrayList <T> (sizeof(T), NULL, newCap)
+      {}
+        
     virtual void construct (Uint8 *dst, UintP n)
     {
       new (dst) T [n];
@@ -430,27 +430,27 @@ namespace GE
         tdst[i] = tsrc[i];
     }
   };
-
+  
   
   /*
   --------------------------------------------------------
   A serializable list of pointers to serializable classes
   --------------------------------------------------------*/
   
-	template <class T>
-  class ResPtrArrayList : public DynArrayList <T*>
-	{
+  template <class T>
+    class ResPtrArrayList : public DynArrayList <T*>
+  {
   public:
     
     ResPtrArrayList ()
-      : DynArrayList (sizeof(T*), Class(T))
-    {}
-    
+      : DynArrayList <T*> (sizeof(T*), Class(T))
+      {}
+        
     ResPtrArrayList (UintP newCap)
-      : DynArrayList (sizeof(T*), Class(T), newCap)
-    {}
+      : DynArrayList <T*> (sizeof(T*), Class(T), newCap)
+      {}
   };
   
-
+  
 }//namespace GE
 #endif //__GEARRAYLIST_RES_H
