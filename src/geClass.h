@@ -38,10 +38,15 @@ namespace GE
     Uint64 d4;
     
     ClassID ()
+    {
+      //can't set to zero or else it wouldn't be serializable!
+    }
+    
+    ClassID (int zero)
       { d1=0; d2=0; d3=0; d4=0; }
-
+    
     ClassID (Uint32 dd1, Uint16 dd2, Uint16 dd3, Uint64 dd4)
-     { d1=dd1; d2=dd2; d3=dd3; d4=dd4; }
+      { d1=dd1; d2=dd2; d3=dd3; d4=dd4; }
     
     bool operator == (int zero) const
       { return (d1==0 && d2==0 && d3==0 && d4==0); }
@@ -323,9 +328,9 @@ private:
 #define DECLARE_SERIAL_CLASS( Name ) __DECLARE( ISerial, Name, Name )
 #define DECLARE_SERIAL_SUBCLASS( Name ) __DECLARE( ISerial, Name, Name )
 
-#define DEFINE_CLASS( Name ) Name::ClassDesc Name::classDesc (#Name, ClassID())
+#define DEFINE_CLASS( Name ) Name::ClassDesc Name::classDesc (#Name, ClassID(0))
 #define DEFINE_SERIAL_CLASS( Name, ID ) Name::ClassDesc Name::classDesc (#Name, ID)
-#define DEFINE_TEMPL_CLASS( Name ) template <> Name::ClassDesc Name::classDesc (#Name, ClassID())
+#define DEFINE_TEMPL_CLASS( Name ) template <> Name::ClassDesc Name::classDesc (#Name, ClassID(0))
 #define DEFINE_SERIAL_TEMPL_CLASS( Name, ID ) template <> Name::ClassDesc Name::classDesc (#Name, ID)
 
 

@@ -3,159 +3,125 @@
 
 namespace GE
 {
-	template <class T> class DynArrayList
-	{
-  public:
+  class GE_API_ENTRY GenArrayList
+  {
+    DECLARE_SERIAL_CLASS (GenArrayList);
+    DECLARE_CALLBACK (CLSEVT_SERIALIZE, serialize);
+    DECLARE_END;
     
-    virtual void serialize (void *sm)
-    {
-      if (_size != 0)
-        ((SM*)sm)->dynamicPtr (&elements, size() * sizeof (T));
-    }
-    
-    DynArrayList (SerializeManager *sm)
-    {
-      _begin.element = elements;
-      _end.element = elements;
-    }
-    
-  public:
-
-    /*
-    ------------------------------
-    Bi-directional iterator
-    ------------------------------*/
-
-    class Iterator
-    {
-      friend class DynArrayList;
-      T *element;
-
-      Iterator(T* e) {
-        element = e;
-      }
-
-    public:
-      Iterator() {}
-
-      Iterator(const Iterator &i) {
-        element = i.element;
-      }
-      
-      Iterator& operator= (const Iterator &i) {
-      	element = i.element;
-        return *this;
-      }
-
-      bool operator== (const Iterator &i) {
-        return element == i.element;
-      }
-
-      bool operator!= (const Iterator &i) {
-        return element != i.element;
-      }
-      
-      Iterator& operator++() {
-      	element++;
-        return *this;
-      }
-      
-      Iterator operator++(int) {
-      	Iterator ans(element);
-        element++;
-        return ans;
-      }
-      
-      Iterator& operator--() {
-      	element--;
-        return *this;
-      }
-      
-      Iterator operator--(int) {
-      	Iterator ans(element);
-      	element--;
-        return ans;
-      }
-
-      Iterator operator+(int i) {
-        Iterator it(element + i);
-        return it;
-      }
-
-      Iterator operator-(int i) {
-        Iterator it(element - i);
-        return it;
-      }
-      
-      Iterator& operator+=(int i) {
-      	element += i;
-        return *this;
-      }
-      
-      Iterator& operator-=(int i) {
-      	element -= i;
-        return *this;
-      }
-
-      T& operator* () {
-        return *element;
-      }
-
-      T* operator-> () {
-        return element;
-      }
-    };
-
 	protected:
-		int _size;
-		int max_size;
-		T *elements;
-    Iterator _begin;
-    Iterator _end;
+		Uint32 sz;
+		Uint32 cap;
+    Uint32 eltSize;
+    ClassID eltClsID;
+    ClassPtr eltCls;
+		Uint8 *elements;
+    
+  public:
 
     /*
-    -----------------------------------------
-    Enlarges the array capacity at element
-    insertion by the factor of 2. This
-    yields an ammortized complexity of O(1)
-    for element insertion.
-    -----------------------------------------*/
+    ------------------------------------------------------
+    Serialization
+    ------------------------------------------------------*/
     
-		void allocMore()
-		{
-			T *temp = new T[max_size * 2];
-			
-			for (int i=0; i<_size; i++)
-				temp[i] = elements[i];
-			
-			delete[] elements;
-			elements = temp;
-			max_size *= 2;
+    GenArrayList (SerializeManager *sm)
+    {
+      //Make sure it is re-serializable
+      if (sm->isDeserializing())
+        eltCls = IClass::FromID (eltClsID);
+    }
+    
+    virtual void serialize (void *param)
+    {
+      SerializeManager *sm = (SM*)param;
+      sm->memberData (&sz, sizeof (sz));
+      sm->memberData (&eltSize, sizeof (eltSize));
+      sm->memberData (&eltClsID, sizeof (eltClsID));
       
-      _begin.element = elements;
-      _end.element = elements + _size;
-		}
+      //Make sure it is usable after loading
+      if (sm->isLoading()) {
+        eltCls = IClass::FromID (eltClsID);
+        cap = sz;
+      }
+      
+      //Assume if class given the elements are pointers
+      //(otherwise the array is not serializable anyway)
+      if (sz > 0) {
+        if (eltCls != NULL)
+          sm->resourcePtrPtr (eltCls, (void***)&elements, sz);
+        else sm->dynamicPtr (&elements, sz * eltSize);
+      }
+      
+      //Make sure it is usable after loading
+      if (sm->isLoading() && sz == 0) {
+        elements = (Uint8*) std::malloc (eltSize);
+        cap = 1;
+      }
+    }
     
-	public:
-  	const Iterator& begin() const {return _begin;}
-    const Iterator& end() const {return _end;}
-    T& first() const {return elements[0];}
-    T& last() const {return elements[_size-1];}
-    bool empty() const {return _size == 0;}
+  protected:
+    
+    /*
+    -----------------------------------------------------
+    Constructs n elements at given address
+    -----------------------------------------------------*/
+    
+    virtual void construct (void *dst, UintP n) {
+      //Implemented in ResArrayList
+    }
+    
+    /*
+    -----------------------------------------------------
+    Destructs n elements at given address
+    -----------------------------------------------------*/
+    
+    virtual void destruct (void *dst, UintP n) {
+      //Implemented in ResArrayList
+    }
+    
+    /*
+    -----------------------------------------------------
+    Copies n elements from source to destination buffer
+    -----------------------------------------------------*/
+    
+    virtual void copy (void *dst, const void *src, UintP n) {
+      std::memcpy (dst, src, n * eltSize);
+    }
+    
+  public:
+    
+    /*
+    ---------------------------------------------
+    Default constructor. Assumes Uint8 elements.
+    We should let this really.
+    ---------------------------------------------*/
+
+    GenArrayList ()
+    {
+      this->eltSize = sizeof (Uint8);
+      this->eltClsID = ClassID(0);
+      this->eltCls = NULL;
+      
+      sz = 0;
+      cap = 1;
+      elements = (Uint8*) std::malloc (cap * eltSize);
+    }
     
     /*
     --------------------------------------
-    Default constructor. Initializes the
+    Simple constructor. Initializes the
     array with storage for 1 element
     --------------------------------------*/
     
-		DynArrayList()
+		GenArrayList (UintP eltSize, ClassPtr eltCls)
 		{
-			_size = 0;
-			max_size = 1;
-			elements = new T[max_size];
-      _begin.element = elements;
-      _end.element = elements;
+      this->eltSize = (Uint32) eltSize;
+      this->eltClsID = (eltCls ? eltCls->getID () : ClassID(0));
+      this->eltCls = eltCls;
+      
+			sz = 0;
+			cap = 1;
+      elements = (Uint8*) std::malloc (cap * eltSize);
 		}
 
     /*
@@ -164,41 +130,27 @@ namespace GE
     array with given capacity.
     -----------------------------------*/
 		
-		DynArrayList(int newCapacity)
+		GenArrayList (UintP eltSize, ClassPtr eltCls, UintP newCap)
 		{
-			_size = 0;
-			max_size = newCapacity;
-			elements = new T[max_size];
-      _begin.element = elements;
-      _end.element = elements;
+      this->eltSize = (Uint32) eltSize;
+      this->eltClsID = (eltCls ? eltCls->getID () : ClassID(0));
+      this->eltCls = eltCls;
+      
+			sz = 0;
+			cap = (Uint32) newCap;
+      elements = (Uint8*) std::malloc (cap * eltSize);
 		}
 
     /*
     -------------------------------------
-    Destructor deletes all the elements
+    Dtor
     -------------------------------------*/
 		
-		virtual ~DynArrayList()
-		{
-			clear();		
-			delete[] elements;
-		}
-    
-    void setSize(int newsize)
+		virtual ~GenArrayList()
     {
-    	if (max_size < newsize) {
-      
-      	delete[] elements;
-        max_size *= 2;
-        if (max_size < newsize)
-        	max_size = newsize;
-        elements = new T[max_size];
-      }
-      
-      _size = newsize;
-      _begin.element = elements;
-      _end.element = elements + _size;
-    }
+      destruct (elements, sz);
+      std::free (elements);
+		}
 
     /*
     ---------------------------------------------
@@ -207,18 +159,17 @@ namespace GE
     invalid and size of the array is reset to 0.
     ---------------------------------------------*/
 
-    void reserve(int n)
+    void reserve (UintP n)
     {
-      if (n > max_size) {
-
-        delete[] elements;
-        elements = new T[n];
-        max_size = n;
+      destruct (elements, sz);
+      sz = 0;
+      
+      if (n > cap) {
+        
+        std::free (elements);
+        elements = (Uint8*) std::malloc (n * eltSize);
+        cap = (Uint32) n;
       }
-
-      _size = 0;
-      _begin.element = elements;
-      _end.element = elements;
     }
 
     /*
@@ -229,42 +180,20 @@ namespace GE
     is always preserved.
     ------------------------------------------*/
 
-    void reserveAndCopy(int n)
+    void reserveAndCopy (UintP n)
     {
-      if (n <= max_size) return;
-
-      T* newElements = new T[n];
-      for (int i=0; i<_size; ++i)
-        newElements[i] = elements[i];
-
-      delete[] elements;
-      elements = newElements;
-      max_size = n;
-
-      _begin.element = elements;
-      _end.element = elements + _size;
+      if (n <= cap) return;
+      
+      void* newElements = std::malloc (n * eltSize);
+      construct (newElements, sz);
+      copy (newElements, elements, sz);
+      
+      destruct (elements, sz);
+      std::free (elements);
+      
+      elements = (Uint8*) newElements;
+      cap = (Uint32) n;
     }
-
-    /*
-    -------------------------------------------
-    Getter functions to return information
-    about the current array state.
-    -------------------------------------------*/
-
-    int capacity() const
-    {
-      return max_size;
-    }
-
-		int size() const
-		{
-			return _size;
-		}
-		
-		T* buffer() const
-		{
-			return elements;
-		}
 
     /*
     ---------------------------------------
@@ -273,151 +202,255 @@ namespace GE
     ---------------------------------------*/
 		
 		void clear()
-		{   
-			_size = 0;
-      _end.element = elements;
-		}
-		
-		void pushBack(const T &new_el)
 		{
-      if (_size==max_size)
+      destruct (elements, sz);
+			sz = 0;
+		}
+
+    /*
+    ------------------------------------------------------
+    Enlarges the array capacity at element insertion by
+    the factor of 2. This yields an ammortized complexity
+    of O(1) for element insertion.
+    ------------------------------------------------------*/
+		
+		void insertAt (UintP index, const void *newElt)
+		{
+      void *copyElt = (void*) newElt;      
+      bool cloned = false;
+
+      //Clamp insertion point to size
+			if (index > sz) index = sz;
+      
+      //Will any moving take place?
+			if (sz == cap || index < sz)
       {
         //It might be a reference to our own element
-        //so better store it before reallocation
-        T temp_new_el = new_el;
-        allocMore();
-        elements[_size++] = temp_new_el;
-
-      }else{
-
-			  elements[_size++] = new_el;
+        //so better clone it before reallocation
+        copyElt = std::malloc (eltSize);
+        construct (copyElt, 1);
+        copy (copyElt, newElt, 1);
+        cloned = true;
       }
+      
+      //Make sure we got enough space
+      if (sz == cap) reserveAndCopy (cap * 2);
+      
+      //Construct an element at the back
+      construct (elements + sz*eltSize, 1);
+      
+      //Shift forward the elements above the index
+      if (index < sz)
+			  for (UintP i=sz-1; i>=index; i--)
+          copy (elements + (i+1)*eltSize, elements + i*eltSize, 1);
+			
+      //Copy the new element at [index]
+      copy (elements + index*eltSize, copyElt, 1);
+			sz++;
+      
+      //Delete the clone
+      if (cloned) {
+        destruct (copyElt, 1);
+        std::free (copyElt);
+      }
+		}
+    
+		void removeAt (UintP index)
+		{
+      //Prevent invalid removal
+      if (index >= sz) return;
 
-      _end.element = elements + _size;
+      //Shift backwards the elements above the index
+			for (UintP i=index; i<sz-1; i++)
+        copy (elements + i*eltSize, elements + (i+1)*eltSize, 1);
+      
+      //Destruct the last element
+      destruct (elements + sz*eltSize, 1);
+			sz--;
 		}
 
-    void popBack()
+		void setAt (UintP index, const void *newElt)
+		{
+      copy (elements + index, newElt, 1);
+		}
+    
+		void pushBack (const void *newElt)
+		{
+      insertAt (sz, newElt);
+		}
+    
+    void popBack ()
     {
-      if (_size==0) return;
-      _size--;
-      _end.element = elements + _size;
+      removeAt (sz-1);
+    }
+
+    int capacity() const
+    {
+      return cap;
+    }
+    
+		int size() const
+		{
+			return sz;
+		}
+
+    bool empty() const
+    {
+      return sz == 0;
     }
 		
-		void remove(const T &el)
+		void* buffer() const
 		{
-			int i = indexOf(el);
-			if (i > -1)	removeAt(i);
+			return elements;
 		}
-		
-		void removeAt(int index)
-		{	
-			if (index < _size-1)
-				for (int i=index; i<_size-1; i++)
-					elements[i] = elements[i+1];
+	};
 
-			_size--;
-      _end.element = elements + _size;
-		}
-		
-		void insertAt(int index, const T &new_el)
+  /*
+  -----------------------------------------------------
+  A serializable array list with non-class elements
+  -----------------------------------------------------*/
+  
+  template <class T> class DynArrayList : public GenArrayList
+	{
+  public:
+    
+    DynArrayList ()
+      : GenArrayList (sizeof(T), NULL)
+    {}
+    
+    DynArrayList (int newCap)
+      : GenArrayList (sizeof(T), NULL, newCap)
+    {}
+
+    
+    DynArrayList (UintP eltSize, ClassPtr eltCls)
+      : GenArrayList (eltSize, eltCls)
+    {}
+    
+    DynArrayList (UintP eltSize, ClassPtr eltCls, UintP newCap)
+      : GenArrayList (eltSize, eltCls, newCap)
+    {}
+    
+		void pushBack (const T &newElt)
 		{
-			if (index > _size)
-				index = _size;
-
-			if (_size==max_size) allocMore();
-
-			if (index < _size)
-				for (int i=_size-1; i>=index; i--)
-					elements[i+1] = elements[i];
-			
-			elements[index] = new_el;
-			_size++;
-      _end.element = elements + _size;
+      GenArrayList::pushBack (&newElt);
 		}
-		
-		T& elementAt(int index) const
+
+		void setAt (int index, const T &newElt)
 		{
-			return elements[index];
+      GenArrayList::setAt (index, &newElt);
 		}
-
-    T& at(int index) const
+    
+    T& first() const
     {
-      return elements[index];
+      return ((T*)elements) [0];
+    }
+    
+    T& last() const
+    {
+      return ((T*)elements) [sz-1];
+    }
+    
+		T& elementAt (int index) const
+		{
+			return ((T*)elements) [index];
+		}
+
+    T& at (int index) const
+    {
+      return ((T*)elements) [index];
     }
 		
 		T& operator[](int index) const
 		{
-			return elements[index];	
-		}
-		
-		void setAt(int index, const T &el)
+			return ((T*)elements) [index];	
+    }
+    
+		T* buffer() const
 		{
-			elements[index] = el;
+			return (T*) elements;
 		}
 		
-		bool contains(const T &el) const
+		bool contains (const T &el) const
 		{
 			return (indexOf(el) != -1);
 		}
 		
-		int indexOf(const T &el) const
+		int indexOf (const T &el) const
 		{
-			for (int i=0; i<_size; i++)
-				if (elements[i] == el)
+			for (int i=0; i<sz; i++)
+				if (((T*)elements) [i] == el)
 					return i;
-
+      
 			return -1;
 		}
     
-    UintP indexOf(const Iterator &it) const
-    {
-      return (UintP) (it.element - elements);
-    }
-	};
+		void remove (const T &el)
+		{
+			int i = indexOf(el);
+			if (i > -1)	removeAt(i);
+		}
+  };
+
+  /*
+  ------------------------------------------------
+  A typical array list (non-serializable!)
+  ------------------------------------------------*/
   
 	template <class T>
   class ResArrayList : public DynArrayList <T>
 	{
   public:
-    
+
     ResArrayList ()
-      : DynArrayList <T> () {}
+      : DynArrayList (sizeof(T), NULL)
+    {}
     
-    ResArrayList (SM *sm)
-      : DynArrayList <T> (sm) {}
+    ResArrayList (int newCap)
+      : DynArrayList (sizeof(T), NULL newCap)
+    {}
     
-    virtual void serialize (void *sm) {
-      if (_size != 0) ((SM*)sm)->resourcePtr (&elements, size());
+    virtual void construct (Uint8 *dst, UintP n)
+    {
+      new (dst) T [n];
+    }
+    
+    virtual void destruct (Uint8 *dst, UintP n)
+    {
+      T *tdst = (T*)dst;
+      for (int d=0; d<n; ++d)
+        tdst[n].~T();
+    }
+    
+    virtual void copy (Uint8 *dst, const Uint8 *src, UintP n)
+    {
+      T *tdst = (T*)dst;
+      T *tsrc = (T*)src;
+      for (int i=0; i<n; ++i)
+        tdst[i] = tsrc[i];
     }
   };
+
+  
+  /*
+  --------------------------------------------------------
+  A serializable list of pointers to serializable classes
+  --------------------------------------------------------*/
   
 	template <class T>
-  class ResPtrArrayList : public DynArrayList <T>
+  class ResPtrArrayList : public DynArrayList <T*>
 	{
   public:
     
     ResPtrArrayList ()
-      : DynArrayList <T> () {}
-
-    ResPtrArrayList (SM *sm)
-      : DynArrayList <T> (sm) {}
+      : DynArrayList (sizeof(T*), Class(T))
+    {}
     
-    virtual void serialize (void *sm) {
-      if (_size != 0) ((SM*)sm)->resourcePtrPtr (&elements, size());
-    }
+    ResPtrArrayList (UintP newCap)
+      : DynArrayList (sizeof(T*), Class(T), newCap)
+    {}
   };
-
-  //Generic serializable ArraysList
-  class GE_API_ENTRY GenArrayList : public DynArrayList <void*>
-  {
-    DECLARE_SERIAL_CLASS (GenArrayList);
-    DECLARE_CALLBACK (CLSEVT_SERIALIZE, serialize);
-    DECLARE_END;
-
-  public:
-    GenArrayList () : DynArrayList<void*> () {}
-    GenArrayList (SM *sm) : DynArrayList<void*> (sm) {}
-  };
+  
 
 }//namespace GE
 #endif //__GEARRAYLIST_RES_H

@@ -348,8 +348,7 @@ void SPolyActor::renderMesh (MaterialId matid)
 }
 
 PolyMesh* loadPackage (String fileName)
-{
-  
+{ 
   FileRef file = new File (fileName);
   if (!file->open ("rb"))
   {
@@ -487,7 +486,7 @@ public:
   }
 };
 
-DEFINE_CLASS (DD);
+DEFINE_SERIAL_CLASS (DD, ClassID(2,2,2,2));
 
 class CC
 {
@@ -495,17 +494,16 @@ class CC
   DECLARE_CALLBACK (CLSEVT_SERIALIZE, serialize);
   DECLARE_END;
 public:
-  ResPtrArrayList<DD*> *list;
-  CC () {list = new ResPtrArrayList<DD*>;}
+  ResPtrArrayList<DD> *list;
+  CC () {list = new ResPtrArrayList<DD>;}
   CC (SM *sm) {}
   void serialize (void *sm)
   {
-    ((SM*)sm)->resourcePtr (Class(GenArrayList), (void**)&list);
+    ((SM*)sm)->resourcePtr (&list);
   }
 };
 
-DEFINE_CLASS (CC);
-
+DEFINE_SERIAL_CLASS (CC, ClassID(1,1,1,1));
 
 int main (int argc, char **argv)
 {
@@ -523,6 +521,30 @@ int main (int argc, char **argv)
 
   CC *ccc = (CC*) sm.deserialize (data);
   */
+  /*
+  SkinVertex vert1, vert2, vert3;
+  vert1.point.set (1,2,3);
+  vert2.point.set (4,5,6);
+  vert3.point.set (7,8,9);
+
+  SkinMesh *mesh = new SkinMesh;
+  mesh->verts->pushBack (vert1);
+  mesh->verts->pushBack (vert2);
+  mesh->verts->pushBack (vert3);
+
+  SkinPose *pose = new SkinPose;
+  SkinAnim *anim = new SkinAnim;
+
+  MaxCharacter mchar;
+  mchar.mesh = mesh;
+  mchar.pose = pose;
+  mchar.anim = anim;
+
+  SM sm;
+  void *data;
+  UintP size;
+  sm.serialize (&mchar, &data, &size);
+  sm.deserialize (data);*/
 
   //Initialize GLUT
   initGlut(argc, argv);
@@ -550,7 +572,7 @@ int main (int argc, char **argv)
   
   actor = new SPolyActor;
   actor->setMaterial (&mat);
-  actor->setMesh (loadPackage ("bub3.pak"));
+  actor->setMesh (loadPackage ("bub.pak"));
   applyFK (1);
   
   lblFps.setLocation (Vector2 (0.0f,(Float)resY));

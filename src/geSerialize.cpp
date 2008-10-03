@@ -37,6 +37,22 @@ namespace GE
 
   ---------------------------------------------------------*/
   
+  bool SerializeManager::isSerializing () {
+    return state == &stateSerial;
+  }
+
+  bool SerializeManager::isDeserializing () {
+    return state == NULL;
+  }
+
+  bool SerializeManager::isSaving () {
+    return state == &stateSave;
+  }
+  
+  bool SerializeManager::isLoading () {
+    return state == &stateLoad;
+  }
+  
   void SerializeManager::memberData
     (void *ptr, UintP size)
   {
@@ -434,7 +450,7 @@ namespace GE
     state->run (cls, root);
     
     //Back to start of data
-    state->reset (0, true);
+    state->offset = 0;
     
     //Store pointer list
     UintP numPointers = state->ptrList.size();
@@ -451,6 +467,7 @@ namespace GE
   
   void* SerializeManager::deserialize (void *data)
   {
+    state = NULL;
     void *root = NULL;
     
     //Get the number of pointers
@@ -465,7 +482,7 @@ namespace GE
       //Add the base data address to it
       Util::PtrAdd (pptr, (UintP)data);
     }
-
+    
     //Get the number of resources
     UintP *numClasses = (UintP*) (ptrList + *numPointers);
     ClsHeader *clsList = (ClsHeader*) (numClasses + 1);
@@ -498,5 +515,6 @@ namespace GE
   --------------------------------------------------
   Loading start
   --------------------------------------------------*/
+
 
 }//namespace GE

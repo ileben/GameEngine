@@ -48,10 +48,10 @@ namespace GE
 
   public:
     Float32 duration;
-    ResPtrArrayList <SkinTrack*> *tracks;
+    ResPtrArrayList <SkinTrack> *tracks;
     
     SkinAnim (SM *sm) {}
-    SkinAnim () { tracks = new ResPtrArrayList <SkinTrack*>; }
+    SkinAnim () { tracks = new ResPtrArrayList <SkinTrack>; }
     ~SkinAnim () { delete tracks; }
     void serialize (void *sm) {
       ((SM*)sm)->resourcePtr (Class(GenArrayList), (void**)&tracks); }

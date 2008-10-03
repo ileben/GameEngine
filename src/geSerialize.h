@@ -101,6 +101,11 @@ namespace GE
     void run (ClassPtr rootCls, void *rootPtr);
 
   public:
+
+    bool isSerializing ();
+    bool isDeserializing ();
+    bool isSaving ();
+    bool isLoading ();
     
     void serialize (ClassPtr cls, void *root, void **outData, UintP *outSize);
     void resourcePtr (ClassPtr cls, void **pptr);
