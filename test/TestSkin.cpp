@@ -361,19 +361,10 @@ PolyMesh* loadPackage (String fileName)
   file->close();
   
   SerializeManager sm;
-  character = (MaxCharacter*) sm.deserialize ((void*)data.buffer());  
+  //character = (MaxCharacter*) sm.deserialize ((void*)data.buffer());
+  character = (MaxCharacter*) sm.load ((void*)data.buffer());
   SkinMesh *inMesh = character->mesh;
   
-  /*
-  void *data; UintP size;
-  SkinPolyMesh_Res outMesh;
-
-  SerializeManager sm;
-  sm.serialize (&outMesh, &data, &size);
-  
-  SkinPolyMesh_Res *inMesh =
-    (SkinPolyMesh_Res*) sm.deserialize (data);
-  */
   printf ("Imported %d verts, %d faces, %d indices\n",
           inMesh->verts->size(),
           inMesh->faces->size(),
@@ -407,10 +398,10 @@ PolyMesh* loadPackage (String fileName)
     
     SPolyMesh::Face *face = (SPolyMesh::Face*) polyMesh->addFace (corners, numCorners);
     if (face != NULL) face->smoothGroups = inMesh->faces->at(f).smoothGroups;
-
+    
     delete[] corners;
   }
-
+  
   polyMesh->updateNormals ();
   return polyMesh;
 }
@@ -543,9 +534,11 @@ int main (int argc, char **argv)
   SM sm;
   void *data;
   UintP size;
-  sm.serialize (&mchar, &data, &size);
-  sm.deserialize (data);*/
-
+  //sm.serialize (&mchar, &data, &size);
+  //sm.deserialize (data);
+  sm.save (&mchar, &data, &size);
+  MaxCharacter *outChar = (MaxCharacter*) sm.load (data);
+  */
   //Initialize GLUT
   initGlut(argc, argv);
   
@@ -572,7 +565,7 @@ int main (int argc, char **argv)
   
   actor = new SPolyActor;
   actor->setMaterial (&mat);
-  actor->setMesh (loadPackage ("bub.pak"));
+  actor->setMesh (loadPackage ("bub2.pak"));
   applyFK (1);
   
   lblFps.setLocation (Vector2 (0.0f,(Float)resY));

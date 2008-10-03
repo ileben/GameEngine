@@ -58,6 +58,7 @@ namespace GE
       virtual void run (ClassPtr rootCls, void *rootPtr) = 0;
       
       void rootPtr (ClassPtr cls, void *ptr);
+      void arrayPtr (ClassPtr cls, void *ptr, UintP ptroffset);
       void store (void *ptr, UintP size);
       void load (void *ptr, UintP size);
       void reset (UintP startOffset, bool realRun);
@@ -107,14 +108,13 @@ namespace GE
     bool isSaving ();
     bool isLoading ();
     
-    void serialize (ClassPtr cls, void *root, void **outData, UintP *outSize);
+    void memberData (void *ptr, UintP size);
     void resourcePtr (ClassPtr cls, void **pptr);
     void resourcePtrPtr (ClassPtr cls, void ***pptr, UintP count);
     void dynamicPtr (void **pptr, UintP size);
-    void memberData (void *ptr, UintP size);
     
-    template <class TR> void serialize (TR *root, void **outData, UintP *outSize)
-      { serialize (Class(TR), root, outData, outSize); }
+    void serialize (ClassPtr cls, void *root, void **outData, UintP *outSize);
+    void save (ClassPtr cls, void *root, void **outData, UintP *outSize);
     
     template <class TR> void resourcePtr (TR **pptr)
       { resourcePtr (Class(TR), (void**)pptr); }
@@ -124,10 +124,17 @@ namespace GE
     
     template <class TD> void dynamicPtr (TD **pptr, UintP size)
       { dynamicPtr ((void**)pptr, size); }
+
+    template <class TR> void serialize (TR *root, void **outData, UintP *outSize)
+      { serialize (Class(TR), root, outData, outSize); }
+
+    template <class TR> void save (TR *root, void **outData, UintP *outSize)
+      { save (Class(TR), root, outData, outSize); }
     
     void* deserialize (void *data);
+    void* load (void *data);
   };
-
+  
   typedef SerializeManager SM;
 
 }//namespace GE

@@ -116,7 +116,8 @@ namespace GE
     offset += size;
   }
 
-  void SerializeManager::State::rootPtr (ClassPtr cls, void *ptr)
+  void SerializeManager::State::rootPtr
+    (ClassPtr cls, void *ptr)
   {
     ResPtrInfo riroot;
     riroot.cls = cls;
@@ -127,6 +128,20 @@ namespace GE
     riroot.detached = true;
     riroot.ptroffset = 0;
     resQueue.pushBack (riroot);
+  }
+
+  void SerializeManager::State::arrayPtr
+    (ClassPtr cls, void *ptr, UintP ptroffset)
+  {
+    ResPtrInfo ri;
+    ri.cls = cls;
+    ri.ptr = ptr;
+    ri.count = 1;
+    ri.offset = 0;
+    ri.isptrptr = false;
+    ri.detached = false;
+    ri.ptroffset = ptroffset;
+    resQueue.pushBack (ri);
   }
 
   /*
@@ -299,15 +314,7 @@ namespace GE
         for (UintP p=0; p<ri.count; ++p)
         {
           //Enqueue each pointer to resource
-          ResPtrInfo rinew;
-          rinew.cls = ri.cls;
-          rinew.ptr = pptr[p];
-          rinew.count = 1;
-          rinew.offset = 0;
-          rinew.isptrptr = false;
-          rinew.detached = false;
-          rinew.ptroffset = offset;
-          resQueue.pushBack (rinew);
+          arrayPtr (ri.cls, pptr[p], offset);
           
           //Leave space for in-data pointer
           offset += sizeof (void*);
@@ -332,7 +339,7 @@ namespace GE
         store (ri.ptr, ri.cls->getSize());
         
         //Get new pointers from the resource
-        ri.cls->invokeCallback (CLSEVT_SERIALIZE, ri.ptr, this);
+        ri.cls->invokeCallback (CLSEVT_SERIALIZE, ri.ptr, sm);
       }
       
       while (!dynQueue.empty())
@@ -374,28 +381,32 @@ namespace GE
         for (UintP p=0; p<ri.count; ++p)
         {
           //Enqueue each pointer to resource
-          //...
+          arrayPtr (ri.cls, pptr[p], 0);
         }
       }
       else
       {
-        //Get new pointers from the resource
-        //...
+        //Copy data and get new pointers from the resource
+        ri.cls->invokeCallback (CLSEVT_SERIALIZE, ri.ptr, sm);
       }
-
+      
       while (!dynQueue.empty())
       {
+        //Pop first dynamic info off the stack
+        DynPtrInfo di = dynQueue.first();
+        dynQueue.popFront();
+        
         //Copy dynamic data
-        //...
+        store (di.ptr, di.size);
       }
     }
   }
-
+  
   /*
   --------------------------------------------------
   Loading state
   --------------------------------------------------*/
-
+  
   void SerializeManager::StateLoad::run
     (ClassPtr rcls, void *rptr)
   {
@@ -410,9 +421,32 @@ namespace GE
 
       if (ri.isptrptr)
       {
+        //Walk the array of pointers to resources
+        void **pptr = (void**)ri.ptr;
+        for (UintP p=0; p<ri.count; ++p)
+        {
+          //Create a new resource instance and adjust pointer
+          void *pres = ri.cls->newSerialInstance (sm);
+          pptr[p] = pres;
+          
+          //Enqueue the pointer to resource
+          arrayPtr (ri.cls, pptr[p], 0);
+        }
       }
       else
       {
+        //Copy data and get new pointers from the resource
+        ri.cls->invokeCallback (CLSEVT_SERIALIZE, ri.ptr, sm);
+      }
+      
+      while (!dynQueue.empty())
+      {
+        //Pop first dynamic info off the stack
+        DynPtrInfo di = dynQueue.first();
+        dynQueue.popFront();
+        
+        //Copy dynamic data
+        load (di.ptr, di.size);
       }
     }
   }
@@ -511,10 +545,55 @@ namespace GE
   Saving start
   --------------------------------------------------*/
 
+  void SerializeManager::save (ClassPtr cls, void *root, void **outData, UintP *outSize)
+  {
+    //Enter saving state
+    state = &stateSave;
+    state->sm = this;
+    
+    //Simulation run
+    state->reset (0, false);
+    state->run (cls, root);
+    
+    //Allocate data
+    UintP dataSize = sizeof (ClassID) + state->offset;
+    state->data = (Uint8*) std::malloc (dataSize);
+    *outData = state->data;
+    *outSize = dataSize;
+    
+    //Real run
+    ClassID rootID = cls->getID();
+    state->reset (0, true);
+    state->store (&rootID, sizeof (ClassID));
+    state->run (cls, root);
+  }
+
   /*
   --------------------------------------------------
   Loading start
   --------------------------------------------------*/
+  
+  void* SerializeManager::load (void *data)
+  {
+    //Enter loading state
+    state = &stateLoad;
+    state->sm = this;
+    state->data = (Uint8*) data;
+
+    //Load root class ID
+    ClassID rootID;
+    state->reset (0, true);
+    state->load (&rootID, sizeof (ClassID));
+    
+    //Create root resource
+    ClassPtr rootCls;    
+    rootCls = IClass::FromID (rootID);
+    void *rootPtr = rootCls->newSerialInstance (this);
+    
+    //Run
+    state->run (rootCls, rootPtr);
+    return rootPtr;
+  }
 
 
 }//namespace GE
