@@ -565,7 +565,7 @@ int main (int argc, char **argv)
   
   actor = new SPolyActor;
   actor->setMaterial (&mat);
-  actor->setMesh (loadPackage ("bub2.pak"));
+  actor->setMesh (loadPackage ("bub.pak"));
   applyFK (1);
   
   lblFps.setLocation (Vector2 (0.0f,(Float)resY));
