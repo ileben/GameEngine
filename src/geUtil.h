@@ -12,6 +12,10 @@ namespace GE
   {
   public:
 
+    //General math
+    template <class T> inline static void Min (const T &a, const T &b);
+    template <class T> inline static void Max (const T &a, const T &b);
+
     //Pointer management
     inline static void PtrSet (void *pptr, UintP address);
     inline static void PtrAdd (void *pptr, UintP offset);
@@ -23,6 +27,21 @@ namespace GE
     inline static Float DegToRad (Float degrees);
     inline static Float RadToDeg (Float radians);
   };
+
+  /*
+  ---------------------------------------------
+  General math
+  ---------------------------------------------*/
+
+  template <class T> void Util::Min (const T &a, const T &b)
+  {
+    return (a <= b) ? a : b;
+  }
+  
+  template <class T> void Util::Max (const T &a, const T &b)
+  {
+    return (a >= b) ? a : b;
+  }
   
   /*
   ---------------------------------------------

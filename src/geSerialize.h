@@ -51,7 +51,7 @@ namespace GE
       SerializeManager *sm;
       bool simulate;
       
-      virtual void memberData (void *ptr, UintP size) = 0;
+      virtual void memberVar (void *ptr, UintP size) = 0;
       virtual void resourcePtr (ClassPtr cls, void **pptr) = 0;
       virtual void resourcePtrPtr (ClassPtr cls, void ***pptr, UintP count) = 0;
       virtual void dynamicPtr (void **pptr, UintP size) = 0;
@@ -66,7 +66,7 @@ namespace GE
 
     class StateSerial : public State
     { public:
-      virtual void memberData (void *ptr, UintP size);
+      virtual void memberVar (void *ptr, UintP size);
       virtual void resourcePtr (ClassPtr cls, void **pptr);
       virtual void resourcePtrPtr (ClassPtr cls, void ***pptr, UintP count);
       virtual void dynamicPtr (void **pptr, UintP size);
@@ -76,7 +76,7 @@ namespace GE
 
     class StateSave : public StateSerial
     { public:
-      virtual void memberData (void *ptr, UintP size);
+      virtual void memberVar (void *ptr, UintP size);
       virtual void resourcePtr (ClassPtr cls, void **pptr);
       virtual void resourcePtrPtr (ClassPtr cls, void ***pptr, UintP count);
       virtual void dynamicPtr (void **pptr, UintP size);
@@ -85,7 +85,7 @@ namespace GE
 
     class StateLoad : public StateSerial
     { public:
-      virtual void memberData (void *ptr, UintP size);
+      virtual void memberVar (void *ptr, UintP size);
       virtual void resourcePtr (ClassPtr cls, void **pptr);
       virtual void resourcePtrPtr (ClassPtr cls, void ***pptr, UintP count);
       virtual void dynamicPtr (void **pptr, UintP size);
@@ -108,13 +108,16 @@ namespace GE
     bool isSaving ();
     bool isLoading ();
     
-    void memberData (void *ptr, UintP size);
+    void memberVar (void *ptr, UintP size);
     void resourcePtr (ClassPtr cls, void **pptr);
     void resourcePtrPtr (ClassPtr cls, void ***pptr, UintP count);
     void dynamicPtr (void **pptr, UintP size);
     
     void serialize (ClassPtr cls, void *root, void **outData, UintP *outSize);
     void save (ClassPtr cls, void *root, void **outData, UintP *outSize);
+
+    template <class TM> void memberVar (TM *ptr)
+      { memberVar ((void*)ptr, sizeof(TM)); }
     
     template <class TR> void resourcePtr (TR **pptr)
       { resourcePtr (Class(TR), (void**)pptr); }

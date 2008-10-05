@@ -145,7 +145,7 @@ namespace GE
     fromAxisAngle (axis.x, axis.y, axis.z, radang);
   }
   
-  void Matrix4x4::fromQuaternion (Float x, Float y, Float z, Float w)
+  void Matrix4x4::fromQuat (Float x, Float y, Float z, Float w)
   {
     set (1-2*y*y-2*z*z,   2*x*y-2*w*z,   2*x*z+2*w*y,  0,
          2*x*y+2*w*z,   1-2*x*x-2*z*z,   2*y*z-2*w*x,  0,
@@ -153,14 +153,14 @@ namespace GE
          0,               0,             0,            1);
   }
   
-  void Matrix4x4::fromQuaternion (const Quaternion &q)
+  void Matrix4x4::fromQuat (const Quat &q)
   {
-    fromQuaternion (q.x, q.y, q.z, q.w);
+    fromQuat (q.x, q.y, q.z, q.w);
   }
 
-  Quaternion Matrix4x4::toQuaternion ()
+  Quat Matrix4x4::toQuat ()
   {
-    Quaternion q;
+    Quat q;
     q.fromMatrix (*this);
     return q;
   }

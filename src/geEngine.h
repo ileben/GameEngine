@@ -22,6 +22,7 @@
 #include "geSkinMesh.h"
 #include "geSkinPose.h"
 #include "geSkinAnim.h"
+#include "geCharacter.h"
 
 #include "geTexture.h"
 #include "geShaders.h"

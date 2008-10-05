@@ -51,14 +51,16 @@ namespace GE
   typedef float      Float32;
   typedef double     Float64;
   typedef Float32    Float;
-
-  #define PI 3.1415926535f
-  #define COS(a)  ((Float)std::cos(a))
-  #define SIN(a)  ((Float)std::sin(a))
-  #define ACOS(a) ((Float)std::acos(a))
-  #define SQRT(a) ((Float)std::sqrt(a))
-  #define ASSERT  assert
-  #define INLINE  inline
+  
+  #define PI       3.1415926535f
+  #define COS(a)   ((Float)std::cos(a))
+  #define SIN(a)   ((Float)std::sin(a))
+  #define ACOS(a)  ((Float)std::acos(a))
+  #define SQRT(a)  ((Float)std::sqrt(a))
+  #define FLOOR(a) ((Float)std::floor(a))
+  #define CEIL(a)  ((Float)std::ceil(a))
+  #define ASSERT   assert
+  #define INLINE   inline
 }
 
 #endif// __GEDEFS_H

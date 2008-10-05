@@ -34,9 +34,9 @@ namespace GE
     virtual void serialize (void *param)
     {
       SerializeManager *sm = (SM*)param;
-      sm->memberData (&sz, sizeof (sz));
-      sm->memberData (&eltSize, sizeof (eltSize));
-      sm->memberData (&eltClsID, sizeof (eltClsID));
+      sm->memberVar (&sz);
+      sm->memberVar (&eltSize);
+      sm->memberVar (&eltClsID);
       
       //Make sure it is usable after loading
       if (sm->isLoading()) {

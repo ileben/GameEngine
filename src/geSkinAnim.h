@@ -3,6 +3,7 @@
 
 namespace GE
 {
+
   /*
   -----------------------------------
   Animation key
@@ -10,8 +11,7 @@ namespace GE
 
   struct SkinKey
   {
-    Float32     time;
-    Quaternion  value;
+    Quat value;
   };
 
   /*
@@ -26,15 +26,31 @@ namespace GE
     DECLARE_END;
     
   public:
+    Float32 totalTime;
+    Float32 frameTime;
     DynArrayList <SkinKey> *keys;
     
     SkinTrack (SM *sm) {}
-    SkinTrack () { keys = new DynArrayList <SkinKey>; }
-    ~SkinTrack () { delete keys; }
-    void serialize (void *sm) {
-      ((SM*)sm)->resourcePtr (&keys); }
-  };
 
+    void serialize (void *sm)
+    {
+      ((SM*)sm)->memberVar (&totalTime);
+      ((SM*)sm)->memberVar (&frameTime);
+      ((SM*)sm)->resourcePtr (&keys);
+    }
+
+    SkinTrack ()
+    {
+      totalTime = 0.0f;
+      frameTime = 0.0f;
+      keys = new DynArrayList <SkinKey>;
+    }
+
+    ~SkinTrack () { delete keys; }
+    
+    Quat evalAt (Float time);
+  };
+  
   /*
   -----------------------------------
   Animation is a set of tracks
@@ -45,16 +61,32 @@ namespace GE
     DECLARE_SERIAL_CLASS (SkinAnim);
     DECLARE_CALLBACK (CLSEVT_SERIALIZE, serialize);
     DECLARE_END;
-
+    
   public:
-    Float32 duration;
+    OCC::CharString *name;
     ResPtrArrayList <SkinTrack> *tracks;
     
+    void serialize (void *sm)
+    {
+      ((SM*)sm)->resourcePtr (&tracks);
+    }
+    
     SkinAnim (SM *sm) {}
-    SkinAnim () { tracks = new ResPtrArrayList <SkinTrack>; }
-    ~SkinAnim () { delete tracks; }
-    void serialize (void *sm) {
-      ((SM*)sm)->resourcePtr (&tracks); }
+    
+    SkinAnim ()
+    {
+      tracks = new ResPtrArrayList <SkinTrack>;
+    }
+    
+    ~SkinAnim ()
+    {
+      for (int t=0; t<tracks->size(); ++t)
+        delete tracks->at (t);
+
+      delete tracks;
+    }
+
+    void evalFrame (Float time);
   };
 };
 

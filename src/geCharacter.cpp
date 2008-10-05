@@ -3,8 +3,8 @@
 
 namespace GE
 {
-
-  DEFINE_SERIAL_CLASS (SkinMesh, CLSID_SKINMESH);
+  
+  DEFINE_SERIAL_CLASS (MaxCharacter, CLSID_MAXCHARACTER);
 
 
 }//namespace GE

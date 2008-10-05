@@ -203,9 +203,9 @@ namespace GE
     void fromAxisAngle (Float x, Float y, Float z, Float radang);
     void fromAxisAngle (const Vector3 &axis, Float radang);
     
-    void fromQuaternion (Float x, Float y, Float z, Float w);
-    void fromQuaternion (const Quaternion &q);
-    Quaternion toQuaternion ();
+    void fromQuat (Float x, Float y, Float z, Float w);
+    void fromQuat (const Quat &q);
+    Quat toQuat ();
     
     Matrix4x4& operator*= (const Matrix4x4 &r);
     Matrix4x4 operator* (const Matrix4x4 &r) const;

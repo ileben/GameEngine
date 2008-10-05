@@ -6,18 +6,16 @@ namespace GE
   /*
   ------------------------------------
   Forward declarations
-  ------------------------------------
-  */
-  
+  ------------------------------------*/
+
   class Vector3;
   class Vector4;
   class Matrix4x4;
 
   /*
-  --------------------------------------------------
+  =============================================
   2, 3, and 4-dimensional vectors
-  --------------------------------------------------
-  */
+  =============================================*/
   
   class GE_API_ENTRY Vector2
   {
@@ -164,70 +162,69 @@ namespace GE
   void getVerticesBounds(Vector2 *verts, int size, Vector2 *min, Vector2 *max);
 
   /*
-  --------------------------------------------
+  =============================================
   Quaternion
-  --------------------------------------------
-  */
+  =============================================*/
 
-  class GE_API_ENTRY Quaternion
+  class GE_API_ENTRY Quat
   {
   public:
     Float x,y,z,w;
 
-    Quaternion ();
-    Quaternion (Float x, Float y, Float z, Float w);
+    Quat ();
+    Quat (Float x, Float y, Float z, Float w);
     void set (Float x, Float y, Float z, Float w);
 
     Float norm () const;
     Float normSq () const;
-    Quaternion& normalize ();
+    Quat& normalize ();
 
     void setIdentity ();
     void fromAxisAngle (Float x, Float y, Float z, Float radang);
     void fromAxisAngle (const Vector3 &axis, Float radang);
     void fromMatrix (const Matrix4x4 &m);
     Matrix4x4 toMatrix ();
+    
+    static Quat Slerp (const Quat &q1, const Quat &q2, Float t);
+    inline static Float Dot (const Quat &q1, const Quat &q2);
   };
 
-  Quaternion GE_API_ENTRY operator* (const Quaternion &q1, const Quaternion &q2);
-  
-  /*
-  ---------------------------------------------
-  Intersections
-  ---------------------------------------------
-  */
-  
-  class GE_API_ENTRY Intersection
-  {
-  public:
-    static Vector2 LineLine(const Vector2 &o1, const Vector2 &v1, const Vector2 &o2, const Vector2 &v2);
-    static void EllipseEllipse(const Vector2 &c1, const Vector2 &c2, Float rx, Float ry,
-                               Vector2 *i1, Vector2 *i2);
-  };
-  
+  Quat GE_API_ENTRY operator* (const Quat &q1, const Quat &q2);
+
   /*
   ---------------------------------------------
   Unhandled from old code
   ---------------------------------------------
 
-  void getLinePoint(Float k, Float p[3], Float v[3], Float *pt);
-  Float DistSquarePt2Pt(Float p1[3], Float p2[3]);
-
-  void AxisAngle2Quaternion(Float axis[3], Float angle, Float *quat);
   void Quaternion2Euler(Float q[4], Float *euler);
   Float Quaternion2AxisAngle(Float q[4], Float *axis);
   void ConjugateQuaternion(Float *q);
   void InvertQuaternion(Float *q);
   void MulQuaternions(Float a[4], Float b[4], Float *c);
   void DivQuaternions(Float q1[4], Float q2[4], Float *q);
-  void SlerpQuaternions(Float q1[4], Float q2[4], Float t, Float *q);
   */
+
   
   /*
-  ----------------------------------------------
+  =============================================
+  Intersections
+  =============================================*/
+  
+  class GE_API_ENTRY Intersection
+  {
+  public:
+    static Vector2 LineLine (const Vector2 &o1, const Vector2 &v1,
+                             const Vector2 &o2, const Vector2 &v2);
+
+    static void EllipseEllipse (const Vector2 &c1, const Vector2 &c2,
+                                Float rx, Float ry,
+                                Vector2 *i1, Vector2 *i2);
+  };
+  
+  /*
+  =============================================
   Vector inline functions
-  ----------------------------------------------
-  */
+  =============================================*/
   
   inline Vector3 Vector2::xy (Float z)
     { return Vector3 (x,y,z); }
@@ -501,32 +498,34 @@ namespace GE
   }
   
   /*
-  ------------------------------------------
+  =============================================
   Quaternion inline functions
-  ------------------------------------------
-  */
+  =============================================*/
   
-  inline Quaternion::Quaternion ()
+  inline Quat::Quat ()
     { x=0.0f; y=0.0f; z=0.0f; w=1.0f; }
   
-  inline Quaternion::Quaternion (Float xx, Float yy, Float zz, Float ww)
+  inline Quat::Quat (Float xx, Float yy, Float zz, Float ww)
     { x=xx; y=yy; z=zz; w=ww; }
   
-  inline void Quaternion::set (Float xx, Float yy, Float zz, Float ww)
+  inline void Quat::set (Float xx, Float yy, Float zz, Float ww)
     { x=xx; y=yy; z=zz; w=ww; }
   
-  inline void Quaternion::setIdentity ()
+  inline void Quat::setIdentity ()
     { x=0.0f; y=0.0f; z=0.0f; w=1.0f; }
   
-  inline Float Quaternion::norm () const
+  inline Float Quat::norm () const
     { return SQRT (x*x + y*y + z*z + w*w); }
   
-  inline Float Quaternion::normSq () const
+  inline Float Quat::normSq () const
     { return x*x + y*y + z*z + w*w; }
   
-  inline Quaternion& Quaternion::normalize ()
+  inline Quat& Quat::normalize ()
     { Float n=norm(); x/=n; y/=n; z/=n; w/=n; return *this; }
   
+  inline Float Quat::Dot (const Quat &q1, const Quat &q2)
+    { return q1.x*q2.x + q1.y*q2.y + q1.z*q2.z + q1.w*q2.w; }
   
+
 }//namespace GE
 #endif//__VECTORS_H

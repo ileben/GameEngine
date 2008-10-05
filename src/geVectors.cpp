@@ -6,10 +6,9 @@
 namespace GE
 {	
   /*
-  -----------------------------------------
+  =========================================
   Vectors
-  -----------------------------------------
-  */
+  =========================================*/
   
   Float Vector::RotationOnPlane2 (const Vector2 &v)
   {
@@ -102,8 +101,7 @@ namespace GE
   /*
   ---------------------------------------------
   Vertices info
-  ---------------------------------------------
-  */
+  ---------------------------------------------*/
   
   void getVertexBounds (Vector2 *verts, int size, Vector2 *min, Vector2 *max)
   {
@@ -120,29 +118,28 @@ namespace GE
   }
   
   /*
-  ---------------------------------------------
+  =========================================
   Quaternion
-  ---------------------------------------------
-  */
+  =========================================*/
   
-  void Quaternion::fromAxisAngle (Float xx, Float yy, Float zz, Float radang)
+  void Quat::fromAxisAngle (Float xx, Float yy, Float zz, Float radang)
   {
     Float halfang = radang * 0.5f;
-    Float sinha = SIN(halfang);
+    Float sinha = SIN (halfang);
     x = xx * sinha;
     y = yy * sinha;
     z = zz * sinha;
-    w = COS(halfang);
+    w = COS (halfang);
   }
   
-  void Quaternion::fromAxisAngle (const Vector3 &axis, Float radang)
+  void Quat::fromAxisAngle (const Vector3 &axis, Float radang)
   {
-    fromAxisAngle(axis.x, axis.y, axis.z, radang);
+    fromAxisAngle (axis.x, axis.y, axis.z, radang);
   }
   
-  Quaternion GE_API_ENTRY operator* (const Quaternion &q1, const Quaternion &q2)
+  Quat GE_API_ENTRY operator* (const Quat &q1, const Quat &q2)
   {
-    Quaternion out;
+    Quat out;
     out.x = q1.w*q2.x + q1.x*q2.w + q1.y*q2.z - q1.z*q2.y;
     out.y = q1.w*q2.y - q1.x*q2.z + q1.y*q2.w + q1.z*q2.x;
     out.z = q1.w*q2.z + q1.x*q2.y - q1.y*q2.x + q1.z*q2.w;
@@ -152,7 +149,7 @@ namespace GE
   
   /*
   --------------------------------------------------------
-  See Matrix::fromQuaternion for the relation of matrix
+  See Matrix::fromQuat for the relation of matrix
   elements with the quaternion components. From that we
   can derive the following relations:
 
@@ -184,7 +181,7 @@ namespace GE
   to obtain values for x, y or z.
   --------------------------------------------------------*/
   
-  void Quaternion::fromMatrix (const Matrix4x4 &m)
+  void Quat::fromMatrix (const Matrix4x4 &m)
   {
     Float trace, s, inv2s;
     
@@ -237,18 +234,32 @@ namespace GE
     }
   }
 
-  Matrix4x4 Quaternion::toMatrix ()
+  Matrix4x4 Quat::toMatrix ()
   {
     Matrix4x4 m;
-    m.fromQuaternion (*this);
+    m.fromQuat (*this);
     return m;
   }
   
+  Quat Quat::Slerp (const Quat &q1, const Quat &q2, Float t)
+	{
+    Float angle = ACOS (Quat::Dot (q1, q2));
+    Float sina = SIN (angle);
+    Float a = SIN ((1-t) * angle) / sina;
+    Float b = SIN (  t   * angle) / sina;
+
+    Quat qout;
+    qout.x =  a * q1.x  +  b * q2.x;
+    qout.y =  a * q1.y  +  b * q2.y;
+    qout.z =  a * q1.z  +  b * q2.z;
+    qout.w =  a * q1.w  +  b * q2.w;
+    return qout;
+	}
+  
   /*
-  ---------------------------------------------
+  =========================================
   Intersections
-  ---------------------------------------------
-  */
+  =========================================*/
   
   Vector2 Intersection::LineLine(const Vector2 &o1, const Vector2 &v1, const Vector2 &o2, const Vector2 &v2)
   {
@@ -374,23 +385,6 @@ namespace GE
 	//////////////////////////////////////////////////////////////
                    
   /*
-	#define RGB16(r,g,b) (((r&248)<<8) + ((g&252)<<3) + (b>>3))
-	#define RGB15(r,g,b) (((r&248)<<7) + ((g&248)<<2) + (b>>3))
-
-	void getLinePoint(Float k, Float p[3], Float v[3], Float *pt)
-	{
-		pt[0] = p[0] + k*v[0];
-		pt[1] = p[1] + k*v[1];
-		pt[2] = p[2] + k*v[2];
-	}
-
-	void AxisAngle2Quaternion(Float axis[3], Float angle, Float *quat)
-	{
-		quat[0] = COS(angle/2);
-		quat[1] = axis[0] * SIN(angle/2);
-		quat[2] = axis[1] * SIN(angle/2);
-		quat[3] = axis[2] * SIN(angle/2);
-  }
 
 	void Quaternion2Euler(Float q[4], Float *euler)
 	{
@@ -458,14 +452,6 @@ namespace GE
 		ConjugateQuaternion(q);
 	}
 
-	void MulQuaternions(Float a[4], Float b[4], Float *c)
-	{
-		c[0]=a[0]*b[0]-a[1]*b[1]-a[2]*b[2]-a[3]*b[3];
-		c[1]=a[0]*b[1]+a[1]*b[0]+a[2]*b[3]-a[3]*b[2];
-		c[2]=a[0]*b[2]+a[2]*b[0]+a[3]*b[1]-a[1]*b[3];
-		c[3]=a[0]*b[3]+a[3]*b[0]+a[1]*b[2]-a[2]*b[1];
-	}
-
 	void DivQuaternions(Float q1[4], Float q2[4], Float *q)
 	{
 		Float q2i[4];
@@ -474,16 +460,5 @@ namespace GE
 
 		MulQuaternions(q1, q2i, q);
 	}
-
-	void SlerpQuaternions(Float q1[4], Float q2[4], Float t, Float *q)
-	{
-		Float angle = ACOS(DOT4(q1, q2));
-		Float a = SIN((1-t) * angle) / SIN(angle);
-		Float b = SIN(t * angle) / SIN(angle);
-
-		q[0] = a * q1[0] + b * q2[0];
-		q[1] = a * q1[1] + b * q2[1];
-		q[2] = a * q1[2] + b * q2[2];
-		q[3] = a * q1[3] + b * q2[3];
-	}*/
+  */
 }

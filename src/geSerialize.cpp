@@ -12,7 +12,7 @@ namespace GE
   data to be copied in.
   
   The byte offset to the serialized conterpart of the
-  pointers or are calculated from the serialized offset
+  pointers are calculated from the serialized offset
   of the currently processed resource and the offset of the
   pointer member variable within its structure.
 
@@ -26,8 +26,8 @@ namespace GE
     resource itself will have no idea whether it's been
     constructed on the heap or in-place.
 
-  - Pointer to an array of resources. This is invalid
-    only when save-ing / load-ing, since the array
+  - Pointer to an array of resources. This is a problem
+    only when save-ing / load-ing, because the array
     version of the new operator always invokes the default
     constructor. When serializing however, we could use
     multiple in-place constructions to work around it.
@@ -53,10 +53,10 @@ namespace GE
     return state == &stateLoad;
   }
   
-  void SerializeManager::memberData
+  void SerializeManager::memberVar
     (void *ptr, UintP size)
   {
-    state->memberData (ptr, size);
+    state->memberVar (ptr, size);
   }
 
   void SerializeManager::resourcePtr
@@ -149,7 +149,7 @@ namespace GE
   Serialization state
   -----------------------------------------------------*/
 
-  void SerializeManager::StateSerial::memberData
+  void SerializeManager::StateSerial::memberVar
     (void *ptr, UintP size)
   {
     //No-op
@@ -199,7 +199,7 @@ namespace GE
   Saving state
   -----------------------------------------------------*/
 
-  void SerializeManager::StateSave::memberData
+  void SerializeManager::StateSave::memberVar
     (void *ptr, UintP size)
   {
     //Copy data from resource to buffer
@@ -232,7 +232,7 @@ namespace GE
   Loading state
   -----------------------------------------------------*/
 
-  void SerializeManager::StateLoad::memberData
+  void SerializeManager::StateLoad::memberVar
     (void *ptr, UintP size)
   {
     //Copy data from buffer to resource

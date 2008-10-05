@@ -54,45 +54,5 @@ namespace GE
     }
   };
 
-  /*
-  -----------------------------------
-  Resource
-  -----------------------------------*/
-
-  class SkinPose;
-  class SkinAnim;
-  
-  class GE_API_ENTRY MaxCharacter
-  {
-    DECLARE_SERIAL_CLASS (MaxCharacter)
-    DECLARE_CALLBACK (CLSEVT_SERIALIZE, serialize);
-    DECLARE_END;
-
-  public:
-    
-    SkinMesh *mesh;
-    SkinPose *pose;
-    SkinAnim *anim;
-    
-    void serialize (void *sm)
-    {
-      if (mesh != NULL)
-        ((SM*)sm)->resourcePtr (&mesh);
-      if (pose != NULL)
-        ((SM*)sm)->resourcePtr (&pose);
-      if (anim != NULL)
-        ((SM*)sm)->resourcePtr (&anim);
-    }
-    
-    MaxCharacter ()
-    {
-      mesh = NULL;
-      pose = NULL;
-      anim = NULL;
-    }
-    
-    MaxCharacter (SM *sm) {}
-  };
-
 }//namespace GE
 #endif//__GESKINPOLYMESH_H

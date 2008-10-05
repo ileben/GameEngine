@@ -386,7 +386,7 @@ void printVector(const Vector3 &v)
   printf("(%f,%f,%f)\n", v.x, v.y, v.z);
 }
 
-void printQuat(const Quaternion &q)
+void printQuat(const Quat &q)
 {
   printf("(%f,%f,%f,%f)\n", q.x, q.y, q.z, q.w);
 }

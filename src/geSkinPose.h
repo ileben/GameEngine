@@ -7,9 +7,8 @@ namespace GE
   {
     Uint32     numChildren;
     Matrix4x4  worldInv;
-    Quaternion localRot;
+    Quat       localRot;
     Vector4    localTra;
-    Matrix4x4  local;
   };
   
   class GE_API_ENTRY SkinPose
@@ -19,14 +18,12 @@ namespace GE
     DECLARE_END;
     
   public:
-    DynArrayList<SkinBone> *bones;
-
-    SkinPose () { bones = new DynArrayList<SkinBone>; }
-    ~SkinPose () { delete bones; }
+    DynArrayList <SkinBone> *bones;
     
     SkinPose (SM *sm) {}
-    void serialize (void *sm) {
-      ((SM*)sm)->resourcePtr (&bones); }
+    SkinPose () { bones = new DynArrayList <SkinBone>; }
+    ~SkinPose () { delete bones; }
+    void serialize (void *sm) { ((SM*)sm)->resourcePtr (&bones); }
   };
   
 }//namespace GE

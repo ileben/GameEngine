@@ -80,6 +80,7 @@ bool down3D;
 Vector2 lastMouse3D;
 int boneColorIndex = 0;
 int frame = 0;
+int numFrames = 0;
 
 int resY = 512;
 int resX = 512;
@@ -184,7 +185,7 @@ void keyboard (unsigned char key, int x, int y)
   case '+':
     //boneColorIndex++;
     //printf ("BoneIndex: %d\n", boneColorIndex);
-    if (frame < 61) applyFK (++frame);
+    if (frame < numFrames-1) applyFK (++frame);
     break;
   case '-':
     //if (boneColorIndex > 0)
@@ -364,6 +365,7 @@ PolyMesh* loadPackage (String fileName)
   //character = (MaxCharacter*) sm.deserialize ((void*)data.buffer());
   character = (MaxCharacter*) sm.load ((void*)data.buffer());
   SkinMesh *inMesh = character->mesh;
+  numFrames = character->anims->first()->tracks->first()->keys->size();
   
   printf ("Imported %d verts, %d faces, %d indices\n",
           inMesh->verts->size(),
@@ -409,7 +411,7 @@ PolyMesh* loadPackage (String fileName)
 void applyFK (int frame)
 {
   SkinPose *pose = character->pose;
-  SkinAnim *anim = character->anim;
+  SkinAnim *anim = character->anims->first();
   ArrayList <Matrix4x4> fkMats;
   ArrayList <Matrix4x4> skinMats;
   int cindex = 1;
@@ -419,8 +421,8 @@ void applyFK (int frame)
   
   //Root FK matrix = local matrix
   Matrix4x4 rootWorld;
-  //rootWorld.fromQuaternion (skel->bones->first().localRot);
-  rootWorld.fromQuaternion (anim->tracks->first()->keys->at(frame).value);
+  //rootWorld.fromQuat (skel->bones->first().localRot);
+  rootWorld.fromQuat (anim->tracks->first()->keys->at(frame).value);
   rootWorld.setColumn (3, pose->bones->first().localTra);
   fkMats.pushBack (rootWorld);
   
@@ -440,8 +442,8 @@ void applyFK (int frame)
       cindex++;
       
       Matrix4x4 childLocal;
-      //childLocal.fromQuaternion (child->localRot);
-      childLocal.fromQuaternion (track->keys->at(frame).value);
+      //childLocal.fromQuat (child->localRot);
+      childLocal.fromQuat (track->keys->at(frame).value);
       childLocal.setColumn (3, child->localTra);
       fkMats.pushBack (fkMats[b] * childLocal);
     }
@@ -461,7 +463,7 @@ void applyFK (int frame)
     }
   }
 }
-
+/*
 class DD
 {
   DECLARE_SERIAL_CLASS (DD);
@@ -495,6 +497,7 @@ public:
 };
 
 DEFINE_SERIAL_CLASS (CC, ClassID(1,1,1,1));
+*/
 
 int main (int argc, char **argv)
 {
@@ -539,6 +542,7 @@ int main (int argc, char **argv)
   sm.save (&mchar, &data, &size);
   MaxCharacter *outChar = (MaxCharacter*) sm.load (data);
   */
+
   //Initialize GLUT
   initGlut(argc, argv);
   
@@ -565,7 +569,7 @@ int main (int argc, char **argv)
   
   actor = new SPolyActor;
   actor->setMaterial (&mat);
-  actor->setMesh (loadPackage ("bub.pak"));
+  actor->setMesh (loadPackage ("bub2.pak"));
   applyFK (1);
   
   lblFps.setLocation (Vector2 (0.0f,(Float)resY));

@@ -195,6 +195,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\geCharacter.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\geClass.cpp"
 				>
 			</File>
@@ -243,6 +247,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\gePolyMeshActor.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\geProperty.cpp"
 				>
 			</File>
@@ -275,10 +283,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\gePolyMeshActor.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\src\geSkinAnim.cpp"
 				>
 			</File>
@@ -291,6 +295,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\geTexMesh.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\geTexture.cpp"
 				>
 			</File>
@@ -300,10 +308,6 @@
 			</File>
 			<File
 				RelativePath="..\..\src\geTriMeshActor.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\geTexMesh.cpp"
 				>
 			</File>
 			<File
@@ -337,7 +341,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\geAnimation.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\geCamera.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\geCharacter.h"
 				>
 			</File>
 			<File
@@ -405,6 +417,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\gePolyMeshActor.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\geProperty.h"
 				>
 			</File>
@@ -437,10 +453,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\gePolyMeshActor.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\src\geSkinAnim.h"
 				>
 			</File>
@@ -450,6 +462,10 @@
 			</File>
 			<File
 				RelativePath="..\..\src\geSkinPose.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\geTexMesh.h"
 				>
 			</File>
 			<File
@@ -470,10 +486,6 @@
 			</File>
 			<File
 				RelativePath="..\..\src\geUtil.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\geTexMesh.h"
 				>
 			</File>
 			<File
