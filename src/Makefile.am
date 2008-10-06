@@ -1,6 +1,8 @@
 GE_HEADS =\
 	geActor.h\
+	geAnimation.h\
 	geCamera.h\
+	geCharacter.h\
 	geClass.h\
 	geDefs.h\
 	geDynArrayList.h\
@@ -17,16 +19,16 @@ GE_HEADS =\
 	geMatrix.h\
 	geObject.h\
 	gePolyMesh.h\
-	gePolyMeshIters.h\
 	gePolyMeshActor.h\
+	gePolyMeshIters.h\
 	geProperty.h\
 	geRenderer.h\
 	geResource.h\
 	geSaveObj.h\
 	geScene.h\
 	geSerialize.h\
-	geShaders.h\
 	geShader.h\
+	geShaders.h\
 	geSkinAnim.h\
 	geSkinMesh.h\
 	geSkinPose.h\
@@ -48,6 +50,7 @@ libGameEngine_la_SOURCES =\
 	${GE_HEADS}\
 	geActor.cpp\
 	geCamera.cpp\
+	geCharacter.cpp\
 	geClass.cpp\
 	geDynArrayList.cpp\
 	geHMesh.cpp\

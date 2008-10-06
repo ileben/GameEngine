@@ -69,8 +69,8 @@ enum CameraMode
 
 ByteString data;
 MaxCharacter *character;
-ArrayList <Vector3> origPoints;
-ArrayList <Vector3> origNormals;
+ArrayList <Vector3> posePoints;
+ArrayList <Vector3> poseNormals;
 
 SPolyActor *actor;
 FpsLabel lblFps;
@@ -83,7 +83,7 @@ Vector2 lastMouse3D;
 int boneColorIndex = 0;
 int frame = 0;
 int numFrames = 0;
-float time = 0.0f;
+float curTime = 0.0f;
 float maxTime = 0.0f;
 
 int resY = 512;
@@ -190,14 +190,14 @@ void keyboard (unsigned char key, int x, int y)
     //boneColorIndex++;
     //printf ("BoneIndex: %d\n", boneColorIndex);
     if (frame < numFrames-1) ++frame;
-    if (time < maxTime) time += 0.01f;
+    if (curTime < maxTime) curTime += 0.01f;
     applyFK (frame);
     break;
   case '-':
     //if (boneColorIndex > 0) boneColorIndex--;
     //printf ("BoneIndex: %d\n", boneColorIndex);
     if (frame > 0) --frame; 
-    if (time > 0.0f) time -= 0.01f;
+    if (curTime > 0.0f) curTime -= 0.01f;
     applyFK (frame);
     break;
   case 27:
@@ -257,6 +257,8 @@ void display ()
 
 void reshape (int w, int h)
 {
+  resX = w;
+  resY = h;
 }
 
 void findCenter ()
@@ -418,10 +420,10 @@ PolyMesh* loadPackage (String fileName)
   polyMesh->updateNormals ();
   
   for (SPolyMesh::VertIter vi(polyMesh); !vi.end(); ++vi)
-    origPoints.pushBack (vi->point);
+    posePoints.pushBack (vi->point);
   
   for (SPolyMesh::SmoothNormalIter ni(polyMesh); !ni.end(); ++ni)
-    origNormals.pushBack (ni->coord);
+    poseNormals.pushBack (ni->coord);
   
   return polyMesh;
 }
@@ -440,7 +442,7 @@ void applyFK (int frame)
   //Root FK matrix = local matrix
   Matrix4x4 rootWorld;
   //rootWorld.fromQuat (anim->tracks->first()->keys->at(frame).value);
-  rootWorld.fromQuat (anim->tracks->first()->evalAt (time));
+  rootWorld.fromQuat (anim->tracks->first()->evalAt (curTime));
   rootWorld.setColumn (3, pose->bones->first().localT);
   rootWorld *= pose->bones->first().localS;
   fkMats.pushBack (rootWorld);
@@ -465,7 +467,7 @@ void applyFK (int frame)
       
       Matrix4x4 childLocal;
       //childLocal.fromQuat (track->keys->at(frame).value);
-      childLocal.fromQuat (track->evalAt (time));
+      childLocal.fromQuat (track->evalAt (curTime));
       childLocal.setColumn (3, child->localT);
       childLocal *= child->localS;
       fkMats.pushBack (fkMats[b] * childLocal);
@@ -482,7 +484,7 @@ void applyFK (int frame)
     v->point.set (0,0,0);
     for (int i=0; i<4; ++i)
     {
-      Vector3 &posePoint = origPoints [vindex];
+      Vector3 &posePoint = posePoints [vindex];
       v->point += skinMats[v->boneIndex[i]] * posePoint * v->boneWeight[i];
     }
   }
@@ -494,7 +496,7 @@ void applyFK (int frame)
     for (int i=0; i<4; ++i)
     {
       SPolyMesh::Vertex *v = (SPolyMesh::Vertex*) n->vert;
-      Vector3 &poseNormal = origNormals [nindex];
+      Vector3 &poseNormal = poseNormals [nindex];
       n->coord += skinMats[v->boneIndex[i]].transformVector (poseNormal) * v->boneWeight[i];
     }
   }
