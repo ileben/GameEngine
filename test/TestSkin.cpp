@@ -69,6 +69,8 @@ enum CameraMode
 
 ByteString data;
 MaxCharacter *character;
+ArrayList <Vector3> origPoints;
+ArrayList <Vector3> origNormals;
 
 SPolyActor *actor;
 FpsLabel lblFps;
@@ -81,6 +83,8 @@ Vector2 lastMouse3D;
 int boneColorIndex = 0;
 int frame = 0;
 int numFrames = 0;
+float time = 0.0f;
+float maxTime = 0.0f;
 
 int resY = 512;
 int resX = 512;
@@ -185,13 +189,16 @@ void keyboard (unsigned char key, int x, int y)
   case '+':
     //boneColorIndex++;
     //printf ("BoneIndex: %d\n", boneColorIndex);
-    if (frame < numFrames-1) applyFK (++frame);
+    if (frame < numFrames-1) ++frame;
+    if (time < maxTime) time += 0.01f;
+    applyFK (frame);
     break;
   case '-':
-    //if (boneColorIndex > 0)
-    //  boneColorIndex--;
+    //if (boneColorIndex > 0) boneColorIndex--;
     //printf ("BoneIndex: %d\n", boneColorIndex);
-    if (frame > 0) applyFK (--frame);
+    if (frame > 0) --frame; 
+    if (time > 0.0f) time -= 0.01f;
+    applyFK (frame);
     break;
   case 27:
     //Quit on escape
@@ -366,12 +373,14 @@ PolyMesh* loadPackage (String fileName)
   character = (MaxCharacter*) sm.load ((void*)data.buffer());
   SkinMesh *inMesh = character->mesh;
   numFrames = character->anims->first()->tracks->first()->keys->size();
+  maxTime = character->anims->first()->tracks->first()->totalTime;
   
   printf ("Imported %d verts, %d faces, %d indices\n",
           inMesh->verts->size(),
           inMesh->faces->size(),
           inMesh->indices->size());
   
+  //Add vertices to the mesh
   SPolyMesh *polyMesh = new SPolyMesh;
   ArrayList <SPolyMesh::Vertex*> verts (inMesh->verts->size());
   for (int v=0; v<inMesh->verts->size(); ++v)
@@ -384,6 +393,7 @@ PolyMesh* loadPackage (String fileName)
     verts.pushBack (vert);
   }
   
+  //Add indexed faces to the mesh
   int nextIndex = 0;
   for (int f=0; f<inMesh->faces->size(); ++f)
   {
@@ -404,7 +414,15 @@ PolyMesh* loadPackage (String fileName)
     delete[] corners;
   }
   
+  //Calculate and store original normals and points
   polyMesh->updateNormals ();
+  
+  for (SPolyMesh::VertIter vi(polyMesh); !vi.end(); ++vi)
+    origPoints.pushBack (vi->point);
+  
+  for (SPolyMesh::SmoothNormalIter ni(polyMesh); !ni.end(); ++ni)
+    origNormals.pushBack (ni->coord);
+  
   return polyMesh;
 }
 
@@ -421,9 +439,10 @@ void applyFK (int frame)
   
   //Root FK matrix = local matrix
   Matrix4x4 rootWorld;
-  //rootWorld.fromQuat (skel->bones->first().localRot);
-  rootWorld.fromQuat (anim->tracks->first()->keys->at(frame).value);
-  rootWorld.setColumn (3, pose->bones->first().localTra);
+  //rootWorld.fromQuat (anim->tracks->first()->keys->at(frame).value);
+  rootWorld.fromQuat (anim->tracks->first()->evalAt (time));
+  rootWorld.setColumn (3, pose->bones->first().localT);
+  rootWorld *= pose->bones->first().localS;
   fkMats.pushBack (rootWorld);
   
   //Walk all the bones
@@ -436,30 +455,47 @@ void applyFK (int frame)
     //Walk the children
     for (Uint32 c=0; c<parent->numChildren; ++c)
     {
+      if (cindex == 17)
+        int stop = 1;
+      
       //Child FK matrix = parent FK matrix * local matrix
       SkinBone *child = &pose->bones->at (cindex);
       SkinTrack *track = anim->tracks->at (cindex);
       cindex++;
       
       Matrix4x4 childLocal;
-      //childLocal.fromQuat (child->localRot);
-      childLocal.fromQuat (track->keys->at(frame).value);
-      childLocal.setColumn (3, child->localTra);
+      //childLocal.fromQuat (track->keys->at(frame).value);
+      childLocal.fromQuat (track->evalAt (time));
+      childLocal.setColumn (3, child->localT);
+      childLocal *= child->localS;
       fkMats.pushBack (fkMats[b] * childLocal);
     }
   }
-  
-  SkinMesh *mesh = character->mesh;
+
   SPolyMesh *pmesh = (SPolyMesh*) actor->getMesh ();
-  int vindex = 0;
-  
+  int vindex = 0; int nindex = 0;
+
+
+  //Transform vertices
   for (SPolyMesh::VertIter v(pmesh); !v.end(); ++v, ++vindex)
   {
     v->point.set (0,0,0);
     for (int i=0; i<4; ++i)
     {
-      Vector3 &posePoint = mesh->verts->at(vindex).point;
+      Vector3 &posePoint = origPoints [vindex];
       v->point += skinMats[v->boneIndex[i]] * posePoint * v->boneWeight[i];
+    }
+  }
+  
+  //Transform normals
+  for (SPolyMesh::SmoothNormalIter n(pmesh); !n.end(); ++n, ++nindex)
+  {
+    n->coord.set (0,0,0);
+    for (int i=0; i<4; ++i)
+    {
+      SPolyMesh::Vertex *v = (SPolyMesh::Vertex*) n->vert;
+      Vector3 &poseNormal = origNormals [nindex];
+      n->coord += skinMats[v->boneIndex[i]].transformVector (poseNormal) * v->boneWeight[i];
     }
   }
 }
@@ -569,8 +605,8 @@ int main (int argc, char **argv)
   
   actor = new SPolyActor;
   actor->setMaterial (&mat);
-  actor->setMesh (loadPackage ("bub2.pak"));
-  applyFK (1);
+  actor->setMesh (loadPackage ("bub.pak"));
+  applyFK (0);
   
   lblFps.setLocation (Vector2 (0.0f,(Float)resY));
   lblFps.setColor (Vector3 (1.0f,1.0f,1.0f));

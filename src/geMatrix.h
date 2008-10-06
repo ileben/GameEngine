@@ -206,10 +206,13 @@ namespace GE
     void fromQuat (Float x, Float y, Float z, Float w);
     void fromQuat (const Quat &q);
     Quat toQuat ();
+
+    Vector3 transformPoint (const Vector3 &v) const;
+    Vector3 transformVector (const Vector3 &v) const;
     
     Matrix4x4& operator*= (const Matrix4x4 &r);
     Matrix4x4 operator* (const Matrix4x4 &r) const;
-    Vector3 operator* (const Vector3 &v) const;
+    inline Vector3 operator* (const Vector3 &v) const;
     
     //Float determinant () const;
     //Matrix4x4 inverse () const;
@@ -233,6 +236,11 @@ namespace GE
     m[0][1]=m01; m[1][1]=m11; m[2][1]=m21; m[3][1]=m31;
     m[0][2]=m02; m[1][2]=m12; m[2][2]=m22; m[3][2]=m32;
     m[0][3]=m03; m[1][3]=m13; m[2][3]=m23; m[3][3]=m33;
+  }
+
+  inline Vector3 Matrix4x4::operator* (const Vector3 &v) const
+  {
+    return transformPoint (v);
   }
   
 }//namespace GE

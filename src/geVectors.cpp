@@ -245,6 +245,8 @@ namespace GE
 	{
     Float angle = ACOS (Quat::Dot (q1, q2));
     Float sina = SIN (angle);
+    if (sina == 0.0f) return q1;
+
     Float a = SIN ((1-t) * angle) / sina;
     Float b = SIN (  t   * angle) / sina;
 
@@ -255,6 +257,19 @@ namespace GE
     qout.w =  a * q1.w  +  b * q2.w;
     return qout;
 	}
+
+  Quat Quat::Nlerp (const Quat &q1, const Quat &q2, Float t)
+  {
+    Float a = 1 - t;
+    Float b = t;
+    
+    Quat qout;
+    qout.x =  a * q1.x  +  b * q2.x;
+    qout.y =  a * q1.y  +  b * q2.y;
+    qout.z =  a * q1.z  +  b * q2.z;
+    qout.w =  a * q1.w  +  b * q2.w;
+    return qout.normalize();
+  }
   
   /*
   =========================================

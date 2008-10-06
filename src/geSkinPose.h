@@ -7,8 +7,9 @@ namespace GE
   {
     Uint32     numChildren;
     Matrix4x4  worldInv;
-    Quat       localRot;
-    Vector4    localTra;
+    Quat       localR;
+    Vector4    localT;
+    Matrix4x4  localS;
   };
   
   class GE_API_ENTRY SkinPose

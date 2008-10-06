@@ -186,6 +186,7 @@ namespace GE
     Matrix4x4 toMatrix ();
     
     static Quat Slerp (const Quat &q1, const Quat &q2, Float t);
+    static Quat Nlerp (const Quat &q1, const Quat &q2, Float t);
     inline static Float Dot (const Quat &q1, const Quat &q2);
   };
 

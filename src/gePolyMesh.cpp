@@ -119,6 +119,7 @@ namespace GE
     //Average the final normal vector
     if (count > 0) sum /= (Float)count;
     smoothNormals.pushBack( SmoothNormal( sum ));
+    smoothNormals.last().vert = vert;
 
     //Pass2: store normal into each half-edge
     for (f.begin(vert); !f.end(); ++f) {
@@ -229,6 +230,7 @@ namespace GE
     for (g=0; g<groups.size(); ++g) {
       groups[g].normal /= (Float)groups[g].faceCount;
       smoothNormals.pushBack( SmoothNormal( groups[g].normal ));
+      smoothNormals.last().vert = vert;
     }
 
 

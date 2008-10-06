@@ -421,6 +421,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\gepolymeshiters.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\geProperty.h"
 				>
 			</File>

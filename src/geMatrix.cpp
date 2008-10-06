@@ -147,10 +147,17 @@ namespace GE
   
   void Matrix4x4::fromQuat (Float x, Float y, Float z, Float w)
   {
+    
     set (1-2*y*y-2*z*z,   2*x*y-2*w*z,   2*x*z+2*w*y,  0,
          2*x*y+2*w*z,   1-2*x*x-2*z*z,   2*y*z-2*w*x,  0,
          2*x*z-2*w*y,     2*y*z+2*w*x, 1-2*x*x-2*y*y,  0,
          0,               0,             0,            1);
+    /*
+    set (1-2*y*y-2*z*z,   2*x*y+2*w*z,   2*x*z-2*w*y,  0,
+         2*x*y-2*w*z,   1-2*x*x-2*z*z,   2*y*z+2*w*x,  0,
+         2*x*z+2*w*y,     2*y*z-2*w*x, 1-2*x*x-2*y*y,  0,
+         0,               0,             0,            1);
+   */
   }
   
   void Matrix4x4::fromQuat (const Quat &q)
@@ -163,6 +170,24 @@ namespace GE
     Quat q;
     q.fromMatrix (*this);
     return q;
+  }
+
+  Vector3 Matrix4x4::transformPoint (const Vector3 &v) const
+  {
+    Vector3 out;
+    out.x = m[0][0]*v.x + m[1][0]*v.y + m[2][0]*v.z + m[3][0];// * 1.0;
+    out.y = m[0][1]*v.x + m[1][1]*v.y + m[2][1]*v.z + m[3][1];// * 1.0;
+    out.z = m[0][2]*v.x + m[1][2]*v.y + m[2][2]*v.z + m[3][2];// * 1.0;
+    return out;
+  }
+
+  Vector3 Matrix4x4::transformVector (const Vector3 &v) const
+  {
+    Vector3 out;
+    out.x = m[0][0]*v.x + m[1][0]*v.y + m[2][0]*v.z;// + m[3][0] * 0.0;
+    out.y = m[0][1]*v.x + m[1][1]*v.y + m[2][1]*v.z;// + m[3][1] * 0.0;
+    out.z = m[0][2]*v.x + m[1][2]*v.y + m[2][2]*v.z;// + m[3][2] * 0.0;
+    return out;
   }
   
   Matrix4x4& Matrix4x4::operator*= (const Matrix4x4 &R)
@@ -187,15 +212,6 @@ namespace GE
                        m[1][r]*R.m[c][1] +
                        m[2][r]*R.m[c][2] +
                        m[3][r]*R.m[c][3]); }}
-    return out;
-  }
-  
-  Vector3 Matrix4x4::operator* (const Vector3 &v) const
-  {
-    Vector3 out;
-    out.x = m[0][0]*v.x + m[1][0]*v.y + m[2][0]*v.z + m[3][0];// * 1.0;
-    out.y = m[0][1]*v.x + m[1][1]*v.y + m[2][1]*v.z + m[3][1];// * 1.0;
-    out.z = m[0][2]*v.x + m[1][2]*v.y + m[2][2]*v.z + m[3][2];// * 1.0;
     return out;
   }
   

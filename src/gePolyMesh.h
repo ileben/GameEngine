@@ -39,7 +39,12 @@ namespace GE
     DECLARE_SUBCLASS (PolyMesh, HMesh);
     DECLARE_END;
     
-  private:
+  public:
+
+    class Vertex;
+    class Edge;
+    class HalfEdge;
+    class Face;
 
     /*---------------------------------------------
     Smooth normals are dynamically allocated like
@@ -57,10 +62,12 @@ namespace GE
     public:
       ItemTag tag;
       Vector3 coord;
+      Vertex *vert;
       SmoothNormal() {};
       SmoothNormal(const Vector3 &c) {coord = c;}
     };
 
+  private:
     bool useSmoothGroups;
     ShadingModel shadingModel;
     SmoothNormal dummySmoothNormal;
@@ -87,12 +94,6 @@ namespace GE
     ------------------------------------------------*/
 
   public:
-    
-    class Vertex;
-    class Edge;
-    class HalfEdge;
-    class Face;
-
     
     class GE_API_ENTRY Vertex : public VertexBase <PolyMesh,HMesh> {
       DECLARE_SUBCLASS (Vertex, HMesh::Vertex); DECLARE_END;
