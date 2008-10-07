@@ -39,11 +39,11 @@ namespace GE
     
     
     //Output and index vertex normals
-    id =0; for (PolyMesh::SmoothNormalIter s(mesh); !s.end(); ++s) {
+    id =0; for (PolyMesh::VertexNormalIter s(mesh); !s.end(); ++s) {
       file->write( ByteString::Format(
         "vn %f %f %f\n", s->coord.x, s->coord.y, s->coord.z));
       s->tag.id = ++id; }
-
+    
     //Total no. of unique normals
     file->write( ByteString::Format("# %d normals\n\n", id) );
     
@@ -68,32 +68,32 @@ namespace GE
       
         if (!uh.end()) {
         
-          file->write( ByteString::Format(
+          file->write( ByteString::Format (
             " %d/%d/%d", h->dstVertex()->tag.id, uh->dstVertex()->tag.id,
-                         h->smoothNormal()->tag.id) );
+                         h->vertexNormal()->tag.id) );
         }else{
         
           file->write( ByteString::Format(
-            " %d//%d", h->dstVertex()->tag.id, h->smoothNormal()->tag.id) ); }
+            " %d//%d", h->dstVertex()->tag.id, h->vertexNormal()->tag.id) ); }
       }
       
       file->write("\n");
     }
   }
 
-  void SaverObj::writeShape(PolyMeshActor *shape)
+  void SaverObj::writeShape( PolyMeshActor *shape )
   {
     //Group name
-    file->write("g ");
-    file->write(shape->id);
-    file->write("\n");
+    file->write ("g ");
+    file->write (shape->id);
+    file->write ("\n");
     
     //Dynamic mesh
     if (shape->polyMesh != NULL)
       writeDynMesh (shape->polyMesh, shape->texMesh);
   }
 
-  bool SaverObj::saveFile(const String &filename)
+  bool SaverObj::saveFile( const String &filename )
   {
     //Try to open file
     FileRef module = File::GetModule();

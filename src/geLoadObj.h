@@ -23,8 +23,8 @@ namespace GE
     typedef OCC::ArrayList <PolyMesh::Vertex*> VertArray;
     typedef VertArray::Iterator VertArrayIter;
 
-    typedef OCC::ArrayList <PolyMesh::SmoothNormal*> SNormalArray;
-    typedef SNormalArray::Iterator SNormalArrayIter;
+    typedef OCC::ArrayList <PolyMesh::VertexNormal*> VNormalArray;
+    typedef VNormalArray::Iterator VNormalArrayIter;
 
     OCC::FileRef file;
     OCC::ByteString buffer;
@@ -54,7 +54,7 @@ namespace GE
     PolyMeshActor *shape;
     VertArray verts;
     UVertArray uverts;
-    SNormalArray snormals;
+    VNormalArray vnormals;
     void newShape(const OCC::ByteString &name);
 
     void command_Group();

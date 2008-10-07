@@ -31,7 +31,7 @@ namespace GE
   class GE_API_ENTRY TriMesh : public Resource
   {
     friend class Renderer;
-    DECLARE_SUBCLASS (TriMesh, Resource);
+    DECLARE_SUBCLASS( TriMesh, Resource );
     DECLARE_END;
     
   public:
@@ -39,17 +39,27 @@ namespace GE
     struct IndexGroup
     {
       MaterialId materialId;
-      StaticId start;
-      StaticId count;
+      StaticId   start;
+      StaticId   count;
     };
     
-    OCC::ArrayList<Float> data;
-    OCC::ArrayList<Uint32> indices;
-    OCC::LinkedList<IndexGroup> groups;
-
+    OCC::ArrayList <Float> data;
+    OCC::ArrayList <Uint32> indices;
+    OCC::ArrayList <IndexGroup> groups;
+    
+  protected:
+    
+    virtual void vertexFromPoly (PolyMesh::Vertex *polyVert,
+                                 PolyMesh::VertexNormal *polyNormal,
+                                 TexMesh::Vertex *texVert);
+    
+    virtual void faceFromPoly (PolyMesh::Face *polyFace);
+    
   public:
-    void fromPoly (PolyMesh *m, TexMesh *uv,
-                   OCC::ArrayList<PolyMesh::Vertex*> *outVertexMap=NULL);
+    
+    virtual ~TriMesh () {}
+    
+    void fromPoly (PolyMesh *m, TexMesh *uv);
   };
 
 

@@ -94,38 +94,38 @@ namespace GE
   {
     //Create new shape with given id
     shape = new PolyMeshActor;
-    umesh = (TexMesh*) New(uvMeshClass);
-    mesh = (PolyMesh*) New(dMeshClass);
+    umesh = (TexMesh*) New (uvMeshClass);
+    mesh = (PolyMesh*) New (dMeshClass);
     
     shape->setId (name);
     shape->setMesh (mesh);
     shape->setTexMesh (umesh);
 
-    resources.pushBack(umesh);
-    resources.pushBack(mesh);
-    objects.pushBack(shape);
+    resources.pushBack (umesh);
+    resources.pushBack (mesh);
+    objects.pushBack (shape);
 
     //Initialize space for the vertices of the new mesh.
     //They are created only if really used by this mesh
     //once referenced for the first time
 
-    verts.reserve(points.size());
-    for (int i=0; i<points.size(); ++i)
-      verts.pushBack(NULL);
+    verts.reserve (points.size());
+    for (int i=0; i < points.size(); ++i)
+      verts.pushBack (NULL);
 
-    uverts.reserve(ucoords.size());
-    for (int u=0; u<ucoords.size(); ++u)
-      uverts.pushBack(NULL);
+    uverts.reserve (ucoords.size());
+    for (int u=0; u < ucoords.size(); ++u)
+      uverts.pushBack (NULL);
 
-    snormals.reserve(ncoords.size());
-    for (int n=0; n<ncoords.size(); ++n)
-      snormals.pushBack(NULL);
+    vnormals.reserve (ncoords.size());
+    for (int n=0; n < ncoords.size(); ++n)
+      vnormals.pushBack (NULL);
   }
 
   void LoaderObj::command_Group()
   {
     //End previous shape and start new
-    newShape(parseToken());
+    newShape (parseToken ());
   }
 
   void LoaderObj::command_Face()
@@ -137,25 +137,25 @@ namespace GE
     //only if really used by this mesh once referenced
     //for the first time
 
-    verts.reserveAndCopy(points.size());
-    for (int p=verts.size(); p<points.size(); ++p)
-      verts.pushBack(NULL);
+    verts.reserveAndCopy (points.size());
+    for (int p = verts.size(); p < points.size(); ++p)
+      verts.pushBack (NULL);
 
-    uverts.reserveAndCopy(ucoords.size());
-    for (int u=uverts.size(); u<ucoords.size(); ++u)
-      uverts.pushBack(NULL);
+    uverts.reserveAndCopy (ucoords.size());
+    for (int u = uverts.size(); u < ucoords.size(); ++u)
+      uverts.pushBack (NULL);
 
-    snormals.reserveAndCopy(ncoords.size());
-    for (int n=snormals.size(); n<ncoords.size(); ++n)
-      snormals.pushBack(NULL);
+    vnormals.reserveAndCopy (ncoords.size());
+    for (int n = vnormals.size(); n < ncoords.size(); ++n)
+      vnormals.pushBack(NULL);
 
     //Temp arrays for face indices
-    VertArray faceVerts(4);
-    UVertArray faceUverts(4);
-    SNormalArray faceSnormals(4);
+    VertArray faceVerts (4);
+    UVertArray faceUverts (4);
+    VNormalArray faceVnormals (4);
 
     //Parse face vertices
-    ArrayList<ByteString> ints(3);
+    ArrayList<ByteString> ints (3);
     ByteString sf = parseToken();
     while (sf != "") {
       
@@ -181,12 +181,12 @@ namespace GE
       if (ints.size() >= 3) {
         inormal = ints[2].parseInteger();
         if (inormal >= 0) inormal -= 1;
-        else inormal = snormals.size() + inormal; }
+        else inormal = vnormals.size() + inormal; }
 
       //Skip invalid vertex
       bool vertOk = (ivert >= 0 && ivert < verts.size());
       bool uvertOk  = (iuvert >= 0 && iuvert < uverts.size());
-      bool normalOk = (inormal >= 0 && inormal < snormals.size());
+      bool normalOk = (inormal >= 0 && inormal < vnormals.size());
 
       if (vertOk) {
 
@@ -194,21 +194,21 @@ namespace GE
         if (verts[ivert] == NULL) {
           verts[ivert] = (PolyMesh::Vertex*)mesh->addVertex();
           verts[ivert]->point = points[ivert]; }
-        faceVerts.pushBack(verts[ivert]);
+        faceVerts.pushBack (verts[ivert]);
 
         //Create new UV vertex if first time referenced
         if (uvertOk) {
           if (uverts[iuvert] == NULL) {
             uverts[iuvert] = (TexMesh::Vertex*)umesh->addVertex();
             uverts[iuvert]->point = ucoords[iuvert].xy(); }
-          faceUverts.pushBack(uverts[iuvert]); }
+          faceUverts.pushBack (uverts[iuvert]); }
 
-        //Create new SmoothNormal if first time referenced
+        //Create new VertexNormal if first time referenced
         if (normalOk) {
-          if (snormals[inormal] == NULL) {
-            mesh->smoothNormals.pushBack (PolyMesh::SmoothNormal (ncoords[inormal]));
-            snormals[inormal] = &mesh->smoothNormals.last(); }
-          faceSnormals.pushBack(snormals[inormal]); }
+          if (vnormals[inormal] == NULL) {
+            mesh->vertexNormals.pushBack (PolyMesh::VertexNormal (ncoords[inormal]));
+            vnormals[inormal] = &mesh->vertexNormals.last(); }
+          faceVnormals.pushBack (vnormals[inormal]); }
       }
 
       //Pick next vertex data
@@ -225,14 +225,14 @@ namespace GE
     //Create UV mesh face if at least triangle
     if (faceUverts.size() >= 3)
       umesh->addFace((HMesh::Vertex**)faceUverts.buffer(), faceUverts.size());
-
+    
     //Apply normals to mesh face
     PolyMesh::HalfEdge *h = face->hedgeTo(faceVerts[0]);
     int i=0; for (PolyMesh::HedgeLoopIter l(h); !l.end(); ++l, ++i) {
        
       //Check if normal coord present and store
-      if (i < faceSnormals.size())
-        l->snormal = faceSnormals[i];
+      if (i < faceVnormals.size())
+        l->vnormal = faceVnormals[i];
     }
   }
 
@@ -264,7 +264,7 @@ namespace GE
     smoothGroup = 0;
     uverts.clear();
     verts.clear();
-    snormals.clear();
+    vnormals.clear();
     int counter = 0;
 
 

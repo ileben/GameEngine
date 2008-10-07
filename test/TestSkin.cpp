@@ -9,6 +9,11 @@ using namespace OCC;
 
 void applyFK (int frame);
 
+/*
+==========================================================
+SkinPolyMesh
+==========================================================*/
+
 class SPolyMesh : public PolyMesh
 {
   DECLARE_SUBCLASS (SPolyMesh, PolyMesh); DECLARE_END;
@@ -59,6 +64,36 @@ class SPolyActor : public PolyMeshActor { public:
   virtual void renderMesh (MaterialId materialId);
 };
 
+/*
+==========================================================
+SkinTriMesh
+==========================================================*/
+
+class SkinTriMesh : public TriMesh { protected:
+  
+  virtual void vertexFromPoly (PolyMesh::Vertex *polyVert,
+                               PolyMesh::VertexNormal *polyNormal,
+                               TexMesh::Vertex *texVert)
+  {
+    TriMesh::vertexFromPoly( polyVert, polyNormal, texVert);
+    SPolyMesh::Vertex *skinVert = (SPolyMesh::Vertex*) polyVert;
+    
+    for (int i=0; i<4; ++i)
+      data.pushBack( skinVert->boneIndex[ i ]);
+    
+    for (int i=0; i<4; ++i)
+      data.pushBack( skinVert->boneWeight[ i ]); 
+  }
+};
+
+class SkinTriActor : public TriMeshActor { public:
+  virtual void renderMesh (MaterialId materialId);
+};
+
+/*
+==========================================================
+State
+==========================================================*/
 
 enum CameraMode
 {
@@ -73,6 +108,7 @@ ArrayList <Vector3> posePoints;
 ArrayList <Vector3> poseNormals;
 
 SPolyActor *actor;
+TriMeshActor *triActor;
 FpsLabel lblFps;
 
 Camera2D cam2D;
@@ -109,38 +145,38 @@ void drag3D (int x, int y)
   //printf ("------------------------\n");
   //printMatrix (cam3D.getMatrix());
   
-  Vector2 diff = Vector2((Float)x,(Float)y) - lastMouse3D;
-  float eyeDist = (cam3D.getEye() - center).norm();
+  Vector2 diff = Vector2( (Float)x,(Float)y ) - lastMouse3D;
+  float eyeDist = ( cam3D.getEye() - center ).norm();
   
   Float angleH = -diff.x * (2*PI) / 400;
   Float angleV = -diff.y * (2*PI) / 400;
-  Float panH = -diff.x * (eyeDist * 0.002f);
-  Float panV = diff.y * (eyeDist * 0.002f);
-  Float zoom = -diff.y * (eyeDist * 0.01f);
-  lastMouse3D.set ((Float)x, (Float)y);
+  Float panH = -diff.x * ( eyeDist * 0.002f );
+  Float panV =  diff.y * ( eyeDist * 0.002f );
+  Float zoom = -diff.y * ( eyeDist * 0.01f );
+  lastMouse3D.set( (Float)x, (Float)y );
   
   switch (cameraMode)
   {  
   case CAMERA_MODE_ZOOM:
 
-    cam3D.zoom (zoom);
+    cam3D.zoom( zoom );
     break;
     
   case CAMERA_MODE_ORBIT:
     
-    cam3D.setCenter (center);
-    cam3D.orbitH (angleH, true);
-    cam3D.orbitV (angleV, true);
+    cam3D.setCenter( center );
+    cam3D.orbitH( angleH, true );
+    cam3D.orbitV( angleV, true );
     break;
 
   case CAMERA_MODE_PAN:
 
-    cam3D.panH (panH);
-    cam3D.panV (panV);
+    cam3D.panH( panH );
+    cam3D.panV( panV );
     break;
   }
   
-  postRedisplay ();
+  postRedisplay();
 }
 
 void click3D (int button, int state, int x, int y)
@@ -167,19 +203,19 @@ void click3D (int button, int state, int x, int y)
     cameraMode = CAMERA_MODE_PAN;
   }
   
-  lastMouse3D.set((Float)x, (Float)y);
+  lastMouse3D.set( (Float)x, (Float)y );
   down3D = true;
 }
 
 void click (int button, int state, int x, int y)
 {
-  click3D (button, state, x, y);
+  click3D( button, state, x, y );
 }
 
 void drag (int x, int y)
 {
   if (down3D)
-    drag3D (x, y);
+    drag3D( x, y );
 }
 
 void keyboard (unsigned char key, int x, int y)
@@ -191,14 +227,14 @@ void keyboard (unsigned char key, int x, int y)
     //printf ("BoneIndex: %d\n", boneColorIndex);
     if (frame < numFrames-1) ++frame;
     if (curTime < maxTime) curTime += 0.01f;
-    applyFK (frame);
+    applyFK( frame );
     break;
   case '-':
     //if (boneColorIndex > 0) boneColorIndex--;
     //printf ("BoneIndex: %d\n", boneColorIndex);
     if (frame > 0) --frame; 
     if (curTime > 0.0f) curTime -= 0.01f;
-    applyFK (frame);
+    applyFK( frame );
     break;
   case 27:
     //Quit on escape
@@ -209,30 +245,30 @@ void keyboard (unsigned char key, int x, int y)
 void renderAxes ()
 {
   StandardMaterial mat;
-  mat.setUseLighting (false);
-  mat.begin ();
+  mat.setUseLighting( false );
+  mat.begin();
 
-  glMatrixMode (GL_MODELVIEW);
-  glPushMatrix ();
-  glScalef (100, 100, 100);
+  glMatrixMode( GL_MODELVIEW );
+  glPushMatrix();
+  glScalef( 100, 100, 100 );
   
-  glBegin (GL_LINES);
-  glColor3f  (1, 0, 0);
-  glVertex3f (0, 0, 0);
-  glVertex3f (1, 0, 0);
+  glBegin( GL_LINES );
+  glColor3f ( 1, 0, 0 );
+  glVertex3f( 0, 0, 0 );
+  glVertex3f( 1, 0, 0 );
 
-  glColor3f  (0, 1, 0);
-  glVertex3f (0, 0, 0);
-  glVertex3f (0, 1, 0);
+  glColor3f ( 0, 1, 0 );
+  glVertex3f( 0, 0, 0 );
+  glVertex3f( 0, 1, 0 );
 
-  glColor3f  (0, 0, 1);
-  glVertex3f (0, 0, 0);
-  glVertex3f (0, 0, 1);
-  glEnd ();
+  glColor3f ( 0, 0, 1 );
+  glVertex3f( 0, 0, 0 );
+  glVertex3f( 0, 0, 1 );
+  glEnd();
 
-  glPopMatrix ();
+  glPopMatrix();
   
-  mat.end ();
+  mat.end();
 }
 
 void display ()
@@ -240,17 +276,18 @@ void display ()
   renderer.begin();
   
   //switch camera
-  renderer.setViewport (0,0,resX, resY);
-  renderer.setCamera (&cam3D);
+  renderer.setViewport( 0,0,resX, resY );
+  renderer.setCamera( &cam3D );
   
   //draw model
-  renderer.drawActor (actor);
-  renderAxes ();
+  //renderer.drawActor( actor );
+  renderer.drawActor( triActor );
+  renderAxes();
   
   //Frames per second
-  renderer.setViewport (0,0,resX, resY);
-  renderer.setCamera (&cam2D);
-  renderer.drawWidget (&lblFps);
+  renderer.setViewport( 0,0,resX, resY );
+  renderer.setCamera( &cam2D );
+  renderer.drawWidget( &lblFps );
   
   renderer.end();
 }
@@ -281,76 +318,70 @@ void cleanup()
 
 void initGlut (int argc, char **argv)
 {
-  glutInit(&argc, argv);
-  glutInitDisplayMode(GLUT_RGBA | GLUT_ALPHA | GLUT_DEPTH | GLUT_DOUBLE);
+  glutInit( &argc, argv );
+  glutInitDisplayMode( GLUT_RGBA | GLUT_ALPHA | GLUT_DEPTH | GLUT_DOUBLE );
 
-  glutInitWindowPosition(100,100);
-  glutInitWindowSize(resX,resY);
-  glutCreateWindow("Test Skin");
+  glutInitWindowPosition( 100,100 );
+  glutInitWindowSize( resX,resY );
+  glutCreateWindow( "Test Skin" );
   
-  glutReshapeFunc(reshape);
-  glutDisplayFunc(display);
-  glutKeyboardFunc(keyboard);
-  glutMouseFunc(click);
-  glutMotionFunc(drag);
-  glutIdleFunc(display);
+  glutReshapeFunc( reshape );
+  glutDisplayFunc( display );
+  glutKeyboardFunc( keyboard );
+  glutMouseFunc( click );
+  glutMotionFunc( drag );
+  glutIdleFunc( display );
   idleDraw = true;
   
   Float L = 0.9f;
   GLfloat ambient[4] = {0.2f,0.2f,0.2f, 1.0f};
   GLfloat diffuse[4] = {L, L, L, 1.0f};
   GLfloat position[4] = {0.0f, 0.0f, 0.0f, 1.0f};
-  glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
-  glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
-  glLightfv(GL_LIGHT0, GL_POSITION, position);
-  glEnable(GL_LIGHT0);
+  glLightfv( GL_LIGHT0, GL_AMBIENT, ambient );
+  glLightfv( GL_LIGHT0, GL_DIFFUSE, diffuse );
+  glLightfv( GL_LIGHT0, GL_POSITION, position );
+  glEnable(  GL_LIGHT0 );
 }
 
 class VertColorMaterial : public StandardMaterial { public:
   virtual void begin ()  {
     StandardMaterial::begin ();
-    glEnable (GL_COLOR_MATERIAL);
+    glEnable( GL_COLOR_MATERIAL );
   }
 };
 
 void SPolyActor::renderMesh (MaterialId matid)
 {
-  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+  glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
   
-  TexMesh::FaceIter uf(texMesh);
-  for (SPolyMesh::FaceIter f(polyMesh); !f.end(); ++f, ++uf) {
+  TexMesh::FaceIter uf( texMesh );
+  for (SPolyMesh::FaceIter f( polyMesh ); !f.end(); ++f, ++uf) {
     
     //Check if this face belongs to current material
     if (f->materialId() != matid && matid != GE_ANY_MATERIAL_ID)
       continue;
     
-    glBegin(GL_POLYGON);
-    
-    //Use face normal for all vertices in flat mode
-    if (polyMesh->getShadingModel() == SHADING_FLAT)
-      glNormal3fv ((Float*)&f->normal);
+    glBegin( GL_POLYGON );
     
     TexMesh::FaceVertIter uv(*uf);
     for(SPolyMesh::FaceHedgeIter h(*f); !h.end(); ++h, ++uv) {
       
-      //Interpolate per-vertex normals in smooth mode
-      if (polyMesh->getShadingModel() == SHADING_SMOOTH)
-        glNormal3fv ((Float*)&h->smoothNormal()->coord);
+      glNormal3fv( (Float*) &h->vertexNormal()->coord );
       
       SPolyMesh::Vertex *vert = h->dstVertex();
       glColor3f (1,1,1);
       for (int b=0; b<4; ++b) {
-        if (vert->boneIndex [b] == boneColorIndex &&
-            vert->boneWeight [b] > 0.0f)
-            glColor3f (1, 0, 0); }
+        if (vert->boneIndex[ b ] == boneColorIndex &&
+            vert->boneWeight[ b ] > 0.0f)
+            glColor3f( 1, 0, 0 ); }
 
       
       //UV coordinates
       if (!uv.end()) {
-        glTexCoord2f (uv->point.x, uv->point.y); }
+        glTexCoord2f( uv->point.x, uv->point.y ); }
       
       //Vertex coordinate
-      glVertex3fv ((Float*)&h->dstVertex()->point);
+      glVertex3fv( (Float*) &h->dstVertex()->point );
     }
     
     glEnd();
@@ -371,8 +402,8 @@ PolyMesh* loadPackage (String fileName)
   file->close();
   
   SerializeManager sm;
-  //character = (MaxCharacter*) sm.deserialize ((void*)data.buffer());
-  character = (MaxCharacter*) sm.load ((void*)data.buffer());
+  character = (MaxCharacter*) sm.load( (void*)data.buffer() );
+  
   SkinMesh *inMesh = character->mesh;
   numFrames = character->anims->first()->tracks->first()->keys->size();
   maxTime = character->anims->first()->tracks->first()->totalTime;
@@ -384,11 +415,11 @@ PolyMesh* loadPackage (String fileName)
   
   //Add vertices to the mesh
   SPolyMesh *polyMesh = new SPolyMesh;
-  ArrayList <SPolyMesh::Vertex*> verts (inMesh->verts->size());
+  ArrayList <SPolyMesh::Vertex*> verts( inMesh->verts->size() );
   for (int v=0; v<inMesh->verts->size(); ++v)
   {
-    SPolyMesh::Vertex *vert = (SPolyMesh::Vertex*) polyMesh->addVertex ();
-    vert->point = inMesh->verts->at(v).point;
+    SPolyMesh::Vertex *vert = (SPolyMesh::Vertex*) polyMesh->addVertex();
+    vert->point = inMesh->verts->at( v ).point;
     for (int b=0; b<4; ++b) {
       vert->boneIndex[b] = inMesh->verts->at(v).boneIndex[b];
       vert->boneWeight[b] = inMesh->verts->at(v).boneWeight[b]; }
@@ -399,31 +430,31 @@ PolyMesh* loadPackage (String fileName)
   int nextIndex = 0;
   for (int f=0; f<inMesh->faces->size(); ++f)
   {
-    int numCorners = inMesh->faces->at(f).numCorners;
-    HMesh::Vertex **corners = new HMesh::Vertex* [numCorners];
+    int numCorners = inMesh->faces->at( f ).numCorners;
+    HMesh::Vertex **corners = new HMesh::Vertex*[ numCorners ];
     
     for (int c=0; c<numCorners; ++c) {
-      int vertIndex = inMesh->indices->at (nextIndex++);
+      int vertIndex = inMesh->indices->at( nextIndex++ );
       if (vertIndex > inMesh->verts->size()) {
         printf ("Invalid vertex: %d\n", vertIndex);
         vertIndex = 0; }
       corners [c] = verts [vertIndex];
     }
     
-    SPolyMesh::Face *face = (SPolyMesh::Face*) polyMesh->addFace (corners, numCorners);
+    SPolyMesh::Face *face = (SPolyMesh::Face*) polyMesh->addFace( corners, numCorners );
     if (face != NULL) face->smoothGroups = inMesh->faces->at(f).smoothGroups;
     
     delete[] corners;
   }
   
   //Calculate and store original normals and points
-  polyMesh->updateNormals ();
+  polyMesh->updateNormals( SHADING_SMOOTH );
   
-  for (SPolyMesh::VertIter vi(polyMesh); !vi.end(); ++vi)
-    posePoints.pushBack (vi->point);
+  for (SPolyMesh::VertIter vi( polyMesh ); !vi.end(); ++vi)
+    posePoints.pushBack( vi->point );
   
-  for (SPolyMesh::SmoothNormalIter ni(polyMesh); !ni.end(); ++ni)
-    poseNormals.pushBack (ni->coord);
+  for (SPolyMesh::VertexNormalIter ni( polyMesh ); !ni.end(); ++ni)
+    poseNormals.pushBack( ni->coord );
   
   return polyMesh;
 }
@@ -441,18 +472,18 @@ void applyFK (int frame)
   
   //Root FK matrix = local matrix
   Matrix4x4 rootWorld;
-  //rootWorld.fromQuat (anim->tracks->first()->keys->at(frame).value);
-  rootWorld.fromQuat (anim->tracks->first()->evalAt (curTime));
-  rootWorld.setColumn (3, pose->bones->first().localT);
+  //rootWorld.fromQuat( anim->tracks->first()->keys->at( frame ).value);
+  rootWorld.fromQuat( anim->tracks->first()->evalAt( curTime ));
+  rootWorld.setColumn( 3, pose->bones->first().localT );
   rootWorld *= pose->bones->first().localS;
-  fkMats.pushBack (rootWorld);
+  fkMats.pushBack( rootWorld );
   
   //Walk all the bones
   for (int b=0; b<pose->bones->size(); ++b)
   {
     //Final skin matrix = FK matrix * world matrix inverse
     SkinBone *parent = &pose->bones->at(b);
-    skinMats.pushBack (fkMats[b] * parent->worldInv);
+    skinMats.pushBack( fkMats[b] * parent->worldInv );
     
     //Walk the children
     for (Uint32 c=0; c<parent->numChildren; ++c)
@@ -461,16 +492,16 @@ void applyFK (int frame)
         int stop = 1;
       
       //Child FK matrix = parent FK matrix * local matrix
-      SkinBone *child = &pose->bones->at (cindex);
-      SkinTrack *track = anim->tracks->at (cindex);
+      SkinBone *child = &pose->bones->at( cindex );
+      SkinTrack *track = anim->tracks->at( cindex );
       cindex++;
       
       Matrix4x4 childLocal;
-      //childLocal.fromQuat (track->keys->at(frame).value);
-      childLocal.fromQuat (track->evalAt (curTime));
-      childLocal.setColumn (3, child->localT);
+      //childLocal.fromQuat( track->keys->at( frame ).value);
+      childLocal.fromQuat( track->evalAt( curTime ));
+      childLocal.setColumn( 3, child->localT );
       childLocal *= child->localS;
-      fkMats.pushBack (fkMats[b] * childLocal);
+      fkMats.pushBack( fkMats[b] * childLocal );
     }
   }
 
@@ -481,23 +512,25 @@ void applyFK (int frame)
   //Transform vertices
   for (SPolyMesh::VertIter v(pmesh); !v.end(); ++v, ++vindex)
   {
-    v->point.set (0,0,0);
+    v->point.set( 0,0,0 );
     for (int i=0; i<4; ++i)
     {
-      Vector3 &posePoint = posePoints [vindex];
-      v->point += skinMats[v->boneIndex[i]] * posePoint * v->boneWeight[i];
+      Vector3 &posePoint = posePoints[ vindex ];
+      Vector3 skinPoint = skinMats[ v->boneIndex[i] ] * posePoint;
+      v->point += skinPoint * v->boneWeight[i];
     }
   }
   
   //Transform normals
-  for (SPolyMesh::SmoothNormalIter n(pmesh); !n.end(); ++n, ++nindex)
+  for (SPolyMesh::VertexNormalIter n(pmesh); !n.end(); ++n, ++nindex)
   {
-    n->coord.set (0,0,0);
+    n->coord.set( 0,0,0 );
     for (int i=0; i<4; ++i)
     {
       SPolyMesh::Vertex *v = (SPolyMesh::Vertex*) n->vert;
-      Vector3 &poseNormal = poseNormals [nindex];
-      n->coord += skinMats[v->boneIndex[i]].transformVector (poseNormal) * v->boneWeight[i];
+      Vector3 &poseNormal = poseNormals[ nindex ];
+      Vector3 skinNormal = skinMats[ v->boneIndex[i] ].transformVector( poseNormal );
+      n->coord += skinNormal * v->boneWeight[i];
     }
   }
 }
@@ -582,43 +615,50 @@ int main (int argc, char **argv)
   */
 
   //Initialize GLUT
-  initGlut(argc, argv);
+  initGlut( argc, argv );
   
   Kernel kernel;
-  kernel.enableVerticalSync(false);
-  printf("Kernel loaded\n");  
+  kernel.enableVerticalSync( false );
+  printf( "Kernel loaded\n" );
   
   //Setup camera
-  cam3D.setCenter(center);
-  cam3D.translate(0,0,200);
-  cam3D.orbitV (Util::DegToRad (-20), true);
-  cam3D.orbitH (Util::DegToRad (-30), true);
-  cam3D.setNearClipPlane(10.0f);
-  cam3D.setFarClipPlane(1000.0f);
+  cam3D.setCenter( center );
+  cam3D.translate( 0,0,200 );
+  cam3D.orbitV( Util::DegToRad( -20 ), true );
+  cam3D.orbitH( Util::DegToRad( -30 ), true );
+  cam3D.setNearClipPlane( 10.0f );
+  cam3D.setFarClipPlane( 1000.0f );
   
   //VertColorMaterial mat;
   //StandardMaterial mat;
   PhongMaterial mat;
-  mat.setSpecularity (0.5);
+  mat.setSpecularity( 0.5 );
   
   //StandardMaterial mat;
-  //mat.setCullBack (false);
-  //mat.setUseLighting (false);
+  //mat.setCullBack( false );
+  //mat.setUseLighting( false );
   
   actor = new SPolyActor;
-  actor->setMaterial (&mat);
-  actor->setMesh (loadPackage ("bub.pak"));
-  applyFK (0);
+  actor->setMaterial( &mat );
+  actor->setMesh( loadPackage( "bub.pak" ));
+  applyFK( 0 );
   
-  lblFps.setLocation (Vector2 (0.0f,(Float)resY));
-  lblFps.setColor (Vector3 (1.0f,1.0f,1.0f));
+  TriMesh *tmesh = new TriMesh;
+  tmesh->fromPoly( actor->getMesh(), NULL );
+  
+  triActor = new TriMeshActor;
+  triActor->setMaterial( &mat );
+  triActor->setMesh( tmesh );
+  
+  lblFps.setLocation( Vector2( 0.0f, (Float)resY ));
+  lblFps.setColor( Vector3( 1.0f, 1.0f, 1.0f ));
   
   //Find model center
   findCenter();
-  cam3D.setCenter (center);
+  cam3D.setCenter( center );
 
   //Run application
-  atexit(cleanup);
+  atexit( cleanup );
   glutMainLoop();
   cleanup();
 

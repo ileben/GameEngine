@@ -247,9 +247,6 @@ namespace GE
     for (FaceArrayIter f=faces.begin(); f!=faces.end(); ++f) {
 
     }
-
-    //Normals
-    mesh->updateNormals();
   }
 
   void Loader3ds::chunk_OBJECT ()

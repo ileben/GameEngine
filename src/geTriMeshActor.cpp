@@ -36,31 +36,33 @@ namespace GE
   {
     //Draw our mesh
     if (mesh != NULL)
-      renderMesh (materialId);
+      renderMesh( materialId );
   }
-
+  
   void TriMeshActor::renderMesh (MaterialId materialId)
   {
     //Walk material index groups
-    for (LinkedList<TriMesh::IndexGroup>::Iterator
-         g = mesh->groups.begin ();
-         g != mesh->groups.end (); ++g)
+    for (int g=0; g<mesh->groups.size(); ++g)
     {
       //Check if the material id matches
-      if (g->materialId == materialId || materialId == GE_ANY_MATERIAL_ID)
-      {
-        glPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
-        
-        glInterleavedArrays (GL_T2F_N3F_V3F, 0, mesh->data.buffer());
-        glDrawElements (GL_TRIANGLES, g->count, GL_UNSIGNED_INT,
-                        mesh->indices.buffer() + g->start);
-        
-        glDisableClientState (GL_VERTEX_ARRAY);
-        glDisableClientState (GL_NORMAL_ARRAY);
-        glDisableClientState (GL_TEXTURE_COORD_ARRAY);
-        
-        break;
-      }
+      TriMesh::IndexGroup &grp = mesh->groups[g];
+      if (materialId != grp.materialId &&
+          materialId != GE_ANY_MATERIAL_ID)
+        continue;
+      
+      //Pass the geometry to OpenGL
+      glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+      
+      glInterleavedArrays( GL_T2F_N3F_V3F, 0, mesh->data.buffer());
+      
+      glDrawElements (GL_TRIANGLES, grp.count, GL_UNSIGNED_INT,
+                      mesh->indices.buffer() + grp.start);
+      
+      glDisableClientState( GL_VERTEX_ARRAY );
+      glDisableClientState( GL_NORMAL_ARRAY );
+      glDisableClientState( GL_TEXTURE_COORD_ARRAY );
+      
+      break;
     }
   }
 }

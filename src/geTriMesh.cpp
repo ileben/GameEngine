@@ -44,14 +44,13 @@ namespace GE
   
   struct UniqueVertex
   {
-    StaticId staticId;
-    MaterialId materialId;
-    void* uvertexPtr;
-    void* snormalPtr;
+    StaticId    staticId;
+    MaterialId  materialId;
+    void*       uvertexPtr;
+    void*       vnormalPtr;
   };
 
-  void TriMesh::fromPoly (PolyMesh *m, TexMesh *um,
-                          OCC::ArrayList<PolyMesh::Vertex*> *outVertexMap=NULL)
+  void TriMesh::fromPoly (PolyMesh *m, TexMesh *um)
   {
     PolyMesh::FaceIter f;
     PolyMesh::FaceHedgeIter h;
@@ -59,6 +58,13 @@ namespace GE
     TexMesh::FaceHedgeIter uh;
     ArrayList<UniqueVertex> uniqVerts;
     StaticId nextStaticId = 0;
+    
+    /*
+    if (Kernel::Instance->hasRangeElements) {
+      printf( "Max verts: %d\n", Kernel::Instance->maxElementsVertices );
+      printf( "Max indices: %d\n", Kernel::Instance->maxElementsIndices );
+    }
+    */
 
     data.clear();
     indices.clear();
@@ -88,7 +94,7 @@ namespace GE
           //Check for match
           if (uniqVerts[u].materialId == vf->materialId() &&
               uniqVerts[u].uvertexPtr == vfh->tag.ptr &&
-              uniqVerts[u].snormalPtr == vfh->smoothNormal())
+              uniqVerts[u].vnormalPtr == vfh->vertexNormal())
           {
             //Assign existing static ID
             vfh->tag.id = uniqVerts[u].staticId;
@@ -104,75 +110,95 @@ namespace GE
           UniqueVertex uniq;
           uniq.materialId = vf->materialId();
           uniq.uvertexPtr = vfh->tag.ptr;
-          uniq.snormalPtr = vfh->smoothNormal();
+          uniq.vnormalPtr = vfh->vertexNormal();
           uniq.staticId = nextStaticId;
-          uniqVerts.pushBack(uniq);
-
-          //Add UV coord to data
-          if (vfh->tag.ptr == NULL) {
-            data.pushBack (0.0f);
-            data.pushBack (0.0f);
-          }else{
-            TexMesh::Vertex *uv = (TexMesh::Vertex*) vfh->tag.ptr;
-            data.pushBack (uv->point.x);
-            data.pushBack (uv->point.y); }
+          uniqVerts.pushBack( uniq );
           
-          //Add normal coord to data
-          data.pushBack (vfh->smoothNormal()->coord.x);
-          data.pushBack (vfh->smoothNormal()->coord.y);
-          data.pushBack (vfh->smoothNormal()->coord.z);
+          //Invoke the vertex exporter
+          vertexFromPoly (*v, vfh->vertexNormal(),
+                          (TexMesh::Vertex*) vfh->tag.ptr);
           
-          //Add vertex coord to data
-          data.pushBack (v->point.x);
-          data.pushBack (v->point.y);
-          data.pushBack (v->point.z);
-
           //Assign new static ID
           vfh->tag.id = nextStaticId++;
-          
-          //Add vertex to tri-to-poly map
-          if (outVertexMap != NULL)
-            outVertexMap.pushBack (*v);
         }
-       
+        
       }//Walk adjacent faces
     }//Walk all vertices
 
     
-    //Walk all the faces of the mesh
+    //Walk the materials used by the mesh
     for (LinkedList<MaterialId>::Iterator mid=m->materialsUsed.begin();
          mid != m->materialsUsed.end(); ++mid)
     {
       //Initialize material index group
-      IndexGroup &grp = *groups.pushBack(IndexGroup());
+      IndexGroup grp;
       grp.materialId = *mid;
       grp.start = indices.size();
-      grp.count = 0;
       
-      //Walk faces of current material
-      for (PolyMesh::MaterialFaceIter mf(m, *mid); !mf.end(); ++mf)
-      {
-        PolyMesh::HalfEdge *cur = mf->firstHedge();
-        PolyMesh::HalfEdge *prev = cur->prevHedge();
-        PolyMesh::HalfEdge *next = cur->nextHedge();
-        
-        do { //Triangulate face
-          
-          indices.pushBack(prev->tag.id);
-          indices.pushBack(cur->tag.id);
-          indices.pushBack(next->tag.id);
-          grp.count += 3;
-          cur = cur->nextHedge();
-          next = next->nextHedge();
-          
-        } while (next != prev);
-      }
+      //Walk faces of current material and invoke the exporter
+      for (PolyMesh::MaterialFaceIter mf( m, *mid ); !mf.end(); ++mf)
+        faceFromPoly( *mf );
+      
+      //Count the number of exported indices
+      grp.count = indices.size() - grp.start;
+      groups.pushBack( grp );
     }
+  }
+  
+  /*
+  -------------------------------------------------------
+  This is the default triangle vertex exporter function.
+  It generates the triangle mesh data from the polygonal
+  mesh input structures. The data exported are vertex
+  coordinate, vertex normal and texture coordinate.
+  -------------------------------------------------------*/
+  
+  void TriMesh::vertexFromPoly (PolyMesh::Vertex *polyVert,
+                                PolyMesh::VertexNormal *polyNormal,
+                                TexMesh::Vertex *texVert)
+  {
+    //Add UV coord to data
+    if (texVert == NULL) {
+      data.pushBack( 0.0f );
+      data.pushBack( 0.0f );
+    }else{
+      data.pushBack( texVert->point.x );
+      data.pushBack( texVert->point.y ); }
     
-    if (Kernel::Instance->hasRangeElements) {
-      printf("Max verts: %d\n", Kernel::Instance->maxElementsVertices);
-      printf("Max indices: %d\n", Kernel::Instance->maxElementsIndices);
-    }
+    //Add normal coord to data
+    data.pushBack( polyNormal->coord.x );
+    data.pushBack( polyNormal->coord.y );
+    data.pushBack( polyNormal->coord.z );
+    
+    //Add vertex coord to data
+    data.pushBack( polyVert->point.x );
+    data.pushBack( polyVert->point.y );
+    data.pushBack( polyVert->point.z );
+  }
+  
+  /*
+  ----------------------------------------------------
+  This is the default triangle face exporter function.
+  It triangulates the input polygon using a simple
+  ear-cut algorithm and stores the resulting indices.
+  ----------------------------------------------------*/
+  
+  void TriMesh::faceFromPoly (PolyMesh::Face *polyFace)
+  {
+    PolyMesh::HalfEdge *cur = polyFace->firstHedge();
+    PolyMesh::HalfEdge *prev = cur->prevHedge();
+    PolyMesh::HalfEdge *next = cur->nextHedge();
+    
+    do {
+      
+      indices.pushBack( prev->tag.id );
+      indices.pushBack( cur->tag.id );
+      indices.pushBack( next->tag.id );
+      
+      cur = cur->nextHedge();
+      next = next->nextHedge();
+      
+    } while (next != prev);
   }
 
 }//namespace GE

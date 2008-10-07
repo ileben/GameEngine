@@ -57,7 +57,7 @@ namespace GE
 
   void PolyMeshActor::renderMesh (MaterialId matid)
   {
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    glPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
     
     TexMesh::FaceIter uf (texMesh);
     for (PolyMesh::FaceIter f(polyMesh); !f.end(); ++f, ++uf) {
@@ -68,16 +68,11 @@ namespace GE
       
       glBegin(GL_POLYGON);
       
-      //Use face normal for all vertices in flat mode
-      if (polyMesh->getShadingModel() == SHADING_FLAT)
-        glNormal3fv ((Float*)&f->normal);
-      
       TexMesh::FaceVertIter uv(*uf);
       for(PolyMesh::FaceHedgeIter h(*f); !h.end(); ++h, ++uv) {
         
-        //Interpolate per-vertex normals in smooth mode
-        if (polyMesh->getShadingModel() == SHADING_SMOOTH)
-          glNormal3fv ((Float*)&h->smoothNormal()->coord);
+        //Vertex normal
+        glNormal3fv ((Float*)&h->vertexNormal()->coord);
         
         //UV coordinates
         if (!uv.end()) {

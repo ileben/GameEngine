@@ -57,22 +57,21 @@ namespace GE
     get updated.
     ----------------------------------------------*/
 
-    class SmoothNormal
+    class VertexNormal
     {
     public:
       ItemTag tag;
       Vector3 coord;
       Vertex *vert;
-      SmoothNormal() {};
-      SmoothNormal(const Vector3 &c) {coord = c;}
+      VertexNormal () {};
+      VertexNormal (const Vector3 &c) {coord = c;}
     };
 
   private:
     bool useSmoothGroups;
-    ShadingModel shadingModel;
-    SmoothNormal dummySmoothNormal;
-    OCC::DynamicArrayList<SmoothNormal> smoothNormals;
-    virtual void insertHalfEdge(HMesh::HalfEdge *he);
+    VertexNormal dummyVertexNormal;
+    OCC::DynamicArrayList<VertexNormal> vertexNormals;
+    virtual void insertHalfEdge (HMesh::HalfEdge *he);
     
     /*--------------------------------------------
     We keep track of all the material IDs used on
@@ -81,12 +80,12 @@ namespace GE
     ----------------------------------------------*/
     
   private:
-    int facesPerMaterial[GE_MAX_MATERIAL_ID];
+    int facesPerMaterial [GE_MAX_MATERIAL_ID];
     OCC::LinkedList<MaterialId> materialsUsed;
-    void addMaterialId(MaterialId m);
-    void subMaterialId(MaterialId m);
-    virtual void insertFace(HMesh::Face *f);
-    virtual ListHandle deleteFace(HMesh::Face *f);
+    void addMaterialId (MaterialId m);
+    void subMaterialId (MaterialId m);
+    virtual void insertFace (HMesh::Face *f);
+    virtual ListHandle deleteFace (HMesh::Face *f);
     
 
     /*----------------------------------------------
@@ -116,9 +115,9 @@ namespace GE
     class GE_API_ENTRY HalfEdge : public HalfEdgeBase <PolyMesh,HMesh> {
       DECLARE_SUBCLASS (HalfEdge, HMesh::HalfEdge); DECLARE_END;
     public:
-      SmoothNormal *snormal;
-      HalfEdge() {snormal = NULL;}
-      INLINE SmoothNormal* smoothNormal() { return snormal; }
+      VertexNormal *vnormal;
+      HalfEdge() {vnormal = NULL;}
+      INLINE VertexNormal* vertexNormal() { return vnormal; }
     };
     
     /*--------------------------------------------------
@@ -137,8 +136,8 @@ namespace GE
       Vector3 center;
       Vector3 normal;
       Uint32 smoothGroups;
-      Face() {smoothGroups = 0; matId = 0;}
-      Uint8 materialId() {return matId;}
+      Face () {smoothGroups = 0; matId = 0;}
+      Uint8 materialId () {return matId;}
     };
 
     //Data and adjancency iterators
@@ -153,34 +152,25 @@ namespace GE
     
     //When true causes smoothing groups to be taken
     //into account when calculating vertex normals
-    void setUseSmoothGroups(bool enabled) {
+    void setUseSmoothGroups (bool enabled) {
       useSmoothGroups = enabled;
     }
 
-    bool getUseSmoothGroups() {
+    bool getUseSmoothGroups () {
       return useSmoothGroups;
-    }
-
-    //When true the mesh is rendered using per-vertex
-    //normals which are interpolated over triangles
-    void setShadingModel(ShadingModel model) {
-      shadingModel = model;
-    }
-
-    ShadingModel getShadingModel() {
-      return shadingModel;
     }
 
   private:
 
-    void updateFaceNormal(Face *f);
-    void updateVertNormal(Vertex *v);
-    void updateVertNormalGroups(Vertex *v);
+    void updateFaceNormal (Face *f);
+    void updateVertNormalFlat (Vertex *v);
+    void updateVertNormalSmooth (Vertex *v);
+    void updateVertNormalGroups (Vertex *v);
 
   public:
 
-    void updateNormals();
-    void setMaterialId(Face *f, MaterialId id);
+    void updateNormals (ShadingModel shadingModel);
+    void setMaterialId (Face *f, MaterialId id);
   };
   
 

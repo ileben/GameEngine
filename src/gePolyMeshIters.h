@@ -5,22 +5,22 @@
  *
  *=============================================*/
 
-class SmoothNormalIter
+class VertexNormalIter
 {
   PolyMesh *mesh;
   int cur;
 
 public:
 
-  SmoothNormalIter()
+  VertexNormalIter()
   {
     mesh = NULL;
     cur = 0;
   }
 
-  SmoothNormalIter (PolyMesh *mesh)
+  VertexNormalIter (PolyMesh *mesh)
   {
-    begin(mesh);
+    begin (mesh);
   }
 
   void begin (PolyMesh *mesh)
@@ -29,7 +29,7 @@ public:
     cur = 0;
   }
 
-  SmoothNormalIter& operator++ ()
+  VertexNormalIter& operator++ ()
   {
     cur++;
     return *this;
@@ -38,15 +38,15 @@ public:
   bool end() const
   {
     if (mesh == NULL) return true;
-    return (cur >= mesh->smoothNormals.size());
+    return (cur >= mesh->vertexNormals.size());
   }
 
-  SmoothNormal* operator*() const {
-    return (mesh == NULL) ? NULL : &mesh->smoothNormals[cur];
+  VertexNormal* operator*() const {
+    return (mesh == NULL) ? NULL : &mesh->vertexNormals [cur];
   }
 
-  SmoothNormal* operator->() const {
-    return (mesh == NULL) ? NULL : &mesh->smoothNormals[cur];
+  VertexNormal* operator->() const {
+    return (mesh == NULL) ? NULL : &mesh->vertexNormals [cur];
   }
 };
 
