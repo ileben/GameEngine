@@ -7,17 +7,9 @@ using namespace OCC;
 namespace GE
 {
   DEFINE_CLASS (TriMesh);
-  
-  
-  struct UniqueVertex
-  {
-    StaticId staticId;
-    MaterialId materialId;
-    void* uvertexPtr;
-    void* snormalPtr;
-  };
 
-  /*-------------------------------------------------
+  /*
+  ---------------------------------------------------
   When packing a dynamic editable mesh into a static
   representation, the final memory layout of data
   has to be appropriate for OpenGL rendering calls.
@@ -29,16 +21,37 @@ namespace GE
   
   The algorithm walks all the incident faces of each
   vertex and checks whether the normal or texture
-  coordinate differ for any of the faces. The
-  uniqueness of the smooth normal is already given
-  via the 'normalGroup' id produced by the normal
-  calculation algorithm. Additionally, in the first
-  pass the pointers to the respective vertices in
-  the dynamic UV mesh are copied into vert-per-face
-  halfedges' algorithm helper tags.
-  --------------------------------------------------*/
+  vertex pointers differ for any of the faces.
 
-  void TriMesh::fromPoly (PolyMesh *m, TexMesh *um)
+  In the first pass the pointers to the respective
+  vertices in the dynamic UV mesh are copied into
+  the adjacent face's incoming halfedge helper tag.
+  These are later inspected to determine the
+  differences in UV coordinates based on the
+  texture vertex pointers.
+  
+  When an adjacent face is visited, that tag is
+  replaced with the index into the array of final
+  output vertices (existing or new one).
+  
+  If a pointer to a Vertex array is given, it is
+  filled with pointers to vertices in the original
+  polygonal mesh for each produced triangle mesh
+  vertex. This efficiently creates a mapping
+  between the TriMesh and PolyMesh vertices for
+  use in subsequent algorithms.
+  --------------------------------------------------*/
+  
+  struct UniqueVertex
+  {
+    StaticId staticId;
+    MaterialId materialId;
+    void* uvertexPtr;
+    void* snormalPtr;
+  };
+
+  void TriMesh::fromPoly (PolyMesh *m, TexMesh *um,
+                          OCC::ArrayList<PolyMesh::Vertex*> *outVertexMap=NULL)
   {
     PolyMesh::FaceIter f;
     PolyMesh::FaceHedgeIter h;
@@ -50,8 +63,8 @@ namespace GE
     data.clear();
     indices.clear();
 
-
     //Store UV pointers into vert-per-face hedges
+    //(These are later replaced with static vertex IDs)
     for (f.begin(m), uf.begin(um); !f.end(); ++f, ++uf) {
       for (h.begin(*f), uh.begin(*uf); !h.end(); ++h, ++uh) {
         if (!uh.end()) h->tag.ptr = uh->dstVertex();
@@ -59,33 +72,34 @@ namespace GE
       }}
 
     //Walk all the vertices of the mesh
-    for (PolyMesh::VertIter v(m); !v.end(); ++v) {
-
+    for (PolyMesh::VertIter v(m); !v.end(); ++v)
+    {
       //An array for unique vertices
       uniqVerts.clear();
-
+      
       //Walk adjacent faces and output unique vertex variants
       for (PolyMesh::VertFaceIter vf(*v); !vf.end(); ++vf) {
         PolyMesh::HalfEdge *vfh = vf.hedgeToVertex();
-
+        
         //Walk existing vertex variants
         bool existingFound = false;
-        for (int u=uniqVerts.size()-1; u>=0; --u) {
-
+        for (int u=uniqVerts.size()-1; u>=0; --u)
+        {
           //Check for match
           if (uniqVerts[u].materialId == vf->materialId() &&
               uniqVerts[u].uvertexPtr == vfh->tag.ptr &&
-              uniqVerts[u].snormalPtr == vfh->smoothNormal()) {
-
-              //Target existing one
-              vfh->tag.id = uniqVerts[u].staticId;
-              existingFound = true;
-              break;
-          }}
-
+              uniqVerts[u].snormalPtr == vfh->smoothNormal())
+          {
+            //Assign existing static ID
+            vfh->tag.id = uniqVerts[u].staticId;
+            existingFound = true;
+            break;
+          }
+        }
+        
         //Output a new vertex variant
-        if (!existingFound) {
-
+        if (!existingFound)
+        {
           //Uniqueness info
           UniqueVertex uniq;
           uniq.materialId = vf->materialId();
@@ -96,25 +110,29 @@ namespace GE
 
           //Add UV coord to data
           if (vfh->tag.ptr == NULL) {
-            data.pushBack(0.0f);
-            data.pushBack(0.0f);
+            data.pushBack (0.0f);
+            data.pushBack (0.0f);
           }else{
-            TexMesh::Vertex *uv = (TexMesh::Vertex*)vfh->tag.ptr;
-            data.pushBack(uv->point.x);
-            data.pushBack(uv->point.y); }
+            TexMesh::Vertex *uv = (TexMesh::Vertex*) vfh->tag.ptr;
+            data.pushBack (uv->point.x);
+            data.pushBack (uv->point.y); }
           
           //Add normal coord to data
-          data.pushBack(vfh->smoothNormal()->coord.x);
-          data.pushBack(vfh->smoothNormal()->coord.y);
-          data.pushBack(vfh->smoothNormal()->coord.z);
+          data.pushBack (vfh->smoothNormal()->coord.x);
+          data.pushBack (vfh->smoothNormal()->coord.y);
+          data.pushBack (vfh->smoothNormal()->coord.z);
           
           //Add vertex coord to data
-          data.pushBack(v->point.x);
-          data.pushBack(v->point.y);
-          data.pushBack(v->point.z);
+          data.pushBack (v->point.x);
+          data.pushBack (v->point.y);
+          data.pushBack (v->point.z);
 
-          //Assign static id
+          //Assign new static ID
           vfh->tag.id = nextStaticId++;
+          
+          //Add vertex to tri-to-poly map
+          if (outVertexMap != NULL)
+            outVertexMap.pushBack (*v);
         }
        
       }//Walk adjacent faces
@@ -123,8 +141,8 @@ namespace GE
     
     //Walk all the faces of the mesh
     for (LinkedList<MaterialId>::Iterator mid=m->materialsUsed.begin();
-         mid != m->materialsUsed.end(); ++mid) {
-      
+         mid != m->materialsUsed.end(); ++mid)
+    {
       //Initialize material index group
       IndexGroup &grp = *groups.pushBack(IndexGroup());
       grp.materialId = *mid;
@@ -132,8 +150,8 @@ namespace GE
       grp.count = 0;
       
       //Walk faces of current material
-      for (PolyMesh::MaterialFaceIter mf(m, *mid); !mf.end(); ++mf) {
-        
+      for (PolyMesh::MaterialFaceIter mf(m, *mid); !mf.end(); ++mf)
+      {
         PolyMesh::HalfEdge *cur = mf->firstHedge();
         PolyMesh::HalfEdge *prev = cur->prevHedge();
         PolyMesh::HalfEdge *next = cur->nextHedge();

@@ -48,7 +48,8 @@ namespace GE
     OCC::LinkedList<IndexGroup> groups;
 
   public:
-    void fromPoly (PolyMesh *m, TexMesh *uv);
+    void fromPoly (PolyMesh *m, TexMesh *uv,
+                   OCC::ArrayList<PolyMesh::Vertex*> *outVertexMap=NULL);
   };
 
 
