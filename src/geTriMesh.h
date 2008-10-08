@@ -31,7 +31,8 @@ namespace GE
   class GE_API_ENTRY TriMesh : public Resource
   {
     friend class Renderer;
-    DECLARE_SUBCLASS( TriMesh, Resource );
+    DECLARE_SERIAL_SUBCLASS( TriMesh, Resource );
+    DECLARE_CALLBACK (CLSEVT_SERIALIZE, serialize);
     DECLARE_END;
     
   public:
@@ -43,9 +44,9 @@ namespace GE
       StaticId   count;
     };
     
-    OCC::ArrayList <Float> data;
-    OCC::ArrayList <Uint32> indices;
-    OCC::ArrayList <IndexGroup> groups;
+    ArrayListGeneric *data;
+    ArrayList <Uint32> indices;
+    ArrayList <IndexGroup> groups;
     
   protected:
     
@@ -57,7 +58,26 @@ namespace GE
     
   public:
     
-    virtual ~TriMesh () {}
+    void serialize ()
+    {
+    }
+    
+    TriMesh (SerialManager *sm)
+    {}
+    
+    TriMesh ()
+    {
+      data = new ArrayListGeneric;
+      indices = new ArrayList <Uint32>;
+      groups = new ArrayList <IndexGroup>;
+    }
+    
+    virtual ~TriMesh ()
+    {
+      delete data;
+      delete indices;
+      delete groups;
+    }
     
     void fromPoly (PolyMesh *m, TexMesh *uv);
   };
