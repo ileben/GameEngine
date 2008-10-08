@@ -632,8 +632,25 @@ public:
 DEFINE_SERIAL_CLASS (CC, ClassID(1,1,1,1));
 */
 
+class CC
+{
+public:
+  CC() { printf( "Ctor\n" ); }
+  ~CC() { printf( "~Dtor\n" ); }
+};
+
 int main (int argc, char **argv)
 {
+  ResArrayList <String> list;
+  String cc;
+  
+  list.pushBack( cc );
+  list.pushBack( cc );
+  list.pushBack( cc );
+  list.pushBack( cc );
+  
+  getchar();
+  return 0;
   /*
   CC cc;
   for (int d=0; d<5; ++d) {

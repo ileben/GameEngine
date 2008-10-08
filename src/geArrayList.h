@@ -148,8 +148,10 @@ namespace GE
 		
     virtual ~GenericArrayList()
     {
-      destruct (elements, sz);
-      std::free (elements);
+      //--Can't call virtuals in destructor!
+      //--Implemented in ArrayList<T>.
+      //destruct( elements, sz );
+      std::free( elements );
     }
       
     /*
@@ -218,6 +220,8 @@ namespace GE
     {
       void *copyElt = (void*) newElt;      
       bool cloned = false;
+      
+      printf( "cap: %d\n", cap );
       
       //Clamp insertion point to size
       if (index > sz) index = sz;
@@ -406,27 +410,36 @@ namespace GE
   {
   public:
     
-    ResArrayList ()
-      : ArrayListT <T> (sizeof(T))
+    ResArrayList()
+      : ArrayListT <T> ( sizeof(T), NULL )
       {}
         
-    ResArrayList (UintP newCap)
-      : ArrayListT <T> (newCap, sizeof(T))
+    ResArrayList( UintP newCap )
+      : ArrayListT <T> ( newCap, sizeof(T), NULL )
       {}
         
-    virtual void construct (Uint8 *dst, UintP n)
+    ~ResArrayList()
     {
+      printf( "~ResArrayList\n" );
+      destruct( this->elements, this->sz );
+    }
+      
+    virtual void construct( void *dst, UintP n )
+    {
+      printf( "construct %d, %p\n", n, dst );
       new (dst) T [n];
     }
     
-    virtual void destruct (Uint8 *dst, UintP n)
+    virtual void destruct( void *dst, UintP n )
     {
+      printf( "destruct %d, %p\n", n, dst );
+      printf( "sizeof(T): %d\n", this->eltSize );
       T *tdst = (T*)dst;
       for (int d=0; d<n; ++d)
         tdst[n].~T();
     }
     
-    virtual void copy (Uint8 *dst, const Uint8 *src, UintP n)
+    virtual void copy( void *dst, const void *src, UintP n )
     {
       T *tdst = (T*)dst;
       T *tsrc = (T*)src;
