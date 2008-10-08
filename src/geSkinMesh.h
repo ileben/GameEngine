@@ -25,9 +25,9 @@ namespace GE
     
   public:
     
-    DynArrayList <SkinVertex> *verts;
-    DynArrayList <SkinFace> *faces;
-    DynArrayList <Uint32> *indices;
+    ArrayListT <SkinVertex> *verts;
+    ArrayListT <SkinFace> *faces;
+    ArrayListT <Uint32> *indices;
     
     void serialize (void *sm)
     {
@@ -41,9 +41,9 @@ namespace GE
     
     SkinMesh ()
     {
-      verts = new DynArrayList <SkinVertex> ();
-      faces = new DynArrayList <SkinFace> ();
-      indices = new DynArrayList <Uint32> ();
+      verts = new ArrayListT <SkinVertex> ();
+      faces = new ArrayListT <SkinFace> ();
+      indices = new ArrayListT <Uint32> ();
     }
     
     ~SkinMesh ()

@@ -1,11 +1,11 @@
 GE_HEADS =\
 	geActor.h\
 	geAnimation.h\
+	geArrayList.h\
 	geCamera.h\
 	geCharacter.h\
 	geClass.h\
 	geDefs.h\
-	geDynArrayList.h\
 	geEngine.h\
 	geGLHeaders.h\
 	geHmesh.h\
@@ -49,10 +49,10 @@ libGameEngine_la_LDFLAGS = -L${prefix}/lib
 libGameEngine_la_SOURCES =\
 	${GE_HEADS}\
 	geActor.cpp\
+	geArrayList.cpp\
 	geCamera.cpp\
 	geCharacter.cpp\
 	geClass.cpp\
-	geDynArrayList.cpp\
 	geHMesh.cpp\
 	geKernel.cpp\
 	geLoad3ds.cpp\

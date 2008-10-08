@@ -49,13 +49,13 @@ namespace GE
     return polyMesh;
   }
 
-  void PolyMeshActor::render (MaterialId materialId)
+  void PolyMeshActor::render (MaterialID materialID)
   {
     if (polyMesh != NULL)
-      renderMesh (materialId);
+      renderMesh (materialID);
   }
 
-  void PolyMeshActor::renderMesh (MaterialId matid)
+  void PolyMeshActor::renderMesh (MaterialID matID)
   {
     glPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
     
@@ -63,7 +63,8 @@ namespace GE
     for (PolyMesh::FaceIter f(polyMesh); !f.end(); ++f, ++uf) {
       
       //Check if this face belongs to current material
-      if (f->materialId() != matid && matid != GE_ANY_MATERIAL_ID)
+      if (matID != f->materialID() &&
+          matID != GE_ANY_MATERIAL_ID)
         continue;
       
       glBegin(GL_POLYGON);

@@ -25,7 +25,7 @@ namespace GE
   protected:
     TriMesh *mesh;
 
-    virtual void renderMesh (MaterialId materialId);
+    virtual void renderMesh (MaterialID materialID);
     
   public:
     TriMeshActor();
@@ -34,7 +34,7 @@ namespace GE
     void setMesh (TriMesh *mesh);
     TriMesh* getMesh();
     
-    virtual void render (MaterialId materialId);
+    virtual void render (MaterialID materialID);
   };
 
 

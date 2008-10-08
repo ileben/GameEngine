@@ -26,7 +26,7 @@ namespace GE
     
     useSmoothGroups = true;
     
-    for (MaterialId m=0; m<GE_MAX_MATERIAL_ID; ++m)
+    for (MaterialID m=0; m<GE_MAX_MATERIAL_ID; ++m)
       facesPerMaterial [m] = 0;
   }
   
@@ -48,38 +48,38 @@ namespace GE
   Material ID handling
   ----------------------------------------------------*/
   
-  void PolyMesh::addMaterialId (MaterialId m)
+  void PolyMesh::addMaterialID (MaterialID m)
   {
-    facesPerMaterial[m]++;
-    if (facesPerMaterial[m] == 1)
-      if (!materialsUsed.contains(m))
-        materialsUsed.pushFront(m);
+    facesPerMaterial[ m ]++;
+    if( facesPerMaterial[ m ] == 1 )
+      if(! materialsUsed.contains( m ))
+        materialsUsed.pushFront( m );
   }
   
-  void PolyMesh::subMaterialId (MaterialId m)
+  void PolyMesh::subMaterialID (MaterialID m)
   {
-    facesPerMaterial[m]--;
-    if (facesPerMaterial[m] == 0)
-      materialsUsed.remove(m);
+    facesPerMaterial[ m ]--;
+    if( facesPerMaterial[ m ] == 0 )
+      materialsUsed.remove( m );
   }
   
   void PolyMesh::insertFace (HMesh::Face *f)
   {
     HMesh::insertFace(f);
-    addMaterialId(((PolyMesh::Face*)f)->materialId());
+    addMaterialID( ((PolyMesh::Face*) f)->materialID() );
   }
   
   ListHandle PolyMesh::deleteFace (HMesh::Face *f)
   {
-    subMaterialId(((PolyMesh::Face*)f)->materialId());
+    subMaterialID( ((PolyMesh::Face*) f)->materialID() );
     return HMesh::deleteFace(f);
   }
   
-  void PolyMesh::setMaterialId (Face *f, MaterialId id)
+  void PolyMesh::setMaterialID (Face *f, MaterialID id)
   {
-    if (id == f->materialId()) return;
-    subMaterialId(f->materialId());
-    addMaterialId(id);
+    if( id == f->materialID() ) return;
+    subMaterialID( f->materialID() );
+    addMaterialID( id );
     f->matId = id;
   }
 

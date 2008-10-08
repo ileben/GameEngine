@@ -19,10 +19,10 @@ namespace GE
     DECLARE_END;
     
   public:
-    DynArrayList <SkinBone> *bones;
+    ArrayListT <SkinBone> *bones;
     
     SkinPose (SM *sm) {}
-    SkinPose () { bones = new DynArrayList <SkinBone>; }
+    SkinPose () { bones = new ArrayListT <SkinBone>; }
     ~SkinPose () { delete bones; }
     void serialize (void *sm) { ((SM*)sm)->resourcePtr (&bones); }
   };

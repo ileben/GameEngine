@@ -60,28 +60,28 @@ class MaterialFaceIter
 {
   PolyMesh *mesh;
   ListHandle cur;
-  Uint8 materialId;
+  Uint8 materialID;
   
 public:
   
-  MaterialFaceIter (PolyMesh *mesh, Uint8 materialId)
+  MaterialFaceIter (PolyMesh *mesh, Uint8 materialID)
   {
-    begin(mesh, materialId);
+    begin( mesh, materialID );
   }
   
   MaterialFaceIter (const MaterialFaceIter &it)
   {
-    begin(it);
+    begin( it );
   }
   
-  void begin (PolyMesh *mesh, Uint8 materialId)
+  void begin (PolyMesh *mesh, Uint8 materialID)
   {
     this->mesh = mesh;
-    this->materialId = materialId;
+    this->materialID = materialID;
     if (mesh == NULL) return;
     
     cur = mesh->faces.begin();
-    if (((Face*)*cur)->materialId() != materialId)
+    if (((Face*)*cur)->materialID() != materialID)
       ++(*this);
   }
   
@@ -89,7 +89,7 @@ public:
   {
     mesh = it.mesh;
     cur = it.cur;
-    materialId = it.materialId;
+    materialID = it.materialID;
   }
   
   MaterialFaceIter& operator++()
@@ -98,7 +98,7 @@ public:
     if (cur == mesh->faces.end()) return *this;
 
     for (++cur; cur!=mesh->faces.end(); ++cur)
-      if (((Face*)*cur)->materialId() == materialId)
+      if (((Face*)*cur)->materialID() == materialID)
         break;
     
     return *this;

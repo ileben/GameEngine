@@ -27,7 +27,7 @@ namespace GE
     TexMesh *texMesh;
     PolyMesh *polyMesh;
     
-    virtual void renderMesh (MaterialId materialId);
+    virtual void renderMesh (MaterialID materialID);
     
   public:
     PolyMeshActor();
@@ -39,7 +39,7 @@ namespace GE
     PolyMesh* getMesh();
     TexMesh* getTexMesh ();
     
-    virtual void render (MaterialId materialId);
+    virtual void render (MaterialID materialID);
   };
 }
 

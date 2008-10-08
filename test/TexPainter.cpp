@@ -792,23 +792,23 @@ int main (int argc, char **argv)
   for (PolyMesh::FaceIter f(dmesh); !f.end(); ++f) {
     //f->smoothGroups = 0x1;
     if (f->firstHedge()->dstVertex()->point.y > center.y)
-      dmesh->setMaterialId(*f, 1); }
+      dmesh->setMaterialID( *f, 1 ); }
 
   //Convert to static mesh
   //dmesh->updateNormals();
-  smesh.fromPoly (dmesh, uvmesh);
+  smesh.fromPoly( dmesh, uvmesh );
   //zekko->setStatic(&smesh);
   
   //Load texture image
-  imgDiff.readFile("texture.jpg", "");
+  imgDiff.readFile( "texture.jpg", "" );
   
   //Create texture from image
-  texDiff = new Texture();
-  texDiff->fromImage(&imgDiff);
+  texDiff = new Texture;
+  texDiff->fromImage( &imgDiff );
   
   //Load specularity image
   Image imgSpec;
-  imgSpec.readFile("specularity.jpg", "");
+  imgSpec.readFile( "specularity.jpg", "" );
 
   //Create specularity texture
   texSpec = new Texture();

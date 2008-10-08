@@ -81,9 +81,9 @@ namespace GE
     
   private:
     int facesPerMaterial [GE_MAX_MATERIAL_ID];
-    OCC::LinkedList<MaterialId> materialsUsed;
-    void addMaterialId (MaterialId m);
-    void subMaterialId (MaterialId m);
+    OCC::LinkedList<MaterialID> materialsUsed;
+    void addMaterialID (MaterialID m);
+    void subMaterialID (MaterialID m);
     virtual void insertFace (HMesh::Face *f);
     virtual ListHandle deleteFace (HMesh::Face *f);
     
@@ -123,7 +123,7 @@ namespace GE
     /*--------------------------------------------------
     Bits in the 32-bit field define whether the Face
     belongs to any of the 32 smoothing groups.
-    MaterialId is an index into material's sub-material
+    MaterialID is an index into material's sub-material
     array.
     ----------------------------------------------------*/
 
@@ -136,8 +136,8 @@ namespace GE
       Vector3 center;
       Vector3 normal;
       Uint32 smoothGroups;
-      Face () {smoothGroups = 0; matId = 0;}
-      Uint8 materialId () {return matId;}
+      Face() { smoothGroups = 0; matId = 0; }
+      Uint8 materialID() { return matId; }
     };
 
     //Data and adjancency iterators
@@ -170,7 +170,7 @@ namespace GE
   public:
 
     void updateNormals (ShadingModel shadingModel);
-    void setMaterialId (Face *f, MaterialId id);
+    void setMaterialID (Face *f, MaterialID id);
   };
   
 

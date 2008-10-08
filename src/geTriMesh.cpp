@@ -10,6 +10,43 @@ namespace GE
 
   /*
   ---------------------------------------------------
+  Adds vertex data to the buffer
+  ---------------------------------------------------*/
+  
+  void TriMesh::addVertex( void *vertData )
+  {
+    data->pushBack( vertData );
+  }
+  
+  /*
+  -----------------------------------------------------
+  Creates a new face group for the given material ID
+  -----------------------------------------------------*/
+  
+  void TriMesh::addFaceGroup( MaterialID matID )
+  {
+    IndexGroup newGrp;
+    newGrp.materialID = matID;
+    newGrp.start = indices->size();
+    newGrp.count = 0;
+    groups->pushBack( newGrp );
+  }
+  
+  /*
+  -----------------------------------------------------
+  Adds a face to the last created face group
+  -----------------------------------------------------*/
+  
+  void TriMesh::addFace( VertexID v1, VertexID v2, VertexID v3 )
+  {
+    indices->pushBack( v1 );
+    indices->pushBack( v2 );
+    indices->pushBack( v3 );
+    groups->last().count += 3;
+  }
+  
+  /*
+  ---------------------------------------------------
   When packing a dynamic editable mesh into a static
   representation, the final memory layout of data
   has to be appropriate for OpenGL rendering calls.
@@ -44,12 +81,12 @@ namespace GE
   
   struct UniqueVertex
   {
-    StaticId    staticId;
-    MaterialId  materialId;
+    VertexID    vertexID;
+    MaterialID  materialID;
     void*       uvertexPtr;
     void*       vnormalPtr;
   };
-
+  
   void TriMesh::fromPoly (PolyMesh *m, TexMesh *um)
   {
     PolyMesh::FaceIter f;
@@ -57,7 +94,7 @@ namespace GE
     TexMesh::FaceIter uf;
     TexMesh::FaceHedgeIter uh;
     ArrayList<UniqueVertex> uniqVerts;
-    StaticId nextStaticId = 0;
+    VertexID nextVertexID = 0;
     
     /*
     if (Kernel::Instance->hasRangeElements) {
@@ -66,8 +103,8 @@ namespace GE
     }
     */
 
-    data.clear();
-    indices.clear();
+    data->clear();
+    indices->clear();
 
     //Store UV pointers into vert-per-face hedges
     //(These are later replaced with static vertex IDs)
@@ -92,12 +129,12 @@ namespace GE
         for (int u=uniqVerts.size()-1; u>=0; --u)
         {
           //Check for match
-          if (uniqVerts[u].materialId == vf->materialId() &&
+          if (uniqVerts[u].materialID == vf->materialID() &&
               uniqVerts[u].uvertexPtr == vfh->tag.ptr &&
               uniqVerts[u].vnormalPtr == vfh->vertexNormal())
           {
-            //Assign existing static ID
-            vfh->tag.id = uniqVerts[u].staticId;
+            //Assign existing vertex ID
+            vfh->tag.id = uniqVerts[u].vertexID;
             existingFound = true;
             break;
           }
@@ -108,18 +145,18 @@ namespace GE
         {
           //Uniqueness info
           UniqueVertex uniq;
-          uniq.materialId = vf->materialId();
+          uniq.materialID = vf->materialID();
           uniq.uvertexPtr = vfh->tag.ptr;
           uniq.vnormalPtr = vfh->vertexNormal();
-          uniq.staticId = nextStaticId;
+          uniq.vertexID = nextVertexID;
           uniqVerts.pushBack( uniq );
           
           //Invoke the vertex exporter
           vertexFromPoly (*v, vfh->vertexNormal(),
                           (TexMesh::Vertex*) vfh->tag.ptr);
           
-          //Assign new static ID
-          vfh->tag.id = nextStaticId++;
+          //Assign new vertex ID
+          vfh->tag.id = nextVertexID++;
         }
         
       }//Walk adjacent faces
@@ -127,21 +164,15 @@ namespace GE
 
     
     //Walk the materials used by the mesh
-    for (LinkedList<MaterialId>::Iterator mid=m->materialsUsed.begin();
+    for (LinkedList<MaterialID>::Iterator mid=m->materialsUsed.begin();
          mid != m->materialsUsed.end(); ++mid)
     {
-      //Initialize material index group
-      IndexGroup grp;
-      grp.materialId = *mid;
-      grp.start = indices.size();
+      //Create a new face group for this material
+      addFaceGroup( *mid );
       
       //Walk faces of current material and invoke the exporter
       for (PolyMesh::MaterialFaceIter mf( m, *mid ); !mf.end(); ++mf)
         faceFromPoly( *mf );
-      
-      //Count the number of exported indices
-      grp.count = indices.size() - grp.start;
-      groups.pushBack( grp );
     }
   }
   
@@ -157,23 +188,15 @@ namespace GE
                                 PolyMesh::VertexNormal *polyNormal,
                                 TexMesh::Vertex *texVert)
   {
-    //Add UV coord to data
-    if (texVert == NULL) {
-      data.pushBack( 0.0f );
-      data.pushBack( 0.0f );
-    }else{
-      data.pushBack( texVert->point.x );
-      data.pushBack( texVert->point.y ); }
+    TriMeshVertex vert;
     
-    //Add normal coord to data
-    data.pushBack( polyNormal->coord.x );
-    data.pushBack( polyNormal->coord.y );
-    data.pushBack( polyNormal->coord.z );
+    if (texVert != NULL)
+      vert.texcoord = texVert->point;
     
-    //Add vertex coord to data
-    data.pushBack( polyVert->point.x );
-    data.pushBack( polyVert->point.y );
-    data.pushBack( polyVert->point.z );
+    vert.normal = polyNormal->coord;
+    vert.point = polyVert->point;
+    
+    addVertex( &vert );
   }
   
   /*
@@ -191,9 +214,7 @@ namespace GE
     
     do {
       
-      indices.pushBack( prev->tag.id );
-      indices.pushBack( cur->tag.id );
-      indices.pushBack( next->tag.id );
+      addFace( prev->tag.id, cur->tag.id, next->tag.id );
       
       cur = cur->nextHedge();
       next = next->nextHedge();

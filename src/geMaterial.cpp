@@ -507,14 +507,14 @@ namespace GE
   Extends or shrinks sub-material array
   -----------------------------------------------*/
   
-  void MultiMaterial::setNumSubMaterials(int n)
+  void MultiMaterial::setNumSubMaterials( int n )
   {
     if (n < 0 || n > GE_MAX_MATERIAL_ID)
       return;
     
     if (n > subMaterials.size()) {
       for (int i=subMaterials.size(); i<n; ++i)
-        subMaterials.pushBack(NULL);
+        subMaterials.pushBack( NULL );
 
     }else if (n < subMaterials.size()) {
       for (int i=subMaterials.size(); i>n; --i)
@@ -523,7 +523,7 @@ namespace GE
     }
   }
 
-  int MultiMaterial::getNumSubMaterials ()
+  int MultiMaterial::getNumSubMaterials()
   {
     return subMaterials.size();
   }
@@ -533,20 +533,20 @@ namespace GE
   Sets or replaces exiting sub-material reference
   --------------------------------------------------*/
   
-  void MultiMaterial::setSubMaterial(MaterialId id, Material *m)
+  void MultiMaterial::setSubMaterial( MaterialID id, Material *m )
   {
     if ((int)id >= subMaterials.size())
       return;
     
-    subMaterials[id] = m;
+    subMaterials[ id ] = m;
   }
   
-  Material* MultiMaterial::getSubMaterial(MaterialId id)
+  Material* MultiMaterial::getSubMaterial( MaterialID id )
   {
     if ((int)id >= subMaterials.size())
       return NULL;
     
-    return subMaterials[id];
+    return subMaterials[ id ];
   }
   
   /*
@@ -565,7 +565,7 @@ namespace GE
     return true;
   }
   
-  bool MultiMaterial::selectSubMaterial (MaterialId id)
+  bool MultiMaterial::selectSubMaterial (MaterialID id)
   {
     selectedId = id;
     return selectionValid ();

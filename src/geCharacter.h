@@ -14,7 +14,7 @@ namespace GE
     
     SkinMesh *mesh;
     SkinPose *pose;
-    ResPtrArrayList <SkinAnim> *anims;
+    ClassArrayList <SkinAnim> *anims;
     
     void serialize (void *sm)
     {
@@ -32,9 +32,9 @@ namespace GE
     {
       mesh = NULL;
       pose = NULL;
-      anims = new ResPtrArrayList <SkinAnim>;
+      anims = new ClassArrayList <SkinAnim>;
     }
-
+    
     ~MaxCharacter ()
     {
       if (mesh != NULL)

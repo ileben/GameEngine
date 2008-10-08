@@ -18,7 +18,7 @@
 //Resources
 #include "geResource.h"
 #include "geSerialize.h"
-#include "geDynArrayList.h"
+#include "geArrayList.h"
 #include "geSkinMesh.h"
 #include "geSkinPose.h"
 #include "geSkinAnim.h"

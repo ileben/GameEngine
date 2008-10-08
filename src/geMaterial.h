@@ -18,14 +18,14 @@ namespace GE
   /*
   =========================================================
   
-  MaterialId is an index into sub-material array.
+  MaterialID is an index into sub-material array.
   Max value is clamped to one less then max representable
   so it is possible to hit the end value when iterating
-  over the array using MaterialId type.
+  over the array using MaterialID type.
   
   =========================================================*/
   
-  typedef Uint8 MaterialId;
+  typedef Uint8 MaterialID;
   #define GE_MAX_MATERIAL_ID 254
   #define GE_ANY_MATERIAL_ID 255
   
@@ -217,13 +217,13 @@ namespace GE
   private:
     int selectedId;
     OCC::ArrayList<Material*> subMaterials;
-    bool selectSubMaterial (MaterialId id);
+    bool selectSubMaterial (MaterialID id);
     bool selectionValid ();
     
   public:
     void setNumSubMaterials (int n);
-    void setSubMaterial (MaterialId id, Material *m);
-    Material* getSubMaterial (MaterialId id);
+    void setSubMaterial (MaterialID id, Material *m);
+    Material* getSubMaterial (MaterialID id);
     int getNumSubMaterials ();
     
     virtual void begin ();

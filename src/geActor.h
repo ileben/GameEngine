@@ -60,7 +60,7 @@ namespace GE
     Material* getMaterial();
     
     //Need signed int here so we can pass in -1 as any
-    virtual void render (MaterialId materialId) {}
+    virtual void render (MaterialID materialID) {}
   };
   
   /*
@@ -82,7 +82,7 @@ namespace GE
     void removeChild (Actor* o);
     const OCC::ArrayList<Actor*>* getChildren ();
 
-    virtual void render (MaterialId materialId);
+    virtual void render (MaterialID materialID);
   };
 
 

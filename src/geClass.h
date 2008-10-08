@@ -326,7 +326,7 @@ private:
 #define DECLARE_SUBABSTRACT( Name, Super ) __DECLARE( IAbstract, Name, Super )
 
 #define DECLARE_SERIAL_CLASS( Name ) __DECLARE( ISerial, Name, Name )
-#define DECLARE_SERIAL_SUBCLASS( Name ) __DECLARE( ISerial, Name, Name )
+#define DECLARE_SERIAL_SUBCLASS( Name, Super ) __DECLARE( ISerial, Name, Super )
 
 #define DEFINE_CLASS( Name ) Name::ClassDesc Name::classDesc (#Name, ClassID(0))
 #define DEFINE_SERIAL_CLASS( Name, ID ) Name::ClassDesc Name::classDesc (#Name, ID)

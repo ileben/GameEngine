@@ -60,15 +60,15 @@ namespace GE
   void Group::addChild (Actor* o)
   {
     if (o->parent != NULL)
-      o->parent->removeChild(o);
+      o->parent->removeChild( o );
     
-    children.pushBack(o);
+    children.pushBack( o );
     o->parent = this;
   }
   
   void Group::removeChild (Actor* o)
   {
-    children.remove(o);
+    children.remove( o );
     o->parent = NULL;
   }
   
@@ -76,11 +76,11 @@ namespace GE
     return &children;
   }
 
-  void Group::render (MaterialId materialId)
+  void Group::render (MaterialID materialID)
   {
     //Hrmm.... don't use this yet... needs some thought
     for (int c=0; c<children.size(); ++c)
-      children [c] ->render (materialId);
+      children[ c ]->render( materialID );
   }
 
 }//namespace GE

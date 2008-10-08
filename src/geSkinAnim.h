@@ -28,7 +28,7 @@ namespace GE
   public:
     Float32 totalTime;
     Float32 frameTime;
-    DynArrayList <SkinKey> *keys;
+    ArrayListT <SkinKey> *keys;
     
     SkinTrack (SM *sm) {}
 
@@ -43,7 +43,7 @@ namespace GE
     {
       totalTime = 0.0f;
       frameTime = 0.0f;
-      keys = new DynArrayList <SkinKey>;
+      keys = new ArrayListT <SkinKey>;
     }
 
     ~SkinTrack () { delete keys; }
@@ -64,7 +64,7 @@ namespace GE
     
   public:
     OCC::CharString *name;
-    ResPtrArrayList <SkinTrack> *tracks;
+    ClassArrayList <SkinTrack> *tracks;
     
     void serialize (void *sm)
     {
@@ -75,7 +75,7 @@ namespace GE
     
     SkinAnim ()
     {
-      tracks = new ResPtrArrayList <SkinTrack>;
+      tracks = new ClassArrayList <SkinTrack>;
     }
     
     ~SkinAnim ()

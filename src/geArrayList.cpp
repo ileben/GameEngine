@@ -3,5 +3,5 @@
 
 namespace GE
 {
-  DEFINE_SERIAL_CLASS (GenArrayList, CLSID_GENARRAYLIST);
+  DEFINE_SERIAL_CLASS (GenericArrayList, CLSID_GENARRAYLIST);
 }

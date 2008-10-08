@@ -16,29 +16,29 @@ SkinPolyMesh
 
 class SPolyMesh : public PolyMesh
 {
-  DECLARE_SUBCLASS (SPolyMesh, PolyMesh); DECLARE_END;
+  DECLARE_SUBCLASS( SPolyMesh, PolyMesh ); DECLARE_END;
 
 public:
 
   class Vertex; class HalfEdge; class Edge; class Face;
 
   class Vertex : public VertexBase <SPolyMesh,PolyMesh> {
-    DECLARE_SUBCLASS (Vertex, PolyMesh::Vertex); DECLARE_END;
+    DECLARE_SUBCLASS( Vertex, PolyMesh::Vertex ); DECLARE_END;
   public:
     Uint32 boneIndex [4];
     Float boneWeight [4];
   };
   
   class HalfEdge : public HalfEdgeBase <SPolyMesh,PolyMesh> {
-    DECLARE_SUBCLASS (HalfEdge, PolyMesh::HalfEdge); DECLARE_END;
+    DECLARE_SUBCLASS( HalfEdge, PolyMesh::HalfEdge ); DECLARE_END;
   };
   
-  class Edge : public EdgeBase <SPolyMesh,PolyMesh> {
-    DECLARE_SUBCLASS (Edge, PolyMesh::Edge); DECLARE_END;
+  class Edge : public EdgeBase <SPolyMesh,PolyMesh>  {
+    DECLARE_SUBCLASS( Edge, PolyMesh::Edge ); DECLARE_END;
   };
   
   class Face : public FaceBase <SPolyMesh,PolyMesh> {
-    DECLARE_SUBCLASS (Face, PolyMesh::Face); DECLARE_END;
+    DECLARE_SUBCLASS( Face, PolyMesh::Face ); DECLARE_END;
   };
   
   #include "geHmeshDataiter.h"
@@ -46,22 +46,22 @@ public:
   
   SPolyMesh() {
     setClasses(
-      Class(Vertex),
-      Class(HalfEdge),
-      Class(Edge),
-      Class(Face));
+      Class( Vertex ),
+      Class( HalfEdge ),
+      Class( Edge ),
+      Class( Face ));
   }
 };
 
-DEFINE_CLASS (SPolyMesh);
-DEFINE_CLASS (SPolyMesh::Vertex);
-DEFINE_CLASS (SPolyMesh::HalfEdge);
-DEFINE_CLASS (SPolyMesh::Edge);
-DEFINE_CLASS (SPolyMesh::Face);
+DEFINE_CLASS( SPolyMesh );
+DEFINE_CLASS( SPolyMesh::Vertex );
+DEFINE_CLASS( SPolyMesh::HalfEdge );
+DEFINE_CLASS( SPolyMesh::Edge );
+DEFINE_CLASS( SPolyMesh::Face );
 
 
 class SPolyActor : public PolyMeshActor { public:
-  virtual void renderMesh (MaterialId materialId);
+  virtual void renderMesh (MaterialID materialID);
 };
 
 /*
@@ -69,25 +69,44 @@ class SPolyActor : public PolyMeshActor { public:
 SkinTriMesh
 ==========================================================*/
 
-class SkinTriMesh : public TriMesh { protected:
+struct SkinTriVertex
+{
+  Vector2 texcoord;
+  Vector3 normal;
+  Vector3 point;
+  Uint32 boneIndex[4];
+  Float32 boneWeight[4];
+};
+
+class SkinTriMesh : public TriMesh
+{
+public:
+  
+  SkinTriMesh() : TriMesh( sizeof( SkinTriVertex )) {}
+  
+protected:
   
   virtual void vertexFromPoly (PolyMesh::Vertex *polyVert,
                                PolyMesh::VertexNormal *polyNormal,
                                TexMesh::Vertex *texVert)
   {
-    TriMesh::vertexFromPoly( polyVert, polyNormal, texVert);
     SPolyMesh::Vertex *skinVert = (SPolyMesh::Vertex*) polyVert;
+    SkinTriVertex triVert;
+    
+    if (texVert != NULL)
+      triVert.texcoord = texVert->point;
+    
+    triVert.normal = polyNormal->coord;
+    triVert.point = polyVert->point;
     
     for (int i=0; i<4; ++i)
-      data.pushBack( skinVert->boneIndex[ i ]);
+      triVert.boneIndex[ i ] = skinVert->boneIndex[ i ];
     
     for (int i=0; i<4; ++i)
-      data.pushBack( skinVert->boneWeight[ i ]); 
+      triVert.boneWeight[ i ] = skinVert->boneWeight[ i ];
+    
+    addVertex( &triVert );
   }
-};
-
-class SkinTriActor : public TriMeshActor { public:
-  virtual void renderMesh (MaterialId materialId);
 };
 
 /*
@@ -104,11 +123,17 @@ enum CameraMode
 
 ByteString data;
 MaxCharacter *character;
-ArrayList <Vector3> posePoints;
-ArrayList <Vector3> poseNormals;
 
-SPolyActor *actor;
+SPolyMesh *polyMesh;
+SPolyActor *polyActor;
+ArrayList <Vector3> polyPosePoints;
+ArrayList <Vector3> polyPoseNormals;
+
+SkinTriMesh *triMesh;
 TriMeshActor *triActor;
+ArrayList <Vector3> triPosePoints;
+ArrayList <Vector3> triPoseNormals;
+
 FpsLabel lblFps;
 
 Camera2D cam2D;
@@ -280,7 +305,7 @@ void display ()
   renderer.setCamera( &cam3D );
   
   //draw model
-  //renderer.drawActor( actor );
+  //renderer.drawActor( polyActor );
   renderer.drawActor( triActor );
   renderAxes();
   
@@ -303,7 +328,7 @@ void findCenter ()
   int count = 0;
   center.set (0,0,0);
 
-  PolyMesh *mesh = actor->getMesh();
+  PolyMesh *mesh = polyActor->getMesh();
   for (PolyMesh::VertIter v(mesh); !v.end(); ++v) {
     center += v->point;
     count++;
@@ -350,7 +375,7 @@ class VertColorMaterial : public StandardMaterial { public:
   }
 };
 
-void SPolyActor::renderMesh (MaterialId matid)
+void SPolyActor::renderMesh (MaterialID matid)
 {
   glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
   
@@ -358,7 +383,8 @@ void SPolyActor::renderMesh (MaterialId matid)
   for (SPolyMesh::FaceIter f( polyMesh ); !f.end(); ++f, ++uf) {
     
     //Check if this face belongs to current material
-    if (f->materialId() != matid && matid != GE_ANY_MATERIAL_ID)
+    if (matid != f->materialID() &&
+        matid != GE_ANY_MATERIAL_ID)
       continue;
     
     glBegin( GL_POLYGON );
@@ -366,15 +392,16 @@ void SPolyActor::renderMesh (MaterialId matid)
     TexMesh::FaceVertIter uv(*uf);
     for(SPolyMesh::FaceHedgeIter h(*f); !h.end(); ++h, ++uv) {
       
-      glNormal3fv( (Float*) &h->vertexNormal()->coord );
-      
+      //Adjust the color based on bone weight
       SPolyMesh::Vertex *vert = h->dstVertex();
       glColor3f (1,1,1);
       for (int b=0; b<4; ++b) {
         if (vert->boneIndex[ b ] == boneColorIndex &&
             vert->boneWeight[ b ] > 0.0f)
             glColor3f( 1, 0, 0 ); }
-
+      
+      //Vertex normal
+      glNormal3fv( (Float*) &h->vertexNormal()->coord );
       
       //UV coordinates
       if (!uv.end()) {
@@ -388,19 +415,21 @@ void SPolyActor::renderMesh (MaterialId matid)
   }
 }
 
-PolyMesh* loadPackage (String fileName)
+void loadPackage (String fileName)
 { 
+  //Read the file
   FileRef file = new File (fileName);
   if (!file->open ("rb"))
   {
     printf ("Failed opening file!\n");
     getchar ();
-    return 0;
+    exit( 1 );
   }
   
   data = file->read (file->getSize());
   file->close();
   
+  //Load character data
   SerializeManager sm;
   character = (MaxCharacter*) sm.load( (void*)data.buffer() );
   
@@ -414,7 +443,7 @@ PolyMesh* loadPackage (String fileName)
           inMesh->indices->size());
   
   //Add vertices to the mesh
-  SPolyMesh *polyMesh = new SPolyMesh;
+  polyMesh = new SPolyMesh;
   ArrayList <SPolyMesh::Vertex*> verts( inMesh->verts->size() );
   for (int v=0; v<inMesh->verts->size(); ++v)
   {
@@ -447,16 +476,27 @@ PolyMesh* loadPackage (String fileName)
     delete[] corners;
   }
   
-  //Calculate and store original normals and points
   polyMesh->updateNormals( SHADING_SMOOTH );
   
+  //Convert to TriMesh
+  triMesh = new SkinTriMesh;
+  triMesh->fromPoly( polyMesh, NULL );
+  
+  //Store original normals and points
   for (SPolyMesh::VertIter vi( polyMesh ); !vi.end(); ++vi)
-    posePoints.pushBack( vi->point );
+    polyPosePoints.pushBack( vi->point );
   
   for (SPolyMesh::VertexNormalIter ni( polyMesh ); !ni.end(); ++ni)
-    poseNormals.pushBack( ni->coord );
+    polyPoseNormals.pushBack( ni->coord );
   
-  return polyMesh;
+  ArrayListT <SkinTriVertex> *triVerts =
+    (ArrayListT <SkinTriVertex> *) triMesh->data;
+  
+  for (int v=0; v<triVerts->size(); ++v)
+  {
+    triPosePoints.pushBack( triVerts->at( v ).point );
+    triPoseNormals.pushBack( triVerts->at( v ).normal );
+  }
 }
 
 void applyFK (int frame)
@@ -505,32 +545,54 @@ void applyFK (int frame)
     }
   }
 
-  SPolyMesh *pmesh = (SPolyMesh*) actor->getMesh ();
   int vindex = 0; int nindex = 0;
-
-
+  /*
   //Transform vertices
-  for (SPolyMesh::VertIter v(pmesh); !v.end(); ++v, ++vindex)
+  for (SPolyMesh::VertIter v(polyMesh); !v.end(); ++v, ++vindex)
   {
     v->point.set( 0,0,0 );
     for (int i=0; i<4; ++i)
     {
-      Vector3 &posePoint = posePoints[ vindex ];
+      Vector3 &posePoint = polyPosePoints[ vindex ];
       Vector3 skinPoint = skinMats[ v->boneIndex[i] ] * posePoint;
       v->point += skinPoint * v->boneWeight[i];
     }
   }
   
   //Transform normals
-  for (SPolyMesh::VertexNormalIter n(pmesh); !n.end(); ++n, ++nindex)
+  for (SPolyMesh::VertexNormalIter n(polyMesh); !n.end(); ++n, ++nindex)
   {
     n->coord.set( 0,0,0 );
     for (int i=0; i<4; ++i)
     {
       SPolyMesh::Vertex *v = (SPolyMesh::Vertex*) n->vert;
-      Vector3 &poseNormal = poseNormals[ nindex ];
+      Vector3 &poseNormal = polyPoseNormals[ nindex ];
       Vector3 skinNormal = skinMats[ v->boneIndex[i] ].transformVector( poseNormal );
       n->coord += skinNormal * v->boneWeight[i];
+    }
+  } */
+  
+  ArrayListT <SkinTriVertex> *triVerts =
+    (ArrayListT <SkinTriVertex> *) triMesh->data;
+  
+  for (int index=0; index<triVerts->size(); ++index)
+  {
+    SkinTriVertex &v = triVerts->at( index );
+    
+    v.point.set( 0,0,0 );
+    for (int i=0; i<4; ++i)
+    {
+      Vector3 &posePoint = triPosePoints[ index ];
+      Vector3 skinPoint = skinMats[ v.boneIndex[i] ] * posePoint;
+      v.point += skinPoint * v.boneWeight[i];
+    }
+    
+    v.normal.set( 0,0,0 );
+    for (int i=0; i<4; ++i)
+    {
+      Vector3 &poseNormal = triPoseNormals[ index ];
+      Vector3 skinNormal = skinMats[ v.boneIndex[i] ].transformVector( poseNormal );
+      v.normal += skinNormal * v.boneWeight[i];
     }
   }
 }
@@ -638,17 +700,17 @@ int main (int argc, char **argv)
   //mat.setCullBack( false );
   //mat.setUseLighting( false );
   
-  actor = new SPolyActor;
-  actor->setMaterial( &mat );
-  actor->setMesh( loadPackage( "bub.pak" ));
-  applyFK( 0 );
+  loadPackage( "bub.pak" );
   
-  TriMesh *tmesh = new TriMesh;
-  tmesh->fromPoly( actor->getMesh(), NULL );
+  polyActor = new SPolyActor;
+  polyActor->setMaterial( &mat );
+  polyActor->setMesh( polyMesh );
   
   triActor = new TriMeshActor;
   triActor->setMaterial( &mat );
-  triActor->setMesh( tmesh );
+  triActor->setMesh( triMesh );
+  
+  applyFK( 0 );
   
   lblFps.setLocation( Vector2( 0.0f, (Float)resY ));
   lblFps.setColor( Vector3( 1.0f, 1.0f, 1.0f ));

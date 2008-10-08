@@ -3,28 +3,28 @@
 
 namespace GE
 {
-  class GE_API_ENTRY GenArrayList
+  class GE_API_ENTRY GenericArrayList
   {
-    DECLARE_SERIAL_CLASS (GenArrayList);
+    DECLARE_SERIAL_CLASS (GenericArrayList);
     DECLARE_CALLBACK (CLSEVT_SERIALIZE, serialize);
     DECLARE_END;
     
-	protected:
-		Uint32 sz;
-		Uint32 cap;
+  protected:
+    Uint32 sz;
+    Uint32 cap;
     Uint32 eltSize;
     ClassID eltClsID;
     ClassPtr eltCls;
-		Uint8 *elements;
+    Uint8 *elements;
     
   public:
-
+    
     /*
     ------------------------------------------------------
     Serialization
     ------------------------------------------------------*/
     
-    GenArrayList (SerializeManager *sm)
+    GenericArrayList (SerializeManager *sm)
     {
       //Make sure it is re-serializable
       if (sm->isDeserializing())
@@ -96,7 +96,7 @@ namespace GE
     We should let this really.
     ---------------------------------------------*/
 
-    GenArrayList ()
+    GenericArrayList ()
     {
       this->eltSize = sizeof (Uint8);
       this->eltClsID = ClassID(0);
@@ -113,7 +113,7 @@ namespace GE
     array with storage for 1 element
     --------------------------------------*/
     
-    GenArrayList (UintP eltSize, ClassPtr eltCls)
+    GenericArrayList (UintP eltSize, ClassPtr eltCls=NULL)
     {
       this->eltSize = (Uint32) eltSize;
       this->eltClsID = (eltCls ? eltCls->getID () : ClassID(0));
@@ -130,7 +130,7 @@ namespace GE
     array with given capacity.
     -----------------------------------*/
     
-    GenArrayList (UintP eltSize, ClassPtr eltCls, UintP newCap)
+    GenericArrayList (UintP newCap, UintP eltSize, ClassPtr eltCls=NULL)
     {
       this->eltSize = (Uint32) eltSize;
       this->eltClsID = (eltCls ? eltCls->getID () : ClassID(0));
@@ -146,7 +146,7 @@ namespace GE
     Dtor
     -------------------------------------*/
 		
-    virtual ~GenArrayList()
+    virtual ~GenericArrayList()
     {
       destruct (elements, sz);
       std::free (elements);
@@ -303,6 +303,11 @@ namespace GE
     {
       return elements;
     }
+    
+    int elementSize() const
+    {
+      return eltSize;
+    }
   };
   
   /*
@@ -310,35 +315,34 @@ namespace GE
   A serializable array list with non-class elements
   -----------------------------------------------------*/
   
-  template <class T> class DynArrayList : public GenArrayList
-	{
+  template <class T> class ArrayListT : public GenericArrayList
+  {
   public:
     
-    DynArrayList ()
-      : GenArrayList (sizeof(T), NULL)
+    ArrayListT ()
+      : GenericArrayList (sizeof(T))
       {}
     
-    DynArrayList (int newCap)
-      : GenArrayList (sizeof(T), NULL, newCap)
+    ArrayListT (int newCap)
+      : GenericArrayList (newCap, sizeof(T))
       {}
     
-    
-    DynArrayList (UintP eltSize, ClassPtr eltCls)
-      : GenArrayList (eltSize, eltCls)
+    ArrayListT (UintP eltSize, ClassPtr eltCls)
+      : GenericArrayList (eltSize, eltCls)
       {}
     
-    DynArrayList (UintP eltSize, ClassPtr eltCls, UintP newCap)
-      : GenArrayList (eltSize, eltCls, newCap)
+    ArrayListT (UintP newCap, UintP eltSize, ClassPtr eltCls)
+      : GenericArrayList (newCap, eltSize, eltCls)
       {}
     
     void pushBack (const T &newElt)
     {
-      GenArrayList::pushBack (&newElt);
+      GenericArrayList::pushBack (&newElt);
     }
     
     void setAt (int index, const T &newElt)
     {
-      GenArrayList::setAt (index, &newElt);
+      GenericArrayList::setAt (index, &newElt);
     }
     
     T& first() const
@@ -398,16 +402,16 @@ namespace GE
   ------------------------------------------------*/
   
   template <class T>
-    class ResArrayList : public DynArrayList <T>
+    class ResArrayList : public ArrayListT <T>
   {
   public:
     
     ResArrayList ()
-      : DynArrayList <T> (sizeof(T), NULL)
+      : ArrayListT <T> (sizeof(T))
       {}
         
     ResArrayList (UintP newCap)
-      : DynArrayList <T> (sizeof(T), NULL, newCap)
+      : ArrayListT <T> (newCap, sizeof(T))
       {}
         
     virtual void construct (Uint8 *dst, UintP n)
@@ -438,16 +442,16 @@ namespace GE
   --------------------------------------------------------*/
   
   template <class T>
-    class ResPtrArrayList : public DynArrayList <T*>
+    class ClassArrayList : public ArrayListT <T*>
   {
   public:
     
-    ResPtrArrayList ()
-      : DynArrayList <T*> (sizeof(T*), Class(T))
+    ClassArrayList ()
+      : ArrayListT <T*> (sizeof(T*), Class(T))
       {}
-        
-    ResPtrArrayList (UintP newCap)
-      : DynArrayList <T*> (sizeof(T*), Class(T), newCap)
+    
+    ClassArrayList (UintP newCap)
+      : ArrayListT <T*> (newCap, sizeof(T*), Class(T))
       {}
   };
   

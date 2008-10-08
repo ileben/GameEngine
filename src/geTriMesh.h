@@ -26,27 +26,34 @@ namespace GE
    * surpass the time needed for copying of data.
    *------------------------------------------------------------*/
   
-  typedef Uint32 StaticId;
-
+  typedef Uint32 VertexID;
+  
+  struct TriMeshVertex
+  {
+    Vector2 texcoord;
+    Vector3 normal;
+    Vector3 point;
+  };
+  
   class GE_API_ENTRY TriMesh : public Resource
   {
     friend class Renderer;
     DECLARE_SERIAL_SUBCLASS( TriMesh, Resource );
-    DECLARE_CALLBACK (CLSEVT_SERIALIZE, serialize);
+    DECLARE_CALLBACK( CLSEVT_SERIALIZE, serialize );
     DECLARE_END;
     
   public:
     
     struct IndexGroup
     {
-      MaterialId materialId;
-      StaticId   start;
-      StaticId   count;
+      MaterialID materialID;
+      VertexID   start;
+      VertexID   count;
     };
     
-    ArrayListGeneric *data;
-    ArrayList <Uint32> indices;
-    ArrayList <IndexGroup> groups;
+    GenericArrayList *data;
+    ArrayListT <Uint32> *indices;
+    ArrayListT <IndexGroup> *groups;
     
   protected:
     
@@ -57,19 +64,29 @@ namespace GE
     virtual void faceFromPoly (PolyMesh::Face *polyFace);
     
   public:
-    
-    void serialize ()
+        
+    void serialize (void *sm)
     {
+      ( (SM*)sm )->resourcePtr( &data );
+      ( (SM*)sm )->resourcePtr( &indices );
+      ( (SM*)sm )->resourcePtr( &groups );
     }
     
-    TriMesh (SerialManager *sm)
+    TriMesh( SerializeManager *sm )
     {}
     
-    TriMesh ()
+    TriMesh()
     {
-      data = new ArrayListGeneric;
-      indices = new ArrayList <Uint32>;
-      groups = new ArrayList <IndexGroup>;
+      data = new GenericArrayList( sizeof( TriMeshVertex ));
+      indices = new ArrayListT <Uint32>;
+      groups = new ArrayListT <IndexGroup>;
+    }
+    
+    TriMesh( Uint32 vertexSize )
+    {
+      data = new GenericArrayList( vertexSize );
+      indices = new ArrayListT <Uint32>;
+      groups = new ArrayListT <IndexGroup>;
     }
     
     virtual ~TriMesh ()
@@ -79,7 +96,10 @@ namespace GE
       delete groups;
     }
     
-    void fromPoly (PolyMesh *m, TexMesh *uv);
+    void addVertex( void *data );
+    void addFaceGroup( MaterialID matID );
+    void addFace( VertexID v1, VertexID v2, VertexID v3 );
+    void fromPoly (PolyMesh *m, TexMesh *uv );
   };
 
 
