@@ -1,7 +1,6 @@
 #include <geEngine.h>
 #include <geGLHeaders.h>
 using namespace GE;
-using namespace OCC;
 
 #include <GL/gl.h>
 #include <GL/glu.h>

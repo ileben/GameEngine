@@ -128,7 +128,7 @@ namespace GE
   private: //internal classes
     
     Shader *shader;
-    OCC::ArrayList <UniformProperty*> uniformProps;
+    ArrayListT <UniformProperty*> uniformProps;
     void freeUniformProps ();
     
   public: //user
@@ -215,16 +215,16 @@ namespace GE
     friend class Renderer;
     
   private:
-    int selectedId;
-    OCC::ArrayList<Material*> subMaterials;
-    bool selectSubMaterial (MaterialID id);
-    bool selectionValid ();
+    UintSize selectedID;
+    ArrayListT<Material*> subMaterials;
+    bool selectSubMaterial( MaterialID id );
+    bool selectionValid();
     
   public:
-    void setNumSubMaterials (int n);
-    void setSubMaterial (MaterialID id, Material *m);
-    Material* getSubMaterial (MaterialID id);
-    int getNumSubMaterials ();
+    void setNumSubMaterials( UintSize n );
+    void setSubMaterial( MaterialID id, Material *m );
+    Material* getSubMaterial( MaterialID id );
+    UintSize getNumSubMaterials();
     
     virtual void begin ();
     virtual void end ();

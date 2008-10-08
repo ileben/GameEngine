@@ -1,7 +1,6 @@
 #define GE_API_EXPORT
 #include "geEngine.h"
 #include "geGLHeaders.h"
-using namespace OCC;;
 
 namespace GE
 {
@@ -68,44 +67,44 @@ namespace GE
     glutSwapBuffers ();
   }
 
-  void Renderer::drawActor(Actor *actor)
+  void Renderer::drawActor( Actor *actor )
   {
-    Material *mat = actor->getMaterial ();
-    if (mat == NULL) {
+    Material *mat = actor->getMaterial();
+    if( mat == NULL ){
       
-      Material::BeginDefault ();
-      actor->render (-1);
+      Material::BeginDefault();
+      actor->render( GE_ANY_MATERIAL_ID );
 
-    }else if (ClassOf (mat) == Class (MultiMaterial)) {
+    }else if( ClassOf(mat) == Class(MultiMaterial) ){
       
       MultiMaterial *mmat = (MultiMaterial*) mat;
-      for (int s=0; s<mmat->getNumSubMaterials(); ++s)
+      for( UintSize s=0; s<mmat->getNumSubMaterials(); ++s )
       {
-        mmat->selectSubMaterial (s);
-        mmat->begin ();
-        actor->render (s);
-        mmat->end ();
+        mmat->selectSubMaterial( (MaterialID)s );
+        mmat->begin();
+        actor->render( (MaterialID)s );
+        mmat->end();
       }
 
     }else{
       
-      mat->begin ();      
-      actor->render (-1);
-      mat->end ();
+      mat->begin();
+      actor->render( GE_ANY_MATERIAL_ID );
+      mat->end();
     }
   }
   
-  void Renderer::drawWidget(Widget *w)
+  void Renderer::drawWidget( Widget *w )
   {
-    GLProgram::UseFixed ();
-    glDisable (GL_DEPTH_TEST);
-    glDisable (GL_CULL_FACE);
-    glDisable (GL_LIGHTING);
-    glDisable (GL_BLEND);
+    GLProgram::UseFixed();
+    glDisable( GL_DEPTH_TEST );
+    glDisable( GL_CULL_FACE );
+    glDisable( GL_LIGHTING );
+    glDisable( GL_BLEND );
     
-    glEnable (GL_COLOR_MATERIAL);
+    glEnable( GL_COLOR_MATERIAL );
     
-    w->draw ();
+    w->draw();
   }
 
 }/* namespace GE */

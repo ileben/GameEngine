@@ -1,7 +1,6 @@
 #define GE_API_EXPORT
 #include "geEngine.h"
-using namespace OCC;
-using namespace OCC::TextParserCommon;
+using OCC::CharString;
 
 namespace GE
 {

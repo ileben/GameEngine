@@ -1,6 +1,9 @@
 #define GE_API_EXPORT
 #include "geEngine.h"
-using namespace OCC;
+using OCC::ByteString;
+using OCC::String;
+using OCC::File;
+using OCC::FileRef;
 
 namespace GE
 {
@@ -101,9 +104,9 @@ namespace GE
     if (!file->open("wb")) return false;
     
     //Walk objects to save
-    for (int i=0; i<objects.size(); ++i) {
-      if (ClassOf (objects[i]) == Class (PolyMeshActor)) {
-        writeShape ((PolyMeshActor*) objects[i]); }
+    for( UintSize i=0; i<objects.size(); ++i ){
+      if( ClassOf( objects[i] ) == Class( PolyMeshActor )){
+        writeShape( (PolyMeshActor*) objects[i] );}
     }
 
     file->close();

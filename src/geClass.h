@@ -86,7 +86,7 @@ namespace GE
   class SerializeManager;
   
   typedef IClass* ClassPtr;
-  typedef OCC::ArrayList <Property*> PTable;
+  typedef std::vector <Property*> PTable;
   typedef std::map <std::string, ClassPtr> CTable;
   typedef std::map <ClassID, ClassPtr> ITable;
   
@@ -141,7 +141,7 @@ namespace GE
     PTable *        getProperties ();
     
     //Layer-2 (IClass2)
-    virtual UintP     getSize() = 0;
+    virtual UintSize     getSize() = 0;
     virtual ClassPtr  getSuper() = 0;
     virtual void      invokeCallback (ClassEvent e, void *obj, void *param) = 0;
     
@@ -173,7 +173,7 @@ namespace GE
   {
   public://Miscellaneous
 
-    UintP getSize()
+    UintSize getSize()
       { return sizeof (Name); }
     
     ClassPtr getSuper()
@@ -191,20 +191,20 @@ namespace GE
       ClassEventFunc func;
     };
 
-    OCC::ArrayList <CallbackInfo> funcs;
+    std::vector <CallbackInfo> funcs;
     
   public://Callback management
 
     void registerCallback (ClassEvent e, ClassEventFunc func)
     {
       CallbackInfo ccinfo = {e, func};
-      funcs.pushBack (ccinfo);
+      funcs.push_back (ccinfo);
     }
 
     void invokeCallback (ClassEvent e, void *obj, void *param)
     {
       Name *nobj = (Name*) obj;
-      for (int f=0; f<funcs.size(); ++f) {
+      for (UintSize f=0; f<funcs.size(); ++f) {
         if (funcs[f].evnt = e) {
           (nobj->*funcs[f].func) (param);
           break;
@@ -301,7 +301,7 @@ class CLASS_DLL_ACTION ClassDesc : public Interface <Name, Super > { public: \
     registerCallback (evnt, &ThisClass::func);
     
     #define DECLARE_PROPERTY( Type, pname ) \
-    properties.pushBack (new TypeProperty <Type, ThisClass> (&ThisClass::pname, #pname));
+    properties.push_back (new TypeProperty <Type, ThisClass> (&ThisClass::pname, #pname));
     
     #define DECLARE_END \
     IClass::Classify (this); \

@@ -1,6 +1,5 @@
 #define GE_API_EXPORT
 #include "geEngine.h"
-using namespace OCC;
 
 namespace GE
 {
@@ -72,14 +71,14 @@ namespace GE
     o->parent = NULL;
   }
   
-  const OCC::ArrayList<Actor*>* Group::getChildren() {
+  const ArrayListT<Actor*>* Group::getChildren() {
     return &children;
   }
 
   void Group::render (MaterialID materialID)
   {
     //Hrmm.... don't use this yet... needs some thought
-    for (int c=0; c<children.size(); ++c)
+    for (UintSize c=0; c<children.size(); ++c)
       children[ c ]->render( materialID );
   }
 

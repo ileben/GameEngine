@@ -1,6 +1,6 @@
 #define GE_API_EXPORT
 #include "geEngine.h"
-using namespace OCC;
+using OCC::ArraySet;
 
 namespace GE
 {

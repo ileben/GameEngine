@@ -191,6 +191,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\geArrayList.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\geCamera.cpp"
 				>
 			</File>
@@ -200,10 +204,6 @@
 			</File>
 			<File
 				RelativePath="..\..\src\geClass.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\geDynArrayList.cpp"
 				>
 			</File>
 			<File
@@ -345,6 +345,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\geArrayList.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\geCamera.h"
 				>
 			</File>
@@ -358,10 +362,6 @@
 			</File>
 			<File
 				RelativePath="..\..\src\geDefs.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\geDynArrayList.h"
 				>
 			</File>
 			<File

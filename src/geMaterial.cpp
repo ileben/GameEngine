@@ -1,7 +1,9 @@
 #define GE_API_EXPORT
 #include "geEngine.h"
 #include "geGLHeaders.h"
-using namespace OCC;
+using OCC::CharString;
+using OCC::String;
+
 
 namespace GE
 {
@@ -208,11 +210,8 @@ namespace GE
   
   void Material::freeUniformProps ()
   {
-    for (ArrayList<UniformProperty*>::Iterator p = uniformProps.begin();
-         p != uniformProps.end(); ++p)
-    {
-      delete (*p);
-    }
+    for( UintSize p=0; p<uniformProps.size(); ++p )
+      delete uniformProps[ p ];
     
     uniformProps.clear ();
   }
@@ -242,7 +241,7 @@ namespace GE
     //Add uniform properties to material for each uniform found in shader
     int texUnit = 0;
     
-    for (int u=0; u < shader->getUniformCount(); ++u)
+    for (UintSize u=0; u < shader->getUniformCount(); ++u)
     {
       Shader::Uniform &uni = shader->getUniform (u);
       switch (uni.type)
@@ -272,50 +271,40 @@ namespace GE
     }
   }
   
-  void Material::setProperty (const String &name, void *value)
+  void Material::setProperty( const String &name, void *value )
   {
     //Find property with given name
-    for (ArrayList<UniformProperty*>::Iterator
-         p = uniformProps.begin();
-         p != uniformProps.end (); ++p)
+    for( UintSize p=0; p<uniformProps.size(); ++p )
     {
       //Set its value
-      if ((*p)->getName() == name) {
-        (*p)->set (value);
+      if( uniformProps[p]->getName() == name ){
+        uniformProps[p]->set( value );
         return;
       }
     }
   }
   
-  void Material::begin ()
+  void Material::begin()
   {
     //Use custom shader if present
-    if (shader != NULL)
-      shader->use ();
+    if( shader != NULL )
+      shader->use();
     else
-      GLProgram::UseFixed ();
+      GLProgram::UseFixed();
     
     //Begin properties
-    for (ArrayList<UniformProperty*>::Iterator
-         p = uniformProps.begin();
-         p != uniformProps.end (); ++p)
-    {
-      (*p)->begin ();
-    }
+    for( UintSize p=0; p<uniformProps.size(); ++p )
+      uniformProps[ p ]->begin();
   }
   
-  void Material::end ()
+  void Material::end()
   {
     //Unwind properties
-    for (ArrayList<UniformProperty*>::Iterator
-         p = uniformProps.begin();
-         p != uniformProps.end (); ++p)
-    {
-      (*p)->end ();
-    }
+    for( UintSize p=0; p<uniformProps.size(); ++p )
+      uniformProps[ p ]->end();
   }
   
-  void Material::BeginDefault ()
+  void Material::BeginDefault()
   {
     //Use fixed functionality
     GLProgram::UseFixed ();
@@ -507,23 +496,23 @@ namespace GE
   Extends or shrinks sub-material array
   -----------------------------------------------*/
   
-  void MultiMaterial::setNumSubMaterials( int n )
+  void MultiMaterial::setNumSubMaterials( UintSize n )
   {
-    if (n < 0 || n > GE_MAX_MATERIAL_ID)
+    if( n < 0 || n > GE_MAX_MATERIAL_ID )
       return;
     
-    if (n > subMaterials.size()) {
-      for (int i=subMaterials.size(); i<n; ++i)
+    if( n > subMaterials.size() ){
+      for( UintSize i=subMaterials.size(); i<n; ++i )
         subMaterials.pushBack( NULL );
 
-    }else if (n < subMaterials.size()) {
-      for (int i=subMaterials.size(); i>n; --i)
+    }else if( n < subMaterials.size() ){
+      for( UintSize i=subMaterials.size(); i>n; --i )
         subMaterials.last() = NULL;
         subMaterials.popBack();
     }
   }
 
-  int MultiMaterial::getNumSubMaterials()
+  UintSize MultiMaterial::getNumSubMaterials()
   {
     return subMaterials.size();
   }
@@ -535,7 +524,7 @@ namespace GE
   
   void MultiMaterial::setSubMaterial( MaterialID id, Material *m )
   {
-    if ((int)id >= subMaterials.size())
+    if (id >= subMaterials.size())
       return;
     
     subMaterials[ id ] = m;
@@ -543,7 +532,7 @@ namespace GE
   
   Material* MultiMaterial::getSubMaterial( MaterialID id )
   {
-    if ((int)id >= subMaterials.size())
+    if (id >= subMaterials.size())
       return NULL;
     
     return subMaterials[ id ];
@@ -556,19 +545,19 @@ namespace GE
   
   bool MultiMaterial::selectionValid ()
   {
-    if (selectedId < 0 || selectedId >= subMaterials.size ())
+    if( selectedID < 0 || selectedID >= subMaterials.size () )
       return false;
     
-    if (subMaterials [selectedId] == NULL)
+    if( subMaterials[ selectedID ] == NULL )
       return false;
     
     return true;
   }
   
-  bool MultiMaterial::selectSubMaterial (MaterialID id)
+  bool MultiMaterial::selectSubMaterial( MaterialID id )
   {
-    selectedId = id;
-    return selectionValid ();
+    selectedID = id;
+    return selectionValid();
   }
   
   /*
@@ -576,20 +565,20 @@ namespace GE
   Sets-up the OpenGL state for the selected material
   ---------------------------------------------------*/
   
-  void MultiMaterial::begin ()
+  void MultiMaterial::begin()
   {
-    if (selectionValid ())
-      subMaterials [selectedId]->begin();
+    if( selectionValid() )
+      subMaterials[ selectedID ]->begin();
     else
-      Material::BeginDefault ();
+      Material::BeginDefault();
   }
   
   void MultiMaterial::end ()
   {
-    if (selectionValid ())
-      subMaterials [selectedId] -> end();
+    if( selectionValid() )
+      subMaterials[ selectedID ]->end();
     else
-      Material::EndDefault ();
+      Material::EndDefault();
   }
   
   /*
@@ -599,18 +588,18 @@ namespace GE
   
   ============================================*/
   
-  PhongMaterial::PhongMaterial () : StandardMaterial ()
+  PhongMaterial::PhongMaterial() : StandardMaterial()
   {
     //Setup the shader object
     Shader *specShader = new Shader;
-    specShader->fromFile ("specularity.vertex.c", "specularity.fragment.c");
-    specShader->registerUniform ("textures[0]", GE_UNIFORM_TEXTURE, 1);
-    specShader->registerUniform ("textures[1]", GE_UNIFORM_TEXTURE, 1);
-    specShader->registerUniform ("useTextures[0]", GE_UNIFORM_INT, 1);
-    specShader->registerUniform ("useTextures[1]", GE_UNIFORM_INT, 1);
+    specShader->fromFile( "specularity.vertex.c", "specularity.fragment.c" );
+    specShader->registerUniform( "textures[0]", GE_UNIFORM_TEXTURE, 1 );
+    specShader->registerUniform( "textures[1]", GE_UNIFORM_TEXTURE, 1 );
+    specShader->registerUniform( "useTextures[0]", GE_UNIFORM_INT, 1 );
+    specShader->registerUniform( "useTextures[1]", GE_UNIFORM_INT, 1 );
     
     //Assign shader
-    setShader (specShader);
+    setShader( specShader );
     
     //Init other properties
     texDiffuse = NULL;
@@ -648,18 +637,18 @@ namespace GE
     setProperty ("textures[1]", tex);
   }
 
-  Texture* PhongMaterial::getSpecularityTexture ()
+  Texture* PhongMaterial::getSpecularityTexture()
   {
     return texSpecularity;
   }
   
-  void PhongMaterial::begin ()
+  void PhongMaterial::begin()
   {
-    StandardMaterial::begin ();
+    StandardMaterial::begin();
     
     if (texDiffuse != NULL) {
-      if (texDiffuse->getFormat() == COLOR_FORMAT_GRAY_ALPHA ||
-          texDiffuse->getFormat() == COLOR_FORMAT_RGB_ALPHA) {
+      if (texDiffuse->getFormat() == OCC::COLOR_FORMAT_GRAY_ALPHA ||
+          texDiffuse->getFormat() == OCC::COLOR_FORMAT_RGB_ALPHA) {
         
         glEnable (GL_BLEND);
         glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

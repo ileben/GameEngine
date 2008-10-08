@@ -10,7 +10,7 @@ namespace GE
     DECLARE_ABSTRACT (Saver); DECLARE_END;
 
   protected:
-    OCC::ArrayList<Object*> objects;
+    ArrayListT<Object*> objects;
 
   public:
     void addObject(Object *o);

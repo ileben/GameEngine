@@ -9,13 +9,9 @@ namespace GE
    * Arrays used by the loader
    *-------------------------------*/
 
-  typedef OCC::ArrayList <PolyMesh::Vertex*> VertArray;
-  typedef VertArray::Iterator VertArrayIter;
-
-  typedef OCC::ArrayList <PolyMesh::Face*> FaceArray;
-  typedef FaceArray::Iterator FaceArrayIter;
-
-  typedef OCC::ArrayList <Vector2> UVArray;
+  typedef ArrayListT <PolyMesh::Vertex*> VertArray;
+  typedef ArrayListT <PolyMesh::Face*> FaceArray;
+  typedef ArrayListT <Vector2> UVArray;
 
   /*---------------------------------------
    * Stores a single 3ds chunk file layout
@@ -42,7 +38,7 @@ namespace GE
     
     //Chunk stack
     ChunkInfo topChunk;
-    OCC::ArrayList<ChunkInfo> chunkStack;
+    ArrayListT<ChunkInfo> chunkStack;
     void readChunkInfo (ChunkInfo *chunk);
     void pushChunk (const ChunkInfo &chunk);
     void popChunk ();

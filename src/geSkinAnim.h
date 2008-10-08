@@ -80,7 +80,7 @@ namespace GE
     
     ~SkinAnim ()
     {
-      for (int t=0; t<tracks->size(); ++t)
+      for (UintSize t=0; t<tracks->size(); ++t)
         delete tracks->at (t);
 
       delete tracks;

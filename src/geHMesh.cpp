@@ -1,7 +1,6 @@
 #define GE_API_EXPORT
 #include "geEngine.h"
-using namespace OCC;
-
+using OCC::LinkedList;
 
 namespace GE
 {

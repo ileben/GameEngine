@@ -3,6 +3,13 @@
 
 namespace GE
 {
+  /*
+  =======================================================
+  A serializable list of structures of undefined class.
+  The size of the elements must be passed as an argument
+  to the constructor.
+  =======================================================*/
+  
   class GE_API_ENTRY GenericArrayList
   {
     DECLARE_SERIAL_CLASS (GenericArrayList);
@@ -24,37 +31,37 @@ namespace GE
     Serialization
     ------------------------------------------------------*/
     
-    GenericArrayList (SerializeManager *sm)
+    GenericArrayList( SerializeManager *sm )
     {
       //Make sure it is re-serializable
-      if (sm->isDeserializing())
-        eltCls = IClass::FromID (eltClsID);
+      if( sm->isDeserializing() )
+        eltCls = IClass::FromID( eltClsID );
     }
     
-    virtual void serialize (void *param)
+    virtual void serialize( void *param )
     {
       SerializeManager *sm = (SM*)param;
-      sm->memberVar (&sz);
-      sm->memberVar (&eltSize);
-      sm->memberVar (&eltClsID);
+      sm->memberVar( &sz );
+      sm->memberVar( &eltSize );
+      sm->memberVar( &eltClsID );
       
       //Make sure it is usable after loading
-      if (sm->isLoading()) {
-        eltCls = IClass::FromID (eltClsID);
+      if( sm->isLoading() ){
+        eltCls = IClass::FromID( eltClsID );
         cap = sz;
       }
       
       //Assume if class given the elements are pointers
       //(otherwise the array is not serializable anyway)
-      if (sz > 0) {
-        if (eltCls != NULL)
-          sm->resourcePtrPtr (eltCls, (void***)&elements, sz);
-        else sm->dynamicPtr (&elements, sz * eltSize);
+      if( sz > 0 ){
+        if( eltCls != NULL )
+          sm->resourcePtrPtr( eltCls, (void***)&elements, sz );
+        else sm->dynamicPtr( &elements, sz * eltSize );
       }
       
       //Make sure it is usable after loading
-      if (sm->isLoading() && sz == 0) {
-        elements = (Uint8*) std::malloc (eltSize);
+      if( sm->isLoading() && sz == 0 ){
+        elements = (Uint8*) std::malloc( eltSize );
         cap = 1;
       }
     }
@@ -66,8 +73,8 @@ namespace GE
     Constructs n elements at given address
     -----------------------------------------------------*/
     
-    virtual void construct (void *dst, UintP n) {
-      //Implemented in ResArrayList
+    virtual void construct( void *dst, UintSize n ){
+      //Implemented in ArrayList<T>
     }
     
     /*
@@ -75,8 +82,8 @@ namespace GE
     Destructs n elements at given address
     -----------------------------------------------------*/
     
-    virtual void destruct (void *dst, UintP n) {
-      //Implemented in ResArrayList
+    virtual void destruct( void *dst, UintSize n ){
+      //Implemented in ArrayList<T>
     }
     
     /*
@@ -84,8 +91,8 @@ namespace GE
     Copies n elements from source to destination buffer
     -----------------------------------------------------*/
     
-    virtual void copy (void *dst, const void *src, UintP n) {
-      std::memcpy (dst, src, n * eltSize);
+    virtual void copy( void *dst, const void *src, UintSize n ){
+      std::memcpy( dst, src, n * eltSize );
     }
     
   public:
@@ -93,18 +100,18 @@ namespace GE
     /*
     ---------------------------------------------
     Default constructor. Assumes Uint8 elements.
-    We should let this really.
+    We shouldn't allow this really.
     ---------------------------------------------*/
-
-    GenericArrayList ()
+    
+    GenericArrayList()
     {
-      this->eltSize = sizeof (Uint8);
+      this->eltSize = sizeof( Uint8 );
       this->eltClsID = ClassID(0);
       this->eltCls = NULL;
       
       sz = 0;
       cap = 1;
-      elements = (Uint8*) std::malloc (cap * eltSize);
+      elements = (Uint8*) std::malloc( cap * eltSize );
     }
     
     /*
@@ -113,15 +120,15 @@ namespace GE
     array with storage for 1 element
     --------------------------------------*/
     
-    GenericArrayList (UintP eltSize, ClassPtr eltCls=NULL)
+    GenericArrayList( UintSize eltSize, ClassPtr eltCls )
     {
       this->eltSize = (Uint32) eltSize;
-      this->eltClsID = (eltCls ? eltCls->getID () : ClassID(0));
+      this->eltClsID = ( eltCls ? eltCls->getID() : ClassID(0) );
       this->eltCls = eltCls;
       
       sz = 0;
       cap = 1;
-      elements = (Uint8*) std::malloc (cap * eltSize);
+      elements = (Uint8*) std::malloc( cap * eltSize );
     }
 
     /*
@@ -130,15 +137,15 @@ namespace GE
     array with given capacity.
     -----------------------------------*/
     
-    GenericArrayList (UintP newCap, UintP eltSize, ClassPtr eltCls=NULL)
+    GenericArrayList( UintSize newCap, UintSize eltSize, ClassPtr eltCls )
     {
       this->eltSize = (Uint32) eltSize;
-      this->eltClsID = (eltCls ? eltCls->getID () : ClassID(0));
+      this->eltClsID = ( eltCls ? eltCls->getID() : ClassID(0) );
       this->eltCls = eltCls;
       
       sz = 0;
       cap = (Uint32) newCap;
-      elements = (Uint8*) std::malloc (cap * eltSize);
+      elements = (Uint8*) std::malloc( cap * eltSize );
     }
       
     /*
@@ -148,10 +155,22 @@ namespace GE
 		
     virtual ~GenericArrayList()
     {
-      //--Can't call virtuals in destructor!
-      //--Implemented in ArrayList<T>.
+      //Can't call virtuals in destructor!
+      //Implemented in ArrayList<T>.
       //destruct( elements, sz );
       std::free( elements );
+    }
+    
+    /*
+    ---------------------------------------
+    Invalidates all the items and resets
+    array size to 0.
+    ---------------------------------------*/
+    
+    void clear()
+    {
+      destruct( elements, sz );
+      sz = 0;
     }
       
     /*
@@ -161,17 +180,19 @@ namespace GE
     invalid and size of the array is reset to 0.
     ---------------------------------------------*/
 
-    void reserve (UintP n)
+    void reserve( UintSize n )
     {
-      destruct (elements, sz);
+      //Clear existing elements
+      destruct( elements, sz );
       sz = 0;
       
-      if (n > cap) {
-        
-        std::free (elements);
-        elements = (Uint8*) std::malloc (n * eltSize);
-        cap = (Uint32) n;
-      }
+      //Return if enough capacity
+      if( n <= cap ) return;
+      
+      //Free old memory and allocate more
+      std::free( elements );
+      elements = (Uint8*) std::malloc( n * eltSize );
+      cap = (Uint32) n;
     }
 
     /*
@@ -182,31 +203,23 @@ namespace GE
     is always preserved.
     ------------------------------------------*/
 
-    void reserveAndCopy (UintP n)
+    void reserveAndCopy( UintSize n )
     {
-      if (n <= cap) return;
+      //No-op if enough capacity
+      if( n <= cap ) return;
       
-      void* newElements = std::malloc (n * eltSize);
-      construct (newElements, sz);
-      copy (newElements, elements, sz);
+      //Allocate array for new elements,
+      //construct and copy existing ones
+      void* newElements = std::malloc( n * eltSize );
+      construct( newElements, sz );
+      copy( newElements, elements, sz );
       
-      destruct (elements, sz);
-      std::free (elements);
+      //Destruct and free old elements
+      destruct( elements, sz );
+      std::free( elements );
       
       elements = (Uint8*) newElements;
       cap = (Uint32) n;
-    }
-
-    /*
-    ---------------------------------------
-    Invalidates all the items and resets
-    array size to 0.
-    ---------------------------------------*/
-    
-    void clear()
-    {
-      destruct (elements, sz);
-      sz = 0;
     }
     
     /*
@@ -216,84 +229,82 @@ namespace GE
     of O(1) for element insertion.
     ------------------------------------------------------*/
     
-    void insertAt (UintP index, const void *newElt)
+    void insertAt( UintSize index, const void *newElt )
     {
       void *copyElt = (void*) newElt;      
       bool cloned = false;
       
-      printf( "cap: %d\n", cap );
-      
       //Clamp insertion point to size
-      if (index > sz) index = sz;
+      if( index > sz ) index = sz;
       
       //Will any moving take place?
-      if (sz == cap || index < sz)
+      if( sz == cap || index < sz )
       {
         //It might be a reference to our own element
         //so better clone it before reallocation
-        copyElt = std::malloc (eltSize);
-        construct (copyElt, 1);
-        copy (copyElt, newElt, 1);
+        copyElt = std::malloc( eltSize );
+        construct( copyElt, 1 );
+        copy( copyElt, newElt, 1 );
         cloned = true;
       }
       
       //Make sure we got enough space
-      if (sz == cap) reserveAndCopy (cap * 2);
+      if( sz == cap ) reserveAndCopy( cap * 2 );
       
       //Construct an element at the back
-      construct (elements + sz*eltSize, 1);
+      construct( elements + sz*eltSize, 1 );
       
       //Shift forward the elements above the index
-      if (index < sz)
-        for (UintP i=sz-1; i>=index; i--)
-          copy (elements + (i+1)*eltSize, elements + i*eltSize, 1);
+      if( index < sz )
+        for( UintSize i=sz-1; i>=index; --i )
+          copy( elements + (i+1)*eltSize, elements + i*eltSize, 1 );
       
       //Copy the new element at [index]
-      copy (elements + index*eltSize, copyElt, 1);
+      copy( elements + index*eltSize, copyElt, 1 );
       sz++;
       
       //Delete the clone
-      if (cloned) {
-        destruct (copyElt, 1);
-        std::free (copyElt);
+      if( cloned ){
+        destruct( copyElt, 1 );
+        std::free( copyElt );
       }
     }
     
-    void removeAt (UintP index)
+    void removeAt( UintSize index )
     {
       //Prevent invalid removal
-      if (index >= sz) return;
+      if( index >= sz ) return;
       
       //Shift backwards the elements above the index
-      for (UintP i=index; i<sz-1; i++)
-        copy (elements + i*eltSize, elements + (i+1)*eltSize, 1);
+      for( UintSize i=index; i<sz-1; i++ )
+        copy( elements + i*eltSize, elements + (i+1)*eltSize, 1 );
       
       //Destruct the last element
-      destruct (elements + sz*eltSize, 1);
+      destruct( elements + sz*eltSize, 1 );
       sz--;
     }
     
-    void setAt (UintP index, const void *newElt)
+    void setAt( UintSize index, const void *newElt )
     {
-      copy (elements + index, newElt, 1);
+      copy( elements + index, newElt, 1 );
     }
     
-    void pushBack (const void *newElt)
+    void pushBack( const void *newElt )
     {
-      insertAt (sz, newElt);
+      insertAt( sz, newElt );
     }
     
-    void popBack ()
+    void popBack()
     {
-      removeAt (sz-1);
+      removeAt( sz-1 );
     }
     
-    int capacity() const
+    UintSize capacity() const
     {
       return cap;
     }
     
-    int size() const
+    UintSize size() const
     {
       return sz;
     }
@@ -308,163 +319,142 @@ namespace GE
       return elements;
     }
     
-    int elementSize() const
+    UintSize elementSize() const
     {
       return eltSize;
     }
   };
   
   /*
-  -----------------------------------------------------
-  A serializable array list with non-class elements
-  -----------------------------------------------------*/
+  ======================================================
+  A non-serializable templated list
+  ======================================================*/
   
   template <class T> class ArrayListT : public GenericArrayList
   {
   public:
     
-    ArrayListT ()
-      : GenericArrayList (sizeof(T))
+    ArrayListT()
+      : GenericArrayList( sizeof(T), NULL )
       {}
     
-    ArrayListT (int newCap)
-      : GenericArrayList (newCap, sizeof(T))
+    ArrayListT( UintSize newCap )
+      : GenericArrayList( newCap, sizeof(T), NULL )
       {}
     
-    ArrayListT (UintP eltSize, ClassPtr eltCls)
-      : GenericArrayList (eltSize, eltCls)
+    ArrayListT( UintSize eltSize, ClassPtr eltCls )
+      : GenericArrayList( eltSize, eltCls )
       {}
     
-    ArrayListT (UintP newCap, UintP eltSize, ClassPtr eltCls)
-      : GenericArrayList (newCap, eltSize, eltCls)
+    ArrayListT( UintSize newCap, UintSize eltSize, ClassPtr eltCls )
+      : GenericArrayList( newCap, eltSize, eltCls )
       {}
     
-    void pushBack (const T &newElt)
+    ~ArrayListT()
+    {
+      destruct( this->elements, this->sz );
+    }
+    
+    virtual void construct( void *dst, UintSize n )
+    {
+      T *tdst = (T*)dst;
+      for( UintSize i=0; i<n; ++i )
+        new( &tdst[i] )T;
+    }
+    
+    virtual void destruct( void *dst, UintSize n )
+    {
+      T *tdst = (T*)dst;
+      for( UintSize i=0; i<n; ++i )
+        tdst[i].~T();
+    }
+    
+    virtual void copy( void *dst, const void *src, UintSize n )
+    {
+      T *tdst = (T*)dst;
+      T *tsrc = (T*)src;
+      for( UintSize i=0; i<n; ++i )
+        tdst[i] = tsrc[i];
+    }
+    
+    void pushBack( const T &newElt )
     {
       GenericArrayList::pushBack (&newElt);
     }
     
-    void setAt (int index, const T &newElt)
+    void setAt( UintSize index, const T &newElt )
     {
       GenericArrayList::setAt (index, &newElt);
     }
     
     T& first() const
     {
-      return ((T*)elements) [0];
+      return ((T*)elements)[ 0 ];
     }
     
     T& last() const
     {
-      return ((T*)elements) [sz-1];
+      return ((T*)elements)[ sz-1 ];
     }
     
-    T& elementAt (int index) const
+    T& elementAt( UintSize index ) const
     {
-      return ((T*)elements) [index];
+      return ((T*)elements)[ index ];
     }
     
-    T& at (int index) const
+    T& at( UintSize index ) const
     {
-      return ((T*)elements) [index];
+      return ((T*)elements)[ index ];
     }
     
-    T& operator[](int index) const
+    T& operator[]( UintSize index ) const
     {
-      return ((T*)elements) [index];	
+      return ((T*)elements)[ index ];
     }
     
     T* buffer() const
     {
-      return (T*) elements;
+      return (T*)elements;
     }
     
-    bool contains (const T &el) const
+    bool contains( const T &el ) const
     {
-      return (indexOf(el) != -1);
+      return (indexOf( el ) != -1);
     }
     
-    int indexOf (const T &el) const
+    UintSize indexOf( const T &el ) const
     {
-      for (int i=0; i<sz; i++)
-        if (((T*)elements) [i] == el)
+      for( UintSize i=0; i<sz; i++ )
+        if( ((T*)elements) [i] == el )
           return i;
       
       return -1;
     }
     
-    void remove (const T &el)
+    void remove( const T &el )
     {
-      int i = indexOf(el);
-      if (i > -1)	removeAt(i);
+      UintSize i = indexOf( el );
+      if( i > -1 ) removeAt( i );
     }
   };
+
   
   /*
-  ------------------------------------------------
-  A typical array list (non-serializable!)
-  ------------------------------------------------*/
-  
-  template <class T>
-    class ResArrayList : public ArrayListT <T>
-  {
-  public:
-    
-    ResArrayList()
-      : ArrayListT <T> ( sizeof(T), NULL )
-      {}
-        
-    ResArrayList( UintP newCap )
-      : ArrayListT <T> ( newCap, sizeof(T), NULL )
-      {}
-        
-    ~ResArrayList()
-    {
-      printf( "~ResArrayList\n" );
-      destruct( this->elements, this->sz );
-    }
-      
-    virtual void construct( void *dst, UintP n )
-    {
-      printf( "construct %d, %p\n", n, dst );
-      new (dst) T [n];
-    }
-    
-    virtual void destruct( void *dst, UintP n )
-    {
-      printf( "destruct %d, %p\n", n, dst );
-      printf( "sizeof(T): %d\n", this->eltSize );
-      T *tdst = (T*)dst;
-      for (int d=0; d<n; ++d)
-        tdst[n].~T();
-    }
-    
-    virtual void copy( void *dst, const void *src, UintP n )
-    {
-      T *tdst = (T*)dst;
-      T *tsrc = (T*)src;
-      for (int i=0; i<n; ++i)
-        tdst[i] = tsrc[i];
-    }
-  };
-  
-  
-  /*
-  --------------------------------------------------------
+  ========================================================
   A serializable list of pointers to serializable classes
-  --------------------------------------------------------*/
+  ========================================================*/
   
   template <class T>
     class ClassArrayList : public ArrayListT <T*>
   {
   public:
     
-    ClassArrayList ()
-      : ArrayListT <T*> (sizeof(T*), Class(T))
+    ClassArrayList()
+      : ArrayListT <T*> ( sizeof(T*), Class(T) )
       {}
     
-    ClassArrayList (UintP newCap)
-      : ArrayListT <T*> (newCap, sizeof(T*), Class(T))
+    ClassArrayList( UintSize newCap )
+      : ArrayListT <T*> ( newCap, sizeof(T*), Class(T) )
       {}
   };
   

@@ -1,7 +1,7 @@
 #define GE_API_EXPORT
 #include "geEngine.h"
 #include "geGLHeaders.h"
-using namespace OCC;
+using OCC::String;
 
 namespace GE
 {
@@ -95,14 +95,14 @@ namespace GE
     uniforms.pushBack (Uniform (name, type, count));
   }
   
-  int Shader::getUniformCount ()
+  UintSize Shader::getUniformCount()
   {
-    return uniforms.size ();
+    return uniforms.size();
   }
   
-  Shader::Uniform& Shader::getUniform (int index)
+  Shader::Uniform& Shader::getUniform( UintSize index )
   {
-    return uniforms [index];
+    return uniforms[ index ];
   }
   
   void Shader::use ()

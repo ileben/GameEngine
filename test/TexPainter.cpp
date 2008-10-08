@@ -2,7 +2,15 @@
 #include <geGLHeaders.h>
 #include <geClass.h>
 using namespace GE;
-using namespace OCC;
+using OCC::ColorFormat;
+using OCC::Color;
+using OCC::Image;
+using OCC::EncoderParamsJPEG;
+using OCC::File;
+using OCC::FileRef;
+using OCC::LinkedList;
+using OCC::String;
+using OCC::ByteString;
 
 #include <cstdlib>
 #include <cstdio>
@@ -161,7 +169,7 @@ void saveImage()
   
   //Create new image for UV mesh
   Image imgUV;
-  imgUV.create(imgDiff.getWidth(), imgDiff.getHeight(), COLOR_FORMAT_RGB, white);
+  imgUV.create(imgDiff.getWidth(), imgDiff.getHeight(), OCC::COLOR_FORMAT_RGB, white);
 
   //Draw UV mesh
   for (ETexMesh::EdgeIter e(uvmesh); !e.end(); ++e) {
@@ -176,11 +184,11 @@ void saveImage()
   EncoderParamsJPEG params;
   params.quality = 100;
 
-  if (imgUV.writeFile("mesh.jpg", &params, "JPEG") != IMAGE_NO_ERROR)
+  if (imgUV.writeFile("mesh.jpg", &params, "JPEG") != OCC::IMAGE_NO_ERROR)
     printf("Failed saving mesh image file!\n");
   else printf("Mesh image saved successfully.\n");
 
-  if (imgDiff.writeFile("texture.jpg", &params, "JPEG") != IMAGE_NO_ERROR)
+  if (imgDiff.writeFile("texture.jpg", &params, "JPEG") != OCC::IMAGE_NO_ERROR)
     printf("Failed saving texture image file!\n");
   else printf("Texture image saved successfully.\n");
 

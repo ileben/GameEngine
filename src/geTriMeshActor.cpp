@@ -1,7 +1,6 @@
 #define GE_API_EXPORT
 #include "geEngine.h"
 #include "geGLHeaders.h"
-using namespace OCC;
 
 namespace GE
 {
@@ -42,7 +41,7 @@ namespace GE
   void TriMeshActor::renderMesh (MaterialID materialID)
   {
     //Walk material index groups
-    for (int g=0; g<mesh->groups->size(); ++g)
+    for (UintSize g=0; g<mesh->groups->size(); ++g)
     {
       //Check if the material id matches
       TriMesh::IndexGroup &grp = mesh->groups->at( g );
@@ -54,7 +53,7 @@ namespace GE
       glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
       
       glInterleavedArrays( GL_T2F_N3F_V3F,
-                           mesh->data->elementSize(),
+                           (GLsizei) mesh->data->elementSize(),
                            mesh->data->buffer());
       
       glDrawElements( GL_TRIANGLES, grp.count, GL_UNSIGNED_INT,

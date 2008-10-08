@@ -1,7 +1,9 @@
 #define GE_API_EXPORT
 #include "geEngine.h"
 #include "geLoad3ds.h"
-using namespace OCC;
+using OCC::String;
+using OCC::File;
+using OCC::FileRef;
 
 namespace GE
 {
@@ -91,7 +93,7 @@ namespace GE
   void Loader3ds::chunk_MESH_FACE_SMOOTH_GROUP_LIST (PolyMesh *mesh, FaceArray *faces)
   {
     //Just read all smoothgroups and apply to faces
-    for (int i=0; i<faces->size(); ++i) {
+    for (UintSize i=0; i<faces->size(); ++i) {
       Int32 smoothGroups = 0;
       if (file->readLE(&smoothGroups, 4) != 4) break;
       faces->elementAt(i)->smoothGroups = smoothGroups;
@@ -117,9 +119,9 @@ namespace GE
       if (file->readLE(&flag, 2) != 2) return;
 
       //Make sure indices are in vertex range
-      if (i1 < 0 || i1 >= verts->size()) return;
-      if (i2 < 0 || i2 >= verts->size()) return;
-      if (i3 < 0 || i3 >= verts->size()) return;
+      if (i1 < 0 || i1 >= (Int16) verts->size()) return;
+      if (i2 < 0 || i2 >= (Int16) verts->size()) return;
+      if (i3 < 0 || i3 >= (Int16) verts->size()) return;
 
       //Add face to mesh
       PolyMesh::Vertex* v[3] = {
@@ -130,9 +132,9 @@ namespace GE
       faces->pushBack(face);
 
       //Make sure indices are in UV range
-      if (i1 >= uvcoords->size()) continue;
-      if (i2 >= uvcoords->size()) continue;
-      if (i3 >= uvcoords->size()) continue;
+      if (i1 >= (Int16) uvcoords->size()) continue;
+      if (i2 >= (Int16) uvcoords->size()) continue;
+      if (i3 >= (Int16) uvcoords->size()) continue;
 
       //Apply UV coordinates
       //TODO: Add UV face instead
@@ -244,7 +246,7 @@ namespace GE
     }
 
     //Apply tex coords to faces
-    for (FaceArrayIter f=faces.begin(); f!=faces.end(); ++f) {
+    for (UintSize f=0; f<faces.size(); ++f) {
 
     }
   }

@@ -46,7 +46,7 @@ namespace GE
   typedef unsigned int         Uint32;
   typedef long long            Int64;
   typedef unsigned long long   Uint64;
-  typedef std::size_t          UintP;
+  typedef std::size_t          UintSize;
   
   typedef float      Float32;
   typedef double     Float64;

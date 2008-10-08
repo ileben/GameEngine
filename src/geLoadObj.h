@@ -14,17 +14,10 @@ namespace GE
   {
     DECLARE_SUBCLASS (LoaderObj, Loader); DECLARE_END;
 
-    typedef OCC::ArrayList <Vector3> Vec3Array;
-    typedef Vec3Array::Iterator Vec3ArrayIter;
-
-    typedef OCC::ArrayList <TexMesh::Vertex*> UVertArray;
-    typedef UVertArray::Iterator UVertArrayIter;
-
-    typedef OCC::ArrayList <PolyMesh::Vertex*> VertArray;
-    typedef VertArray::Iterator VertArrayIter;
-
-    typedef OCC::ArrayList <PolyMesh::VertexNormal*> VNormalArray;
-    typedef VNormalArray::Iterator VNormalArrayIter;
+    typedef ArrayListT <Vector3> Vec3Array;
+    typedef ArrayListT <TexMesh::Vertex*> UVertArray;
+    typedef ArrayListT <PolyMesh::Vertex*> VertArray;
+    typedef ArrayListT <PolyMesh::VertexNormal*> VNormalArray;
 
     OCC::FileRef file;
     OCC::ByteString buffer;

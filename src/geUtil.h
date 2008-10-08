@@ -17,11 +17,11 @@ namespace GE
     template <class T> inline static void Max (const T &a, const T &b);
 
     //Pointer management
-    inline static void PtrSet (void *pptr, UintP address);
-    inline static void PtrAdd (void *pptr, UintP offset);
-    inline static void PtrSub (void *pptr, UintP offset);
-    inline static UintP PtrDist (void *ptrFrom, void *ptrTo);   
-    inline static void* PtrOff (void *ptr, UintP offset);
+    inline static void PtrSet (void *pptr, UintSize address);
+    inline static void PtrAdd (void *pptr, UintSize offset);
+    inline static void PtrSub (void *pptr, UintSize offset);
+    inline static UintSize PtrDist (void *ptrFrom, void *ptrTo);   
+    inline static void* PtrOff (void *ptr, UintSize offset);
 
     //Trigonometry
     inline static Float DegToRad (Float degrees);
@@ -48,27 +48,27 @@ namespace GE
   Pointer management
   ---------------------------------------------*/
 
-  void Util::PtrSet (void *pptr, UintP address)
+  void Util::PtrSet (void *pptr, UintSize address)
   {
-    *((UintP*)pptr) = address;
+    *((UintSize*)pptr) = address;
   }
   
-  void Util::PtrAdd (void *pptr, UintP offset)
+  void Util::PtrAdd (void *pptr, UintSize offset)
   {
-    *((UintP*)pptr) += offset;
+    *((UintSize*)pptr) += offset;
   }
   
-  void Util::PtrSub (void *pptr, UintP offset)
+  void Util::PtrSub (void *pptr, UintSize offset)
   {
-    *((UintP*)pptr) -= offset;
+    *((UintSize*)pptr) -= offset;
   }
 
-  UintP Util::PtrDist (void *ptr1, void *ptr2)
+  UintSize Util::PtrDist (void *ptr1, void *ptr2)
   {
-    return ((UintP)ptr2) - ((UintP)ptr1);
+    return ((UintSize)ptr2) - ((UintSize)ptr1);
   }
 
-  void* Util::PtrOff (void *ptr, UintP offset)
+  void* Util::PtrOff (void *ptr, UintSize offset)
   {
     void *ptrout = ptr;
     PtrAdd (&ptrout, offset);

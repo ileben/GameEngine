@@ -43,7 +43,7 @@ namespace GE
       if (pose != NULL)
         delete pose;
       
-      for (int a=0; a<anims->size(); ++a)
+      for (UintSize a=0; a<anims->size(); ++a)
         delete anims->at (a);
       
       delete anims;

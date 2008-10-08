@@ -13,7 +13,6 @@
 #endif
 
 #include <stdio.h>
-using namespace OCC;
 
 /*========================================
  *

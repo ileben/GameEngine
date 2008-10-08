@@ -1,8 +1,7 @@
 #define GE_API_EXPORT
 #include "geEngine.h"
 #include "geGLHeaders.h"
-using namespace OCC;
-
+using OCC::LinkedList;
 
 namespace GE
 {
@@ -27,7 +26,7 @@ namespace GE
   {
     IndexGroup newGrp;
     newGrp.materialID = matID;
-    newGrp.start = indices->size();
+    newGrp.start = (VertexID) indices->size();
     newGrp.count = 0;
     groups->pushBack( newGrp );
   }
@@ -93,7 +92,7 @@ namespace GE
     PolyMesh::FaceHedgeIter h;
     TexMesh::FaceIter uf;
     TexMesh::FaceHedgeIter uh;
-    ArrayList<UniqueVertex> uniqVerts;
+    ArrayListT<UniqueVertex> uniqVerts;
     VertexID nextVertexID = 0;
     
     /*
@@ -126,7 +125,7 @@ namespace GE
         
         //Walk existing vertex variants
         bool existingFound = false;
-        for (int u=uniqVerts.size()-1; u>=0; --u)
+        for( int u=(int)uniqVerts.size()-1; u>=0; --u )
         {
           //Check for match
           if (uniqVerts[u].materialID == vf->materialID() &&

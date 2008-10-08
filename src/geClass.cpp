@@ -1,6 +1,7 @@
 #define GE_API_EXPORT
 #include "geEngine.h"
-using namespace OCC;
+using OCC::ByteString;
+using OCC::TextParser;
 using namespace OCC::TextParserCommon;
 
 namespace GE
@@ -110,7 +111,7 @@ namespace GE
   {
     PTable *props = ptr.cls->getProperties ();
     
-    for (int p=0; p<props->size(); ++p)
+    for (size_t p=0; p<props->size(); ++p)
     {
       buf += props->at(p)->getName();
       buf += " = ";
@@ -124,7 +125,7 @@ namespace GE
   {
     PTable *props = ptr.cls->getProperties ();
     
-    for (int p=0; p<props->size(); ++p)
+    for (size_t p=0; p<props->size(); ++p)
     {
       props->at(p)->saveBinary (ptr.obj, buf);
     }
@@ -167,7 +168,7 @@ namespace GE
         
         //Search for the property with same name
         PTable *props = ptr.cls->getProperties();
-        for (int p=0; p < props->size(); ++p) {
+        for (size_t p=0; p < props->size(); ++p) {
           if (parser.compareToken (props->at(p)->getName())) {
             
             //Let the property load itself

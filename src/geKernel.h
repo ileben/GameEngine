@@ -59,7 +59,7 @@ namespace GE
     int maxElementsVertices;
     void loadExtensions ();
     
-    OCC::ArrayList<ObjectPtr> objects;
+    ArrayListT<ObjectPtr> objects;
     OCC::ArraySet<KernelBuffer*> buffers;
     
   public:

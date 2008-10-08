@@ -38,7 +38,7 @@ namespace GE
     GLShader  *vertex;
     GLShader  *fragment;
     GLProgram *program;
-    OCC::ArrayList<Uniform> uniforms;
+    ArrayListT<Uniform> uniforms;
     
     void freeProgram ();
     
@@ -54,8 +54,8 @@ namespace GE
                           UniformType type,
                           int count);
     
-    int getUniformCount ();
-    Uniform& getUniform (int index);
+    UintSize getUniformCount ();
+    Uniform& getUniform (UintSize index);
     void use ();
   };
 }

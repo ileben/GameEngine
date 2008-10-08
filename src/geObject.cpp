@@ -1,17 +1,17 @@
 #define GE_API_EXPORT
 #include "geEngine.h"
-using namespace OCC;
+using OCC::String;
 
 namespace GE
 {
-  DEFINE_CLASS (Object);
+  DEFINE_CLASS( Object );
   
-  void Object::setId (const String &id)
+  void Object::setId( const String &id )
   {
     this->id = id;
   }
   
-  const String& Object::getId ()
+  const String& Object::getId()
   {
     return id;
   }

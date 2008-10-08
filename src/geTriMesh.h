@@ -77,14 +77,14 @@ namespace GE
     
     TriMesh()
     {
-      data = new GenericArrayList( sizeof( TriMeshVertex ));
+      data = new GenericArrayList( sizeof( TriMeshVertex ), NULL );
       indices = new ArrayListT <Uint32>;
       groups = new ArrayListT <IndexGroup>;
     }
     
     TriMesh( Uint32 vertexSize )
     {
-      data = new GenericArrayList( vertexSize );
+      data = new GenericArrayList( vertexSize, NULL );
       indices = new ArrayListT <Uint32>;
       groups = new ArrayListT <IndexGroup>;
     }

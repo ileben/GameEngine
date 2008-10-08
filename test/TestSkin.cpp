@@ -2,12 +2,15 @@
 #include <geGLHeaders.h>
 #include <geClass.h>
 using namespace GE;
-using namespace OCC;
+using OCC::ByteString;
+using OCC::String;
+using OCC::FileRef;
+using OCC::File;
 
 #include <cstdlib>
 #include <cstdio>
 
-void applyFK (int frame);
+void applyFK( UintSize frame );
 
 /*
 ==========================================================
@@ -126,13 +129,13 @@ MaxCharacter *character;
 
 SPolyMesh *polyMesh;
 SPolyActor *polyActor;
-ArrayList <Vector3> polyPosePoints;
-ArrayList <Vector3> polyPoseNormals;
+ArrayListT <Vector3> polyPosePoints;
+ArrayListT <Vector3> polyPoseNormals;
 
 SkinTriMesh *triMesh;
 TriMeshActor *triActor;
-ArrayList <Vector3> triPosePoints;
-ArrayList <Vector3> triPoseNormals;
+ArrayListT <Vector3> triPosePoints;
+ArrayListT <Vector3> triPoseNormals;
 
 FpsLabel lblFps;
 
@@ -142,8 +145,8 @@ Renderer renderer;
 bool down3D;
 Vector2 lastMouse3D;
 int boneColorIndex = 0;
-int frame = 0;
-int numFrames = 0;
+UintSize frame = 0;
+UintSize numFrames = 0;
 float curTime = 0.0f;
 float maxTime = 0.0f;
 
@@ -444,8 +447,8 @@ void loadPackage (String fileName)
   
   //Add vertices to the mesh
   polyMesh = new SPolyMesh;
-  ArrayList <SPolyMesh::Vertex*> verts( inMesh->verts->size() );
-  for (int v=0; v<inMesh->verts->size(); ++v)
+  ArrayListT <SPolyMesh::Vertex*> verts( inMesh->verts->size() );
+  for (UintSize v=0; v<inMesh->verts->size(); ++v)
   {
     SPolyMesh::Vertex *vert = (SPolyMesh::Vertex*) polyMesh->addVertex();
     vert->point = inMesh->verts->at( v ).point;
@@ -457,13 +460,13 @@ void loadPackage (String fileName)
   
   //Add indexed faces to the mesh
   int nextIndex = 0;
-  for (int f=0; f<inMesh->faces->size(); ++f)
+  for (UintSize f=0; f<inMesh->faces->size(); ++f)
   {
     int numCorners = inMesh->faces->at( f ).numCorners;
     HMesh::Vertex **corners = new HMesh::Vertex*[ numCorners ];
     
     for (int c=0; c<numCorners; ++c) {
-      int vertIndex = inMesh->indices->at( nextIndex++ );
+      Uint32 vertIndex = inMesh->indices->at( nextIndex++ );
       if (vertIndex > inMesh->verts->size()) {
         printf ("Invalid vertex: %d\n", vertIndex);
         vertIndex = 0; }
@@ -492,23 +495,23 @@ void loadPackage (String fileName)
   ArrayListT <SkinTriVertex> *triVerts =
     (ArrayListT <SkinTriVertex> *) triMesh->data;
   
-  for (int v=0; v<triVerts->size(); ++v)
+  for (UintSize v=0; v<triVerts->size(); ++v)
   {
     triPosePoints.pushBack( triVerts->at( v ).point );
     triPoseNormals.pushBack( triVerts->at( v ).normal );
   }
 }
 
-void applyFK (int frame)
+void applyFK( UintSize frame )
 {
   SkinPose *pose = character->pose;
   SkinAnim *anim = character->anims->first();
-  ArrayList <Matrix4x4> fkMats;
-  ArrayList <Matrix4x4> skinMats;
+  ArrayListT <Matrix4x4> fkMats;
+  ArrayListT <Matrix4x4> skinMats;
   int cindex = 1;
-
-  int numTracks = anim->tracks->size();
-  int numKeys = anim->tracks->first()->keys->size();
+  
+  UintSize numTracks = anim->tracks->size();
+  UintSize numKeys = anim->tracks->first()->keys->size();
   
   //Root FK matrix = local matrix
   Matrix4x4 rootWorld;
@@ -519,18 +522,15 @@ void applyFK (int frame)
   fkMats.pushBack( rootWorld );
   
   //Walk all the bones
-  for (int b=0; b<pose->bones->size(); ++b)
+  for( UintSize b=0; b<pose->bones->size(); ++b )
   {
     //Final skin matrix = FK matrix * world matrix inverse
     SkinBone *parent = &pose->bones->at(b);
     skinMats.pushBack( fkMats[b] * parent->worldInv );
     
     //Walk the children
-    for (Uint32 c=0; c<parent->numChildren; ++c)
+    for( Uint32 c=0; c<parent->numChildren; ++c )
     {
-      if (cindex == 17)
-        int stop = 1;
-      
       //Child FK matrix = parent FK matrix * local matrix
       SkinBone *child = &pose->bones->at( cindex );
       SkinTrack *track = anim->tracks->at( cindex );
@@ -575,7 +575,7 @@ void applyFK (int frame)
   ArrayListT <SkinTriVertex> *triVerts =
     (ArrayListT <SkinTriVertex> *) triMesh->data;
   
-  for (int index=0; index<triVerts->size(); ++index)
+  for( UintSize index=0; index<triVerts->size(); ++index)
   {
     SkinTriVertex &v = triVerts->at( index );
     
@@ -631,50 +631,55 @@ public:
 
 DEFINE_SERIAL_CLASS (CC, ClassID(1,1,1,1));
 */
-
+/*
 class CC
 {
 public:
   CC() { printf( "Ctor\n" ); }
   ~CC() { printf( "~Dtor\n" ); }
-};
+};*/
 
-int main (int argc, char **argv)
+int main( int argc, char **argv )
 {
-  ResArrayList <String> list;
-  String cc;
+  /*
+  ArrayListT<CC> *list = new ArrayListT<CC>;
+  CC cc;
   
-  list.pushBack( cc );
-  list.pushBack( cc );
-  list.pushBack( cc );
-  list.pushBack( cc );
+  list->pushBack( cc );
+  list->pushBack( cc );
+  list->pushBack( cc );
+  list->pushBack( cc );
+
+  delete list;
   
   getchar();
   return 0;
+  */
+
   /*
   CC cc;
-  for (int d=0; d<5; ++d) {
-    cc.list->pushBack (new DD);
+  for( int d=0; d<5; ++d ){
+    cc.list->pushBack( new DD );
     cc.list->last()->d = d;
   }
 
   SM sm;
   void *data;
-  UintP size;
-  sm.serialize (&cc, &data, &size);
+  UintSize size;
+  sm.serialize( &cc, &data, &size );
 
-  CC *ccc = (CC*) sm.deserialize (data);
+  CC *ccc = (CC*) sm.deserialize( data );
   */
   /*
   SkinVertex vert1, vert2, vert3;
-  vert1.point.set (1,2,3);
-  vert2.point.set (4,5,6);
-  vert3.point.set (7,8,9);
+  vert1.point.set( 1,2,3 );
+  vert2.point.set( 4,5,6 );
+  vert3.point.set( 7,8,9 );
 
   SkinMesh *mesh = new SkinMesh;
-  mesh->verts->pushBack (vert1);
-  mesh->verts->pushBack (vert2);
-  mesh->verts->pushBack (vert3);
+  mesh->verts->pushBack( vert1 );
+  mesh->verts->pushBack( vert2 );
+  mesh->verts->pushBack( vert3 );
 
   SkinPose *pose = new SkinPose;
   SkinAnim *anim = new SkinAnim;
@@ -686,7 +691,7 @@ int main (int argc, char **argv)
 
   SM sm;
   void *data;
-  UintP size;
+  UintSize size;
   //sm.serialize (&mchar, &data, &size);
   //sm.deserialize (data);
   sm.save (&mchar, &data, &size);

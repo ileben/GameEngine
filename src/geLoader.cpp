@@ -1,6 +1,6 @@
 #define GE_API_EXPORT
 #include "geEngine.h"
-using namespace OCC;
+using OCC::String;
 
 namespace GE
 {
@@ -9,20 +9,21 @@ namespace GE
   Loader::Loader()
   {
     root = NULL;
-    uvMeshClass = Class(TexMesh);
-    dMeshClass = Class(PolyMesh);
-    sMeshClass = Class(TriMesh);
+    uvMeshClass = Class( TexMesh );
+    dMeshClass = Class( PolyMesh );
+    sMeshClass = Class( TriMesh );
   }
 
   Loader::~Loader()
   {
     //delete object tree
-     if (root != NULL)
-       deleteObject(root);
+     if( root != NULL )
+       deleteObject( root );
 
     //delete unreferenced resources
-    for (ArrayList<Resource*>::Iterator it=resources.begin(); it!=resources.end(); ++it)
-      if ((*it)->getRefCount() == 0) delete *it;
+    for( UintSize r=0; r<resources.size(); ++r )
+      if( resources[r]->getRefCount() == 0 )
+        delete resources[r];
   }
 
   /*------------------------------------
@@ -49,12 +50,12 @@ namespace GE
   void Loader::deleteObject(Actor *obj)
   {
     //delete children if group
-    if (ClassOf(obj) == Class(Group)) {
-      const OCC::ArrayList<Actor*> *children = ((Group*)obj)->getChildren();
-      for (ArrayList<Actor*>::Iterator it=children->begin();
-           it!=children->end(); ++it) deleteObject(*it);
+    if( ClassOf( obj ) == Class( Group )) {
+      const ArrayListT<Actor*> *children = ((Group*)obj)->getChildren();
+      for( UintSize c=0; c<children->size(); ++c )
+        deleteObject( children->at(c) );
     }
-
+    
     delete obj;
   }
 
@@ -66,9 +67,9 @@ namespace GE
   Resource* Loader::getFirstResource (ClassPtr type)
   {
     //Search for first resource of given type
-    for (ArrayList<Resource*>::Iterator it=resources.begin(); it!=resources.end(); ++it)
-      if (SafeCastName (type, *it))
-        return *it;
+    for( UintSize r=0; r<resources.size(); ++r )
+      if( SafeCastName( type, resources[r] ))
+        return resources[r];
     
     return NULL;
   }
@@ -81,19 +82,19 @@ namespace GE
   Actor* Loader::getFirstObject (ClassPtr type)
   {
     //Search for first object of given type
-    for (ArrayList<Actor*>::Iterator it=objects.begin(); it!=objects.end(); ++it)
-      if (SafeCastName (type, *it))
-        return *it;
+    for( UintSize o=0; o<objects.size(); ++o )
+      if( SafeCastName( type, objects[o] ))
+        return objects[o];
     
     return NULL;
   }
-
+  
   /*-------------------------------------
    * Returns a pointer to unmodifiable
    * list of all the loaded resources
    *-------------------------------------*/
 
-  const OCC::ArrayList<Resource*>* Loader::getResources()
+  const ArrayListT<Resource*>* Loader::getResources()
   {
     return &resources;
   }
@@ -103,7 +104,7 @@ namespace GE
    * not destroyed along with Loader class
    *--------------------------------------------*/
 
-  void Loader::retainObject(Actor *obj)
+  void Loader::retainObject( Actor *obj )
   {
     //TODO: hmmmmm.......
   }
@@ -113,7 +114,7 @@ namespace GE
    * or the whole scene tree found inside
    *--------------------------------------------*/
 
-  bool Loader::loadFile(const String &filename)
+  bool Loader::loadFile( const String &filename )
   {
     /*
     String ending = filename.right(4);

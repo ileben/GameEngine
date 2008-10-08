@@ -54,7 +54,7 @@ namespace GE
   }
   
   void SerializeManager::memberVar
-    (void *ptr, UintP size)
+    (void *ptr, UintSize size)
   {
     state->memberVar (ptr, size);
   }
@@ -66,13 +66,13 @@ namespace GE
   }
 
   void SerializeManager::resourcePtrPtr
-    (ClassPtr cls, void ***pptr, UintP count)
+    (ClassPtr cls, void ***pptr, UintSize count)
   {
     state->resourcePtrPtr (cls, pptr, count);
   }
   
   void SerializeManager::dynamicPtr
-    (void **pptr, UintP size)
+    (void **pptr, UintSize size)
   {
     state->dynamicPtr (pptr, size);
   }
@@ -82,7 +82,7 @@ namespace GE
   State utilities
   ---------------------------------------------------------*/
 
-  void SerializeManager::State::reset (UintP startOffset, bool realRun)
+  void SerializeManager::State::reset (UintSize startOffset, bool realRun)
   {
     resQueue.clear ();
     dynQueue.clear ();
@@ -92,7 +92,7 @@ namespace GE
     simulate = !realRun;
   }
 
-  void SerializeManager::State::store (void *ptr, UintP size)
+  void SerializeManager::State::store (void *ptr, UintSize size)
   {
     if (!simulate)
     {
@@ -104,7 +104,7 @@ namespace GE
     offset += size;
   }
 
-  void SerializeManager::State::load (void *ptr, UintP size)
+  void SerializeManager::State::load (void *ptr, UintSize size)
   {
     if (!simulate)
     {
@@ -131,7 +131,7 @@ namespace GE
   }
 
   void SerializeManager::State::arrayPtr
-    (ClassPtr cls, void *ptr, UintP ptroffset)
+    (ClassPtr cls, void *ptr, UintSize ptroffset)
   {
     ResPtrInfo ri;
     ri.cls = cls;
@@ -150,7 +150,7 @@ namespace GE
   -----------------------------------------------------*/
 
   void SerializeManager::StateSerial::memberVar
-    (void *ptr, UintP size)
+    (void *ptr, UintSize size)
   {
     //No-op
   }
@@ -170,7 +170,7 @@ namespace GE
   }
 
   void SerializeManager::StateSerial::resourcePtrPtr
-    (ClassPtr cls, void ***pptr, UintP count)
+    (ClassPtr cls, void ***pptr, UintSize count)
   {
     ResPtrInfo ri;
     ri.count = count;
@@ -184,7 +184,7 @@ namespace GE
   }
   
   void SerializeManager::StateSerial::dynamicPtr
-    (void **pptr, UintP size)
+    (void **pptr, UintSize size)
   {
     DynPtrInfo di;
     di.ptr = *(pptr);
@@ -200,7 +200,7 @@ namespace GE
   -----------------------------------------------------*/
 
   void SerializeManager::StateSave::memberVar
-    (void *ptr, UintP size)
+    (void *ptr, UintSize size)
   {
     //Copy data from resource to buffer
     store (ptr, size);
@@ -214,14 +214,14 @@ namespace GE
   }
 
   void SerializeManager::StateSave::resourcePtrPtr
-    (ClassPtr cls, void ***pptr, UintP count)
+    (ClassPtr cls, void ***pptr, UintSize count)
   {
     //Push the resource info on the queue
     StateSerial::resourcePtrPtr (cls, pptr, count);
   }
   
   void SerializeManager::StateSave::dynamicPtr
-    (void **pptr, UintP size)
+    (void **pptr, UintSize size)
   {
     //Push the data info on the queue
     StateSerial::dynamicPtr (pptr, size);
@@ -233,7 +233,7 @@ namespace GE
   -----------------------------------------------------*/
 
   void SerializeManager::StateLoad::memberVar
-    (void *ptr, UintP size)
+    (void *ptr, UintSize size)
   {
     //Copy data from buffer to resource
     load (ptr, size);
@@ -251,7 +251,7 @@ namespace GE
   }
   
   void SerializeManager::StateLoad::resourcePtrPtr
-    (ClassPtr cls, void ***pptr, UintP count)
+    (ClassPtr cls, void ***pptr, UintSize count)
   {
     //Allocate array of pointers and adjust the pointer to it
     void *pdata = std::malloc (count * sizeof (void*));
@@ -262,7 +262,7 @@ namespace GE
   }
   
   void SerializeManager::StateLoad::dynamicPtr
-    (void **pptr, UintP size)
+    (void **pptr, UintSize size)
   {
     //Allocate data on the heap and adjust the pointer to it
     void *pdata = std::malloc (size);
@@ -277,7 +277,7 @@ namespace GE
   Serialization state
   --------------------------------------------------*/
   
-  void SerializeManager::StateSerial::adjust (UintP ptrOffset)
+  void SerializeManager::StateSerial::adjust (UintSize ptrOffset)
   {
     if (!simulate)
     {
@@ -289,7 +289,7 @@ namespace GE
     //Add to the list of adjusted pointers
     PtrHeader ph;
     ph.offset = ptrOffset;
-    ptrList.pushBack (ph);
+    ptrList.push_back (ph);
   }
   
   void SerializeManager::StateSerial::run
@@ -311,7 +311,7 @@ namespace GE
         
         //Walk the array of pointers to resources
         void **pptr = (void**)ri.ptr;
-        for (UintP p=0; p<ri.count; ++p)
+        for (UintSize p=0; p<ri.count; ++p)
         {
           //Enqueue each pointer to resource
           arrayPtr (ri.cls, pptr[p], offset);
@@ -327,7 +327,7 @@ namespace GE
         ch.id = ri.cls->getID();
         ch.count = ri.count;
         ch.offset = offset;
-        clsList.pushBack (ch);
+        clsList.push_back (ch);
         
         //Set the resource offset
         ri.offset = offset;
@@ -362,42 +362,41 @@ namespace GE
   Saving state
   --------------------------------------------------*/
 
-  void SerializeManager::StateSave::run
-    (ClassPtr rcls, void *rptr)
+  void SerializeManager::StateSave::run( ClassPtr rcls, void *rptr )
   {
     //Push root info to queue
-    rootPtr (rcls, rptr);
-    while (!resQueue.empty())
+    rootPtr( rcls, rptr );
+    while( !resQueue.empty() )
     {
       //Pop first resource info off the stack
       ResPtrInfo ri = resQueue.first();
       resQueue.popFront();
       current = &ri;
       
-      if (ri.isptrptr)
+      if( ri.isptrptr )
       {
         //Walk the array of pointers to resources
-        void **pptr = (void**)ri.ptr;
-        for (UintP p=0; p<ri.count; ++p)
+        void **pptr = (void**) ri.ptr;
+        for( UintSize p=0; p<ri.count; ++p )
         {
           //Enqueue each pointer to resource
-          arrayPtr (ri.cls, pptr[p], 0);
+          arrayPtr( ri.cls, pptr[p], 0 );
         }
       }
       else
       {
         //Copy data and get new pointers from the resource
-        ri.cls->invokeCallback (CLSEVT_SERIALIZE, ri.ptr, sm);
+        ri.cls->invokeCallback( CLSEVT_SERIALIZE, ri.ptr, sm );
       }
       
-      while (!dynQueue.empty())
+      while( !dynQueue.empty() )
       {
         //Pop first dynamic info off the stack
         DynPtrInfo di = dynQueue.first();
         dynQueue.popFront();
         
         //Copy dynamic data
-        store (di.ptr, di.size);
+        store( di.ptr, di.size );
       }
     }
   }
@@ -407,46 +406,45 @@ namespace GE
   Loading state
   --------------------------------------------------*/
   
-  void SerializeManager::StateLoad::run
-    (ClassPtr rcls, void *rptr)
+  void SerializeManager::StateLoad::run( ClassPtr rcls, void *rptr )
   {
     //Push root info to queue
-    rootPtr (rcls, rptr);
-    while (!resQueue.empty())
+    rootPtr( rcls, rptr );
+    while( !resQueue.empty() )
     {
       //Pop first resource info off the stack
       ResPtrInfo ri = resQueue.first();
       resQueue.popFront();
       current = &ri;
 
-      if (ri.isptrptr)
+      if( ri.isptrptr )
       {
         //Walk the array of pointers to resources
-        void **pptr = (void**)ri.ptr;
-        for (UintP p=0; p<ri.count; ++p)
+        void **pptr = (void**) ri.ptr;
+        for( UintSize p=0; p<ri.count; ++p )
         {
           //Create a new resource instance and adjust pointer
-          void *pres = ri.cls->newSerialInstance (sm);
+          void *pres = ri.cls->newSerialInstance( sm );
           pptr[p] = pres;
           
           //Enqueue the pointer to resource
-          arrayPtr (ri.cls, pptr[p], 0);
+          arrayPtr( ri.cls, pptr[p], 0 );
         }
       }
       else
       {
         //Copy data and get new pointers from the resource
-        ri.cls->invokeCallback (CLSEVT_SERIALIZE, ri.ptr, sm);
+        ri.cls->invokeCallback( CLSEVT_SERIALIZE, ri.ptr, sm );
       }
       
-      while (!dynQueue.empty())
+      while( !dynQueue.empty() )
       {
         //Pop first dynamic info off the stack
         DynPtrInfo di = dynQueue.first();
         dynQueue.popFront();
         
         //Copy dynamic data
-        load (di.ptr, di.size);
+        load( di.ptr, di.size );
       }
     }
   }
@@ -456,73 +454,74 @@ namespace GE
   Serialization start
   --------------------------------------------------*/
   
-  void SerializeManager::serialize (ClassPtr cls, void *root, void **outData, UintP *outSize)
+  void SerializeManager::serialize( ClassPtr cls, void *root,
+                                    void **outData, UintSize *outSize )
   {
     //Enter serialization state
     state = &stateSerial;
     state->sm = this;
     
     //Simulation run
-    state->reset (0, false);
-    state->run (cls, root);
+    state->reset( 0, false );
+    state->run( cls, root );
     
     //Calculate the size of pointer and class table
-    UintP introSize =
-      (sizeof (UintP) +
-       sizeof (PtrHeader) * state->ptrList.size() +
-       sizeof (UintP) +
-       sizeof (ClsHeader) * state->clsList.size());
+    UintSize introSize =
+      (sizeof(UintSize)  +
+       sizeof(PtrHeader) * state->ptrList.size() +
+       sizeof(UintSize)  +
+       sizeof(ClsHeader) * state->clsList.size());
     
     //Allocate data
-    UintP dataSize = introSize + state->offset;
-    state->data = (Uint8*) std::malloc (dataSize);
+    UintSize dataSize = introSize + state->offset;
+    state->data = (Uint8*) std::malloc( dataSize );
     *outData = state->data;
     *outSize = dataSize;
     
     //Real run
-    state->reset (introSize, true);
-    state->run (cls, root);
+    state->reset( introSize, true );
+    state->run( cls, root );
     
     //Back to start of data
     state->offset = 0;
     
     //Store pointer list
-    UintP numPointers = state->ptrList.size();
-    state->store (&numPointers, sizeof (UintP));
-    state->store (state->ptrList.buffer(),
-                  state->ptrList.size() * sizeof (PtrHeader));
+    UintSize numPointers = state->ptrList.size();
+    state->store( &numPointers, sizeof(UintSize) );
+    state->store( &state->ptrList[0],
+                  state->ptrList.size() * sizeof(PtrHeader) );
     
     //Store class list
-    UintP numClasses = state->clsList.size();
-    state->store (&numClasses, sizeof (UintP));
-    state->store (state->clsList.buffer(),
-                  state->clsList.size() * sizeof (ClsHeader));
+    UintSize numClasses = state->clsList.size();
+    state->store( &numClasses, sizeof(UintSize) );
+    state->store( &state->clsList[0],
+                  state->clsList.size() * sizeof(ClsHeader) );
   }
   
-  void* SerializeManager::deserialize (void *data)
+  void* SerializeManager::deserialize( void *data )
   {
     state = NULL;
     void *root = NULL;
     
     //Get the number of pointers
-    UintP *numPointers = (UintP*) (data);
+    UintSize *numPointers = (UintSize*) (data);
     PtrHeader *ptrList = (PtrHeader*) (numPointers + 1);
     
-    for (UintP p=0; p<*numPointers; ++p)
+    for (UintSize p=0; p<*numPointers; ++p)
     {
       //Get the pointer to the pointer
       void *pptr = Util::PtrOff (data, ptrList[p].offset);
       
       //Add the base data address to it
-      Util::PtrAdd (pptr, (UintP)data);
+      Util::PtrAdd (pptr, (UintSize)data);
     }
     
     //Get the number of resources
-    UintP *numClasses = (UintP*) (ptrList + *numPointers);
+    UintSize *numClasses = (UintSize*) (ptrList + *numPointers);
     ClsHeader *clsList = (ClsHeader*) (numClasses + 1);
     
     //Get the list of class headers
-    for (UintP c=0; c<*numClasses; ++c)
+    for (UintSize c=0; c<*numClasses; ++c)
     {
       //Get the pointer to the resource
       void *pres = Util::PtrOff (data, clsList[c].offset);
@@ -530,7 +529,7 @@ namespace GE
       
       //Construct resource (array) in-place
       ClassPtr cls = ClassFromID (clsList[c].id);
-      for (UintP i=0; i<clsList[c].count; ++i)
+      for (UintSize i=0; i<clsList[c].count; ++i)
       {
         cls->newSerialInPlace (pres, this);
         Util::PtrAdd (pres, cls->getSize());
@@ -545,7 +544,7 @@ namespace GE
   Saving start
   --------------------------------------------------*/
 
-  void SerializeManager::save (ClassPtr cls, void *root, void **outData, UintP *outSize)
+  void SerializeManager::save (ClassPtr cls, void *root, void **outData, UintSize *outSize)
   {
     //Enter saving state
     state = &stateSave;
@@ -556,7 +555,7 @@ namespace GE
     state->run (cls, root);
     
     //Allocate data
-    UintP dataSize = sizeof (ClassID) + state->offset;
+    UintSize dataSize = sizeof (ClassID) + state->offset;
     state->data = (Uint8*) std::malloc (dataSize);
     *outData = state->data;
     *outSize = dataSize;

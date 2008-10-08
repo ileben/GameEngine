@@ -1,6 +1,8 @@
 #define GE_API_EXPORT
 #include "geEngine.h"
-using namespace OCC;
+using OCC::ByteString;
+using OCC::FileRef;
+using OCC::File;
 
 namespace GE
 {
@@ -109,17 +111,17 @@ namespace GE
     //They are created only if really used by this mesh
     //once referenced for the first time
 
-    verts.reserve (points.size());
-    for (int i=0; i < points.size(); ++i)
-      verts.pushBack (NULL);
+    verts.reserve( points.size() );
+    for( UintSize i=0; i < points.size(); ++i )
+      verts.pushBack( NULL );
 
-    uverts.reserve (ucoords.size());
-    for (int u=0; u < ucoords.size(); ++u)
-      uverts.pushBack (NULL);
+    uverts.reserve( ucoords.size() );
+    for( UintSize u=0; u < ucoords.size(); ++u )
+      uverts.pushBack( NULL );
 
-    vnormals.reserve (ncoords.size());
-    for (int n=0; n < ncoords.size(); ++n)
-      vnormals.pushBack (NULL);
+    vnormals.reserve( ncoords.size() );
+    for( UintSize n=0; n < ncoords.size(); ++n )
+      vnormals.pushBack( NULL );
   }
 
   void LoaderObj::command_Group()
@@ -138,26 +140,26 @@ namespace GE
     //for the first time
 
     verts.reserveAndCopy (points.size());
-    for (int p = verts.size(); p < points.size(); ++p)
+    for( UintSize p = verts.size(); p < points.size(); ++p )
       verts.pushBack (NULL);
 
     uverts.reserveAndCopy (ucoords.size());
-    for (int u = uverts.size(); u < ucoords.size(); ++u)
+    for( UintSize u = uverts.size(); u < ucoords.size(); ++u )
       uverts.pushBack (NULL);
 
     vnormals.reserveAndCopy (ncoords.size());
-    for (int n = vnormals.size(); n < ncoords.size(); ++n)
+    for( UintSize n = vnormals.size(); n < ncoords.size(); ++n )
       vnormals.pushBack(NULL);
-
+    
     //Temp arrays for face indices
-    VertArray faceVerts (4);
-    UVertArray faceUverts (4);
-    VNormalArray faceVnormals (4);
+    VertArray faceVerts( 4 );
+    UVertArray faceUverts( 4 );
+    VNormalArray faceVnormals( 4 );
 
     //Parse face vertices
-    ArrayList<ByteString> ints (3);
+    OCC::ArrayList<ByteString> ints( 3 );
     ByteString sf = parseToken();
-    while (sf != "") {
+    while( sf != "" ){
       
       //Get indices
       ints.clear();
@@ -169,25 +171,25 @@ namespace GE
       //Parse vertex index
       ivert = ints[0].parseInteger();
       if (ivert >= 0) ivert -= 1; //zero based!
-      else ivert = verts.size() + ivert; //negative means backwards
+      else ivert = (int)verts.size() + ivert; //negative means backwards
 
       //Parse UV vertex index
       if (ints.size() >= 2) {
         iuvert = ints[1].parseInteger();
         if (iuvert >= 0) iuvert -= 1;
-        else iuvert = uverts.size() + iuvert; }
+        else iuvert = (int)uverts.size() + iuvert; }
 
       //Parse normal index
       if (ints.size() >= 3) {
         inormal = ints[2].parseInteger();
         if (inormal >= 0) inormal -= 1;
-        else inormal = vnormals.size() + inormal; }
+        else inormal = (int)vnormals.size() + inormal; }
 
       //Skip invalid vertex
-      bool vertOk = (ivert >= 0 && ivert < verts.size());
-      bool uvertOk  = (iuvert >= 0 && iuvert < uverts.size());
-      bool normalOk = (inormal >= 0 && inormal < vnormals.size());
-
+      bool vertOk = (ivert >= 0 && ivert < (int)verts.size());
+      bool uvertOk  = (iuvert >= 0 && iuvert < (int)uverts.size());
+      bool normalOk = (inormal >= 0 && inormal < (int)vnormals.size());
+      
       if (vertOk) {
 
         //Create new vertex if first time referenced
@@ -216,22 +218,24 @@ namespace GE
     }
     
     //Create mesh face if at least triangle
-    if (faceVerts.size() < 3) return;
-    PolyMesh::Face *face = (PolyMesh::Face*)mesh->addFace(
-      (HMesh::Vertex**)faceVerts.buffer(), faceVerts.size());
-    if (face == NULL) return;
+    if( faceVerts.size() < 3 ) return;
+    PolyMesh::Face *face = (PolyMesh::Face*)mesh->addFace
+      ( (HMesh::Vertex**)faceVerts.buffer(), (int)faceVerts.size() );
+    
+    //Assign the smoothing group
+    if( face == NULL ) return;
     face->smoothGroups = smoothGroup;
-
+    
     //Create UV mesh face if at least triangle
     if (faceUverts.size() >= 3)
-      umesh->addFace((HMesh::Vertex**)faceUverts.buffer(), faceUverts.size());
+      umesh->addFace( (HMesh::Vertex**)faceUverts.buffer(), (int)faceUverts.size() );
     
     //Apply normals to mesh face
     PolyMesh::HalfEdge *h = face->hedgeTo(faceVerts[0]);
-    int i=0; for (PolyMesh::HedgeLoopIter l(h); !l.end(); ++l, ++i) {
+    int i=0; for( PolyMesh::HedgeLoopIter l(h); !l.end(); ++l, ++i ){
        
       //Check if normal coord present and store
-      if (i < faceVnormals.size())
+      if( i < (int)faceVnormals.size() )
         l->vnormal = faceVnormals[i];
     }
   }
