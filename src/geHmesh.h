@@ -7,7 +7,7 @@
 namespace GE
 {
 
-  typedef OCC::LinkedList<void*>::Iterator ListHandle;
+  typedef LinkedList<void*>::Iterator ListHandle;
   
 
   /*-----------------------------------------
@@ -164,10 +164,10 @@ namespace GE
     that define the mesh structure.
     -------------------------------------------------*/
 
-    OCC::LinkedList<void*> verts;
-    OCC::LinkedList<void*> hedges;
-    OCC::LinkedList<void*> edges;
-    OCC::LinkedList<void*> faces;
+    LinkedList<void*> verts;
+    LinkedList<void*> hedges;
+    LinkedList<void*> edges;
+    LinkedList<void*> faces;
     
     /*---------------------------------------------------
     The entities removed as a result of certain mesh
@@ -178,10 +178,10 @@ namespace GE
     invalid entities after invoking mesh operations
     ----------------------------------------------------*/
 
-    OCC::LinkedList<void*> invalid_verts;
-    OCC::LinkedList<void*> invalid_hedges;
-    OCC::LinkedList<void*> invalid_edges;
-    OCC::LinkedList<void*> invalid_faces;
+    LinkedList<void*> invalid_verts;
+    LinkedList<void*> invalid_hedges;
+    LinkedList<void*> invalid_edges;
+    LinkedList<void*> invalid_faces;
 
     /*--------------------------------------------
     Constructor
@@ -285,7 +285,7 @@ namespace GE
     void linkOverLinear(HalfEdge *he);
     void transferIncomingEdges(HalfEdge *first, HalfEdge *last, Vertex *target);
     void transferIncomingEdges(Vertex *from, Vertex *to);
-    void connectManifolds(OCC::LinkedList<HalfEdge*> *outManifolds);
+    void connectManifolds(LinkedList<HalfEdge*> *outManifolds);
     void mergeEdges(HalfEdge *he1, HalfEdge *he2);
 
   public:

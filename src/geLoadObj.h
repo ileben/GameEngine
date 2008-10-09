@@ -14,22 +14,22 @@ namespace GE
   {
     DECLARE_SUBCLASS (LoaderObj, Loader); DECLARE_END;
 
-    typedef ArrayListT <Vector3> Vec3Array;
-    typedef ArrayListT <TexMesh::Vertex*> UVertArray;
-    typedef ArrayListT <PolyMesh::Vertex*> VertArray;
-    typedef ArrayListT <PolyMesh::VertexNormal*> VNormalArray;
+    typedef ArrayList <Vector3> Vec3Array;
+    typedef ArrayList <TexMesh::Vertex*> UVertArray;
+    typedef ArrayList <PolyMesh::Vertex*> VertArray;
+    typedef ArrayList <PolyMesh::VertexNormal*> VNormalArray;
 
-    OCC::FileRef file;
-    OCC::ByteString buffer;
+    File file;
+    ByteString buffer;
     int bufPointer;
     bool endOfFile;
 
-    OCC::ByteString line;
+    ByteString line;
     int linePointer;
 
     void readLine();
     bool isWhitespace(char c);
-    OCC::ByteString parseToken();
+    ByteString parseToken();
     Vector3 parseVector3();
 
     Vec3Array points;
@@ -48,13 +48,13 @@ namespace GE
     VertArray verts;
     UVertArray uverts;
     VNormalArray vnormals;
-    void newShape(const OCC::ByteString &name);
+    void newShape(const ByteString &name);
 
     void command_Group();
     void command_Face();
 
   public:
-    bool loadFile(const OCC::String &filename);
+    bool loadFile(const String &filename);
   };
 
 }/* namespace GE */

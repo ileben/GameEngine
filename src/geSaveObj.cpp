@@ -1,9 +1,5 @@
 #define GE_API_EXPORT
 #include "geEngine.h"
-using OCC::ByteString;
-using OCC::String;
-using OCC::File;
-using OCC::FileRef;
 
 namespace GE
 {
@@ -22,33 +18,33 @@ namespace GE
     PolyMesh::VertIter v;
 
     //Output and index vertices
-    for (v.begin(mesh); !v.end(); ++v) {
-      file->write( ByteString::Format(
-        "v %f %f %f\n", v->point.x, v->point.y, v->point.z) );
+    for( v.begin(mesh); !v.end(); ++v ){
+      file.write( ByteString::Format(
+        "v %f %f %f\n", v->point.x, v->point.y, v->point.z));
       v->tag.id = ++id; }
 
     //Total no. of vertices
-    file->write( ByteString::Format("# %d vertices\n\n", id) );
+    file.write( ByteString::Format( "# %d vertices\n\n", id));
     
 
     //Output and index UV vertices
-    id = 0; for (TexMesh::VertIter u(umesh); !u.end(); ++u) {
-      file->write( ByteString::Format(
-        "vt %f %f %f\n", u->point.x, 1.0f-u->point.y, 1.0f) );
+    id = 0; for( TexMesh::VertIter u(umesh); !u.end(); ++u ){
+      file.write( ByteString::Format(
+        "vt %f %f %f\n", u->point.x, 1.0f-u->point.y, 1.0f));
       u->tag.id = ++id; }
 
     //Total no. of UV vertices
-    file->write( ByteString::Format("# %d texture vertices\n\n", id) );
+    file.write( ByteString::Format( "# %d texture vertices\n\n", id ));
     
     
     //Output and index vertex normals
-    id =0; for (PolyMesh::VertexNormalIter s(mesh); !s.end(); ++s) {
-      file->write( ByteString::Format(
-        "vn %f %f %f\n", s->coord.x, s->coord.y, s->coord.z));
+    id =0; for( PolyMesh::VertexNormalIter s(mesh); !s.end(); ++s ){
+      file.write( ByteString::Format(
+        "vn %f %f %f\n", s->coord.x, s->coord.y, s->coord.z ));
       s->tag.id = ++id; }
     
     //Total no. of unique normals
-    file->write( ByteString::Format("# %d normals\n\n", id) );
+    file.write( ByteString::Format( "# %d normals\n\n", id ));
     
     
     //Output faces
@@ -61,35 +57,35 @@ namespace GE
     for (PolyMesh::FaceIter f(mesh); !f.end(); ++f, ++uf) {
     
       if (f->smoothGroups != lastSmoothGroups) {
-        file->write( ByteString::Format("s %d\n", f->smoothGroups) );
+        file.write( ByteString::Format("s %d\n", f->smoothGroups) );
         lastSmoothGroups = f->smoothGroups; }
       
-      file->write("f");
+      file.write("f");
     
       TexMesh::FaceHedgeIter uh(*uf);
       for (PolyMesh::FaceHedgeIter h(*f); !h.end(); ++h, ++uh) {
       
         if (!uh.end()) {
         
-          file->write( ByteString::Format (
+          file.write( ByteString::Format (
             " %d/%d/%d", h->dstVertex()->tag.id, uh->dstVertex()->tag.id,
                          h->vertexNormal()->tag.id) );
         }else{
         
-          file->write( ByteString::Format(
+          file.write( ByteString::Format(
             " %d//%d", h->dstVertex()->tag.id, h->vertexNormal()->tag.id) ); }
       }
       
-      file->write("\n");
+      file.write("\n");
     }
   }
 
   void SaverObj::writeShape( PolyMeshActor *shape )
   {
     //Group name
-    file->write ("g ");
-    file->write (shape->id);
-    file->write ("\n");
+    file.write ("g ");
+    file.write (shape->id);
+    file.write ("\n");
     
     //Dynamic mesh
     if (shape->polyMesh != NULL)
@@ -99,17 +95,17 @@ namespace GE
   bool SaverObj::saveFile( const String &filename )
   {
     //Try to open file
-    FileRef module = File::GetModule();
-    file = module->getRelativeFile (filename);
-    if (!file->open("wb")) return false;
+    File module = File::GetModule();
+    file = module.getRelativeFile( filename );
+    if( !file.open( "wb" )) return false;
     
     //Walk objects to save
     for( UintSize i=0; i<objects.size(); ++i ){
       if( ClassOf( objects[i] ) == Class( PolyMeshActor )){
         writeShape( (PolyMeshActor*) objects[i] );}
     }
-
-    file->close();
+    
+    file.close();
     return true;
   }
 

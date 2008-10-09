@@ -1,9 +1,6 @@
 #define GE_API_EXPORT
 #include "geEngine.h"
 #include "geLoad3ds.h"
-using OCC::String;
-using OCC::File;
-using OCC::FileRef;
 
 namespace GE
 {
@@ -44,9 +41,9 @@ namespace GE
   void Loader3ds::popChunk()
   {
     //Skip unread chunk data
-    int fileCur = file->tell();
+    int fileCur = file.tell();
     if (fileCur < topChunk.start + topChunk.size)
-      file->seek((topChunk.start + topChunk.size) - fileCur, SEEK_CUR);
+      file.seek((topChunk.start + topChunk.size) - fileCur, SEEK_CUR);
 
     //Restore top chunk from stack
     ASSERT(!chunkStack.empty());
@@ -57,15 +54,15 @@ namespace GE
   void Loader3ds::readChunkInfo(ChunkInfo *chunk)
   {
     //Save file cursor position and read info
-    chunk->start = file->tell();
-    if (file->readLE(&chunk->id, 2) != 2) chunk->id = CHUNK_NULL;
-    if (file->readLE(&chunk->size, 4) != 4) chunk->size = 0;
+    chunk->start = file.tell();
+    if (file.readLE(&chunk->id, 2) != 2) chunk->id = CHUNK_NULL;
+    if (file.readLE(&chunk->size, 4) != 4) chunk->size = 0;
   }
 
   bool Loader3ds::isChunkDone()
   {
     //Return true if file cursor reached chunk end
-    int fileCur = file->tell();
+    int fileCur = file.tell();
     if (fileCur == -1) return true;
     return (fileCur >= topChunk.start + topChunk.size) ||
            (fileCur >= fileSize);
@@ -75,14 +72,14 @@ namespace GE
   {
     //Get file cursor position
     String str; Int8 ch = -1;
-    int fileCur = file->tell();
+    int fileCur = file.tell();
     if (fileCur == -1) return str;
 
     //Read chars until end of chunk
     while (!isChunkDone()) {
 
       //Stop on file or string end
-      if (file->read(&ch, 1) == 0) break;
+      if (file.read(&ch, 1) == 0) break;
       if (ch == 0) break;
       str += ch; fileCur++;
     }
@@ -95,7 +92,7 @@ namespace GE
     //Just read all smoothgroups and apply to faces
     for (UintSize i=0; i<faces->size(); ++i) {
       Int32 smoothGroups = 0;
-      if (file->readLE(&smoothGroups, 4) != 4) break;
+      if (file.readLE(&smoothGroups, 4) != 4) break;
       faces->elementAt(i)->smoothGroups = smoothGroups;
     }
   }
@@ -105,7 +102,7 @@ namespace GE
   {
     //Read number of faces
     Int16 faceCount = 0;
-    if (file->readLE(&faceCount, 2) != 2)
+    if (file.readLE(&faceCount, 2) != 2)
       return;
 
     for (int i=0; i<faceCount; ++i) {
@@ -113,10 +110,10 @@ namespace GE
       //Read vertex indices
       Int16 i1, i2, i3;
       Int16 flag;
-      if (file->readLE(&i1, 2) != 2) return;
-      if (file->readLE(&i2, 2) != 2) return;
-      if (file->readLE(&i3, 2) != 2) return;
-      if (file->readLE(&flag, 2) != 2) return;
+      if (file.readLE(&i1, 2) != 2) return;
+      if (file.readLE(&i2, 2) != 2) return;
+      if (file.readLE(&i3, 2) != 2) return;
+      if (file.readLE(&flag, 2) != 2) return;
 
       //Make sure indices are in vertex range
       if (i1 < 0 || i1 >= (Int16) verts->size()) return;
@@ -167,15 +164,15 @@ namespace GE
   {
     //Read number of UV vertices
     Int16 pointCount;
-    if (file->readLE(&pointCount, 2) != 2) return;
+    if (file.readLE(&pointCount, 2) != 2) return;
     uvcoords->reserve(pointCount);
 
     for (int i=0; i<pointCount; ++i) {
 
       //Read UV coords
       Float32 u,v;
-      if (file->readLE(&u, 4) != 4) break;
-      if (file->readLE(&v, 4) != 4) break;
+      if (file.readLE(&u, 4) != 4) break;
+      if (file.readLE(&v, 4) != 4) break;
 
       //Add to temp array
       uvcoords->pushBack(Vector2(u,1.0f-v));
@@ -186,16 +183,16 @@ namespace GE
   {
     //Read number of vertices
     Int16 pointCount = 0;
-    if (file->readLE(&pointCount, 2) != 2)
+    if (file.readLE(&pointCount, 2) != 2)
       return;
 
     for (int i=0; i<pointCount; ++i) {
 
       //Read coords for vertex
       Float32 x,y,z;
-      if (file->readLE(&x, 4) != 4) break;
-      if (file->readLE(&y, 4) != 4) break;
-      if (file->readLE(&z, 4) != 4) break;
+      if (file.readLE(&x, 4) != 4) break;
+      if (file.readLE(&y, 4) != 4) break;
+      if (file.readLE(&z, 4) != 4) break;
 
       //Add to mesh
       PolyMesh::Vertex* vert = (PolyMesh::Vertex*)mesh->addVertex();
@@ -298,32 +295,32 @@ namespace GE
   {
   }
 
-  bool Loader3ds::loadFile (const String &filename)
+  bool Loader3ds::loadFile( const String &filename )
   {
     //Try to open file
-    FileRef module = File::GetModule();
-    file = module->getRelativeFile(filename);
-    fileSize = file->getSize();
-    if (!file->open("rb")) return false;
+    File module = File::GetModule();
+    file = module.getRelativeFile( filename );
+    fileSize = file.getSize();
+    if( !file.open( "rb" )) return false;
 
     //Read main chunk info
     ChunkInfo mainChunk;
-    readChunkInfo(&mainChunk);
-    if (mainChunk.id != CHUNK_MAIN)
+    readChunkInfo( &mainChunk );
+    if( mainChunk.id != CHUNK_MAIN )
       return false;
-    pushChunk(mainChunk);
+    pushChunk( mainChunk );
 
     //Create root object node
     root = new Group();
 
     //Process sub-chunks
-    while (!isChunkDone())
+    while( !isChunkDone() )
     {
       ChunkInfo subChunk;
-      readChunkInfo(&subChunk);
-      pushChunk(subChunk);
+      readChunkInfo( &subChunk );
+      pushChunk( subChunk );
 
-      switch(subChunk.id) {
+      switch( subChunk.id ){
       case CHUNK_EDITOR:
         chunk_EDITOR();
         break;
@@ -338,7 +335,7 @@ namespace GE
     
     //End main chunk
     popChunk();
-    file->close();
+    file.close();
     return true;
   }
 

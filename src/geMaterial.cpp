@@ -1,9 +1,6 @@
 #define GE_API_EXPORT
 #include "geEngine.h"
 #include "geGLHeaders.h"
-using OCC::CharString;
-using OCC::String;
-
 
 namespace GE
 {
@@ -146,7 +143,7 @@ namespace GE
   ============================================================*/
   
   Material::UniformTexProperty::UniformTexProperty (GLProgram *program,
-                                                    const OCC::String &name,
+                                                    const String &name,
                                                     int textureUnit)
   {
     this->program = program;
@@ -647,8 +644,8 @@ namespace GE
     StandardMaterial::begin();
     
     if (texDiffuse != NULL) {
-      if (texDiffuse->getFormat() == OCC::COLOR_FORMAT_GRAY_ALPHA ||
-          texDiffuse->getFormat() == OCC::COLOR_FORMAT_RGB_ALPHA) {
+      if (texDiffuse->getFormat() == COLOR_FORMAT_GRAY_ALPHA ||
+          texDiffuse->getFormat() == COLOR_FORMAT_RGB_ALPHA) {
         
         glEnable (GL_BLEND);
         glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

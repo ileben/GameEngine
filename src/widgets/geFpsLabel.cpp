@@ -1,7 +1,6 @@
 #define GE_API_EXPORT
 #include "../geEngine.h"
 #include "../geGLHeaders.h"
-using OCC::String;
 
 namespace GE
 {
@@ -12,7 +11,7 @@ namespace GE
     static int fps = -1;
     static int last = 0;
     static int drawFps = 0;
-    int now = OCC::Time::GetTicks();
+    int now = Time::GetTicks();
 
     if (fps == -1) {
       last = now;

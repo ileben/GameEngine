@@ -1,29 +1,27 @@
-#define GE_API_EXPORT
-#include "geEngine.h"
-using OCC::ByteString;
-using OCC::TextParser;
-using namespace OCC::TextParserCommon;
+#include "util/geUtil.h"
 
 namespace GE
 {
+  using namespace TextParserCommon;
+
   CTable* IClass::classes = NULL;
   ITable* IClass::classesByID = NULL;
   
-  IClass::IClass ()
+  IClass::IClass()
   {
   }
 
-  const ClassID& IClass::getID ()
+  const ClassID& IClass::getID()
   {
     return id;
   }
 
-  const char* IClass::getString ()
+  const char* IClass::getString()
   {
-    return name.buffer();
+    return name.c_str();
   }
   
-  PTable* IClass::getProperties ()
+  PTable* IClass::getProperties()
   {
     return &properties;
   }
@@ -35,7 +33,7 @@ namespace GE
       classes = new CTable;
     
     //Check that the name is not registered yet
-    const char *cname = cls->name.buffer ();
+    const char *cname = cls->name.c_str();//cls->name.buffer ();
     CTable::iterator it = IClass::classes->find (cname);
     ASSERT (it == IClass::classes->end());
     
@@ -105,9 +103,9 @@ namespace GE
     //Cannot cast to non-super class
     return NULL;
   }
-  
+  /*
   void
-  IClass::SaveText (const ObjectPtr &ptr, OCC::ByteString &buf)
+  IClass::SaveText (const ObjectPtr &ptr, ByteString &buf)
   {
     PTable *props = ptr.cls->getProperties ();
     
@@ -121,7 +119,7 @@ namespace GE
   }
   
   void
-  IClass::SaveBinary (const ObjectPtr &ptr, OCC::ByteString &buf)
+  IClass::SaveBinary (const ObjectPtr &ptr, ByteString &buf)
   {
     PTable *props = ptr.cls->getProperties ();
     
@@ -134,7 +132,7 @@ namespace GE
   typedef TextParser <ByteString> ByteParser;
   
   int
-  IClass::LoadText (const ObjectPtr &ptr, const OCC::ByteString &buf, int index)
+  IClass::LoadText (const ObjectPtr &ptr, const ByteString &buf, int index)
   {
     ByteParser parser;
     parser.begin (&buf, index);
@@ -187,11 +185,11 @@ namespace GE
   }
   
   int
-  IClass::LoadBinary (const ObjectPtr &ptr, const OCC::ByteString &buf, int index)
+  IClass::LoadBinary (const ObjectPtr &ptr, const ByteString &buf, int index)
   {
     return index;
   }
-  
+  */
   void
   IClass::Create (const ObjectPtr &ptr, void *data, int size)
   {

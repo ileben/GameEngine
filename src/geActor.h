@@ -75,12 +75,12 @@ namespace GE
     DECLARE_SUBCLASS (Group, Actor); DECLARE_END;
 
   private:
-    ArrayListT<Actor*> children;
+    ArrayList<Actor*> children;
 
   public:
     void addChild (Actor* o);
     void removeChild (Actor* o);
-    const ArrayListT<Actor*>* getChildren ();
+    const ArrayList<Actor*>* getChildren ();
 
     virtual void render (MaterialID materialID);
   };

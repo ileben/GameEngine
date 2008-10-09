@@ -1,8 +1,6 @@
 #define GE_API_EXPORT
 #include "geEngine.h"
 #include "geGLHeaders.h"
-using OCC::ColorFormat;
-using OCC::Image;
 
 namespace GE
 {
@@ -33,19 +31,19 @@ namespace GE
 
     switch(format)
     {
-    case OCC::COLOR_FORMAT_GRAY:
+    case COLOR_FORMAT_GRAY:
       glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
       break;
 
-    case OCC::COLOR_FORMAT_GRAY_ALPHA: 
+    case COLOR_FORMAT_GRAY_ALPHA: 
       glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, width, height, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, data);
       break;
 
-    case OCC::COLOR_FORMAT_RGB:
+    case COLOR_FORMAT_RGB:
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
       break;
 
-    case OCC::COLOR_FORMAT_RGB_ALPHA:
+    case COLOR_FORMAT_RGB_ALPHA:
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
       break;
     }
@@ -64,19 +62,19 @@ namespace GE
 
     switch(format)
     {
-    case OCC::COLOR_FORMAT_GRAY:
+    case COLOR_FORMAT_GRAY:
       glTexSubImage2D(GL_TEXTURE_2D, 0, offX, offY, width, height, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
       break;
 
-    case OCC::COLOR_FORMAT_GRAY_ALPHA: 
+    case COLOR_FORMAT_GRAY_ALPHA: 
       glTexSubImage2D(GL_TEXTURE_2D, 0, offX, offY, width, height, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, data);
       break;
 
-    case OCC::COLOR_FORMAT_RGB:
+    case COLOR_FORMAT_RGB:
       glTexSubImage2D(GL_TEXTURE_2D, 0, offX, offY, width, height, GL_RGB, GL_UNSIGNED_BYTE, data);
       break;
 
-    case OCC::COLOR_FORMAT_RGB_ALPHA:
+    case COLOR_FORMAT_RGB_ALPHA:
       glTexSubImage2D(GL_TEXTURE_2D, 0, offX, offY, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
       break;
     }

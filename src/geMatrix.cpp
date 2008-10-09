@@ -1,7 +1,4 @@
-#define GE_API_EXPORT
-#include "geDefs.h"
-#include "geVectors.h"
-#include "geMatrix.h"
+#include "geEngine.h"
 
 namespace GE
 {

@@ -20,18 +20,18 @@ namespace GE
 
   protected:
     //Resources
-    ArrayListT<Resource*> resources;
+    ArrayList<Resource*> resources;
     
     //Scene tree
     Group *root;
-    ArrayListT<Actor*> objects;
+    ArrayList<Actor*> objects;
     void deleteObject( Actor *obj );
 
     //Specific file type loaders. These can call
     //each other in case additional resources are
     //referenced inside a certain file
-    void loadTex( const OCC::String &filename );
-    void load3ds( const OCC::String &filename );
+    void loadTex( const String &filename );
+    void load3ds( const String &filename );
 
     //Classes to use when creating objects
     ClassPtr uvMeshClass;
@@ -48,13 +48,13 @@ namespace GE
     void setSMeshClass( ClassPtr name );
 
     //Loads any file with prober sub-routine
-    virtual bool loadFile( const OCC::String &filename );
+    virtual bool loadFile( const String &filename );
     
     //Getters for loaded stuff
     Group* getRoot();
     Actor* getFirstObject(ClassPtr type);
     Resource* getFirstResource(ClassPtr type);
-    const ArrayListT <Resource*> * getResources();
+    const ArrayList <Resource*> * getResources();
     
     void retainObject(Actor *obj);
   };

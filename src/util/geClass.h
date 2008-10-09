@@ -22,6 +22,7 @@ The rest can only be #included once.
 #define __GECLASS_H
 
 #include <map>
+#include <string>
 
 namespace GE
 {
@@ -127,7 +128,7 @@ namespace GE
   protected:
 
     ClassID id;
-    OCC::CharString name;
+    std::string name;
     PTable properties;
     static void Classify (ClassPtr cls);
     
@@ -141,7 +142,7 @@ namespace GE
     PTable *        getProperties ();
     
     //Layer-2 (IClass2)
-    virtual UintSize     getSize() = 0;
+    virtual UintSize  getSize() = 0;
     virtual ClassPtr  getSuper() = 0;
     virtual void      invokeCallback (ClassEvent e, void *obj, void *param) = 0;
     
@@ -155,10 +156,11 @@ namespace GE
     static ClassPtr FromString (const char *name);
     static ClassPtr FromID (ClassID id);
     static void* Safecast (ClassPtr to, ClassPtr from, void *instance);
-    static void SaveText (const ObjectPtr &ptr, OCC::ByteString &buf);
-    static void SaveBinary (const ObjectPtr &ptr, OCC::ByteString &buf);
-    static int LoadText (const ObjectPtr &ptr, const OCC::ByteString &buf, int index);
-    static int LoadBinary (const ObjectPtr &ptr, const OCC::ByteString &buf, int index);
+    /*
+    static void SaveText (const ObjectPtr &ptr, ByteString &buf);
+    static void SaveBinary (const ObjectPtr &ptr, ByteString &buf);
+    static int LoadText (const ObjectPtr &ptr, const ByteString &buf, int index);
+    static int LoadBinary (const ObjectPtr &ptr, const ByteString &buf, int index);*/
     static void Create (const ObjectPtr &ptr, void *buf, int size);
   };
 

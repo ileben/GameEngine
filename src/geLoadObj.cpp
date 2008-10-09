@@ -1,8 +1,5 @@
 #define GE_API_EXPORT
 #include "geEngine.h"
-using OCC::ByteString;
-using OCC::FileRef;
-using OCC::File;
 
 namespace GE
 {
@@ -157,7 +154,7 @@ namespace GE
     VNormalArray faceVnormals( 4 );
 
     //Parse face vertices
-    OCC::ArrayList<ByteString> ints( 3 );
+    ArrayList<ByteString> ints( 3 );
     ByteString sf = parseToken();
     while( sf != "" ){
       
@@ -241,18 +238,19 @@ namespace GE
   }
 
 
-  bool LoaderObj::loadFile(const OCC::String &filename)
+  bool LoaderObj::loadFile( const String &filename )
   {
     //Try to open file
-    FileRef module = File::GetModule();
-    file = module->getRelativeFile(filename);
-    if (!file->open("rb")) return false;
-
+    //File module = File::GetModule();
+    //file = module.getRelativeFile( filename );
+    File file( filename );
+    if( !file.open( "rb" )) return false;
+    
     //Read whole file into a buffer
     bufPointer = 0;
     buffer.clear();
-    file->read(buffer, file->getSize());
-
+    file.read( buffer, file.getSize() );
+    
     //Reset loader
     endOfFile = false;
     linePointer = 0;
@@ -273,37 +271,37 @@ namespace GE
 
 
     //Walk lines
-    do {
+    do{
 
       readLine();
-      if (endOfFile) break;
+      if( endOfFile ) break;
 
       
       ByteString command = parseToken();
 
-      if (command == "v") {
+      if( command == "v" ){
         command_Vertex();
 
-      }else if (command == "vn") {
+      }else if( command == "vn" ){
         command_Normal();
 
-      }else if (command == "vt") {
+      }else if( command == "vt" ){
         command_UVW();
 
-      }else if (command == "f") {
+      }else if( command == "f" ){
         command_Face();
 
-      }else if (command == "g") {
+      }else if( command == "g" ){
         command_Group();
 
-      }else if (command == "s") {
+      }else if( command == "s" ){
         command_SmoothGroup();
       }
 
-    }while (!endOfFile);
+    }while( !endOfFile );
 
 
-    file->close();
+    file.close();
     return true;
   }
 

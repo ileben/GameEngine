@@ -71,7 +71,7 @@ namespace GE
     o->parent = NULL;
   }
   
-  const ArrayListT<Actor*>* Group::getChildren() {
+  const ArrayList<Actor*>* Group::getChildren() {
     return &children;
   }
 

@@ -24,12 +24,12 @@ namespace GE
     
   protected:
     
-    OCC::String id;
+    CharString id;
     
   public:
     
-    void setId (const OCC::String &id);
-    const OCC::String& getId ();
+    void setId (const CharString &id);
+    const CharString& getId ();
   };
 
 }//namespace GE

@@ -10,25 +10,25 @@ namespace GE
     DECLARE_ABSTRACT (Saver); DECLARE_END;
 
   protected:
-    ArrayListT<Object*> objects;
+    ArrayList<Object*> objects;
 
   public:
     void addObject(Object *o);
-    virtual bool saveFile(const OCC::String &filename) = 0;
+    virtual bool saveFile(const String &filename) = 0;
   };
     
   class GE_API_ENTRY SaverObj : public Saver
   {
     DECLARE_SUBCLASS (SaverObj, Saver); DECLARE_END;
 
-    OCC::FileRef file;
+    File file;
 
   private:
     void writeDynMesh (PolyMesh *mesh, TexMesh *umesh);
     void writeShape (PolyMeshActor *shape);
 
   public:
-    bool saveFile(const OCC::String &filename);
+    bool saveFile(const String &filename);
   };
 
 }/* namespace GE */

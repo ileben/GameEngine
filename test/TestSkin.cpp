@@ -1,11 +1,7 @@
 #include <geEngine.h>
 #include <geGLHeaders.h>
-#include <geClass.h>
+#include <util/geClass.h>
 using namespace GE;
-using OCC::ByteString;
-using OCC::String;
-using OCC::FileRef;
-using OCC::File;
 
 #include <cstdlib>
 #include <cstdio>
@@ -129,13 +125,13 @@ MaxCharacter *character;
 
 SPolyMesh *polyMesh;
 SPolyActor *polyActor;
-ArrayListT <Vector3> polyPosePoints;
-ArrayListT <Vector3> polyPoseNormals;
+ArrayList <Vector3> polyPosePoints;
+ArrayList <Vector3> polyPoseNormals;
 
 SkinTriMesh *triMesh;
 TriMeshActor *triActor;
-ArrayListT <Vector3> triPosePoints;
-ArrayListT <Vector3> triPoseNormals;
+ArrayList <Vector3> triPosePoints;
+ArrayList <Vector3> triPoseNormals;
 
 FpsLabel lblFps;
 
@@ -421,16 +417,16 @@ void SPolyActor::renderMesh (MaterialID matid)
 void loadPackage (String fileName)
 { 
   //Read the file
-  FileRef file = new File (fileName);
-  if (!file->open ("rb"))
+  File file( fileName );
+  if( !file.open( "rb" ))
   {
-    printf ("Failed opening file!\n");
-    getchar ();
+    printf( "Failed opening file!\n" );
+    getchar();
     exit( 1 );
   }
   
-  data = file->read (file->getSize());
-  file->close();
+  data = file.read( file.getSize() );
+  file.close();
   
   //Load character data
   SerializeManager sm;
@@ -447,7 +443,7 @@ void loadPackage (String fileName)
   
   //Add vertices to the mesh
   polyMesh = new SPolyMesh;
-  ArrayListT <SPolyMesh::Vertex*> verts( inMesh->verts->size() );
+  ArrayList <SPolyMesh::Vertex*> verts( inMesh->verts->size() );
   for (UintSize v=0; v<inMesh->verts->size(); ++v)
   {
     SPolyMesh::Vertex *vert = (SPolyMesh::Vertex*) polyMesh->addVertex();
@@ -492,8 +488,8 @@ void loadPackage (String fileName)
   for (SPolyMesh::VertexNormalIter ni( polyMesh ); !ni.end(); ++ni)
     polyPoseNormals.pushBack( ni->coord );
   
-  ArrayListT <SkinTriVertex> *triVerts =
-    (ArrayListT <SkinTriVertex> *) triMesh->data;
+  ArrayList <SkinTriVertex> *triVerts =
+    (ArrayList <SkinTriVertex> *) triMesh->data;
   
   for (UintSize v=0; v<triVerts->size(); ++v)
   {
@@ -506,8 +502,8 @@ void applyFK( UintSize frame )
 {
   SkinPose *pose = character->pose;
   SkinAnim *anim = character->anims->first();
-  ArrayListT <Matrix4x4> fkMats;
-  ArrayListT <Matrix4x4> skinMats;
+  ArrayList <Matrix4x4> fkMats;
+  ArrayList <Matrix4x4> skinMats;
   int cindex = 1;
   
   UintSize numTracks = anim->tracks->size();
@@ -572,8 +568,8 @@ void applyFK( UintSize frame )
     }
   } */
   
-  ArrayListT <SkinTriVertex> *triVerts =
-    (ArrayListT <SkinTriVertex> *) triMesh->data;
+  ArrayList <SkinTriVertex> *triVerts =
+    (ArrayList <SkinTriVertex> *) triMesh->data;
   
   for( UintSize index=0; index<triVerts->size(); ++index)
   {

@@ -1,6 +1,17 @@
 #ifndef __GEUTIL_H
 #define __GEUTIL_H
 
+#include "util/geDefs.h"
+#include "util/geClass.h"
+#include "util/geSerialize.h"
+#include "util/geArraySet.h"
+#include "util/geArrayList.h"
+#include "util/geHeapArrayList.h"
+#include "util/geLinkedList.h"
+#include "util/geString.h"
+#include "util/geTextParser.h"
+#include "util/geTime.h"
+
 namespace GE
 {
   /*
@@ -11,7 +22,7 @@ namespace GE
   class GE_API_ENTRY Util
   {
   public:
-
+    
     //General math
     template <class T> inline static void Min (const T &a, const T &b);
     template <class T> inline static void Max (const T &a, const T &b);

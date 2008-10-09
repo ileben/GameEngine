@@ -55,10 +55,10 @@ namespace GE
     {
       //DECLARE_SUBABSTRACT (UniformProperty, Property);
     protected:
-      OCC::CharString name;
+      CharString name;
       
     public:
-      const OCC::CharString& getName ();
+      const CharString& getName ();
       virtual ~UniformProperty ();
       virtual void set (void *value) = 0;
       virtual void begin () = 0;
@@ -88,7 +88,7 @@ namespace GE
       UniformVecProperty () {};
       virtual ~UniformVecProperty ();
       UniformVecProperty (GLProgram *program,
-                          const OCC::String &name,
+                          const String &name,
                           int count);
       
       virtual void set (void *value);
@@ -117,7 +117,7 @@ namespace GE
     public:
       UniformTexProperty () {}
       UniformTexProperty (GLProgram *program,
-                          const OCC::String &name,
+                          const String &name,
                           int texture);
       
       virtual void set (void *value);
@@ -128,7 +128,7 @@ namespace GE
   private: //internal classes
     
     Shader *shader;
-    ArrayListT <UniformProperty*> uniformProps;
+    ArrayList <UniformProperty*> uniformProps;
     void freeUniformProps ();
     
   public: //user
@@ -137,7 +137,7 @@ namespace GE
     virtual ~Material ();
     
     void setShader (Shader *newShader);
-    void setProperty (const OCC::String &name, void *value);
+    void setProperty (const String &name, void *value);
     
     virtual void begin ();
     virtual void end ();
@@ -216,7 +216,7 @@ namespace GE
     
   private:
     UintSize selectedID;
-    ArrayListT<Material*> subMaterials;
+    ArrayList<Material*> subMaterials;
     bool selectSubMaterial( MaterialID id );
     bool selectionValid();
     

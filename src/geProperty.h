@@ -1,6 +1,9 @@
+#ifndef __GEPROPERTY_H
+#define __GEPROPERTY_H
+
 namespace GE
 {
-  using namespace OCC::TextParserCommon;
+  using namespace TextParserCommon;
   
   class Object;
   
@@ -33,17 +36,17 @@ namespace GE
     friend class Object;
     
   protected:
-    OCC::CharString name;
+    CharString name;
     
   public:
     Property () {};
     Property (const char *newName) { name = newName; };
     
-    const OCC::CharString& getName ();
-    virtual void saveText (void *obj, OCC::ByteString &buf) = 0;
-    virtual void saveBinary (void *obj, OCC::ByteString &buf) = 0;
-    virtual int loadText (void *obj, const OCC::ByteString &buf, int index) = 0;
-    virtual int loadBinary (void *obj, const OCC::ByteString &buf, int index) = 0;
+    const CharString& getName ();
+    virtual void saveText (void *obj, ByteString &buf) = 0;
+    virtual void saveBinary (void *obj, ByteString &buf) = 0;
+    virtual int loadText (void *obj, const ByteString &buf, int index) = 0;
+    virtual int loadBinary (void *obj, const ByteString &buf, int index) = 0;
   };
   
   /*
@@ -68,15 +71,15 @@ namespace GE
   private:
     
     template <class V>
-    void __saveText (C *obj, V C::*val, OCC::ByteString &buf) {}
+    void __saveText (C *obj, V C::*val, ByteString &buf) {}
     
-    void __saveText (C *obj, int C::*val, OCC::ByteString &buf)
-      { buf += OCC::String::FromInteger (obj->*pvalue); }
+    void __saveText (C *obj, int C::*val, ByteString &buf)
+      { buf += ByteString::FromInteger (obj->*pvalue); }
     
-    void __saveText (C *obj, float C::*val, OCC::ByteString &buf)
-      { buf += OCC::String::FromFloat (obj->*pvalue); }
+    void __saveText (C *obj, float C::*val, ByteString &buf)
+      { buf += ByteString::FromFloat (obj->*pvalue); }
     
-    void __saveText (C *obj, OCC::String C::*val, OCC::ByteString &buf)
+    void __saveText (C *obj, String C::*val, ByteString &buf)
       { buf += obj->*pvalue; }
     
     /*
@@ -86,10 +89,10 @@ namespace GE
     
   public:
     
-    virtual void saveText (void *obj, OCC::ByteString &buf)
+    virtual void saveText (void *obj, ByteString &buf)
       { __saveText ((C*) obj, pvalue, buf); }
     
-    virtual void saveBinary (void *obj, OCC::ByteString &buf)
+    virtual void saveBinary (void *obj, ByteString &buf)
       {}
     
     
@@ -101,25 +104,25 @@ namespace GE
   private:
     
     template <class V>
-    void __loadText (C *obj, V C::*val, const OCC::ByteString &buf, int index) {}
+    void __loadText (C *obj, V C::*val, const ByteString &buf, int index) {}
     
-    int __loadText (C *obj, int C::*val, const OCC::ByteString &buf, int index)
+    int __loadText (C *obj, int C::*val, const ByteString &buf, int index)
     {
       int len = 0;
       obj->*pvalue = buf.parseIntegerAt (index, &len);
       return index + len;
     }
     
-    int __loadText (C *obj, float C::*val, const OCC::ByteString &buf, int index)
+    int __loadText (C *obj, float C::*val, const ByteString &buf, int index)
     {
       int len = 0;
       obj->*pvalue = buf.parseFloatAt (index, &len);
       return index + len;
     }
     
-    int __loadText (C *obj, OCC::String *val, const OCC::ByteString &buf, int index)
+    int __loadText (C *obj, String *val, const ByteString &buf, int index)
     {
-      OCC::TextParser<OCC::ByteString> parser (&buf, index);
+      TextParser<ByteString> parser (&buf, index);
       
       parser.jump <Or <Char <'"'>, S > > (false);
       parser.fw (1);
@@ -141,10 +144,12 @@ namespace GE
     
   public:
     
-    virtual int loadText (void *obj, const OCC::ByteString &buf, int index)
+    virtual int loadText (void *obj, const ByteString &buf, int index)
       { return __loadText ((C*) obj, pvalue, buf, index); }
     
-    virtual int loadBinary (void *obj, const OCC::ByteString &buf, int index)
+    virtual int loadBinary (void *obj, const ByteString &buf, int index)
       { return index; }
   };
-}
+
+}//namespace GE
+#endif//__GEPROPERTY_H

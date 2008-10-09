@@ -13,20 +13,20 @@ namespace GE
 
   private:
     Uint32 handle;
-    OCC::ColorFormat format;
+    ColorFormat format;
 
   public:
     Texture();
     ~Texture();
 
     Uint32 getHandle();
-    OCC::ColorFormat getFormat();
+    ColorFormat getFormat();
 
-    void fromData(int width, int height, OCC::ColorFormat format, const void *data);
-    void fromImage(const OCC::Image *img);
+    void fromData(int width, int height, ColorFormat format, const void *data);
+    void fromImage(const Image *img);
 
-    void updateRegion(int offX, int offY, int width, int height, OCC::ColorFormat format, const void *data);
-    void updateRegion(int offX, int offY, const OCC::Image *img);
+    void updateRegion(int offX, int offY, int width, int height, ColorFormat format, const void *data);
+    void updateRegion(int offX, int offY, const Image *img);
   };
 }
 

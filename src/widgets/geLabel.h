@@ -13,12 +13,12 @@ namespace GE
     DECLARE_END;
     
   protected:
-    OCC::String text;
+    String text;
     Vector3 color;
     virtual void draw();
     
   public:
-    void setText (const OCC::String &text);
+    void setText (const String &text);
     void setColor(const Vector3 &c);
   };
 

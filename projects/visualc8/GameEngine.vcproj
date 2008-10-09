@@ -17,9 +17,9 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="Debug/bin"
-			IntermediateDirectory="Debug/$(ProjectName)"
-			ConfigurationType="2"
+			OutputDirectory="$(ConfigurationName)\bin"
+			IntermediateDirectory="$(ConfigurationName)\$(ProjectName)"
+			ConfigurationType="4"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			CharacterSet="2"
 			>
@@ -62,20 +62,10 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="libOpenCC.lib jpeg.lib libpng.lib zlib.lib opengl32.lib glu32.lib glut32.lib"
-				OutputFile="$(OutDir)/libGameEngine.dll"
-				LinkIncremental="2"
-				GenerateDebugInformation="true"
-				ProgramDatabaseFile="$(IntDir)/GameEngine.pdb"
-				SubSystem="1"
-				TargetMachine="1"
+				Name="VCLibrarianTool"
 			/>
 			<Tool
 				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -87,20 +77,14 @@
 				Name="VCFxCopTool"
 			/>
 			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
-			/>
-			<Tool
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="Release/bin"
-			IntermediateDirectory="Release/$(ProjectName)"
-			ConfigurationType="2"
+			OutputDirectory="$(ConfigurationName)\bin"
+			IntermediateDirectory="$(ConfigurationName)\$(ProjectName)"
+			ConfigurationType="4"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			CharacterSet="2"
 			>
@@ -140,22 +124,10 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="libOpenCC.lib jpeg.lib libpng.lib zlib.lib opengl32.lib glu32.lib glut32.lib"
-				OutputFile="$(OutDir)/libGameEngine.dll"
-				LinkIncremental="1"
-				GenerateDebugInformation="true"
-				ProgramDatabaseFile="$(IntDir)/$(ProjectName).pdb"
-				SubSystem="1"
-				OptimizeReferences="2"
-				EnableCOMDATFolding="2"
-				TargetMachine="1"
+				Name="VCLibrarianTool"
 			/>
 			<Tool
 				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -165,12 +137,6 @@
 			/>
 			<Tool
 				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
-				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -191,152 +157,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geArrayList.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\geCamera.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\geCharacter.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\geClass.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\geHMesh.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\geKernel.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\geLoad3ds.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\geLoader.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\geLoadObj.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\geLoadTex.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\geMaterial.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\geMatrix.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\geObject.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\gePolyMesh.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\gePolyMeshActor.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\geProperty.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\geRenderer.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\geResource.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\geSaveObj.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\geScene.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\geSerialize.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\geShader.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\geShaders.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\geSkinAnim.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\geSkinMesh.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\geSkinPose.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\geTexMesh.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\geTexture.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\geTriMesh.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\geTriMeshActor.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\geVectors.cpp"
-				>
-			</File>
-			<Filter
-				Name="widgets"
-				>
-				<File
-					RelativePath="..\..\src\widgets\geFpsLabel.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\src\widgets\geLabel.cpp"
-					>
-				</File>
-				<File
-					RelativePath="..\..\src\widgets\geWidget.cpp"
-					>
-				</File>
-			</Filter>
-		</Filter>
-		<Filter
-			Name="Header Files"
-			Filter="h;hpp;hxx;hm;inl;inc;xsd"
-			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
-			>
-			<File
 				RelativePath="..\..\src\geActor.h"
 				>
 			</File>
@@ -345,7 +165,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geArrayList.h"
+				RelativePath="..\..\src\geCamera.cpp"
 				>
 			</File>
 			<File
@@ -353,15 +173,11 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\geCharacter.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\geCharacter.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\geClass.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\geDefs.h"
 				>
 			</File>
 			<File
@@ -370,6 +186,10 @@
 			</File>
 			<File
 				RelativePath="..\..\src\geGLHeaders.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\geHMesh.cpp"
 				>
 			</File>
 			<File
@@ -385,7 +205,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\geKernel.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\geKernel.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\geLoad3ds.cpp"
 				>
 			</File>
 			<File
@@ -393,7 +221,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\geLoader.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\geLoader.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\geLoadObj.cpp"
 				>
 			</File>
 			<File
@@ -401,7 +237,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\geLoadTex.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\geMaterial.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\geMaterial.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\geMatrix.cpp"
 				>
 			</File>
 			<File
@@ -409,7 +257,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\geObject.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\geObject.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\gePolyMesh.cpp"
 				>
 			</File>
 			<File
@@ -417,11 +273,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\gePolyMeshActor.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\gePolyMeshActor.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\gepolymeshiters.h"
+				RelativePath="..\..\src\gePolyMeshIters.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\geProperty.cpp"
 				>
 			</File>
 			<File
@@ -429,7 +293,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\geRenderer.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\geRenderer.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\geResource.cpp"
 				>
 			</File>
 			<File
@@ -437,7 +309,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\geSaveObj.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\geSaveObj.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\geScene.cpp"
 				>
 			</File>
 			<File
@@ -445,7 +325,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geSerialize.h"
+				RelativePath="..\..\src\geShader.cpp"
 				>
 			</File>
 			<File
@@ -453,7 +333,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\geShaders.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\geShaders.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\geSkinAnim.cpp"
 				>
 			</File>
 			<File
@@ -461,7 +349,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\geSkinMesh.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\geSkinMesh.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\geSkinPose.cpp"
 				>
 			</File>
 			<File
@@ -469,7 +365,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\geTexMesh.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\geTexMesh.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\geTexture.cpp"
 				>
 			</File>
 			<File
@@ -477,7 +381,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\geTriMesh.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\geTriMesh.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\geTriMeshActor.cpp"
 				>
 			</File>
 			<File
@@ -489,7 +401,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geUtil.h"
+				RelativePath="..\..\src\geVectors.cpp"
 				>
 			</File>
 			<File
@@ -500,11 +412,23 @@
 				Name="widgets"
 				>
 				<File
+					RelativePath="..\..\src\widgets\geFpsLabel.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\..\src\widgets\geFpsLabel.h"
 					>
 				</File>
 				<File
+					RelativePath="..\..\src\widgets\geLabel.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\..\src\widgets\geLabel.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\src\widgets\geWidget.cpp"
 					>
 				</File>
 				<File

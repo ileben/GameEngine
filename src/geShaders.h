@@ -34,7 +34,7 @@ namespace GE
     virtual ~GLShader ();
     void create (ShaderType type);
     void fromString (const char *code);
-    bool fromFile (const OCC::String &file);
+    bool fromFile (const String &file);
     bool compile ();
     char* getInfoLog ();
   };

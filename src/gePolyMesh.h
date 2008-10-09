@@ -70,7 +70,7 @@ namespace GE
   private:
     bool useSmoothGroups;
     VertexNormal dummyVertexNormal;
-    OCC::DynamicArrayList<VertexNormal> vertexNormals;
+    DynamicArrayList<VertexNormal> vertexNormals;
     virtual void insertHalfEdge (HMesh::HalfEdge *he);
     
     /*--------------------------------------------
@@ -81,7 +81,7 @@ namespace GE
     
   private:
     int facesPerMaterial [GE_MAX_MATERIAL_ID];
-    OCC::LinkedList<MaterialID> materialsUsed;
+    LinkedList<MaterialID> materialsUsed;
     void addMaterialID (MaterialID m);
     void subMaterialID (MaterialID m);
     virtual void insertFace (HMesh::Face *f);

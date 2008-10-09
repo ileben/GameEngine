@@ -1,7 +1,6 @@
 #define GE_API_EXPORT
 #include "geEngine.h"
 #include "geGLHeaders.h"
-using OCC::LinkedList;
 
 namespace GE
 {
@@ -92,7 +91,7 @@ namespace GE
     PolyMesh::FaceHedgeIter h;
     TexMesh::FaceIter uf;
     TexMesh::FaceHedgeIter uh;
-    ArrayListT<UniqueVertex> uniqVerts;
+    ArrayList<UniqueVertex> uniqVerts;
     VertexID nextVertexID = 0;
     
     /*

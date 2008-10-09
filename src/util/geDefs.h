@@ -1,15 +1,37 @@
 #ifndef __GEDEFS_H
 #define __GEDEFS_H
 
-#if defined(WIN32)
+#if defined( GE_BUILD_DLL )
+
+  #if defined(WIN32)
+  #  define GE_DLL_EXPORT __declspec(dllexport)
+  #  define GE_DLL_IMPORT __declspec(dllimport)
+  #else
+  #  define GE_DLL_EXPORT
+  #  define GE_DLL_IMPORT
+  #endif
+
+  #if defined(GE_API_EXPORT)
+  #  define GE_API_ENTRY GE_DLL_EXPORT
+  #else
+  #  define GE_API_ENTRY GE_DLL_IMPORT
+  #endif
+
+#else
+
+  #define GE_API_ENTRY
+
+#endif
+
 
 //Platform SDK compatibility with VC++ default headers sux
 //so we disable "macro already defined" warnings
+#if defined(WIN32)
 #  pragma warning (disable : 4005) 
 #  include <windows.h>
 #  pragma warning (default : 4005)
+#endif//defined(WIN32)
 
-#endif// defined(WIN32)
 
 //External headers
 #include <cstdlib>
@@ -18,28 +40,16 @@
 #include <cassert>
 #include <cmath>
 #include <list>
-#include <OpenCC/OpenCC.h>
+#include <vector>
+#include <deque>
 
 
-#if defined(WIN32)
-#  define GE_DLL_EXPORT __declspec(dllexport)
-#  define GE_DLL_IMPORT __declspec(dllimport)
-#else
-#  define GE_DLL_EXPORT
-#  define GE_DLL_IMPORT
-#endif
-
-#if defined(GE_API_EXPORT)
-#  define GE_API_ENTRY GE_DLL_EXPORT
-#else
-#  define GE_API_ENTRY GE_DLL_IMPORT
-#endif
-
-
+//General definitions
 namespace GE
 {
   typedef char                 Int8;
   typedef unsigned char        Uint8;
+  typedef unsigned char        Byte;
   typedef short                Int16;
   typedef unsigned short       Uint16;
   typedef int                  Int32;

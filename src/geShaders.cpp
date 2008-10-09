@@ -1,7 +1,6 @@
 #define GE_API_EXPORT
 #include "geEngine.h"
 #include "geGLHeaders.h"
-using OCC::String;
 
 namespace GE
 {

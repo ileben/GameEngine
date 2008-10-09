@@ -1,5 +1,4 @@
-#define GE_API_EXPORT
-#include "geEngine.h"
+#include "util/geUtil.h"
 
 namespace GE
 {
@@ -127,7 +126,7 @@ namespace GE
     riroot.isptrptr = false;
     riroot.detached = true;
     riroot.ptroffset = 0;
-    resQueue.pushBack (riroot);
+    resQueue.push_back (riroot);
   }
 
   void SerializeManager::State::arrayPtr
@@ -141,7 +140,7 @@ namespace GE
     ri.isptrptr = false;
     ri.detached = false;
     ri.ptroffset = ptroffset;
-    resQueue.pushBack (ri);
+    resQueue.push_back (ri);
   }
 
   /*
@@ -166,7 +165,7 @@ namespace GE
     ri.isptrptr = false;
     ri.detached = false;
     ri.ptroffset = current->offset + Util::PtrDist (current->ptr, pptr);
-    resQueue.pushBack (ri);
+    resQueue.push_back (ri);
   }
 
   void SerializeManager::StateSerial::resourcePtrPtr
@@ -180,7 +179,7 @@ namespace GE
     ri.isptrptr = true;
     ri.detached = false;
     ri.ptroffset = current->offset + Util::PtrDist (current->ptr, pptr);
-    resQueue.pushBack (ri);
+    resQueue.push_back (ri);
   }
   
   void SerializeManager::StateSerial::dynamicPtr
@@ -190,7 +189,7 @@ namespace GE
     di.ptr = *(pptr);
     di.size = size;
     di.ptroffset = current->offset + Util::PtrDist (current->ptr, pptr);
-    dynQueue.pushBack (di);
+    dynQueue.push_back (di);
   }
 
  
@@ -300,8 +299,8 @@ namespace GE
     while (!resQueue.empty())
     {
       //Pop first resource info off the stack
-      ResPtrInfo ri = resQueue.first();
-      resQueue.popFront();
+      ResPtrInfo ri = resQueue.front();
+      resQueue.pop_front();
       current = &ri;
 
       if (ri.isptrptr)
@@ -345,8 +344,8 @@ namespace GE
       while (!dynQueue.empty())
       {
         //Pop first dynamic info off the stack
-        DynPtrInfo di = dynQueue.first();
-        dynQueue.popFront();
+        DynPtrInfo di = dynQueue.front();
+        dynQueue.pop_front();
         
         //Adjust the in-data pointer to dynamic data
         adjust (di.ptroffset);
@@ -369,8 +368,8 @@ namespace GE
     while( !resQueue.empty() )
     {
       //Pop first resource info off the stack
-      ResPtrInfo ri = resQueue.first();
-      resQueue.popFront();
+      ResPtrInfo ri = resQueue.front();
+      resQueue.pop_front();
       current = &ri;
       
       if( ri.isptrptr )
@@ -392,8 +391,8 @@ namespace GE
       while( !dynQueue.empty() )
       {
         //Pop first dynamic info off the stack
-        DynPtrInfo di = dynQueue.first();
-        dynQueue.popFront();
+        DynPtrInfo di = dynQueue.front();
+        dynQueue.pop_front();
         
         //Copy dynamic data
         store( di.ptr, di.size );
@@ -413,8 +412,8 @@ namespace GE
     while( !resQueue.empty() )
     {
       //Pop first resource info off the stack
-      ResPtrInfo ri = resQueue.first();
-      resQueue.popFront();
+      ResPtrInfo ri = resQueue.front();
+      resQueue.pop_front();
       current = &ri;
 
       if( ri.isptrptr )
@@ -440,8 +439,8 @@ namespace GE
       while( !dynQueue.empty() )
       {
         //Pop first dynamic info off the stack
-        DynPtrInfo di = dynQueue.first();
-        dynQueue.popFront();
+        DynPtrInfo di = dynQueue.front();
+        dynQueue.pop_front();
         
         //Copy dynamic data
         load( di.ptr, di.size );

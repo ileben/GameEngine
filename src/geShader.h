@@ -26,19 +26,19 @@ namespace GE
     
     struct Uniform
     {
-      OCC::String name;
+      String      name;
       UniformType type;
       int count;
       
       Uniform () {};
-      Uniform (const OCC::String &newName, UniformType newType, int newCount)
+      Uniform (const String &newName, UniformType newType, int newCount)
         { name = newName; type = newType; count = newCount; }
     };
     
     GLShader  *vertex;
     GLShader  *fragment;
     GLProgram *program;
-    ArrayListT<Uniform> uniforms;
+    ArrayList<Uniform> uniforms;
     
     void freeProgram ();
     
@@ -47,10 +47,10 @@ namespace GE
     Shader ();
     virtual ~Shader ();
     
-    void fromFile (const OCC::String &fileVertex,
-                   const OCC::String &fileFragment);
+    void fromFile (const String &fileVertex,
+                   const String &fileFragment);
     
-    void registerUniform (const OCC::String &name,
+    void registerUniform (const String &name,
                           UniformType type,
                           int count);
     

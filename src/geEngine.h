@@ -1,14 +1,10 @@
 #ifndef __GAMEENGINE_H
 #define __GAMEENGINE_H
 
-//General definitions
-#include "geDefs.h"
-#include "geUtil.h"
-
-//Class management
-#define CLASS_DLL_ACTION GE_API_ENTRY
-#include "geClass.h"
-#include "geProperty.h"
+//#define CLASS_DLL_ACTION GE_API_ENTRY
+#include "util/geUtil.h"
+#include "io/geFile.h"
+#include "image/geImage.h"
 
 //Miscelaneous
 #include "geVectors.h"
@@ -16,9 +12,8 @@
 #include "geObject.h"
 
 //Resources
+#include "geProperty.h"
 #include "geResource.h"
-#include "geSerialize.h"
-#include "geArrayList.h"
 #include "geSkinMesh.h"
 #include "geSkinPose.h"
 #include "geSkinAnim.h"
@@ -55,7 +50,7 @@
 #include "geKernel.h"
 
 //Prevent
-#include "geUnClass.h"
+//#include "geUnClass.h"
 
 
 #endif /* __GAMEENGINE_H */

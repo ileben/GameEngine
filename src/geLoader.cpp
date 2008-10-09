@@ -1,6 +1,5 @@
 #define GE_API_EXPORT
 #include "geEngine.h"
-using OCC::String;
 
 namespace GE
 {
@@ -51,7 +50,7 @@ namespace GE
   {
     //delete children if group
     if( ClassOf( obj ) == Class( Group )) {
-      const ArrayListT<Actor*> *children = ((Group*)obj)->getChildren();
+      const ArrayList<Actor*> *children = ((Group*)obj)->getChildren();
       for( UintSize c=0; c<children->size(); ++c )
         deleteObject( children->at(c) );
     }
@@ -94,7 +93,7 @@ namespace GE
    * list of all the loaded resources
    *-------------------------------------*/
 
-  const ArrayListT<Resource*>* Loader::getResources()
+  const ArrayList<Resource*>* Loader::getResources()
   {
     return &resources;
   }

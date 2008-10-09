@@ -12,7 +12,7 @@ namespace GE
   
   template <class T> TimedTrack
   {
-    ArrayListTT <TimedKey<T> > *keys;
+    ArrayListT <TimedKey<T> > *keys;
     T evalAt (Float time, int keyHint = 0, int *outKeyHint = NULL);
   };
 

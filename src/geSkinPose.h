@@ -19,10 +19,10 @@ namespace GE
     DECLARE_END;
     
   public:
-    ArrayListT <SkinBone> *bones;
+    ArrayList <SkinBone> *bones;
     
     SkinPose (SM *sm) {}
-    SkinPose () { bones = new ArrayListT <SkinBone>; }
+    SkinPose () { bones = new ArrayList <SkinBone>; }
     ~SkinPose () { delete bones; }
     void serialize (void *sm) { ((SM*)sm)->resourcePtr (&bones); }
   };

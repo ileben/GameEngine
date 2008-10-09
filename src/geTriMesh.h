@@ -52,8 +52,8 @@ namespace GE
     };
     
     GenericArrayList *data;
-    ArrayListT <Uint32> *indices;
-    ArrayListT <IndexGroup> *groups;
+    ArrayList <Uint32> *indices;
+    ArrayList <IndexGroup> *groups;
     
   protected:
     
@@ -78,15 +78,15 @@ namespace GE
     TriMesh()
     {
       data = new GenericArrayList( sizeof( TriMeshVertex ), NULL );
-      indices = new ArrayListT <Uint32>;
-      groups = new ArrayListT <IndexGroup>;
+      indices = new ArrayList <Uint32>;
+      groups = new ArrayList <IndexGroup>;
     }
     
     TriMesh( Uint32 vertexSize )
     {
       data = new GenericArrayList( vertexSize, NULL );
-      indices = new ArrayListT <Uint32>;
-      groups = new ArrayListT <IndexGroup>;
+      indices = new ArrayList <Uint32>;
+      groups = new ArrayList <IndexGroup>;
     }
     
     virtual ~TriMesh ()

@@ -44,8 +44,8 @@ namespace GE
       Uint8 *data;
       UintSize offset;
       ResPtrInfo *current;
-      OCC::LinkedList <ResPtrInfo> resQueue;
-      OCC::LinkedList <DynPtrInfo> dynQueue;
+      std::deque <ResPtrInfo> resQueue;
+      std::deque <DynPtrInfo> dynQueue;
       std::vector <ClsHeader> clsList;
       std::vector <PtrHeader> ptrList;
       SerializeManager *sm;

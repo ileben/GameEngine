@@ -12,8 +12,8 @@ namespace GE
   
   class GE_API_ENTRY GenericArrayList
   {
-    DECLARE_SERIAL_CLASS (GenericArrayList);
-    DECLARE_CALLBACK (CLSEVT_SERIALIZE, serialize);
+    DECLARE_SERIAL_CLASS( GenericArrayList );
+    DECLARE_CALLBACK( CLSEVT_SERIALIZE, serialize );
     DECLARE_END;
     
   protected:
@@ -330,27 +330,27 @@ namespace GE
   A non-serializable templated list
   ======================================================*/
   
-  template <class T> class ArrayListT : public GenericArrayList
+  template <class T> class ArrayList : public GenericArrayList
   {
   public:
     
-    ArrayListT()
+    ArrayList()
       : GenericArrayList( sizeof(T), NULL )
       {}
     
-    ArrayListT( UintSize newCap )
+    ArrayList( UintSize newCap )
       : GenericArrayList( newCap, sizeof(T), NULL )
       {}
     
-    ArrayListT( UintSize eltSize, ClassPtr eltCls )
+    ArrayList( UintSize eltSize, ClassPtr eltCls )
       : GenericArrayList( eltSize, eltCls )
       {}
     
-    ArrayListT( UintSize newCap, UintSize eltSize, ClassPtr eltCls )
+    ArrayList( UintSize newCap, UintSize eltSize, ClassPtr eltCls )
       : GenericArrayList( newCap, eltSize, eltCls )
       {}
     
-    ~ArrayListT()
+    ~ArrayList()
     {
       destruct( this->elements, this->sz );
     }
@@ -376,15 +376,20 @@ namespace GE
       for( UintSize i=0; i<n; ++i )
         tdst[i] = tsrc[i];
     }
+
+    void insertAt( UintSize index, const T &newElt )
+    {
+      GenericArrayList::insertAt( index, &newElt );
+    }
     
     void pushBack( const T &newElt )
     {
-      GenericArrayList::pushBack (&newElt);
+      GenericArrayList::pushBack( &newElt );
     }
     
     void setAt( UintSize index, const T &newElt )
     {
-      GenericArrayList::setAt (index, &newElt);
+      GenericArrayList::setAt( index, &newElt );
     }
     
     T& first() const
@@ -445,16 +450,16 @@ namespace GE
   ========================================================*/
   
   template <class T>
-    class ClassArrayList : public ArrayListT <T*>
+    class ClassArrayList : public ArrayList <T*>
   {
   public:
     
     ClassArrayList()
-      : ArrayListT <T*> ( sizeof(T*), Class(T) )
+      : ArrayList <T*> ( sizeof(T*), Class(T) )
       {}
     
     ClassArrayList( UintSize newCap )
-      : ArrayListT <T*> ( newCap, sizeof(T*), Class(T) )
+      : ArrayList <T*> ( newCap, sizeof(T*), Class(T) )
       {}
   };
   

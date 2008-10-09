@@ -1,16 +1,7 @@
 #include <geEngine.h>
 #include <geGLHeaders.h>
-#include <geClass.h>
+#include <util/geClass.h>
 using namespace GE;
-using OCC::ColorFormat;
-using OCC::Color;
-using OCC::Image;
-using OCC::EncoderParamsJPEG;
-using OCC::File;
-using OCC::FileRef;
-using OCC::LinkedList;
-using OCC::String;
-using OCC::ByteString;
 
 #include <cstdlib>
 #include <cstdio>
@@ -169,7 +160,7 @@ void saveImage()
   
   //Create new image for UV mesh
   Image imgUV;
-  imgUV.create(imgDiff.getWidth(), imgDiff.getHeight(), OCC::COLOR_FORMAT_RGB, white);
+  imgUV.create(imgDiff.getWidth(), imgDiff.getHeight(), COLOR_FORMAT_RGB, white);
 
   //Draw UV mesh
   for (ETexMesh::EdgeIter e(uvmesh); !e.end(); ++e) {
@@ -184,20 +175,20 @@ void saveImage()
   EncoderParamsJPEG params;
   params.quality = 100;
 
-  if (imgUV.writeFile("mesh.jpg", &params, "JPEG") != OCC::IMAGE_NO_ERROR)
+  if (imgUV.writeFile("mesh.jpg", &params, "JPEG") != IMAGE_NO_ERROR)
     printf("Failed saving mesh image file!\n");
   else printf("Mesh image saved successfully.\n");
 
-  if (imgDiff.writeFile("texture.jpg", &params, "JPEG") != OCC::IMAGE_NO_ERROR)
+  if (imgDiff.writeFile("texture.jpg", &params, "JPEG") != IMAGE_NO_ERROR)
     printf("Failed saving texture image file!\n");
   else printf("Texture image saved successfully.\n");
 
   //Save mesh
   SaverObj sav;
   sav.addObject(zekko);
-  FileRef f = new File("output.obj");
+  File f( "output.obj" );
 
-  if (sav.saveFile(f->getPathName()) == false)
+  if( sav.saveFile( f.getPathName() ) == false )
     printf("Failed saving UV mesh!\n");
   else printf("UV mesh saved successfully.\n");
 }
@@ -738,7 +729,7 @@ int main (int argc, char **argv)
   ByteString btesty;
   testy->a = 33;
   testy->b = 44;
-  
+  /*
   IClass::SaveText (testy, btesty);
   printf ("Testy:\n%s", btesty.buffer());
   
@@ -749,21 +740,21 @@ int main (int argc, char **argv)
   IClass::Create (testy, NULL, 0);
   printf ("testy->a: %d\n", testy->a);
   printf ("testy->b: %d\n", testy->b);
-  
+  */
   //Load shape model
   LoaderObj ldr;
-  FileRef f = new File("zekko.obj");
-  ldr.setUVMeshClass(Class(ETexMesh));
+  File f( "zekko.obj" );
+  ldr.setUVMeshClass( Class( ETexMesh ));
   
-  int start = OCC::Time::GetTicks();
-  ldr.loadFile(f->getPathName());
-  int end = OCC::Time::GetTicks();
-  printf("Time: %d\n", end - start);
+  int start = Time::GetTicks();
+  ldr.loadFile( f.getPathName() );
+  int end = Time::GetTicks();
+  printf( "Time: %d\n", end - start );
   
   PolyMesh *dmesh;
-  uvmesh = (ETexMesh*) ldr.getFirstResource (Class(TexMesh));
-  dmesh = (PolyMesh*)ldr.getFirstResource(Class(PolyMesh));
-  zekko = (PolyMeshActor*) ldr.getFirstObject (Class(PolyMeshActor));
+  uvmesh = (ETexMesh*) ldr.getFirstResource( Class(TexMesh) );
+  dmesh = (PolyMesh*) ldr.getFirstResource( Class(PolyMesh) );
+  zekko = (PolyMeshActor*) ldr.getFirstObject( Class(PolyMeshActor) );
   if (dmesh == NULL) return EXIT_FAILURE;
   if (uvmesh == NULL) return EXIT_FAILURE;
   if (zekko == NULL) return EXIT_FAILURE;
