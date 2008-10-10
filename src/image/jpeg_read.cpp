@@ -191,7 +191,7 @@ namespace GE
     img->data = NULL;
     
     /* Allocate image buffer */
-    img->data = (BYTE*)malloc(img->stride * img->height);
+    img->data = (Byte*)malloc(img->stride * img->height);
     if (!img->data) return IMAGE_OUT_OF_MEMORY_ERROR;
 
     /* Mark image info and color buffer are valid for use
@@ -275,7 +275,7 @@ namespace GE
     return IMAGE_NO_ERROR;
   }
 
-  ImageErrorCode ImageDecoderJPEG::readData(Image *img, const BYTE *data, int size)
+  ImageErrorCode ImageDecoderJPEG::readData(Image *img, const Byte *data, int size)
   {
     jpeg_decompress_struct jdc;
     jpeg_jmp_error_mgr jerrmgr;

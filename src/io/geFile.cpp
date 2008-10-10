@@ -10,10 +10,12 @@
 #  define access _access
 #  define stat _stat
 #  define F_OK 0
+#else
+#  include <dirent.h> //opendir
 #endif
 
 #if defined(__APPLE__)
-	#include <Carbon/Carbon.h>
+#  include <Carbon/Carbon.h>
 #endif
 
 namespace GE
@@ -373,40 +375,40 @@ namespace GE
     #else
     
     //open searching directory
-    DIR *newDir = opendir(pathname.toCSTR().buffer());
-    if (newDir == NULL){
-      printf("failed opening dir '%s'\n", pathname.toCSTR().buffer());
-      return files;
+    DIR *newDir = opendir( pathname.toCSTR().buffer() );
+    if( newDir == NULL ){
+      printf( "failed opening dir '%s'\n", pathname.toCSTR().buffer() );
+      return;
     }
     
     dirent *ent;
-    int nextDirIndex=files->size();
+    int nextDirIndex = outFiles->size();
 		
     //find all the files inside this dir
-    while ( (ent = readdir(newDir)) != NULL)
+    while( (ent = readdir( newDir )) != NULL )
     {
       String s = ent->d_name;
-      if (s == ".")
+      if( s == "." )
         continue;
-      if (s == ".." && name == SLASH)
+      if( s == ".." && name == SLASH )
         continue;
       
-      FileRef f = new File;
-      f->name = s;
-      f->path = (name==SLASH ? pathname : pathname+SLASH);
+      File f;
+      f.name = s;
+      f.path = (name==SLASH ? pathname : pathname+SLASH);
       
-      if(ent->d_type == DT_DIR) {
+      if( ent->d_type == DT_DIR ){
         //insert directories at the beginning
-        files->insertAt(nextDirIndex, f);
+        outFiles->insertAt( nextDirIndex, f );
         nextDirIndex++;
       }else{
         //add other files at the end
-        files->pushBack(f);
+        outFiles->pushBack( f );
       }
     }
     
     //close searching directory
-    closedir(newDir);
+    closedir( newDir );
     #endif
   }
   
@@ -566,12 +568,12 @@ namespace GE
     
     char procLink[64];
     pid_t pid = getpid();
-    snprintf(procLink, 64, "/proc/%i/exe", pid);
+    snprintf( procLink, 64, "/proc/%i/exe", pid );
     
     char exePath[1024];
-    int pathLen = readlink(procLink, exePath, 1024);
-    if (pathLen == -1) return NULL;
-    exePath[pathLen] = 0;
+    int pathLen = readlink( procLink, exePath, 1024 );
+    if( pathLen == -1 ) return File();
+    exePath[ pathLen ] = 0;
     
     return File( exePath );
     

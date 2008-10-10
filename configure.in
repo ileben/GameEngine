@@ -9,12 +9,12 @@ AC_PROG_LIBTOOL
 case "${host}" in
 *darwin*)
 	GE_CXXFLAGS=""
-	GE_LDFLAGS="-framework OpenGL -framework GLUT -lOpenCC -ljpeg -lpng -lpthread"
+	GE_LDFLAGS="-framework OpenGL -framework GLUT -ljpeg -lpng -lpthread"
 	GE_LDADD="" ;;
 *)
 	GE_CXXFLAGS=""
 	GE_LDFLAGS=""
-	GE_LDADD="-lGL -lGLU -lglut -lOpenCC -ljpeg -lpng -lpthread";;
+	GE_LDADD="-lGL -lGLU -lglut -ljpeg -lpng -lpthread";;
 esac
 
 AC_SUBST([GE_CXXFLAGS])
@@ -23,6 +23,9 @@ AC_SUBST([GE_LDADD])
 
 AC_OUTPUT([
 Makefile
-src/Makefile
+src/util/Makefile
+src/io/Makefile
+src/image/Makefile
+src/engine/Makefile
 test/Makefile
 ])

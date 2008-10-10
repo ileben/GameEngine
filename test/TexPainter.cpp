@@ -1,6 +1,5 @@
-#include <geEngine.h>
-#include <geGLHeaders.h>
-#include <util/geClass.h>
+#include <engine/geEngine.h>
+#include <engine/geGLHeaders.h>
 using namespace GE;
 
 #include <cstdlib>
@@ -88,8 +87,8 @@ public:
       Class(Face));
   }
 
-  #include "geHmeshDataiter.h"
-  #include "geHmeshAdjiter.h"
+  #include "engine/geHmeshDataiter.h"
+  #include "engine/geHmeshAdjiter.h"
 };
 
 DEFINE_CLASS (ETexMesh);
@@ -746,9 +745,9 @@ int main (int argc, char **argv)
   File f( "zekko.obj" );
   ldr.setUVMeshClass( Class( ETexMesh ));
   
-  int start = Time::GetTicks();
+  int start = GE::Time::GetTicks();
   ldr.loadFile( f.getPathName() );
-  int end = Time::GetTicks();
+  int end = GE::Time::GetTicks();
   printf( "Time: %d\n", end - start );
   
   PolyMesh *dmesh;

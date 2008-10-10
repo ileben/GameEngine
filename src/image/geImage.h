@@ -97,22 +97,22 @@ namespace GE
     static ArrayList<ImageDecoder*> *Decoders;
     static ArrayList<ImageEncoder*> *Encoders;
     
-    static void prepareDescriptor(ColorFormatDesc *fd, ColorFormat f);
-    static void storeColor(const Color &c, BYTE *pixel, const ColorFormatDesc &fd);
-    static void loadColor(Color *c, BYTE *pixel, const ColorFormatDesc &fd);
-    static void flipBytes(void *in, int size);
+    static void prepareDescriptor( ColorFormatDesc *fd, ColorFormat f );
+    static void storeColor( const Color &c, Byte *pixel, const ColorFormatDesc &fd );
+    static void loadColor( Color *c, Byte *pixel, const ColorFormatDesc &fd );
+    static void flipBytes( void *in, int size );
     
-    static void copyPixels(BYTE *dst, ColorFormat dstFormat, int dstStride,
-                          BYTE *src, ColorFormat srcFormat, int srcStride,
-                          int dwidth, int dheight, int swidth, int sheight,
-                          int dx, int dy, int sx, int sy,
-                          int width, int height);
+    static void copyPixels( Byte *dst, ColorFormat dstFormat, int dstStride,
+                            Byte *src, ColorFormat srcFormat, int srcStride,
+                            int dwidth, int dheight, int swidth, int sheight,
+                            int dx, int dy, int sx, int sy,
+                            int width, int height );
     
-    ImageErrorCode read(bool usefile, const String &filename,
-         const BYTE *data, int size, const String &typeHint);
+    ImageErrorCode read( bool usefile, const String &filename,
+      const Byte *data, int size, const String &typeHint );
          
-    ImageErrorCode write(bool usefile, const String &filename,
-         BYTE *data, int size, void *params, const String &type);
+    ImageErrorCode write( bool usefile, const String &filename,
+      Byte *data, int size, void *params, const String &type );
 
   public:
   
@@ -122,21 +122,21 @@ namespace GE
     bool isValid() const;
     int getWidth() const;
     int getHeight() const;
-    BYTE* getData() const;
+    Byte* getData() const;
     ColorFormat getFormat() const;
 
-    ImageErrorCode readFile(const String &filename, const String &typeHint);
-    ImageErrorCode readData(const BYTE *data, int size, const String &typeHint);
-    ImageErrorCode writeFile(const String &filename, void *params, const String &type);
-    ImageErrorCode create(int width, int height, ColorFormat format, const Color &color);
-    ImageErrorCode copy(Image *dst, ColorFormat newFormat);
-    ImageErrorCode scale(Image *dst, int width, int height, ColorFormat format, ScaleFilter mode);
-    ImageErrorCode setPixel(int x, int y, const Color &color);
-    Color getPixel(int x, int y);
-    ImageErrorCode drawLine(float x1, float y1, float x2, float y2, const Color &color);
+    ImageErrorCode readFile( const String &filename, const String &typeHint );
+    ImageErrorCode readData( const Byte *data, int size, const String &typeHint );
+    ImageErrorCode writeFile( const String &filename, void *params, const String &type );
+    ImageErrorCode create( int width, int height, ColorFormat format, const Color &color );
+    ImageErrorCode copy( Image *dst, ColorFormat newFormat );
+    ImageErrorCode scale( Image *dst, int width, int height, ColorFormat format, ScaleFilter mode );
+    ImageErrorCode setPixel( int x, int y, const Color &color );
+    Color getPixel( int x, int y );
+    ImageErrorCode drawLine( float x1, float y1, float x2, float y2, const Color &color );
 
-    static char* FindFileType(const String &filename);
-    static char* FindDataType(const BYTE *data, int size);
+    static char* FindFileType( const String &filename );
+    static char* FindDataType( const Byte *data, int size );
   };
   
   class ImageDecoder
@@ -145,9 +145,9 @@ namespace GE
     ArrayList<String> endings;
     
   public:
-    bool isTypeSupported(const String &ending);
-    virtual ImageErrorCode readFile(Image *img, const String &filename) = 0;
-    virtual ImageErrorCode readData(Image *img, const BYTE *data, int size) = 0;
+    bool isTypeSupported( const String &ending );
+    virtual ImageErrorCode readFile( Image *img, const String &filename ) = 0;
+    virtual ImageErrorCode readData( Image *img, const Byte *data, int size ) = 0;
   };
   
   class ImageEncoder
@@ -156,8 +156,8 @@ namespace GE
     ArrayList<String> endings;
     
   public:
-    bool isTypeSupported(const String &ending);
-    virtual ImageErrorCode writeFile(Image *img, const String &filename, void *params) = 0;
+    bool isTypeSupported( const String &ending );
+    virtual ImageErrorCode writeFile( Image *img, const String &filename, void *params ) = 0;
   };
   
   struct EncoderParamsJPEG

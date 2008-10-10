@@ -907,6 +907,12 @@ namespace GE
         buf[size-1-b] = tmp;
       }
     }
+    
+    bool findIsLilEndian()
+    {
+      unsigned int a = 1;
+      return ( ((unsigned char*)&a)[0] == 1 );
+    }
   
     int lengthUTF16() const
     {
@@ -931,15 +937,16 @@ namespace GE
     { 
       char *bufp = outbuf + 2;
       int cursize = 0;
+      bool isLilEndian = findIsLilEndian();
       
       //mark the endianness
-      #if MY_BYTE_ORDER==MY_LIL_ENDIAN
-      outbuf[0] = 0xFF;
-      outbuf[1] = 0xFE;
-      #elif MY_BYTE_ORDER==MY_BIG_ENDIAN
-      outbuf[0] = 0xFE;
-      outbuf[1] = 0xFF;
-      #endif
+      if( isLilEndian ){
+        outbuf[0] = 0xFF;
+        outbuf[1] = 0xFE;
+      }else{
+        outbuf[0] = 0xFE;
+        outbuf[1] = 0xFF;
+      }
       
       //traverse characters
       for (int c=0; c<size; c++) {
@@ -988,23 +995,24 @@ namespace GE
   
     void fromUTF16 (const char *utf16, int bufsize)
     {
-      BYTE *bufp = (BYTE*)utf16;
+      Byte *bufp = (Byte*)utf16;
       int doneBytes = 0;
       Unicode code = 0;
       
       //check byte order
-      int endian = 0;
+      bool isLilEndian = findIsLilEndian();
+      bool isSourceLilEndian = false;
       if (bufp[0] == 0xFF && bufp[1] == 0xFE) {
         //little endian byte order
-        endian = MY_LIL_ENDIAN;
+        isSourceLilEndian = true;
         bufp += 2; doneBytes += 2;
       }else if(bufp[0] == 0xFE && bufp[1] == 0xFF) {
         //big endian byte order
-        endian = MY_BIG_ENDIAN;
+        isSourceLilEndian = false;
         bufp += 2; doneBytes = 2;
       }else{
         //assume order native to system
-        endian = MY_BYTE_ORDER;
+        isSourceLilEndian = isLilEndian;
       }
       
       //traverse input buffer
@@ -1016,8 +1024,8 @@ namespace GE
         
         //pick first word
         unsigned short s1;
-        BYTE *b1 = (BYTE*)&s1;
-        if (endian == MY_BYTE_ORDER)
+        Byte *b1 = (Byte*)&s1;
+        if (isSourceLilEndian == isLilEndian)
           {b1[0]=bufp[0]; b1[1]=bufp[1];}
         else
           {b1[0]=bufp[1]; b1[1]=bufp[0];}
@@ -1035,11 +1043,11 @@ namespace GE
           
           //pick second word
           unsigned short s2;
-          BYTE *b2 = (BYTE*)&s2;
-          if (endian == MY_BYTE_ORDER)
+          Byte *b2 = (Byte*)&s2;
+          if (isSourceLilEndian == isLilEndian)
             {b2[0]=bufp[2]; b2[1]=bufp[3];}
           else
-          {b2[0]=bufp[3]; b2[1]=bufp[2];}
+            {b2[0]=bufp[3]; b2[1]=bufp[2];}
           
           //check for code range
           if (!(s2>=0xDC00 && s2<=0xDFFF))

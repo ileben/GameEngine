@@ -79,19 +79,19 @@ namespace GE
   typedef struct {
 
     size_t size;
-    const BYTE *data;
-    const BYTE *cursor;
+    const Byte *data;
+    const Byte *cursor;
 
   } PNGUMemReader;
 
-  void pnguMemOpen(PNGUMemReader *r, const BYTE *data, size_t size)
+  void pnguMemOpen(PNGUMemReader *r, const Byte *data, size_t size)
   {
     r->size = size;
     r->data = data;
     r->cursor = data;
   }
 
-  size_t pnguMemRead(PNGUMemReader *r, BYTE *dst, size_t n)
+  size_t pnguMemRead(PNGUMemReader *r, Byte *dst, size_t n)
   {
     size_t bytes_till_end = r->data + r->size - r->cursor;
     if (n > bytes_till_end) n = bytes_till_end;
@@ -142,7 +142,7 @@ namespace GE
 
   ImageErrorCode pnguInitFileSource(png_struct *ps, FILE *infile)
   {
-    BYTE psig[PNGU_SIG_BYTES];
+    Byte psig[PNGU_SIG_BYTES];
 
     /* Catch errors here */
     if (pngu_jmp_error_caught(ps))
@@ -165,7 +165,7 @@ namespace GE
 
   ImageErrorCode pnguInitMemSource(png_struct *ps, PNGUMemReader *reader)
   {
-    BYTE psig[PNGU_SIG_BYTES];
+    Byte psig[PNGU_SIG_BYTES];
 
     /* Catch errors here */
     if (pngu_jmp_error_caught(ps))
@@ -247,7 +247,7 @@ namespace GE
     img->data = NULL;
     
     /* Allocate image data */
-    img->data = (BYTE*)malloc(img->height * img->stride);
+    img->data = (Byte*)malloc(img->height * img->stride);
     if (!img->data) return IMAGE_OUT_OF_MEMORY_ERROR;
     
     /* Mark image info and color buffer are valid for use
@@ -342,7 +342,7 @@ namespace GE
     return IMAGE_NO_ERROR;
   }
 
-  ImageErrorCode ImageDecoderPNG::readData(Image *img, const BYTE *data, int size)
+  ImageErrorCode ImageDecoderPNG::readData(Image *img, const Byte *data, int size)
   {
     png_struct *ps;
     png_info *pinfo;

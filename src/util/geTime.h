@@ -9,10 +9,10 @@ namespace GE
     static int ticks;
     static int sec;
     static int msec;
-
+    
   public:
-		static void ResetTicks();
-		static int GetTicks();
+    static void ResetTicks();
+    static int GetTicks();
   };
 };
 

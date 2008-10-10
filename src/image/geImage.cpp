@@ -4,21 +4,23 @@
 namespace GE
 {
 
-  /*=====================================================================
-   *
-   * Helper macros
-   *
-   *=====================================================================*/
+  /*
+  =====================================================================
+  
+  Helper macros
+  
+  =====================================================================*/
 
   #define IMAGE_MAX(a,b) ( (a > b) ? a : b )
   #define IMAGE_MIN(a,b) ( (a < b) ? a : b )
   #define IMAGE_PIXEL(x,y, data, stride, bpp) (data + y*stride + x*bpp)
 
-  /*=====================================================================
-   *
-   * Decoder
-   *
-   *=====================================================================*/
+  /*
+  =====================================================================
+  
+  Decoder
+  
+  =====================================================================*/
    
   bool ImageDecoder::isTypeSupported(const String &ending)
   {
@@ -28,11 +30,12 @@ namespace GE
     return false;
   }
    
-  /*=====================================================================
-   *
-   * Encoder
-   *
-   *=====================================================================*/
+  /*
+  =====================================================================
+  
+  Encoder
+  
+  =====================================================================*/
    
   bool ImageEncoder::isTypeSupported(const String &ending)
   {
@@ -42,25 +45,28 @@ namespace GE
     return false;
   }
 
-  /*=====================================================================
-   *
-   * Image
-   *
-   *=====================================================================*/
+  /*
+  =====================================================================
+  
+  Image
+  
+  =====================================================================*/
   
   
-  /*----------------------------
-   * Statics
-   *----------------------------*/
+  /*
+  ----------------------------
+  Statics
+  ----------------------------*/
    
   int Image::ClassCount = 0;
   bool Image::LittleEndian = false;
   ArrayList<ImageDecoder*> *Image::Decoders = NULL;
   ArrayList<ImageEncoder*> *Image::Encoders = NULL;
 
-  /*--------------------------
-   * Constructor / Destructor
-   *--------------------------*/
+  /*
+  --------------------------
+  Constructor / Destructor
+  --------------------------*/
    
   Image::Image()
   {
@@ -124,7 +130,7 @@ namespace GE
     return height;
   }
   
-  BYTE* Image::getData() const {
+  Byte* Image::getData() const {
     return data;
   }
   
@@ -132,16 +138,17 @@ namespace GE
     return format;
   }
 
-  /*-----------------------------------------------------------
-   * Reads image data from specified source (file or memory).
-   * Type hint helps find the appropriate reader according to
-   * the image file format. If empty string, the output of the
-   * first reader that processes the data without error
-   * will be used.
-   *-----------------------------------------------------------*/
+  /*
+  -----------------------------------------------------------
+  Reads image data from specified source (file or memory).
+  Type hint helps find the appropriate reader according to
+  the image file format. If empty string, the output of the
+  first reader that processes the data without error
+  will be used.
+  -----------------------------------------------------------*/
 
-  ImageErrorCode Image::read(bool usefile, const String &filename,
-                             const BYTE *srcdata, int size, const String &typeHint)
+  ImageErrorCode Image::read( bool usefile, const String &filename,
+                              const Byte *srcdata, int size, const String &typeHint)
   {
     ImageErrorCode err;
     ImageDecoder *dec = NULL;
@@ -171,15 +178,16 @@ namespace GE
     else return dec->readData(this, srcdata, size);
   }
 
-  /*--------------------------------------------------------------
-   * Writes image data to specified destination (file or memory).
-   * Additional encoding parameters must be specified along with
-   * the destination encoding, based on which the appropriate
-   * writer is selected.
-   *--------------------------------------------------------------*/
+  /*
+  --------------------------------------------------------------
+  Writes image data to specified destination (file or memory).
+  Additional encoding parameters must be specified along with
+  the destination encoding, based on which the appropriate
+  writer is selected.
+  --------------------------------------------------------------*/
 
-  ImageErrorCode Image::write(bool usefile, const String &filename,
-                              BYTE *dstdata, int size, void *params, const String &type)
+  ImageErrorCode Image::write( bool usefile, const String &filename,
+                               Byte *dstdata, int size, void *params, const String &type)
   {
     ImageEncoder *enc = NULL;
 
@@ -198,46 +206,50 @@ namespace GE
     else return IMAGE_NO_ERROR; //Encoding to memory not implemented yet
   }
 
-  /*-------------------------------------------------------
-   * Reads image from file with given filename. Type hint
-   * helps find the appropriate read according to the
-   * image file format. If empty string, the output of the
-   * first reader that processes the data without error
-   * will be used.
-   *-------------------------------------------------------*/
+  /*
+  -------------------------------------------------------
+  Reads image from file with given filename. Type hint
+  helps find the appropriate read according to the
+  image file format. If empty string, the output of the
+  first reader that processes the data without error
+  will be used.
+  -------------------------------------------------------*/
 
   ImageErrorCode Image::readFile(const String &filename, const String &typeHint)
   {
     return read (true, filename, NULL, 0, typeHint);
   }
 
-  /*-------------------------------------------------------
-   * Reads image from in-memory image data. Type hint
-   * helps find the appropriate read according to the
-   * image file format. If empty string, the output of the
-   * first reader that processes the data without error
-   * will be used.
-   *-------------------------------------------------------*/
+  /*
+  -------------------------------------------------------
+  Reads image from in-memory image data. Type hint
+  helps find the appropriate read according to the
+  image file format. If empty string, the output of the
+  first reader that processes the data without error
+  will be used.
+  -------------------------------------------------------*/
 
-  ImageErrorCode Image::readData(const BYTE *data, int size, const String &typeHint)
+  ImageErrorCode Image::readData(const Byte *data, int size, const String &typeHint)
   {
     return read (false, "", data, size, typeHint);
   }
 
-  /*----------------------------------------------------
-   * Writes image data to given file encoded according
-   * to given type and encoding parameters
-   *---------------------------------------------------*/
+  /*
+  ----------------------------------------------------
+  Writes image data to given file encoded according
+  to given type and encoding parameters
+  ---------------------------------------------------*/
    
   ImageErrorCode Image::writeFile(const String &filename, void *params, const String &type)
   {
     return write (true, filename, NULL, 0, params, type);
   }
 
-  /*-------------------------------------------------
-   * Fills the format descriptor structure according
-   * to the given color format.
-   *-------------------------------------------------*/
+  /*
+  -------------------------------------------------
+  Fills the format descriptor structure according
+  to the given color format.
+  -------------------------------------------------*/
 
   void Image::prepareDescriptor(ColorFormatDesc *fd, ColorFormat f)
   {
@@ -300,14 +312,15 @@ namespace GE
     fd->bpp = bpp[f];
   }
 
-  /*-----------------------------------------------
-   * Flips [size] number of bytes at given address
-   *-----------------------------------------------*/
+  /*
+  -----------------------------------------------
+  Flips [size] number of bytes at given address
+  -----------------------------------------------*/
 
   void Image::flipBytes(void *in, int size)
   {
-    BYTE *a = (BYTE*)in;
-    int b; BYTE temp;
+    Byte *a = (Byte*)in;
+    int b; Byte temp;
     int hsize = (size + (size & 0x1)) / 2;
     for (b=0; b<hsize; ++b) {
       temp = a[b];
@@ -316,13 +329,14 @@ namespace GE
     }
   }
 
-  /*-----------------------------------------------
-   * Loads a color from pixel memory in the format
-   * described by given format descriptor at the
-   * specified address.
-   *-----------------------------------------------*/
+  /*
+  -----------------------------------------------
+  Loads a color from pixel memory in the format
+  described by given format descriptor at the
+  specified address.
+  -----------------------------------------------*/
 
-  void Image::loadColor(Color *c, BYTE *pixel, const ColorFormatDesc &fd)
+  void Image::loadColor(Color *c, Byte *pixel, const ColorFormatDesc &fd)
   {
     unsigned int px = 0;
     int bytes = fd.bpp / 8;
@@ -336,13 +350,14 @@ namespace GE
     if (fd.amask == 0x0) c->a = 1.0;
   }
 
-  /*-----------------------------------------------
-   * Stores a color to pixel memory in the format
-   * described by given format descriptor at the
-   * specified address.
-   *-----------------------------------------------*/
+  /*
+  -----------------------------------------------
+  Stores a color to pixel memory in the format
+  described by given format descriptor at the
+  specified address.
+  -----------------------------------------------*/
 
-  void Image::storeColor(const Color &c, BYTE *pixel, const ColorFormatDesc &fd)
+  void Image::storeColor(const Color &c, Byte *pixel, const ColorFormatDesc &fd)
   {
     unsigned int px = 0;
     int bytes = fd.bpp / 8;
@@ -355,14 +370,15 @@ namespace GE
     memcpy(pixel, &px, bytes);
   }
 
-  /*-------------------------------------------
-   * Sets a single pixel in the current image
-   *-------------------------------------------*/
+  /*
+  -------------------------------------------
+  Sets a single pixel in the current image
+  -------------------------------------------*/
 
   ImageErrorCode Image::setPixel(int x, int y, const Color &color)
   {
     ColorFormatDesc fd;
-    BYTE *px;
+    Byte *px;
 
     if (data == NULL)
       return IMAGE_INVALID_IMAGE_ERROR;
@@ -378,15 +394,16 @@ namespace GE
     return IMAGE_NO_ERROR;
   }
 
-  /*----------------------------------------------------------
-   * Returns the color of a single pixel in the current image
-   *----------------------------------------------------------*/
+  /*
+  ----------------------------------------------------------
+  Returns the color of a single pixel in the current image
+  ----------------------------------------------------------*/
 
   Color Image::getPixel(int x, int y)
   {
     ColorFormatDesc fd;
     Color color;
-    BYTE *px;
+    Byte *px;
     
     if (x < 0 || x >= width ||
         y < 0 || y >= height)
@@ -399,14 +416,15 @@ namespace GE
     return color;
   }
 
-  /*-----------------------------------------------------------------
-   * Draw a line between given points using the simple DDA algorithm
-   *-----------------------------------------------------------------*/
+  /*
+  -----------------------------------------------------------------
+  Draw a line between given points using the simple DDA algorithm
+  -----------------------------------------------------------------*/
 
   ImageErrorCode Image::drawLine(float x1, float y1, float x2, float y2, const Color &color)
   {
     ColorFormatDesc fd;
-    BYTE *pixel;
+    Byte *pixel;
     float dx, dy, adx, ady;
     int xstep, xend, ix1, ix2, ix;
     float ystep, y;
@@ -479,15 +497,16 @@ namespace GE
     return IMAGE_NO_ERROR;
   }
 
-  /*----------------------------------------------------
-   * Allocates image data for the given size and format
-   * and initializes it to the specified color
-   *----------------------------------------------------*/
+  /*
+  ----------------------------------------------------
+  Allocates image data for the given size and format
+  and initializes it to the specified color
+  ----------------------------------------------------*/
 
   ImageErrorCode Image::create(int newWidth, int newHeight, ColorFormat newFormat, const Color &color)
   {
     ColorFormatDesc fd;
-    BYTE *newData, *px;
+    Byte *newData, *px;
     int newBpp;
     int newStride;
     int newSize;
@@ -511,7 +530,7 @@ namespace GE
     /* Allocate new image data */
     newStride = newBpp * newWidth;
     newSize = newStride * newHeight;
-    newData = (BYTE*)malloc(newSize);
+    newData = (Byte*)malloc(newSize);
     if (newData == NULL)
       return IMAGE_OUT_OF_MEMORY_ERROR;
 
@@ -538,13 +557,14 @@ namespace GE
     return IMAGE_NO_ERROR;
   }
 
-  /*------------------------------------------------------
-   * Generic function for copying a rectangular block of
-   * pixels of size (width,height) from source pixel block
-   * of size (swidth, sheight) at coordinate (sx,sy) to
-   * destination pixel block of size (dwidth, dheight) at
-   * coordinate (dx, dy).
-   *-------------------------------------------------------*/
+  /*
+  ------------------------------------------------------
+  Generic function for copying a rectangular block of
+  pixels of size (width,height) from source pixel block
+  of size (swidth, sheight) at coordinate (sx,sy) to
+  destination pixel block of size (dwidth, dheight) at
+  coordinate (dx, dy).
+  -------------------------------------------------------*/
 
   /*
     In order to optimize the copying loop and remove the
@@ -574,8 +594,8 @@ namespace GE
                                 (dwidth,dheight)
   */
 
-  void Image::copyPixels(BYTE *dst, ColorFormat dstFormat, int dstStride,
-                         BYTE *src, ColorFormat srcFormat, int srcStride,
+  void Image::copyPixels(Byte *dst, ColorFormat dstFormat, int dstStride,
+                         Byte *src, ColorFormat srcFormat, int srcStride,
                          int dwidth, int dheight, int swidth, int sheight,
                          int dx, int dy, int sx, int sy,
                          int width, int height)
@@ -584,7 +604,7 @@ namespace GE
     int dxold, dyold;
     int SX, SY, DX, DY;
     int sBpp, dBpp;
-    BYTE *SD, *DD;
+    Byte *SD, *DD;
     Color c;
     
     prepareDescriptor(&sfd, srcFormat);
@@ -632,18 +652,19 @@ namespace GE
       }}
   }
 
-  /*-------------------------------------------------------
-   * Scale [src] image to given size and stores output
-   * into [dst] image in the given color format. It is
-   * valid for [src] and [dst] to point to the same image.
-   * Scale [mode] specifies how the scaled pixel colors
-   * will be interpolated from source pixels.
-   *-------------------------------------------------------*/
+  /*
+  -------------------------------------------------------
+  Scale [src] image to given size and stores output
+  into [dst] image in the given color format. It is
+  valid for [src] and [dst] to point to the same image.
+  Scale [mode] specifies how the scaled pixel colors
+  will be interpolated from source pixels.
+  -------------------------------------------------------*/
 
   ImageErrorCode Image::scale(Image *dst, int newWidth, int newHeight,
                               ColorFormat newFormat, ScaleFilter filter)
   {
-    BYTE *newData;
+    Byte *newData;
     int newBpp;
     int newStride;
     int newSize;
@@ -667,7 +688,7 @@ namespace GE
     newSize = newHeight * newStride;
     
     /* Allocate new data */
-    newData = (BYTE*)malloc(newSize);
+    newData = (Byte*)malloc(newSize);
     if (newData == NULL) return IMAGE_OUT_OF_MEMORY_ERROR;
     
     /* Convert colors to float arrays */
@@ -690,8 +711,8 @@ namespace GE
           
           int xval = (int)(xin);
           int yval = (int)(yin);
-          BYTE *pixout = IMAGE_PIXEL(x, y, newData, newStride, newBpp);
-          BYTE *pixin = IMAGE_PIXEL(xval, yval, data, stride, bpp);
+          Byte *pixout = IMAGE_PIXEL(x, y, newData, newStride, newBpp);
+          Byte *pixin = IMAGE_PIXEL(xval, yval, data, stride, bpp);
           loadColor(&cout, pixin, sfd);
           storeColor(cout, pixout, dfd);
           
@@ -701,7 +722,7 @@ namespace GE
           int c;
           float x0, x1, y0, y1;
           float dL, dR, dT, dB;
-          BYTE *p00, *p10, *p11, *p01, *pout;
+          Byte *p00, *p10, *p11, *p01, *pout;
           
           /* Take care of border pixels */
           if (xin <= 0.5f) xin += 1.0f;
@@ -753,16 +774,17 @@ namespace GE
     return IMAGE_NO_ERROR;
   }
 
-  /*------------------------------------------------------
-   * Converts the [src] image data into given format and
-   * stores the result into [dst] image. It is valid for
-   * [src] and [dst] to point to the same image.
-   *------------------------------------------------------*/
+  /*
+  ------------------------------------------------------
+  Converts the [src] image data into given format and
+  stores the result into [dst] image. It is valid for
+  [src] and [dst] to point to the same image.
+  ------------------------------------------------------*/
 
   ImageErrorCode Image::copy(Image *dst, ColorFormat newFormat)
   {
     ColorFormatDesc fd;
-    BYTE *newData;
+    Byte *newData;
     int newBpp;
     int newStride;
     int newSize;
@@ -780,7 +802,7 @@ namespace GE
     newSize = height * newStride;
     
     /* Allocate new data */
-    newData = (BYTE*)malloc(newSize);
+    newData = (Byte*)malloc(newSize);
     if (newData == NULL) return IMAGE_OUT_OF_MEMORY_ERROR;
     
     /* Convert pixels */

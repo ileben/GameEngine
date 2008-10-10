@@ -1,6 +1,5 @@
-#include <geEngine.h>
-#include <geGLHeaders.h>
-#include <util/geClass.h>
+#include <engine/geEngine.h>
+#include <engine/geGLHeaders.h>
 using namespace GE;
 
 #include <cstdlib>
@@ -40,8 +39,8 @@ public:
     DECLARE_SUBCLASS( Face, PolyMesh::Face ); DECLARE_END;
   };
   
-  #include "geHmeshDataiter.h"
-  #include "geHmeshAdjiter.h"
+  #include "engine/geHmeshDataiter.h"
+  #include "engine/geHmeshAdjiter.h"
   
   SPolyMesh() {
     setClasses(

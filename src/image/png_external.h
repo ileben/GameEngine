@@ -8,8 +8,8 @@ namespace GE
   {
   public:
     ImageDecoderPNG();
-    ImageErrorCode readFile(Image *img, const String &filename);
-    ImageErrorCode readData(Image *img, const BYTE *data, int size);
+    ImageErrorCode readFile( Image *img, const String &filename );
+    ImageErrorCode readData( Image *img, const Byte *data, int size );
   };
   
 }

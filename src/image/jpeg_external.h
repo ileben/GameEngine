@@ -8,15 +8,15 @@ namespace GE
   {
   public:
     ImageDecoderJPEG();
-    ImageErrorCode readFile(Image *img, const String &filename);
-    ImageErrorCode readData(Image *img, const BYTE *data, int size);
+    ImageErrorCode readFile( Image *img, const String &filename );
+    ImageErrorCode readData( Image *img, const Byte *data, int size );
   };
   
   class ImageEncoderJPEG : public ImageEncoder
   {
   public:
     ImageEncoderJPEG();
-    ImageErrorCode writeFile(Image *img, const String &filename, void *params);
+    ImageErrorCode writeFile( Image *img, const String &filename, void *params );
   };
   
 }

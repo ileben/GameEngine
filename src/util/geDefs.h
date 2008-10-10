@@ -36,12 +36,17 @@
 //External headers
 #include <cstdlib>
 #include <cstdio>
+#include <cstdarg>
 #include <cstring>
 #include <cassert>
 #include <cmath>
 #include <list>
 #include <vector>
 #include <deque>
+
+#ifndef WIN32
+#  include <sys/time.h>
+#endif
 
 
 //General definitions
