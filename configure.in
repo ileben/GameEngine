@@ -23,6 +23,7 @@ AC_SUBST([GE_LDADD])
 
 AC_OUTPUT([
 Makefile
+src/Makefile
 src/util/Makefile
 src/io/Makefile
 src/image/Makefile
