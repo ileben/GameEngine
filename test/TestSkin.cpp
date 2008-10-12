@@ -591,53 +591,69 @@ void applyFK( UintSize frame )
     }
   }
 }
-/*
+
 class DD
 {
-  DECLARE_SERIAL_CLASS (DD);
-  DECLARE_CALLBACK (CLSEVT_SERIALIZE, serialize);
+  DECLARE_SERIAL_CLASS( DD );
+  DECLARE_CALLBACK( CLSEVT_SERIALIZE, serialize );
   DECLARE_END;
 public:
   int d;
-  DD () {}
-  DD (SM *sm) {}
-  void serialize (void *sm)
+  DD() {}
+  DD( SM *sm ) {}
+  void serialize( void *sm )
   {
     int poke = 1;
   }
 };
 
-DEFINE_SERIAL_CLASS (DD, ClassID(2,2,2,2));
+DEFINE_SERIAL_CLASS( DD, ClassID(2,2,2,2) );
 
 class CC
 {
-  DECLARE_SERIAL_CLASS (CC);
-  DECLARE_CALLBACK (CLSEVT_SERIALIZE, serialize);
+  DECLARE_SERIAL_CLASS( CC );
+  DECLARE_CALLBACK( CLSEVT_SERIALIZE, serialize );
   DECLARE_END;
 public:
-  ResPtrArrayList<DD> *list;
-  CC () {list = new ResPtrArrayList<DD>;}
-  CC (SM *sm) {}
+  ClassArrayList<DD> list;
+  CC () {};//{list = new ClassArrayList<DD>;}
+  CC (SM *sm) : list (sm) {}
   void serialize (void *sm)
   {
-    ((SM*)sm)->resourcePtr (&list);
+    ((SM*)sm)->classVar( &list );
   }
 };
 
-DEFINE_SERIAL_CLASS (CC, ClassID(1,1,1,1));
-*/
+DEFINE_SERIAL_CLASS( CC, ClassID(1,1,1,1) );
+
 /*
+class DD
+{
+public:
+  DD() { printf( "DD::Ctor()\n" ); }
+  DD( int a ) { printf( "DD::Ctor(%d)\n", a ); }
+};
+
+class DD2 : public DD
+{
+public:
+  DD2() { printf( "DD2:Ctor()\n" ); }
+  DD2( int a ) : DD(a) { printf( "DD2::Ctor(%d)\n", a ); }
+};
+
 class CC
 {
 public:
-  CC() { printf( "Ctor\n" ); }
-  ~CC() { printf( "~Dtor\n" ); }
+  DD2 dd;
+  CC() { printf( "CC::Ctor\n" ); }
+  ~CC() { printf( "~CC::Dtor\n" ); }
+  CC( int a ) : dd(a) { printf( "CC::Ctor(%d)\n", a ); }
 };*/
 
 int main( int argc, char **argv )
 {
   /*
-  ArrayListT<CC> *list = new ArrayListT<CC>;
+  ArrayList<CC> *list = new ArrayList<CC>;
   CC cc;
   
   list->pushBack( cc );
@@ -651,20 +667,20 @@ int main( int argc, char **argv )
   return 0;
   */
 
-  /*
+
   CC cc;
   for( int d=0; d<5; ++d ){
-    cc.list->pushBack( new DD );
-    cc.list->last()->d = d;
+    cc.list.pushBack( new DD );
+    cc.list.last()->d = d;
   }
 
   SM sm;
   void *data;
   UintSize size;
-  sm.serialize( &cc, &data, &size );
+  sm.save( &cc, &data, &size );
 
-  CC *ccc = (CC*) sm.deserialize( data );
-  */
+  CC *ccc = (CC*) sm.load( data );
+  return 0;
   /*
   SkinVertex vert1, vert2, vert3;
   vert1.point.set( 1,2,3 );

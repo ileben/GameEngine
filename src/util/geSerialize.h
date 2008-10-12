@@ -12,9 +12,10 @@ namespace GE
     {
       ClassPtr   cls;        //class of the resource
       void      *ptr;        //pointer to the resource
-      UintSize   count;      //number of resources in the array
+      UintSize   count;      //number of variables in array
       UintSize   offset;     //offset to the serialized resource
-      bool       isptrptr;   //if true its a pointer to an array of pointers
+      bool       isptr;      //if true its a pointer else its a direct member
+      bool       isarray;    //if true its an array else its a single variable
       bool       detached;   //if true the pointer is not to be adjusted (e.g. root)
       UintSize   ptroffset;  //offset to the serialized pointer to this resource
     };
@@ -52,6 +53,7 @@ namespace GE
       bool simulate;
       
       virtual void memberVar (void *ptr, UintSize size) = 0;
+      virtual void classVar (ClassPtr cls, void *ptr) = 0;
       virtual void resourcePtr (ClassPtr cls, void **pptr) = 0;
       virtual void resourcePtrPtr (ClassPtr cls, void ***pptr, UintSize count) = 0;
       virtual void dynamicPtr (void **pptr, UintSize size) = 0;
@@ -67,6 +69,7 @@ namespace GE
     class StateSerial : public State
     { public:
       virtual void memberVar (void *ptr, UintSize size);
+      virtual void classVar (ClassPtr cls, void *ptr);
       virtual void resourcePtr (ClassPtr cls, void **pptr);
       virtual void resourcePtrPtr (ClassPtr cls, void ***pptr, UintSize count);
       virtual void dynamicPtr (void **pptr, UintSize size);
@@ -77,6 +80,7 @@ namespace GE
     class StateSave : public StateSerial
     { public:
       virtual void memberVar (void *ptr, UintSize size);
+      virtual void classVar (ClassPtr cls, void *ptr);
       virtual void resourcePtr (ClassPtr cls, void **pptr);
       virtual void resourcePtrPtr (ClassPtr cls, void ***pptr, UintSize count);
       virtual void dynamicPtr (void **pptr, UintSize size);
@@ -86,6 +90,7 @@ namespace GE
     class StateLoad : public StateSerial
     { public:
       virtual void memberVar (void *ptr, UintSize size);
+      virtual void classVar (ClassPtr cls, void *ptr);
       virtual void resourcePtr (ClassPtr cls, void **pptr);
       virtual void resourcePtrPtr (ClassPtr cls, void ***pptr, UintSize count);
       virtual void dynamicPtr (void **pptr, UintSize size);
@@ -109,6 +114,7 @@ namespace GE
     bool isLoading ();
     
     void memberVar (void *ptr, UintSize size);
+    void classVar (ClassPtr cls, void *ptr);
     void resourcePtr (ClassPtr cls, void **pptr);
     void resourcePtrPtr (ClassPtr cls, void ***pptr, UintSize count);
     void dynamicPtr (void **pptr, UintSize size);
@@ -116,8 +122,11 @@ namespace GE
     void serialize (ClassPtr cls, void *root, void **outData, UintSize *outSize);
     void save (ClassPtr cls, void *root, void **outData, UintSize *outSize);
 
-    template <class TM> void memberVar (TM *ptr)
-      { memberVar ((void*)ptr, sizeof(TM)); }
+    template <class TV> void memberVar (TV *ptr)
+      { memberVar ((void*)ptr, sizeof(TV)); }
+
+    template <class TV> void classVar (TV *ptr)
+      { classVar (Class(TV), (void*)ptr); }
     
     template <class TR> void resourcePtr (TR **pptr)
       { resourcePtr (Class(TR), (void**)pptr); }

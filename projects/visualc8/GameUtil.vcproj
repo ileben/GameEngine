@@ -213,6 +213,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\util\geUnClass.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\util\geUtil.h"
 				>
 			</File>

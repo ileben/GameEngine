@@ -28,6 +28,15 @@ namespace GE
 {
   /*
   -----------------------------------------------
+  Forward declarations
+  -----------------------------------------------*/
+
+  class IClass;
+  class Property;
+  class SerializeManager;
+  
+  /*
+  -----------------------------------------------
   ClassID is a UUID
   -----------------------------------------------*/
   
@@ -38,9 +47,12 @@ namespace GE
     Uint16 d3;
     Uint64 d4;
     
+    ClassID (SerializeManager *sm) {}
+    
     ClassID ()
     {
       //can't set to zero or else it wouldn't be serializable!
+      d1=0; d2=0; d3=0; d4=0;
     }
     
     ClassID (int zero)
@@ -73,18 +85,8 @@ namespace GE
 
   /*
   ------------------------------------------------------
-  Forward declarations and such
+  Forward declarations
   ------------------------------------------------------*/
-
-  enum ClassEvent
-  {
-    CLSEVT_CREATE,
-    CLSEVT_SERIALIZE
-  };
-  
-  class IClass;
-  class Property;
-  class SerializeManager;
   
   typedef IClass* ClassPtr;
   typedef std::vector <Property*> PTable;
@@ -118,6 +120,12 @@ namespace GE
   Base class descriptor interface
   --------------------------------------------------------------*/
   
+  enum ClassEvent
+  {
+    CLSEVT_CREATE,
+    CLSEVT_SERIALIZE
+  };
+
   class GE_API_ENTRY IClass
   {
   private:

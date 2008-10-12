@@ -31,14 +31,14 @@ namespace GE
     Serialization
     ------------------------------------------------------*/
     
-    GenericArrayList( SerializeManager *sm )
+    GenericArrayList (SerializeManager *sm) : eltClsID (sm)
     {
       //Make sure it is re-serializable
-      if( sm->isDeserializing() )
+      if (sm->isDeserializing())
         eltCls = IClass::FromID( eltClsID );
     }
     
-    virtual void serialize( void *param )
+    virtual void serialize (void *param)
     {
       SerializeManager *sm = (SM*)param;
       sm->memberVar( &sz );
@@ -46,21 +46,21 @@ namespace GE
       sm->memberVar( &eltClsID );
       
       //Make sure it is usable after loading
-      if( sm->isLoading() ){
+      if (sm->isLoading()) {
         eltCls = IClass::FromID( eltClsID );
         cap = sz;
       }
       
       //Assume if class given the elements are pointers
       //(otherwise the array is not serializable anyway)
-      if( sz > 0 ){
-        if( eltCls != NULL )
+      if (sz > 0) {
+        if (eltCls != NULL)
           sm->resourcePtrPtr( eltCls, (void***)&elements, sz );
         else sm->dynamicPtr( &elements, sz * eltSize );
       }
       
       //Make sure it is usable after loading
-      if( sm->isLoading() && sz == 0 ){
+      if (sm->isLoading() && sz == 0) {
         elements = (Uint8*) std::malloc( eltSize );
         cap = 1;
       }
@@ -333,6 +333,10 @@ namespace GE
   template <class T> class ArrayList : public GenericArrayList
   {
   public:
+
+    ArrayList (SerializeManager *sm)
+      : GenericArrayList (sm)
+      {}
     
     ArrayList()
       : GenericArrayList( sizeof(T), NULL )
@@ -454,6 +458,10 @@ namespace GE
   {
   public:
     
+    ClassArrayList (SerializeManager *sm)
+      : ArrayList <T*> (sm)
+     {}
+
     ClassArrayList()
       : ArrayList <T*> ( sizeof(T*), Class(T) )
       {}

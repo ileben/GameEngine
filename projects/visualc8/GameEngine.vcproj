@@ -153,286 +153,282 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\..\src\geActor.cpp"
+				RelativePath="..\..\src\engine\geActor.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geActor.h"
+				RelativePath="..\..\src\engine\geActor.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geAnimation.h"
+				RelativePath="..\..\src\engine\geAnimation.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geCamera.cpp"
+				RelativePath="..\..\src\engine\geCamera.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geCamera.h"
+				RelativePath="..\..\src\engine\geCamera.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geCharacter.cpp"
+				RelativePath="..\..\src\engine\geCharacter.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geCharacter.h"
+				RelativePath="..\..\src\engine\geCharacter.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geEngine.h"
+				RelativePath="..\..\src\engine\geEngine.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geGLHeaders.h"
+				RelativePath="..\..\src\engine\geGLHeaders.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geHMesh.cpp"
+				RelativePath="..\..\src\engine\geHMesh.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geHmesh.h"
+				RelativePath="..\..\src\engine\geHmesh.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geHmeshAdjiter.h"
+				RelativePath="..\..\src\engine\geHmeshAdjiter.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geHmeshDataiter.h"
+				RelativePath="..\..\src\engine\geHmeshDataiter.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geKernel.cpp"
+				RelativePath="..\..\src\engine\geKernel.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geKernel.h"
+				RelativePath="..\..\src\engine\geKernel.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geLoad3ds.cpp"
+				RelativePath="..\..\src\engine\geLoad3ds.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geLoad3ds.h"
+				RelativePath="..\..\src\engine\geLoad3ds.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geLoader.cpp"
+				RelativePath="..\..\src\engine\geLoader.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geLoader.h"
+				RelativePath="..\..\src\engine\geLoader.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geLoadObj.cpp"
+				RelativePath="..\..\src\engine\geLoadObj.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geLoadObj.h"
+				RelativePath="..\..\src\engine\geLoadObj.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geLoadTex.cpp"
+				RelativePath="..\..\src\engine\geLoadTex.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geMaterial.cpp"
+				RelativePath="..\..\src\engine\geMaterial.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geMaterial.h"
+				RelativePath="..\..\src\engine\geMaterial.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geMatrix.cpp"
+				RelativePath="..\..\src\engine\geMatrix.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geMatrix.h"
+				RelativePath="..\..\src\engine\geMatrix.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geObject.cpp"
+				RelativePath="..\..\src\engine\geObject.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geObject.h"
+				RelativePath="..\..\src\engine\geObject.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\gePolyMesh.cpp"
+				RelativePath="..\..\src\engine\gePolyMesh.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\gePolyMesh.h"
+				RelativePath="..\..\src\engine\gePolyMesh.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\gePolyMeshActor.cpp"
+				RelativePath="..\..\src\engine\gePolyMeshActor.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\gePolyMeshActor.h"
+				RelativePath="..\..\src\engine\gePolyMeshActor.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\gePolyMeshIters.h"
+				RelativePath="..\..\src\engine\gePolyMeshIters.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geProperty.cpp"
+				RelativePath="..\..\src\engine\geProperty.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geProperty.h"
+				RelativePath="..\..\src\engine\geProperty.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geRenderer.cpp"
+				RelativePath="..\..\src\engine\geRenderer.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geRenderer.h"
+				RelativePath="..\..\src\engine\geRenderer.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geResource.cpp"
+				RelativePath="..\..\src\engine\geResource.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geResource.h"
+				RelativePath="..\..\src\engine\geResource.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geSaveObj.cpp"
+				RelativePath="..\..\src\engine\geSaveObj.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geSaveObj.h"
+				RelativePath="..\..\src\engine\geSaveObj.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geScene.cpp"
+				RelativePath="..\..\src\engine\geScene.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geScene.h"
+				RelativePath="..\..\src\engine\geScene.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geShader.cpp"
+				RelativePath="..\..\src\engine\geShader.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geShader.h"
+				RelativePath="..\..\src\engine\geShader.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geShaders.cpp"
+				RelativePath="..\..\src\engine\geShaders.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geShaders.h"
+				RelativePath="..\..\src\engine\geShaders.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geSkinAnim.cpp"
+				RelativePath="..\..\src\engine\geSkinAnim.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geSkinAnim.h"
+				RelativePath="..\..\src\engine\geSkinAnim.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geSkinMesh.cpp"
+				RelativePath="..\..\src\engine\geSkinMesh.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geSkinMesh.h"
+				RelativePath="..\..\src\engine\geSkinMesh.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geSkinPose.cpp"
+				RelativePath="..\..\src\engine\geSkinPose.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geSkinPose.h"
+				RelativePath="..\..\src\engine\geSkinPose.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geTexMesh.cpp"
+				RelativePath="..\..\src\engine\geTexMesh.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geTexMesh.h"
+				RelativePath="..\..\src\engine\geTexMesh.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geTexture.cpp"
+				RelativePath="..\..\src\engine\geTexture.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geTexture.h"
+				RelativePath="..\..\src\engine\geTexture.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geTriMesh.cpp"
+				RelativePath="..\..\src\engine\geTriMesh.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geTriMesh.h"
+				RelativePath="..\..\src\engine\geTriMesh.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geTriMeshActor.cpp"
+				RelativePath="..\..\src\engine\geTriMeshActor.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geTriMeshActor.h"
+				RelativePath="..\..\src\engine\geTriMeshActor.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geUnClass.h"
+				RelativePath="..\..\src\engine\geVectors.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\geVectors.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\geVectors.h"
+				RelativePath="..\..\src\engine\geVectors.h"
 				>
 			</File>
 			<Filter
 				Name="widgets"
 				>
 				<File
-					RelativePath="..\..\src\widgets\geFpsLabel.cpp"
+					RelativePath="..\..\src\engine\widgets\geFpsLabel.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\src\widgets\geFpsLabel.h"
+					RelativePath="..\..\src\engine\widgets\geFpsLabel.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\src\widgets\geLabel.cpp"
+					RelativePath="..\..\src\engine\widgets\geLabel.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\src\widgets\geLabel.h"
+					RelativePath="..\..\src\engine\widgets\geLabel.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\src\widgets\geWidget.cpp"
+					RelativePath="..\..\src\engine\widgets\geWidget.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\src\widgets\geWidget.h"
+					RelativePath="..\..\src\engine\widgets\geWidget.h"
 					>
 				</File>
 			</Filter>

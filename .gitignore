@@ -23,6 +23,7 @@ TexPainter
 TexPainter_DEBUG.exe
 TexPainter_RELEASE.exe
 libGameEngine.dll
+*.lib
 *.ncb
 *.Ivan.user
 projects/visualc8/Debug

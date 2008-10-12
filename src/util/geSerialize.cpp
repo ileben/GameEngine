@@ -18,13 +18,6 @@ namespace GE
   There are some exceptions which cannot be serialized
   though:
 
-  - Automatic resource member variable. Even if we did
-    recurse into it at serialization stage, we don't have
-    any control over its construction when unserializing.
-    Only the default constructor will be called so the
-    resource itself will have no idea whether it's been
-    constructed on the heap or in-place.
-
   - Pointer to an array of resources. This is a problem
     only when save-ing / load-ing, because the array
     version of the new operator always invokes the default
@@ -33,7 +26,7 @@ namespace GE
     To avoid the differences in usage though, this
     variant is not supported in any state. An array of
     pointers to resources is much more common anyway.
-
+  
   ---------------------------------------------------------*/
   
   bool SerializeManager::isSerializing () {
@@ -56,6 +49,12 @@ namespace GE
     (void *ptr, UintSize size)
   {
     state->memberVar (ptr, size);
+  }
+
+  void SerializeManager::classVar
+    (ClassPtr cls, void *ptr)
+  {
+    state->classVar (cls, ptr);
   }
 
   void SerializeManager::resourcePtr
@@ -123,7 +122,8 @@ namespace GE
     riroot.ptr = ptr;
     riroot.count = 1;
     riroot.offset = 0;
-    riroot.isptrptr = false;
+    riroot.isptr = true;
+    riroot.isarray = false;
     riroot.detached = true;
     riroot.ptroffset = 0;
     resQueue.push_back (riroot);
@@ -137,7 +137,8 @@ namespace GE
     ri.ptr = ptr;
     ri.count = 1;
     ri.offset = 0;
-    ri.isptrptr = false;
+    ri.isptr = true;
+    ri.isarray = false;
     ri.detached = false;
     ri.ptroffset = ptroffset;
     resQueue.push_back (ri);
@@ -154,6 +155,21 @@ namespace GE
     //No-op
   }
 
+  void SerializeManager::StateSerial::classVar
+    (ClassPtr cls, void *ptr)
+  {
+    ResPtrInfo ri;
+    ri.count = 1;
+    ri.offset = current->offset + Util::PtrDist (current->ptr, ptr);
+    ri.cls = cls;
+    ri.ptr = ptr;
+    ri.isptr = false;
+    ri.isarray = false;
+    ri.detached = false;
+    ri.ptroffset = 0;
+    resQueue.push_back (ri);
+  }
+
   void SerializeManager::StateSerial::resourcePtr
     (ClassPtr cls, void **pptr)
   {
@@ -162,7 +178,8 @@ namespace GE
     ri.offset = 0;
     ri.cls = cls;
     ri.ptr = *pptr;
-    ri.isptrptr = false;
+    ri.isptr = true;
+    ri.isarray = false;
     ri.detached = false;
     ri.ptroffset = current->offset + Util::PtrDist (current->ptr, pptr);
     resQueue.push_back (ri);
@@ -176,7 +193,8 @@ namespace GE
     ri.offset = 0;
     ri.cls = cls;
     ri.ptr = *pptr;
-    ri.isptrptr = true;
+    ri.isptr = true;
+    ri.isarray = true;
     ri.detached = false;
     ri.ptroffset = current->offset + Util::PtrDist (current->ptr, pptr);
     resQueue.push_back (ri);
@@ -203,6 +221,13 @@ namespace GE
   {
     //Copy data from resource to buffer
     store (ptr, size);
+  }
+
+  void SerializeManager::StateSave::classVar
+    (ClassPtr cls, void *ptr)
+  {
+    //Push the resource info on the queue
+    StateSerial::classVar( cls, ptr );
   }
   
   void SerializeManager::StateSave::resourcePtr
@@ -236,6 +261,13 @@ namespace GE
   {
     //Copy data from buffer to resource
     load (ptr, size);
+  }
+
+  void SerializeManager::StateLoad::classVar
+    (ClassPtr cls, void *ptr)
+  {
+    //Push the resource info on the queue
+    StateSerial::classVar( cls, ptr );
   }
   
   void SerializeManager::StateLoad::resourcePtr
@@ -303,23 +335,28 @@ namespace GE
       resQueue.pop_front();
       current = &ri;
 
-      if (ri.isptrptr)
+      if (!ri.isptr)
       {
-        //Adjust the in-data pointer to the resource
-        if (!ri.detached) adjust (ri.ptroffset);
+        //Get new pointers from the resource
+        ri.cls->invokeCallback( CLSEVT_SERIALIZE, ri.ptr, sm );
+      }
+      else if (ri.isarray)
+      {
+        //Adjust the in-data pointer to the array
+        if (!ri.detached) adjust( ri.ptroffset );
         
         //Walk the array of pointers to resources
         void **pptr = (void**)ri.ptr;
         for (UintSize p=0; p<ri.count; ++p)
         {
           //Enqueue each pointer to resource
-          arrayPtr (ri.cls, pptr[p], offset);
+          arrayPtr( ri.cls, pptr[p], offset );
           
           //Leave space for in-data pointer
           offset += sizeof (void*);
         }
       }
-      else
+      else//Its a pointer to a single resource
       {
         //Add to list of classes
         ClsHeader ch;
@@ -331,14 +368,14 @@ namespace GE
         //Set the resource offset
         ri.offset = offset;
         
-        //Adjust the in-data pointer to resource
-        if (!ri.detached) adjust (ri.ptroffset);
+        //Adjust the serialized pointer to resource
+        if (!ri.detached) adjust( ri.ptroffset );
         
         //Copy resource data
-        store (ri.ptr, ri.cls->getSize());
+        store( ri.ptr, ri.cls->getSize() );
         
         //Get new pointers from the resource
-        ri.cls->invokeCallback (CLSEVT_SERIALIZE, ri.ptr, sm);
+        ri.cls->invokeCallback( CLSEVT_SERIALIZE, ri.ptr, sm );
       }
       
       while (!dynQueue.empty())
@@ -348,10 +385,10 @@ namespace GE
         dynQueue.pop_front();
         
         //Adjust the in-data pointer to dynamic data
-        adjust (di.ptroffset);
+        adjust( di.ptroffset );
         
         //Copy dynamic data
-        store (di.ptr, di.size);
+        store( di.ptr, di.size );
       }
     }
   }
@@ -365,14 +402,19 @@ namespace GE
   {
     //Push root info to queue
     rootPtr( rcls, rptr );
-    while( !resQueue.empty() )
+    while (!resQueue.empty())
     {
       //Pop first resource info off the stack
       ResPtrInfo ri = resQueue.front();
       resQueue.pop_front();
       current = &ri;
       
-      if( ri.isptrptr )
+      if (!ri.ptr)
+      {
+        //Copy data and get new pointers from the resource
+        ri.cls->invokeCallback( CLSEVT_SERIALIZE, ri.ptr, sm );
+      }
+      else if (ri.isarray)
       {
         //Walk the array of pointers to resources
         void **pptr = (void**) ri.ptr;
@@ -382,13 +424,13 @@ namespace GE
           arrayPtr( ri.cls, pptr[p], 0 );
         }
       }
-      else
+      else//Its a pointer to a single resource
       {
         //Copy data and get new pointers from the resource
         ri.cls->invokeCallback( CLSEVT_SERIALIZE, ri.ptr, sm );
       }
       
-      while( !dynQueue.empty() )
+      while (!dynQueue.empty())
       {
         //Pop first dynamic info off the stack
         DynPtrInfo di = dynQueue.front();
@@ -416,7 +458,12 @@ namespace GE
       resQueue.pop_front();
       current = &ri;
 
-      if( ri.isptrptr )
+      if (!ri.ptr)
+      {
+        //Copy data and get new pointers from the resource
+        ri.cls->invokeCallback( CLSEVT_SERIALIZE, ri.ptr, sm );
+      }
+      else if( ri.isarray )
       {
         //Walk the array of pointers to resources
         void **pptr = (void**) ri.ptr;
@@ -430,7 +477,7 @@ namespace GE
           arrayPtr( ri.cls, pptr[p], 0 );
         }
       }
-      else
+      else//Its a pointer to a single resource
       {
         //Copy data and get new pointers from the resource
         ri.cls->invokeCallback( CLSEVT_SERIALIZE, ri.ptr, sm );
