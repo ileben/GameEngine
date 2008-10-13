@@ -19,39 +19,28 @@ namespace GE
   
   class GE_API_ENTRY SkinMesh
   {
-    DECLARE_SERIAL_CLASS (SkinMesh);
-    DECLARE_CALLBACK (CLSEVT_SERIALIZE, serialize);
+    DECLARE_SERIAL_CLASS( SkinMesh );
+    DECLARE_CALLBACK( ClassEvent::Serialize, serialize );
     DECLARE_END;
     
   public:
     
-    ArrayList <SkinVertex> *verts;
-    ArrayList <SkinFace> *faces;
-    ArrayList <Uint32> *indices;
+    ArrayList <SkinVertex> verts;
+    ArrayList <SkinFace> faces;
+    ArrayList <Uint32> indices;
     
     void serialize (void *sm)
     {
-      ((SM*)sm)->resourcePtr (&verts);
-      ((SM*)sm)->resourcePtr (&faces);
-      ((SM*)sm)->resourcePtr (&indices);
+      ((SM*)sm)->objectVar (&verts);
+      ((SM*)sm)->objectVar (&faces);
+      ((SM*)sm)->objectVar (&indices);
     }
     
-    SkinMesh (SM *sm)
+    SkinMesh (SM *sm) : verts(sm), faces(sm), indices(sm)
     {}
     
     SkinMesh ()
-    {
-      verts = new ArrayList <SkinVertex> ();
-      faces = new ArrayList <SkinFace> ();
-      indices = new ArrayList <Uint32> ();
-    }
-    
-    ~SkinMesh ()
-    {
-      delete verts;
-      delete faces;
-      delete indices;
-    }
+    {}
   };
 
 }//namespace GE

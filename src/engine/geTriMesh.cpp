@@ -13,7 +13,7 @@ namespace GE
   
   void TriMesh::addVertex( void *vertData )
   {
-    data->pushBack( vertData );
+    data.pushBack( vertData );
   }
   
   /*
@@ -25,9 +25,9 @@ namespace GE
   {
     IndexGroup newGrp;
     newGrp.materialID = matID;
-    newGrp.start = (VertexID) indices->size();
+    newGrp.start = (VertexID) indices.size();
     newGrp.count = 0;
-    groups->pushBack( newGrp );
+    groups.pushBack( newGrp );
   }
   
   /*
@@ -37,10 +37,10 @@ namespace GE
   
   void TriMesh::addFace( VertexID v1, VertexID v2, VertexID v3 )
   {
-    indices->pushBack( v1 );
-    indices->pushBack( v2 );
-    indices->pushBack( v3 );
-    groups->last().count += 3;
+    indices.pushBack( v1 );
+    indices.pushBack( v2 );
+    indices.pushBack( v3 );
+    groups.last().count += 3;
   }
   
   /*
@@ -101,8 +101,8 @@ namespace GE
     }
     */
 
-    data->clear();
-    indices->clear();
+    data.clear();
+    indices.clear();
 
     //Store UV pointers into vert-per-face hedges
     //(These are later replaced with static vertex IDs)

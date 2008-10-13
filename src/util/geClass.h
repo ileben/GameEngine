@@ -50,12 +50,6 @@ namespace GE
     ClassID (SerializeManager *sm) {}
     
     ClassID ()
-    {
-      //can't set to zero or else it wouldn't be serializable!
-      d1=0; d2=0; d3=0; d4=0;
-    }
-    
-    ClassID (int zero)
       { d1=0; d2=0; d3=0; d4=0; }
     
     ClassID (Uint32 dd1, Uint16 dd2, Uint16 dd3, Uint64 dd4)
@@ -120,12 +114,15 @@ namespace GE
   Base class descriptor interface
   --------------------------------------------------------------*/
   
-  enum ClassEvent
+  namespace ClassEvent
   {
-    CLSEVT_CREATE,
-    CLSEVT_SERIALIZE
-  };
-
+    enum Enum
+    {
+      Create,
+      Serialize
+    };
+  }
+  
   class GE_API_ENTRY IClass
   {
   private:
@@ -152,7 +149,7 @@ namespace GE
     //Layer-2 (IClass2)
     virtual UintSize  getSize() = 0;
     virtual ClassPtr  getSuper() = 0;
-    virtual void      invokeCallback (ClassEvent e, void *obj, void *param) = 0;
+    virtual void      invokeCallback (ClassEvent::Enum e, void *obj, void *param) = 0;
     
     //Layer-3 (IAbstract, IReal, ISerial)
     virtual void* newInstance (int count=1) = 0;
@@ -197,7 +194,7 @@ namespace GE
     
     struct CallbackInfo
     {
-      ClassEvent     evnt;
+      ClassEvent::Enum evnt;
       ClassEventFunc func;
     };
 
@@ -205,13 +202,13 @@ namespace GE
     
   public://Callback management
 
-    void registerCallback (ClassEvent e, ClassEventFunc func)
+    void registerCallback (ClassEvent::Enum e, ClassEventFunc func)
     {
       CallbackInfo ccinfo = {e, func};
       funcs.push_back (ccinfo);
     }
-
-    void invokeCallback (ClassEvent e, void *obj, void *param)
+    
+    void invokeCallback (ClassEvent::Enum e, void *obj, void *param)
     {
       Name *nobj = (Name*) obj;
       for (UintSize f=0; f<funcs.size(); ++f) {
@@ -338,9 +335,9 @@ private:
 #define DECLARE_SERIAL_CLASS( Name ) __DECLARE( ISerial, Name, Name )
 #define DECLARE_SERIAL_SUBCLASS( Name, Super ) __DECLARE( ISerial, Name, Super )
 
-#define DEFINE_CLASS( Name ) Name::ClassDesc Name::classDesc (#Name, ClassID(0))
+#define DEFINE_CLASS( Name ) Name::ClassDesc Name::classDesc (#Name, ClassID())
 #define DEFINE_SERIAL_CLASS( Name, ID ) Name::ClassDesc Name::classDesc (#Name, ID)
-#define DEFINE_TEMPL_CLASS( Name ) template <> Name::ClassDesc Name::classDesc (#Name, ClassID(0))
+#define DEFINE_TEMPL_CLASS( Name ) template <> Name::ClassDesc Name::classDesc (#Name, ClassID())
 #define DEFINE_SERIAL_TEMPL_CLASS( Name, ID ) template <> Name::ClassDesc Name::classDesc (#Name, ID)
 
 

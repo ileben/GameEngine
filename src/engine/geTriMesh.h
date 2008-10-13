@@ -6,25 +6,15 @@
 
 namespace GE
 {
-  /*------------------------------------------------------------
-   * Static mesh is highly optimized for rendering. Note that
-   * since OpenGL doesn't allow separate indexes for vertex
-   * and texture/color/normal arrays, certain information has
-   * to be duplicated many times in the respective array in
-   * case another varies across different faces, adjacent to
-   * a certain vertex (like normals when flat-shading is used).
-   * This also makes the StaticMesh less appropriate for direct
-   * target of skinning result - since almost every uvw mapping
-   * contains many separated mesh patches, the vertices along
-   * the seam have different uvw coordinate for each adjacent
-   * face and thus the vertex coordinate has to be copied for
-   * each different uvw coordinate of that vertex. In the end
-   * this raises the complexity of the algorithm, but is not
-   * much faster than computing the skinning result in the
-   * dynamic mesh itself and then recopying it to a static
-   * mesh structure in case the rendering optimization would
-   * surpass the time needed for copying of data.
-   *------------------------------------------------------------*/
+  /*
+  ------------------------------------------------------------
+  Static mesh is highly optimized for rendering. Note that
+  since OpenGL doesn't allow separate indices for vertex
+  and texture/color/normal arrays, certain information has
+  to be duplicated many times in the respective array in
+  case another varies across different faces, adjacent to
+  a certain vertex (like normals when flat-shading is used).
+  ------------------------------------------------------------*/
   
   typedef Uint32 VertexID;
   
@@ -39,7 +29,7 @@ namespace GE
   {
     friend class Renderer;
     DECLARE_SERIAL_SUBCLASS( TriMesh, Resource );
-    DECLARE_CALLBACK( CLSEVT_SERIALIZE, serialize );
+    DECLARE_CALLBACK( ClassEvent::Serialize, serialize );
     DECLARE_END;
     
   public:
@@ -51,9 +41,9 @@ namespace GE
       VertexID   count;
     };
     
-    GenericArrayList *data;
-    ArrayList <Uint32> *indices;
-    ArrayList <IndexGroup> *groups;
+    GenericArrayList data;
+    ArrayList <Uint32> indices;
+    ArrayList <IndexGroup> groups;
     
   protected:
     
@@ -67,39 +57,24 @@ namespace GE
         
     void serialize (void *sm)
     {
-      ( (SM*)sm )->resourcePtr( &data );
-      ( (SM*)sm )->resourcePtr( &indices );
-      ( (SM*)sm )->resourcePtr( &groups );
+      ( (SM*)sm )->objectVar( &data );
+      ( (SM*)sm )->objectVar( &indices );
+      ( (SM*)sm )->objectVar( &groups );
     }
     
-    TriMesh( SerializeManager *sm )
+    TriMesh (SerializeManager *sm) : data(sm), indices(sm), groups(sm)
     {}
     
-    TriMesh()
-    {
-      data = new GenericArrayList( sizeof( TriMeshVertex ), NULL );
-      indices = new ArrayList <Uint32>;
-      groups = new ArrayList <IndexGroup>;
-    }
+    TriMesh (Uint32 vertexSize) : data (vertexSize, NULL)
+    {}
     
-    TriMesh( Uint32 vertexSize )
-    {
-      data = new GenericArrayList( vertexSize, NULL );
-      indices = new ArrayList <Uint32>;
-      groups = new ArrayList <IndexGroup>;
-    }
+    TriMesh () : data (sizeof(TriMeshVertex), NULL)
+    {}
     
-    virtual ~TriMesh ()
-    {
-      delete data;
-      delete indices;
-      delete groups;
-    }
-    
-    void addVertex( void *data );
-    void addFaceGroup( MaterialID matID );
-    void addFace( VertexID v1, VertexID v2, VertexID v3 );
-    void fromPoly (PolyMesh *m, TexMesh *uv );
+    void addVertex (void *data);
+    void addFaceGroup (MaterialID matID);
+    void addFace (VertexID v1, VertexID v2, VertexID v3);
+    void fromPoly (PolyMesh *m, TexMesh *uv);
   };
 
 

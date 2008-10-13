@@ -21,32 +21,27 @@ namespace GE
   
   class GE_API_ENTRY SkinTrack
   {
-    DECLARE_SERIAL_CLASS (SkinTrack);
-    DECLARE_CALLBACK (CLSEVT_SERIALIZE, serialize);
+    DECLARE_SERIAL_CLASS( SkinTrack );
+    DECLARE_CALLBACK( ClassEvent::Serialize, serialize );
     DECLARE_END;
     
   public:
     Float32 totalTime;
     Float32 frameTime;
-    ArrayList <SkinKey> *keys;
+    ArrayList <SkinKey> keys;
     
-    SkinTrack (SM *sm) {}
-
     void serialize (void *sm)
     {
-      ((SM*)sm)->memberVar (&totalTime);
-      ((SM*)sm)->memberVar (&frameTime);
-      ((SM*)sm)->resourcePtr (&keys);
+      ((SM*)sm)->dataVar( &totalTime );
+      ((SM*)sm)->dataVar( &frameTime );
+      ((SM*)sm)->objectVar( &keys );
     }
 
-    SkinTrack ()
-    {
-      totalTime = 0.0f;
-      frameTime = 0.0f;
-      keys = new ArrayList <SkinKey>;
-    }
+    SkinTrack (SM *sm) : keys (sm)
+    {}
 
-    ~SkinTrack () { delete keys; }
+    SkinTrack () : totalTime(0.0f), frameTime(0.0f)
+    {}
     
     Quat evalAt (Float time);
   };
@@ -58,34 +53,31 @@ namespace GE
   
   class GE_API_ENTRY SkinAnim
   {
-    DECLARE_SERIAL_CLASS (SkinAnim);
-    DECLARE_CALLBACK (CLSEVT_SERIALIZE, serialize);
+    DECLARE_SERIAL_CLASS( SkinAnim );
+    DECLARE_CALLBACK( ClassEvent::Serialize, serialize );
     DECLARE_END;
     
   public:
     CharString *name;
-    ClassArrayList <SkinTrack> *tracks;
+    ClassArrayList <SkinTrack> tracks;
     
     void serialize (void *sm)
     {
-      ((SM*)sm)->resourcePtr (&tracks);
+      ((SM*)sm)->objectVar( &tracks );
     }
     
-    SkinAnim (SM *sm) {}
+    SkinAnim (SM *sm) : tracks (sm)
+    {}
     
     SkinAnim ()
-    {
-      tracks = new ClassArrayList <SkinTrack>;
-    }
+    {}
     
     ~SkinAnim ()
     {
-      for (UintSize t=0; t<tracks->size(); ++t)
-        delete tracks->at (t);
-
-      delete tracks;
+      for (UintSize t=0; t<tracks.size(); ++t)
+        delete tracks[t];
     }
-
+    
     void evalFrame (Float time);
   };
 };

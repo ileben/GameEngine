@@ -14,17 +14,16 @@ namespace GE
   
   class GE_API_ENTRY SkinPose
   {
-    DECLARE_SERIAL_CLASS (SkinPose);
-    DECLARE_CALLBACK (CLSEVT_SERIALIZE, serialize);
+    DECLARE_SERIAL_CLASS( SkinPose );
+    DECLARE_CALLBACK( ClassEvent::Serialize, serialize );
     DECLARE_END;
     
   public:
-    ArrayList <SkinBone> *bones;
+    ArrayList <SkinBone> bones;
     
-    SkinPose (SM *sm) {}
-    SkinPose () { bones = new ArrayList <SkinBone>; }
-    ~SkinPose () { delete bones; }
-    void serialize (void *sm) { ((SM*)sm)->resourcePtr (&bones); }
+    void serialize (void *sm) { ((SM*)sm)->objectVar( &bones ); }
+    SkinPose (SM *sm) : bones (sm) {}
+    SkinPose () {}
   };
   
 }//namespace GE

@@ -7,32 +7,32 @@ namespace GE
   class GE_API_ENTRY MaxCharacter
   {
     DECLARE_SERIAL_CLASS (MaxCharacter)
-    DECLARE_CALLBACK (CLSEVT_SERIALIZE, serialize);
+    DECLARE_CALLBACK (ClassEvent::Serialize, serialize);
     DECLARE_END;
 
   public:
     
     SkinMesh *mesh;
     SkinPose *pose;
-    ClassArrayList <SkinAnim> *anims;
+    ClassArrayList <SkinAnim> anims;
     
     void serialize (void *sm)
     {
       if (mesh != NULL)
-        ((SM*)sm)->resourcePtr (&mesh);
+        ((SM*)sm)->objectPtr( &mesh );
       if (pose != NULL)
-        ((SM*)sm)->resourcePtr (&pose);
+        ((SM*)sm)->objectPtr( &pose );
       
-      ((SM*)sm)->resourcePtr (&anims);
+      ((SM*)sm)->objectVar( &anims );
     }
     
-    MaxCharacter (SM *sm) {}
+    MaxCharacter (SM *sm) : anims (sm)
+    {}
     
     MaxCharacter ()
     {
       mesh = NULL;
       pose = NULL;
-      anims = new ClassArrayList <SkinAnim>;
     }
     
     ~MaxCharacter ()
@@ -43,10 +43,8 @@ namespace GE
       if (pose != NULL)
         delete pose;
       
-      for (UintSize a=0; a<anims->size(); ++a)
-        delete anims->at (a);
-      
-      delete anims;
+      for (UintSize a=0; a<anims.size(); ++a)
+        delete anims[ a ];
     }
   };
 

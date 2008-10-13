@@ -432,44 +432,44 @@ void loadPackage (String fileName)
   character = (MaxCharacter*) sm.load( (void*)data.buffer() );
   
   SkinMesh *inMesh = character->mesh;
-  numFrames = character->anims->first()->tracks->first()->keys->size();
-  maxTime = character->anims->first()->tracks->first()->totalTime;
+  numFrames = character->anims.first()->tracks.first()->keys.size();
+  maxTime = character->anims.first()->tracks.first()->totalTime;
   
   printf ("Imported %d verts, %d faces, %d indices\n",
-          inMesh->verts->size(),
-          inMesh->faces->size(),
-          inMesh->indices->size());
+          inMesh->verts.size(),
+          inMesh->faces.size(),
+          inMesh->indices.size());
   
   //Add vertices to the mesh
   polyMesh = new SPolyMesh;
-  ArrayList <SPolyMesh::Vertex*> verts( inMesh->verts->size() );
-  for (UintSize v=0; v<inMesh->verts->size(); ++v)
+  ArrayList <SPolyMesh::Vertex*> verts( inMesh->verts.size() );
+  for (UintSize v=0; v<inMesh->verts.size(); ++v)
   {
     SPolyMesh::Vertex *vert = (SPolyMesh::Vertex*) polyMesh->addVertex();
-    vert->point = inMesh->verts->at( v ).point;
+    vert->point = inMesh->verts[v].point;
     for (int b=0; b<4; ++b) {
-      vert->boneIndex[b] = inMesh->verts->at(v).boneIndex[b];
-      vert->boneWeight[b] = inMesh->verts->at(v).boneWeight[b]; }
+      vert->boneIndex[b] = inMesh->verts[v].boneIndex[b];
+      vert->boneWeight[b] = inMesh->verts[v].boneWeight[b]; }
     verts.pushBack (vert);
   }
   
   //Add indexed faces to the mesh
   int nextIndex = 0;
-  for (UintSize f=0; f<inMesh->faces->size(); ++f)
+  for (UintSize f=0; f<inMesh->faces.size(); ++f)
   {
-    int numCorners = inMesh->faces->at( f ).numCorners;
+    int numCorners = inMesh->faces[f].numCorners;
     HMesh::Vertex **corners = new HMesh::Vertex*[ numCorners ];
     
     for (int c=0; c<numCorners; ++c) {
-      Uint32 vertIndex = inMesh->indices->at( nextIndex++ );
-      if (vertIndex > inMesh->verts->size()) {
-        printf ("Invalid vertex: %d\n", vertIndex);
+      Uint32 vertIndex = inMesh->indices[ nextIndex++ ];
+      if (vertIndex > inMesh->verts.size()) {
+        printf( "Invalid vertex: %d\n", vertIndex );
         vertIndex = 0; }
-      corners [c] = verts [vertIndex];
+      corners[c] = verts[ vertIndex ];
     }
     
     SPolyMesh::Face *face = (SPolyMesh::Face*) polyMesh->addFace( corners, numCorners );
-    if (face != NULL) face->smoothGroups = inMesh->faces->at(f).smoothGroups;
+    if (face != NULL) face->smoothGroups = inMesh->faces[f].smoothGroups;
     
     delete[] corners;
   }
@@ -488,7 +488,7 @@ void loadPackage (String fileName)
     polyPoseNormals.pushBack( ni->coord );
   
   ArrayList <SkinTriVertex> *triVerts =
-    (ArrayList <SkinTriVertex> *) triMesh->data;
+    (ArrayList <SkinTriVertex> *) &triMesh->data;
   
   for (UintSize v=0; v<triVerts->size(); ++v)
   {
@@ -497,38 +497,38 @@ void loadPackage (String fileName)
   }
 }
 
-void applyFK( UintSize frame )
+void applyFK (UintSize frame)
 {
   SkinPose *pose = character->pose;
-  SkinAnim *anim = character->anims->first();
+  SkinAnim *anim = character->anims.first();
   ArrayList <Matrix4x4> fkMats;
   ArrayList <Matrix4x4> skinMats;
   int cindex = 1;
   
-  UintSize numTracks = anim->tracks->size();
-  UintSize numKeys = anim->tracks->first()->keys->size();
+  UintSize numTracks = anim->tracks.size();
+  UintSize numKeys = anim->tracks.first()->keys.size();
   
   //Root FK matrix = local matrix
   Matrix4x4 rootWorld;
   //rootWorld.fromQuat( anim->tracks->first()->keys->at( frame ).value);
-  rootWorld.fromQuat( anim->tracks->first()->evalAt( curTime ));
-  rootWorld.setColumn( 3, pose->bones->first().localT );
-  rootWorld *= pose->bones->first().localS;
+  rootWorld.fromQuat( anim->tracks.first()->evalAt( curTime ));
+  rootWorld.setColumn( 3, pose->bones.first().localT );
+  rootWorld *= pose->bones.first().localS;
   fkMats.pushBack( rootWorld );
   
   //Walk all the bones
-  for( UintSize b=0; b<pose->bones->size(); ++b )
+  for (UintSize b=0; b<pose->bones.size(); ++b)
   {
     //Final skin matrix = FK matrix * world matrix inverse
-    SkinBone *parent = &pose->bones->at(b);
+    SkinBone *parent = &pose->bones[b];
     skinMats.pushBack( fkMats[b] * parent->worldInv );
     
     //Walk the children
-    for( Uint32 c=0; c<parent->numChildren; ++c )
+    for (Uint32 c=0; c<parent->numChildren; ++c)
     {
       //Child FK matrix = parent FK matrix * local matrix
-      SkinBone *child = &pose->bones->at( cindex );
-      SkinTrack *track = anim->tracks->at( cindex );
+      SkinBone *child = &pose->bones[ cindex ];
+      SkinTrack *track = anim->tracks[ cindex ];
       cindex++;
       
       Matrix4x4 childLocal;
@@ -568,9 +568,9 @@ void applyFK( UintSize frame )
   } */
   
   ArrayList <SkinTriVertex> *triVerts =
-    (ArrayList <SkinTriVertex> *) triMesh->data;
+    (ArrayList <SkinTriVertex> *) &triMesh->data;
   
-  for( UintSize index=0; index<triVerts->size(); ++index)
+  for (UintSize index=0; index<triVerts->size(); ++index)
   {
     SkinTriVertex &v = triVerts->at( index );
     
@@ -595,7 +595,7 @@ void applyFK( UintSize frame )
 class DD
 {
   DECLARE_SERIAL_CLASS( DD );
-  DECLARE_CALLBACK( CLSEVT_SERIALIZE, serialize );
+  DECLARE_CALLBACK( ClassEvent::Serialize, serialize );
   DECLARE_END;
 public:
   int d;
@@ -612,7 +612,7 @@ DEFINE_SERIAL_CLASS( DD, ClassID(2,2,2,2) );
 class CC
 {
   DECLARE_SERIAL_CLASS( CC );
-  DECLARE_CALLBACK( CLSEVT_SERIALIZE, serialize );
+  DECLARE_CALLBACK( ClassEvent::Serialize, serialize );
   DECLARE_END;
 public:
   ClassArrayList<DD> list;
@@ -620,7 +620,7 @@ public:
   CC (SM *sm) : list (sm) {}
   void serialize (void *sm)
   {
-    ((SM*)sm)->classVar( &list );
+    ((SM*)sm)->objectVar( &list );
   }
 };
 
@@ -650,7 +650,7 @@ public:
   CC( int a ) : dd(a) { printf( "CC::Ctor(%d)\n", a ); }
 };*/
 
-int main( int argc, char **argv )
+int main (int argc, char **argv)
 {
   /*
   ArrayList<CC> *list = new ArrayList<CC>;
@@ -667,7 +667,7 @@ int main( int argc, char **argv )
   return 0;
   */
 
-
+  /*
   CC cc;
   for( int d=0; d<5; ++d ){
     cc.list.pushBack( new DD );
@@ -680,7 +680,7 @@ int main( int argc, char **argv )
   sm.save( &cc, &data, &size );
 
   CC *ccc = (CC*) sm.load( data );
-  return 0;
+  return 0;*/
   /*
   SkinVertex vert1, vert2, vert3;
   vert1.point.set( 1,2,3 );

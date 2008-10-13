@@ -13,7 +13,7 @@ namespace GE
   class GE_API_ENTRY GenericArrayList
   {
     DECLARE_SERIAL_CLASS( GenericArrayList );
-    DECLARE_CALLBACK( CLSEVT_SERIALIZE, serialize );
+    DECLARE_CALLBACK( ClassEvent::Serialize, serialize );
     DECLARE_END;
     
   protected:
@@ -41,9 +41,9 @@ namespace GE
     virtual void serialize (void *param)
     {
       SerializeManager *sm = (SM*)param;
-      sm->memberVar( &sz );
-      sm->memberVar( &eltSize );
-      sm->memberVar( &eltClsID );
+      sm->dataVar( &sz );
+      sm->dataVar( &eltSize );
+      sm->dataVar( &eltClsID );
       
       //Make sure it is usable after loading
       if (sm->isLoading()) {
@@ -55,8 +55,8 @@ namespace GE
       //(otherwise the array is not serializable anyway)
       if (sz > 0) {
         if (eltCls != NULL)
-          sm->resourcePtrPtr( eltCls, (void***)&elements, sz );
-        else sm->dynamicPtr( &elements, sz * eltSize );
+          sm->objectArray( eltCls, (void***)&elements, sz );
+        else sm->dataPtr( &elements, sz * eltSize );
       }
       
       //Make sure it is usable after loading
@@ -106,7 +106,7 @@ namespace GE
     GenericArrayList()
     {
       this->eltSize = sizeof( Uint8 );
-      this->eltClsID = ClassID(0);
+      this->eltClsID = ClassID();
       this->eltCls = NULL;
       
       sz = 0;
@@ -123,7 +123,7 @@ namespace GE
     GenericArrayList( UintSize eltSize, ClassPtr eltCls )
     {
       this->eltSize = (Uint32) eltSize;
-      this->eltClsID = ( eltCls ? eltCls->getID() : ClassID(0) );
+      this->eltClsID = ( eltCls ? eltCls->getID() : ClassID() );
       this->eltCls = eltCls;
       
       sz = 0;
@@ -140,7 +140,7 @@ namespace GE
     GenericArrayList( UintSize newCap, UintSize eltSize, ClassPtr eltCls )
     {
       this->eltSize = (Uint32) eltSize;
-      this->eltClsID = ( eltCls ? eltCls->getID() : ClassID(0) );
+      this->eltClsID = ( eltCls ? eltCls->getID() : ClassID() );
       this->eltCls = eltCls;
       
       sz = 0;

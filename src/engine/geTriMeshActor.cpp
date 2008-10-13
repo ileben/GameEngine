@@ -41,10 +41,10 @@ namespace GE
   void TriMeshActor::renderMesh (MaterialID materialID)
   {
     //Walk material index groups
-    for (UintSize g=0; g<mesh->groups->size(); ++g)
+    for (UintSize g=0; g<mesh->groups.size(); ++g)
     {
       //Check if the material id matches
-      TriMesh::IndexGroup &grp = mesh->groups->at( g );
+      TriMesh::IndexGroup &grp = mesh->groups[ g ];
       if (materialID != grp.materialID &&
           materialID != GE_ANY_MATERIAL_ID)
         continue;
@@ -53,11 +53,11 @@ namespace GE
       glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
       
       glInterleavedArrays( GL_T2F_N3F_V3F,
-                           (GLsizei) mesh->data->elementSize(),
-                           mesh->data->buffer());
+                           (GLsizei) mesh->data.elementSize(),
+                           mesh->data.buffer());
       
       glDrawElements( GL_TRIANGLES, grp.count, GL_UNSIGNED_INT,
-                      mesh->indices->buffer() + grp.start);
+                      mesh->indices.buffer() + grp.start);
       
       glDisableClientState( GL_VERTEX_ARRAY );
       glDisableClientState( GL_NORMAL_ARRAY );

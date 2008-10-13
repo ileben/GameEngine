@@ -33,12 +33,14 @@ namespace GE
       classes = new CTable;
     
     //Check that the name is not registered yet
-    const char *cname = cls->name.c_str();//cls->name.buffer ();
-    CTable::iterator it = IClass::classes->find (cname);
+    //const char *cname = cls->name.buffer ();
+    //CTable::iterator it = IClass::classes->find (cname);
+    CTable::iterator it = IClass::classes->find (cls->name);
     ASSERT (it == IClass::classes->end());
     
     //Map name string to class pointer
-    (*IClass::classes) [cname] = cls;
+    //(*IClass::classes) [cname] = cls;
+    (*IClass::classes) [cls->name] = cls;
     
     if (cls->id != 0)
     {
@@ -193,7 +195,7 @@ namespace GE
   void
   IClass::Create (const ObjectPtr &ptr, void *data, int size)
   {
-    ptr.cls->invokeCallback (CLSEVT_CREATE, ptr.obj, data);
+    ptr.cls->invokeCallback (ClassEvent::Create, ptr.obj, data);
   }
   
 }//namespace GE

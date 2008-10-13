@@ -52,11 +52,11 @@ namespace GE
       SerializeManager *sm;
       bool simulate;
       
-      virtual void memberVar (void *ptr, UintSize size) = 0;
-      virtual void classVar (ClassPtr cls, void *ptr) = 0;
-      virtual void resourcePtr (ClassPtr cls, void **pptr) = 0;
-      virtual void resourcePtrPtr (ClassPtr cls, void ***pptr, UintSize count) = 0;
-      virtual void dynamicPtr (void **pptr, UintSize size) = 0;
+      virtual void dataVar (void *ptr, UintSize size) = 0;
+      virtual void objectVar (ClassPtr cls, void *ptr) = 0;
+      virtual void objectPtr (ClassPtr cls, void **pptr) = 0;
+      virtual void objectArray (ClassPtr cls, void ***pptr, UintSize count) = 0;
+      virtual void dataPtr (void **pptr, UintSize size) = 0;
       virtual void run (ClassPtr rootCls, void *rootPtr) = 0;
       
       void rootPtr (ClassPtr cls, void *ptr);
@@ -68,32 +68,32 @@ namespace GE
 
     class StateSerial : public State
     { public:
-      virtual void memberVar (void *ptr, UintSize size);
-      virtual void classVar (ClassPtr cls, void *ptr);
-      virtual void resourcePtr (ClassPtr cls, void **pptr);
-      virtual void resourcePtrPtr (ClassPtr cls, void ***pptr, UintSize count);
-      virtual void dynamicPtr (void **pptr, UintSize size);
+      virtual void dataVar (void *ptr, UintSize size);
+      virtual void objectVar (ClassPtr cls, void *ptr);
+      virtual void objectPtr (ClassPtr cls, void **pptr);
+      virtual void objectArray (ClassPtr cls, void ***pptr, UintSize count);
+      virtual void dataPtr (void **pptr, UintSize size);
       virtual void run (ClassPtr rootCls, void *rootPtr);
       void adjust (UintSize ptrOffset);
     };
 
     class StateSave : public StateSerial
     { public:
-      virtual void memberVar (void *ptr, UintSize size);
-      virtual void classVar (ClassPtr cls, void *ptr);
-      virtual void resourcePtr (ClassPtr cls, void **pptr);
-      virtual void resourcePtrPtr (ClassPtr cls, void ***pptr, UintSize count);
-      virtual void dynamicPtr (void **pptr, UintSize size);
+      virtual void dataVar (void *ptr, UintSize size);
+      virtual void objectVar (ClassPtr cls, void *ptr);
+      virtual void objectPtr (ClassPtr cls, void **pptr);
+      virtual void objectArray (ClassPtr cls, void ***pptr, UintSize count);
+      virtual void dataPtr (void **pptr, UintSize size);
       virtual void run (ClassPtr rootCls, void *rootPtr);
     };
 
     class StateLoad : public StateSerial
     { public:
-      virtual void memberVar (void *ptr, UintSize size);
-      virtual void classVar (ClassPtr cls, void *ptr);
-      virtual void resourcePtr (ClassPtr cls, void **pptr);
-      virtual void resourcePtrPtr (ClassPtr cls, void ***pptr, UintSize count);
-      virtual void dynamicPtr (void **pptr, UintSize size);
+      virtual void dataVar (void *ptr, UintSize size);
+      virtual void objectVar (ClassPtr cls, void *ptr);
+      virtual void objectPtr (ClassPtr cls, void **pptr);
+      virtual void objectArray (ClassPtr cls, void ***pptr, UintSize count);
+      virtual void dataPtr (void **pptr, UintSize size);
       virtual void run (ClassPtr rootCls, void *rootPtr);
     };
     
@@ -113,29 +113,29 @@ namespace GE
     bool isSaving ();
     bool isLoading ();
     
-    void memberVar (void *ptr, UintSize size);
-    void classVar (ClassPtr cls, void *ptr);
-    void resourcePtr (ClassPtr cls, void **pptr);
-    void resourcePtrPtr (ClassPtr cls, void ***pptr, UintSize count);
-    void dynamicPtr (void **pptr, UintSize size);
+    void dataVar (void *ptr, UintSize size);
+    void objectVar (ClassPtr cls, void *ptr);
+    void objectPtr (ClassPtr cls, void **pptr);
+    void objectArray (ClassPtr cls, void ***pptr, UintSize count);
+    void dataPtr (void **pptr, UintSize size);
     
     void serialize (ClassPtr cls, void *root, void **outData, UintSize *outSize);
     void save (ClassPtr cls, void *root, void **outData, UintSize *outSize);
 
-    template <class TV> void memberVar (TV *ptr)
-      { memberVar ((void*)ptr, sizeof(TV)); }
+    template <class TV> void dataVar (TV *ptr)
+      { dataVar ((void*)ptr, sizeof(TV)); }
 
-    template <class TV> void classVar (TV *ptr)
-      { classVar (Class(TV), (void*)ptr); }
+    template <class TV> void objectVar (TV *ptr)
+      { objectVar (Class(TV), (void*)ptr); }
     
-    template <class TR> void resourcePtr (TR **pptr)
-      { resourcePtr (Class(TR), (void**)pptr); }
+    template <class TR> void objectPtr (TR **pptr)
+      { objectPtr (Class(TR), (void**)pptr); }
     
-    template <class TR> void resourcePtrPtr (TR ***pptr, UintSize count=1)
-      { resourcePtrPtr (Class(TR), (void***)pptr, count); }
+    template <class TR> void objectArray (TR ***pptr, UintSize count=1)
+      { objectArray (Class(TR), (void***)pptr, count); }
     
-    template <class TD> void dynamicPtr (TD **pptr, UintSize size)
-      { dynamicPtr ((void**)pptr, size); }
+    template <class TD> void dataPtr (TD **pptr, UintSize size)
+      { dataPtr ((void**)pptr, size); }
 
     template <class TR> void serialize (TR *root, void **outData, UintSize *outSize)
       { serialize (Class(TR), root, outData, outSize); }

@@ -12,7 +12,7 @@ public:
   DECLARE_SUBCLASS (Testy, Object);
   DECLARE_PROPERTY (int, a);
   DECLARE_PROPERTY (int, b);
-  DECLARE_CALLBACK (CLSEVT_CREATE, createMe);
+  DECLARE_CALLBACK (ClassEvent::Create, createMe);
   DECLARE_END;
   
 public:
