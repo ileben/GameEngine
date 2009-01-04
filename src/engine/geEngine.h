@@ -27,6 +27,7 @@
 #include "gePolyMesh.h"
 #include "geTexMesh.h"
 #include "geTriMesh.h"
+#include "gePrimitives.h"
 
 //Actors
 #include "geActor.h"
