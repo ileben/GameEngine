@@ -24,8 +24,8 @@ namespace GE
   public:
     
     //General math
-    template <class T> inline static void Min (const T &a, const T &b);
-    template <class T> inline static void Max (const T &a, const T &b);
+    template <class T> inline static T Min (const T &a, const T &b);
+    template <class T> inline static T Max (const T &a, const T &b);
 
     //Pointer management
     inline static void PtrSet (void *pptr, UintSize address);
@@ -44,12 +44,12 @@ namespace GE
   General math
   ---------------------------------------------*/
 
-  template <class T> void Util::Min (const T &a, const T &b)
+  template <class T> T Util::Min (const T &a, const T &b)
   {
     return (a <= b) ? a : b;
   }
   
-  template <class T> void Util::Max (const T &a, const T &b)
+  template <class T> T Util::Max (const T &a, const T &b)
   {
     return (a >= b) ? a : b;
   }

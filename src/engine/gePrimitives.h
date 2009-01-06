@@ -18,7 +18,7 @@ namespace GE
     
   public:
     
-    SphereMesh ();
+    SphereMesh (int numSegments=8);
   };
 }
 
