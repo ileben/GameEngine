@@ -3,6 +3,10 @@
 
 namespace GE
 {
+  DEFINE_CLASS( CubeMesh );
+  DEFINE_CLASS( SphereMesh );
+  
+
   CubeMesh::CubeMesh ()
   {
     

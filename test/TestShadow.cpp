@@ -169,6 +169,30 @@ void renderAxes ()
   mat.end();
 }
 
+class PointMeshActor : public TriMeshActor
+{ public:
+  void renderMesh( MaterialID materialID )
+  {
+    ArrayList< TriMeshVertex > *verts =
+      (ArrayList< TriMeshVertex >*) &mesh->data;
+
+    glDisable( GL_LIGHTING );
+    //glDisable( GL_DEPTH_TEST );
+    //glEnable( GL_COLOR_MATERIAL );
+    //glColor3f( 1,1,1 );
+
+    glBegin( GL_POINTS );
+    
+    for (UintSize v=0; v<verts->size(); ++v)
+    {
+      Vector3 p = verts->at(v).point;
+      glVertex3fv( (GLfloat*) &verts->at(v).point );
+    }
+    
+    glEnd();
+  }
+};
+
 void display ()
 {
   renderer.begin();
@@ -179,7 +203,15 @@ void display ()
   
   //draw model
   //renderer.drawActor( polyActor );
-  //renderer.drawActor( triActor );
+  
+  glMatrixMode( GL_MODELVIEW );
+  glPushMatrix();
+  glScalef( 100, 100, 100 );
+  
+  renderer.drawActor( triActor );
+
+  glPopMatrix();
+
   renderAxes();
   
   //Frames per second
@@ -270,11 +302,12 @@ int main (int argc, char **argv)
   polyActor = new SPolyActor;
   polyActor->setMaterial( &mat );
   polyActor->setMesh( polyMesh );
+  */
+  triMesh = new SphereMesh;
   
-  triActor = new TriMeshActor;
+  triActor = new PointMeshActor;
   triActor->setMaterial( &mat );
   triActor->setMesh( triMesh );
-  */
   
   lblFps.setLocation( Vector2( 0.0f, (Float)resY ));
   lblFps.setColor( Vector3( 1.0f, 1.0f, 1.0f ));
