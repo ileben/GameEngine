@@ -556,7 +556,7 @@ void display()
   renderer.setCamera(&cam3D);
 
   //draw model
-  renderer.drawActor(zekko);
+  renderer.renderActor(zekko);
   
   
   //2D view (right)
@@ -647,7 +647,7 @@ void display()
   //Frames per second
   renderer.setViewport(0,0,resX2D, resY);
   renderer.setCamera(&cam2D);
-  renderer.drawWidget(&lblFps);
+  renderer.renderWidget(&lblFps);
 
   renderer.end();
 }

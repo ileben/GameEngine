@@ -273,14 +273,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\engine\gePolyMeshActor.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\engine\gePolyMeshActor.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\src\engine\gePolyMeshIters.h"
 				>
 			</File>
@@ -397,14 +389,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\engine\geTriMeshActor.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\engine\geTriMeshActor.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\src\engine\geVectors.cpp"
 				>
 			</File>
@@ -437,6 +421,34 @@
 				</File>
 				<File
 					RelativePath="..\..\src\engine\widgets\geWidget.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="actors"
+				>
+				<File
+					RelativePath="..\..\src\engine\geAxisActor.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\src\engine\geAxisActor.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\src\engine\gePolyMeshActor.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\src\engine\gePolyMeshActor.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\src\engine\geTriMeshActor.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\src\engine\geTriMeshActor.h"
 					>
 				</File>
 			</Filter>

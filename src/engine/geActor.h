@@ -15,38 +15,59 @@ namespace GE
   class GE_API_ENTRY Actor : public Object
   {
     DECLARE_SUBCLASS (Actor, Object); DECLARE_END;
-    friend class Group;
     
   private:
     
     Material *material;
+    ArrayList<Actor*> children;
 
   protected:
 
     Matrix4x4 actor2world;    
-    Group *parent;
-    Float mass;    
+    Actor *parent;
+    Float mass;
     
   public:
     
     Actor();
     ~Actor();
-    
+
+    //Transform matrix manipulation
     virtual void onMatrixChanged ();
     void mulMatrixLeft (const Matrix4x4 &m);
     void mulMatrixRight (const Matrix4x4 &m);
     void setMatrix (const Matrix4x4 &m);
+    const Matrix4x4& getMatrix () { return actor2world; }
 
+    //Transform helpers
     void translate (Float x, Float y, Float z);
     void scale (Float x, Float y, Float z);
     void scale (Float k);
     void rotate (const Vector3 &axis, Float angle);
+
+    //Material assignment
+    void setMaterial(Material *material);
+    Material* getMaterial();
     
-    const Matrix4x4& getMatrix () { return actor2world; }
+    //Scene tree handling
+    void addChild (Actor* o);
+    void removeChild (Actor* o);
+    const ArrayList<Actor*>* getChildren ();
+    Actor* getParent ();
     
-    void setMass (Float mass);
-    Float getMass ();
+    //Rendering steps (as invoked by Renderer):
+    virtual void begin ();
+    //- material begin
+    virtual void render (MaterialID materialID) {}
+    //- material end
+    //- recurse to children
+    virtual void end ();
     
+    //Physics
+    //====================================
+    //void setMass (Float mass);
+    //Float getMass ();
+    //
     //- translation speed
     //- rotation speed
     //
@@ -58,34 +79,6 @@ namespace GE
     //
     //- isInCollision()
     //- unCollide(SLIDE | REVERT)
-
-    void setMaterial(Material *material);
-    Material* getMaterial();
-    
-    //Need signed int here so we can pass in -1 as any
-    virtual void renderBegin ();
-    virtual void renderGeometry (MaterialID materialID) {}
-    virtual void renderEnd ();
-  };
-  
-  /*
-  --------------------------------------------------
-  Group object allows for building of hierarchical
-  scene tree. Its transformation affects all the
-  children objects.
-  --------------------------------------------------*/
-
-  class GE_API_ENTRY Group : public Actor
-  {
-    DECLARE_SUBCLASS (Group, Actor); DECLARE_END;
-
-  private:
-    ArrayList<Actor*> children;
-
-  public:
-    void addChild (Actor* o);
-    void removeChild (Actor* o);
-    const ArrayList<Actor*>* getChildren ();
   };
 
 

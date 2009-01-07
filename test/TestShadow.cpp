@@ -17,11 +17,7 @@ enum CameraMode
   CAMERA_MODE_ZOOM
 };
 
-ByteString data;
-
-TriMesh *triMesh;
-TriMeshActor *triActor;
-
+Actor *scene;
 FpsLabel lblFps;
 
 Camera2D cam2D;
@@ -149,20 +145,6 @@ void renderAxes ()
   glMatrixMode( GL_MODELVIEW );
   glPushMatrix();
   glScalef( 100, 100, 100 );
-  
-  glBegin( GL_LINES );
-  glColor3f ( 1, 0, 0 );
-  glVertex3f( 0, 0, 0 );
-  glVertex3f( 1, 0, 0 );
-
-  glColor3f ( 0, 1, 0 );
-  glVertex3f( 0, 0, 0 );
-  glVertex3f( 0, 1, 0 );
-
-  glColor3f ( 0, 0, 1 );
-  glVertex3f( 0, 0, 0 );
-  glVertex3f( 0, 0, 1 );
-  glEnd();
 
   glPopMatrix();
   
@@ -192,27 +174,17 @@ void display ()
 {
   renderer.begin();
   
-  //switch camera
+  //Switch 3D camera
   renderer.setViewport( 0,0,resX, resY );
   renderer.setCamera( &cam3D );
   
-  //draw model
-  //renderer.drawActor( polyActor );
+  //Render 3D stuff
+  renderer.renderActor( scene );
   
-  //glMatrixMode( GL_MODELVIEW );
-  //glPushMatrix();
-  //glScalef( 100, 100, 100 );
-  
-  renderer.drawActor( triActor );
-
-  //glPopMatrix();
-
-  renderAxes();
-  
-  //Frames per second
+  //Render 2D frames per second
   renderer.setViewport( 0,0,resX, resY );
   renderer.setCamera( &cam2D );
-  renderer.drawWidget( &lblFps );
+  renderer.renderWidget( &lblFps );
   
   renderer.end();
 }
@@ -290,23 +262,30 @@ int main (int argc, char **argv)
   //PhongMaterial mat;
   //mat.setUseLighting( false );
   mat.setSpecularity( 0.5 );
+  
+  scene = new Actor;
 
+  TriMesh *sphereMesh = new SphereMesh( 40 );
+  TriMeshActor *sphere = new TriMeshActor;
+  sphere->setMaterial( &mat );
+  sphere->setMesh( sphereMesh );
+  sphere->scale( 50 );
+  scene->addChild( sphere );
   
-  //StandardMaterial mat;
-  //mat.setCullBack( false );
-  //mat.setUseLighting( false );
-  /*
-  polyActor = new SPolyActor;
-  polyActor->setMaterial( &mat );
-  polyActor->setMesh( polyMesh );
-  */
-  triMesh = new SphereMesh( 20 );
-  
-  //triActor = new PointMeshActor;
-  triActor = new TriMeshActor;
-  triActor->setMaterial( &mat );
-  triActor->setMesh( triMesh );
-  triActor->scale( 50 );
+  TriMesh *cubeMesh = new CubeMesh();
+  TriMeshActor *cube = new TriMeshActor;
+  cube->setMaterial( &mat );
+  cube->setMesh( cubeMesh );
+  cube->scale( 40 );
+  scene->addChild( cube );
+
+  StandardMaterial axesMat;
+  axesMat.setUseLighting( false );
+  AxisActor *axes = new AxisActor;
+  axes->scale( 100 );
+  axes->setMaterial( &axesMat );
+  scene->addChild( axes );
+
   
   lblFps.setLocation( Vector2( 0.0f, (Float)resY ));
   lblFps.setColor( Vector3( 1.0f, 1.0f, 1.0f ));

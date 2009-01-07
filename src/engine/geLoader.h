@@ -23,7 +23,7 @@ namespace GE
     ArrayList<Resource*> resources;
     
     //Scene tree
-    Group *root;
+    Actor *root;
     ArrayList<Actor*> objects;
     void deleteObject( Actor *obj );
 
@@ -51,7 +51,7 @@ namespace GE
     virtual bool loadFile( const String &filename );
     
     //Getters for loaded stuff
-    Group* getRoot();
+    Actor* getRoot();
     Actor* getFirstObject(ClassPtr type);
     Resource* getFirstResource(ClassPtr type);
     const ArrayList <Resource*> * getResources();

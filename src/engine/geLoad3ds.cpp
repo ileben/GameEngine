@@ -311,7 +311,7 @@ namespace GE
     pushChunk( mainChunk );
 
     //Create root object node
-    root = new Group();
+    root = new Actor();
 
     //Process sub-chunks
     while( !isChunkDone() )

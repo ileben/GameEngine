@@ -13,9 +13,9 @@ namespace GE
    * A renderable scene - root for object tree
    *----------------------------------------------*/
 
-  class GE_API_ENTRY Scene : public Group
+  class GE_API_ENTRY Scene : public Actor
   {
-    DECLARE_SUBCLASS (Scene, Group); DECLARE_END;
+    DECLARE_SUBCLASS (Scene, Actor); DECLARE_END;
 
   private:
     Camera *cam;

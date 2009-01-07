@@ -48,12 +48,10 @@ namespace GE
 
   void Loader::deleteObject(Actor *obj)
   {
-    //delete children if group
-    if( ClassOf( obj ) == Class( Group )) {
-      const ArrayList<Actor*> *children = ((Group*)obj)->getChildren();
-      for( UintSize c=0; c<children->size(); ++c )
-        deleteObject( children->at(c) );
-    }
+    //delete children if any
+    const ArrayList<Actor*> *children = obj->getChildren();
+    for( UintSize c=0; c<children->size(); ++c )
+      deleteObject( children->at(c) );
     
     delete obj;
   }

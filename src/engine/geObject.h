@@ -6,12 +6,6 @@
 
 namespace GE
 {
-  /*---------------------------------------------
-   * Forward declarations
-   *---------------------------------------------*/
-  class Group;
-
-  
   /*----------------------------------------------
    * Object class can be automagically saved to
    * or loaded from either text or binary format

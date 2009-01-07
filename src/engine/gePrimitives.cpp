@@ -7,9 +7,55 @@ namespace GE
   DEFINE_CLASS( SphereMesh );
   
 
+  void CubeMesh::addQuad (const Vector3 &normal,
+                          int i1, int i2, int i3, int i4,
+                          Vector3 *points)
+  {
+    //First index in the final data array
+    VertexID ifirst = (VertexID) data.size();
+    
+    //Indices into the given array of points
+    int *pi[4] = { &i1, &i2, &i3, &i4 };
+    
+    //Add vertices at 4 given points from the
+    //given array and with given normal
+    for (int i=0; i<4; ++i)
+    {
+      TriMeshVertex vert;
+      vert.point = points[ *pi[i] ];
+      vert.normal = normal;
+      addVertex( &vert );
+    }
+    
+    //Add 2 triangle faces
+    addFace( ifirst+0, ifirst+1, ifirst+2 );
+    addFace( ifirst+2, ifirst+3, ifirst+0 );
+  }
+  
   CubeMesh::CubeMesh ()
   {
-    
+    //Coordinates of the 8 corners
+    Vector3 points[8] =
+    {
+      Vector3( -1, -1, -1 ),
+      Vector3( +1, -1, -1 ),
+      Vector3( +1, -1, +1 ),
+      Vector3( -1, -1, +1 ),
+
+      Vector3( -1, +1, -1 ),
+      Vector3( +1, +1, -1 ),
+      Vector3( +1, +1, +1 ),
+      Vector3( -1, +1, +1 )
+    };
+
+    //Construct mesh
+    addFaceGroup( 0 );
+    addQuad( Vector3( 0,-1, 0 ), 0,1,2,3, points );
+    addQuad( Vector3( 0, 1, 0 ), 7,6,5,4, points );
+    addQuad( Vector3( 0, 0,-1 ), 1,0,4,5, points );
+    addQuad( Vector3( 1, 0, 0 ), 2,1,5,6, points );
+    addQuad( Vector3( 0, 0, 1 ), 3,2,6,7, points );
+    addQuad( Vector3(-1, 0, 0 ), 0,3,7,4, points );
   }
   
   SphereMesh::SphereMesh (int numSegments)

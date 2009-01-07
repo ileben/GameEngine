@@ -6,6 +6,12 @@ namespace GE
   class CubeMesh : public TriMesh
   {
     DECLARE_SUBCLASS( CubeMesh, TriMesh ); DECLARE_END;
+
+  private:
+
+    void addQuad (const Vector3 &normal,
+                  int i1, int i2, int i3, int i4,
+                  Vector3 *points);
   
   public:
   

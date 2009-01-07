@@ -20,9 +20,10 @@ namespace GE
     back = color;
   }
 
-  /*----------------------------------------------------
-   * Changes the target rendering area on the GL window
-   *----------------------------------------------------*/
+  /*
+  ----------------------------------------------------
+  Changes the target rendering area on the GL window
+  ----------------------------------------------------*/
 
   void Renderer::setViewport(int x, int y, int width, int height)
   {
@@ -36,9 +37,10 @@ namespace GE
       camera->updateProjection(viewW, viewH);
   }
 
-  /*-----------------------------------------
-   * Changes the camera used for rendering
-   *-----------------------------------------*/
+  /*
+  -----------------------------------------
+  Changes the camera used for rendering
+  -----------------------------------------*/
 
   void Renderer::setCamera(Camera *camera)
   {
@@ -51,9 +53,10 @@ namespace GE
     return camera;
   }
 
-  /*--------------------------------------
-   * Initializes next frame for rendering
-   *--------------------------------------*/
+  /*
+  --------------------------------------
+  Initializes next frame for rendering
+  --------------------------------------*/
 
   void Renderer::begin()
   {
@@ -67,18 +70,27 @@ namespace GE
     glutSwapBuffers ();
   }
 
-  void Renderer::drawActor( Actor *actor )
-  {
-    actor->renderBegin();
+  /*
+  ------------------------------------------------------
+  Renderer class has authority over the rendering steps
+  invoked and their order. This is to allow for special
+  rendering passes - e.g. when a shadow map is being
+  rendered using materials (and possibly enabling other
+  shading programs) might not be desired.
+  ------------------------------------------------------*/
 
+  void Renderer::renderActor( Actor *actor )
+  {
+    actor->begin();
+    
     //Find the type of material
     Material *mat = actor->getMaterial();
     if( mat == NULL ){
       
       //Use default if none
       Material::BeginDefault();
-      actor->renderGeometry( GE_ANY_MATERIAL_ID );
-
+      actor->render( GE_ANY_MATERIAL_ID );
+      
     }else if( ClassOf(mat) == Class(MultiMaterial) ){
       
       //Render with each sub-material if multi
@@ -87,7 +99,7 @@ namespace GE
       {
         mmat->selectSubMaterial( (MaterialID)s );
         mmat->begin();
-        actor->renderGeometry( (MaterialID)s );
+        actor->render( (MaterialID)s );
         mmat->end();
       }
     
@@ -95,20 +107,18 @@ namespace GE
       
       //Render with given material
       mat->begin();
-      actor->renderGeometry( GE_ANY_MATERIAL_ID );
+      actor->render( GE_ANY_MATERIAL_ID );
       mat->end();
     }
-
-    //Recurse for each child
-    Group *grp = SafeCast( Group, actor );
-    if (grp != NULL) {
-      for (UintSize c=0; c<grp->getChildren()->size(); ++c)
-        drawActor( grp->getChildren()->at( c ) ); }
     
-    actor->renderEnd();
+    //Recurse to each child
+    for (UintSize c=0; c<actor->getChildren()->size(); ++c)
+      renderActor( actor->getChildren()->at( c ) );
+    
+    actor->end();
   }
   
-  void Renderer::drawWidget( Widget *w )
+  void Renderer::renderWidget( Widget *w )
   {
     GLProgram::UseFixed();
     glDisable( GL_DEPTH_TEST );

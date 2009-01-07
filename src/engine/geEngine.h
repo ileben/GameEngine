@@ -34,6 +34,7 @@
 #include "geScene.h"
 #include "geTriMeshActor.h"
 #include "gePolyMeshActor.h"
+#include "geAxisActor.h"
 #include "geCamera.h"
 
 //Widgets

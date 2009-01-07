@@ -27,8 +27,8 @@ namespace GE
     Camera* getCamera();
 
     void begin();
-    void drawActor(Actor *actor);
-    void drawWidget(Widget *w);
+    void renderActor(Actor *actor);
+    void renderWidget(Widget *w);
     void end();
   };
 }

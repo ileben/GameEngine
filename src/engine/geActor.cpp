@@ -5,7 +5,6 @@
 namespace GE
 {
   DEFINE_CLASS (Actor);
-  DEFINE_CLASS (Group);
 
   Actor::Actor()
   {
@@ -82,7 +81,7 @@ namespace GE
     return material;
   }
   
-  void Group::addChild (Actor* o)
+  void Actor::addChild (Actor* o)
   {
     if (o->parent != NULL)
       o->parent->removeChild( o );
@@ -91,24 +90,29 @@ namespace GE
     o->parent = this;
   }
   
-  void Group::removeChild (Actor* o)
+  void Actor::removeChild (Actor* o)
   {
     children.remove( o );
     o->parent = NULL;
   }
   
-  const ArrayList<Actor*>* Group::getChildren() {
+  const ArrayList<Actor*>* Actor::getChildren() {
     return &children;
   }
 
-  void Actor::renderBegin()
+  Actor* Actor::getParent()
+  {
+    return parent;
+  }
+
+  void Actor::begin()
   {
     glMatrixMode( GL_MODELVIEW );
     glPushMatrix();
     glMultMatrixf( (GLfloat*) getMatrix().m );
   }
   
-  void Actor::renderEnd()
+  void Actor::end()
   {
     glMatrixMode( GL_MODELVIEW );
     glPopMatrix();

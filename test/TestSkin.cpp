@@ -303,14 +303,14 @@ void display ()
   renderer.setCamera( &cam3D );
   
   //draw model
-  //renderer.drawActor( polyActor );
-  renderer.drawActor( triActor );
+  //renderer.renderActor( polyActor );
+  renderer.renderActor( triActor );
   renderAxes();
   
   //Frames per second
   renderer.setViewport( 0,0,resX, resY );
   renderer.setCamera( &cam2D );
-  renderer.drawWidget( &lblFps );
+  renderer.renderWidget( &lblFps );
   
   renderer.end();
 }
