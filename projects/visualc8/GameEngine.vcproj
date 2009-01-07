@@ -428,27 +428,27 @@
 				Name="actors"
 				>
 				<File
-					RelativePath="..\..\src\engine\geAxisActor.cpp"
+					RelativePath="..\..\src\engine\actors\geAxisActor.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\src\engine\geAxisActor.h"
+					RelativePath="..\..\src\engine\actors\geAxisActor.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\src\engine\gePolyMeshActor.cpp"
+					RelativePath="..\..\src\engine\actors\gePolyMeshActor.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\src\engine\gePolyMeshActor.h"
+					RelativePath="..\..\src\engine\actors\gePolyMeshActor.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\src\engine\geTriMeshActor.cpp"
+					RelativePath="..\..\src\engine\actors\geTriMeshActor.cpp"
 					>
 				</File>
 				<File
-					RelativePath="..\..\src\engine\geTriMeshActor.h"
+					RelativePath="..\..\src\engine\actors\geTriMeshActor.h"
 					>
 				</File>
 			</Filter>

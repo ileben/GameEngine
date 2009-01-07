@@ -18,8 +18,8 @@ GE_HEADS =\
 	geMatrix.h\
 	geObject.h\
 	gePolyMesh.h\
-	gePolyMeshActor.h\
 	gePolyMeshIters.h\
+	gePrimitives.h\
 	geProperty.h\
 	geRenderer.h\
 	geResource.h\
@@ -33,8 +33,10 @@ GE_HEADS =\
 	geTexture.h\
 	geTexMesh.h\
 	geTriMesh.h\
-	geTriMeshActor.h\
 	geVectors.h\
+	actors/geAxisActor.h\
+	actors/gePolyMeshActor.h\
+	actors/geTriMeshActor.h\
 	widgets/geFpsLabel.h\
 	widgets/geLabel.h\
 	widgets/geWidget.h
@@ -56,7 +58,7 @@ libGameEngine_la_SOURCES =\
 	geMatrix.cpp\
 	geObject.cpp\
 	gePolyMesh.cpp\
-	gePolyMeshActor.cpp\
+	gePrimitives.cpp\
 	geProperty.cpp\
 	geRenderer.cpp\
 	geResource.cpp\
@@ -70,8 +72,10 @@ libGameEngine_la_SOURCES =\
 	geTexture.cpp\
 	geTexMesh.cpp\
 	geTriMesh.cpp\
-	geTriMeshActor.cpp\
 	geVectors.cpp\
+	actors/geAxisActor.cpp\
+	actors/gePolyMeshActor.cpp\
+	actors/geTriMeshActor.cpp\
 	widgets/geFpsLabel.cpp\
 	widgets/geLabel.cpp\
 	widgets/geWidget.cpp
