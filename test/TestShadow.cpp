@@ -176,11 +176,6 @@ class PointMeshActor : public TriMeshActor
     ArrayList< TriMeshVertex > *verts =
       (ArrayList< TriMeshVertex >*) &mesh->data;
 
-    glDisable( GL_LIGHTING );
-    //glDisable( GL_DEPTH_TEST );
-    //glEnable( GL_COLOR_MATERIAL );
-    //glColor3f( 1,1,1 );
-
     glBegin( GL_POINTS );
     
     for (UintSize v=0; v<verts->size(); ++v)
@@ -204,13 +199,13 @@ void display ()
   //draw model
   //renderer.drawActor( polyActor );
   
-  glMatrixMode( GL_MODELVIEW );
-  glPushMatrix();
-  glScalef( 100, 100, 100 );
+  //glMatrixMode( GL_MODELVIEW );
+  //glPushMatrix();
+  //glScalef( 100, 100, 100 );
   
   renderer.drawActor( triActor );
 
-  glPopMatrix();
+  //glPopMatrix();
 
   renderAxes();
   
@@ -291,9 +286,11 @@ int main (int argc, char **argv)
   cam3D.setFarClipPlane( 1000.0f );
   
   //VertColorMaterial mat;
-  //StandardMaterial mat;
-  PhongMaterial mat;
+  StandardMaterial mat;
+  //PhongMaterial mat;
+  //mat.setUseLighting( false );
   mat.setSpecularity( 0.5 );
+
   
   //StandardMaterial mat;
   //mat.setCullBack( false );
@@ -303,11 +300,13 @@ int main (int argc, char **argv)
   polyActor->setMaterial( &mat );
   polyActor->setMesh( polyMesh );
   */
-  triMesh = new SphereMesh;
+  triMesh = new SphereMesh( 20 );
   
-  triActor = new PointMeshActor;
+  //triActor = new PointMeshActor;
+  triActor = new TriMeshActor;
   triActor->setMaterial( &mat );
   triActor->setMesh( triMesh );
+  triActor->scale( 50 );
   
   lblFps.setLocation( Vector2( 0.0f, (Float)resY ));
   lblFps.setColor( Vector3( 1.0f, 1.0f, 1.0f ));

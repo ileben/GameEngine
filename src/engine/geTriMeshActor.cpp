@@ -31,7 +31,7 @@ namespace GE
     return mesh;
   }
 
-  void TriMeshActor::render (MaterialID materialID)
+  void TriMeshActor::renderGeometry (MaterialID materialID)
   {
     //Draw our mesh
     if (mesh != NULL)

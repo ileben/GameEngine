@@ -19,11 +19,11 @@ namespace GE
     
   private:
     
-    Matrix4x4 actor2world;
     Material *material;
 
   protected:
-    
+
+    Matrix4x4 actor2world;    
     Group *parent;
     Float mass;    
     
@@ -33,12 +33,15 @@ namespace GE
     ~Actor();
     
     virtual void onMatrixChanged ();
-    virtual void mulMatrixLeft (const Matrix4x4 &m);
+    void mulMatrixLeft (const Matrix4x4 &m);
     void mulMatrixRight (const Matrix4x4 &m);
+    void setMatrix (const Matrix4x4 &m);
+
     void translate (Float x, Float y, Float z);
-    //void setMatrix(const Matrix4x4 &m);
-    //void mulMatrixLeft(const Matrix4x4 &m);
-    //void mulMatrixRight(const Matrix4x4 &m);
+    void scale (Float x, Float y, Float z);
+    void scale (Float k);
+    void rotate (const Vector3 &axis, Float angle);
+    
     const Matrix4x4& getMatrix () { return actor2world; }
     
     void setMass (Float mass);
@@ -60,7 +63,9 @@ namespace GE
     Material* getMaterial();
     
     //Need signed int here so we can pass in -1 as any
-    virtual void render (MaterialID materialID) {}
+    virtual void renderBegin ();
+    virtual void renderGeometry (MaterialID materialID) {}
+    virtual void renderEnd ();
   };
   
   /*
@@ -81,8 +86,6 @@ namespace GE
     void addChild (Actor* o);
     void removeChild (Actor* o);
     const ArrayList<Actor*>* getChildren ();
-
-    virtual void render (MaterialID materialID);
   };
 
 

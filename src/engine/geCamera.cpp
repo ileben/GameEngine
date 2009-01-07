@@ -84,6 +84,9 @@ namespace GE
   {
     Actor::onMatrixChanged ();
     
+    //Normalize the matrix so the precision errors don't accumulate
+    actor2world.affineNormalize();
+    
     //Camera vectors are first three columns of its transform matrix
     const Matrix4x4 &cam2world = getMatrix();
     side.set ( cam2world.m [0][0],  cam2world.m [0][1],  cam2world.m [0][2]);

@@ -69,29 +69,43 @@ namespace GE
 
   void Renderer::drawActor( Actor *actor )
   {
+    actor->renderBegin();
+
+    //Find the type of material
     Material *mat = actor->getMaterial();
     if( mat == NULL ){
       
+      //Use default if none
       Material::BeginDefault();
-      actor->render( GE_ANY_MATERIAL_ID );
+      actor->renderGeometry( GE_ANY_MATERIAL_ID );
 
     }else if( ClassOf(mat) == Class(MultiMaterial) ){
       
+      //Render with each sub-material if multi
       MultiMaterial *mmat = (MultiMaterial*) mat;
       for( UintSize s=0; s<mmat->getNumSubMaterials(); ++s )
       {
         mmat->selectSubMaterial( (MaterialID)s );
         mmat->begin();
-        actor->render( (MaterialID)s );
+        actor->renderGeometry( (MaterialID)s );
         mmat->end();
       }
-
+    
     }else{
       
+      //Render with given material
       mat->begin();
-      actor->render( GE_ANY_MATERIAL_ID );
+      actor->renderGeometry( GE_ANY_MATERIAL_ID );
       mat->end();
     }
+
+    //Recurse for each child
+    Group *grp = SafeCast( Group, actor );
+    if (grp != NULL) {
+      for (UintSize c=0; c<grp->getChildren()->size(); ++c)
+        drawActor( grp->getChildren()->at( c ) ); }
+    
+    actor->renderEnd();
   }
   
   void Renderer::drawWidget( Widget *w )

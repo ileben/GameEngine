@@ -34,7 +34,7 @@ namespace GE
     void setMesh (TriMesh *mesh);
     TriMesh* getMesh();
     
-    virtual void render (MaterialID materialID);
+    virtual void renderGeometry (MaterialID materialID);
   };
 
 

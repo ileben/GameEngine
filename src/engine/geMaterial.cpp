@@ -476,7 +476,11 @@ namespace GE
     }else glDisable (GL_CULL_FACE);
     
     //Buffers & tests
-    glEnable (GL_DEPTH_TEST);
+    glEnable( GL_DEPTH_TEST );
+    
+    //Normalize all normals so
+    //we can freely scale actors
+    glEnable( GL_NORMALIZE );
   }
   
   

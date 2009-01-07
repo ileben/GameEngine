@@ -29,7 +29,7 @@ namespace GE
     TriMeshVertex sPole;
     sPole.point = Vector3( 0.0f, -1.0f, 0.0f );
     sPole.normal = sPole.point;
-    this->addVertex( &sPole );
+    addVertex( &sPole );
     
     //Walk half-circle in XY plane bottom-up (6 o'clock up to 12 o'clock)
     for (ys=1, ya = -PI*0.5f + ystep; ys < numYSegments; ++ys, ya += ystep)
@@ -50,7 +50,7 @@ namespace GE
         TriMeshVertex vert;
         vert.point = Vector3( x,y,z );
         vert.normal = vert.point;
-        this->addVertex( &vert );
+        addVertex( &vert );
       }
     }
     
@@ -58,7 +58,41 @@ namespace GE
     TriMeshVertex nPole;
     nPole.point = Vector3( 0.0f, 1.0f, 0.0f );
     nPole.normal = nPole.point;
-    this->addVertex( &nPole );
+    addVertex( &nPole );
+
+    //Create a group to add faces to
+    addFaceGroup( 0 );
+    int s, y;
+
+    //South cap
+    for (s = 0; s < numSegments; ++s)
+    {
+      int i1 = 1 + s;
+      int i2 = 1 + ((s+1) % numSegments);
+      addFace( i1, i2, 0 );
+    }
+
+    //Side
+    for (y = 0; y < numYSegments-2; ++y )
+    {
+      for (s = 0; s < numSegments; ++s)
+      {
+        int i1 = 1 + (y+0) * numSegments + s;
+        int i2 = 1 + (y+0) * numSegments + ((s+1) % numSegments);
+        int i3 = 1 + (y+1) * numSegments + s;
+        int i4 = 1 + (y+1) * numSegments + ((s+1) % numSegments);
+        addFace( i1, i3, i2 );
+        addFace( i2, i3, i4 );
+      }
+    }
+
+    //North cap
+    for (s = 0; s < numSegments; ++s)
+    {
+      int i1 = 1 + (numYSegments-2) * numSegments + s;
+      int i2 = 1 + (numYSegments-2) * numSegments + ((s+1) % numSegments);
+      addFace( i2, i1, (VertexID)data.size()-1 );
+    }
   }
 
 }//namespace GE

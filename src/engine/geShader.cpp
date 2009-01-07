@@ -49,30 +49,44 @@ namespace GE
     vertex->create (GE_SHADER_VERTEX);
     fragment->create (GE_SHADER_FRAGMENT);
     
-    //Compile vertex shader
-    vertex->fromFile (fileVertex);
-    if (vertex->compile ()) {
-      printf ("Vertex shader compiled.\n");
-    }else{
-      printf ("Failed compiling vertex shader!");
-      char *infoLog = vertex->getInfoLog ();
-      if (infoLog != NULL) {
-        printf ("Info Log:\n%s\n", infoLog);
-        delete[] infoLog; }
+    //Load vertex source
+    if (!vertex->fromFile( fileVertex )) {
+      printf( "Failed loading vertex shader from '%s'\n",
+        fileVertex.toCSTR().buffer() );
+    }
+    else
+    {
+      //Compile vertex shader
+      if (vertex->compile ()) {
+        printf ("Vertex shader compiled.\n");
+      }else{
+        printf ("Failed compiling vertex shader!");
+        char *infoLog = vertex->getInfoLog ();
+        if (infoLog != NULL) {
+          printf ("Info Log:\n%s\n", infoLog);
+          delete[] infoLog; }
+      }
     }
     
-    //Compile fragment shader
-    fragment->fromFile (fileFragment);
-    if (fragment->compile ()) {
-      printf ("Fragment shader compiled.\n");
-    }else{
-      printf ("Failed compiling fragment shader!\n");
-      char *infoLog = fragment->getInfoLog ();
-      if (infoLog != NULL) {
-        printf ("Info Log:\n%s\n", infoLog);
-        delete[] infoLog; }
+    //Load fragment source
+    if (!fragment->fromFile( fileFragment )) {
+      printf( "Failed loading fragment shader from '%s'\n",
+        fileFragment.toCSTR().buffer() );
     }
-    
+    else
+    {
+      //Compile fragment shader
+      if (fragment->compile ()) {
+        printf ("Fragment shader compiled.\n");
+      }else{
+        printf ("Failed compiling fragment shader!\n");
+        char *infoLog = fragment->getInfoLog ();
+        if (infoLog != NULL) {
+          printf ("Info Log:\n%s\n", infoLog);
+          delete[] infoLog; }
+      }
+    }
+
     //Link shading program
     program->attach (vertex);
     program->attach (fragment);
