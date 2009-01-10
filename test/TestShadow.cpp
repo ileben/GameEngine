@@ -22,7 +22,7 @@ FpsLabel lblFps;
 
 Camera2D cam2D;
 Camera3D cam3D;
-Renderer renderer;
+Renderer *renderer;
 bool down3D;
 Vector2 lastMouse3D;
 UintSize frame = 0;
@@ -172,21 +172,23 @@ class PointMeshActor : public TriMeshActor
 
 void display ()
 {
-  renderer.begin();
+  renderer->beginFrame();
   
   //Switch 3D camera
-  renderer.setViewport( 0,0,resX, resY );
-  renderer.setCamera( &cam3D );
+  renderer->setViewport( 0,0,resX, resY );
+  renderer->setCamera( &cam3D );
   
   //Render 3D stuff
-  renderer.renderActor( scene );
+  renderer->beginScene( scene );
+  renderer->renderScene();
+  renderer->endScene();
   
   //Render 2D frames per second
-  renderer.setViewport( 0,0,resX, resY );
-  renderer.setCamera( &cam2D );
-  renderer.renderWidget( &lblFps );
+  renderer->setViewport( 0,0,resX, resY );
+  renderer->setCamera( &cam2D );
+  renderer->renderWidget( &lblFps );
   
-  renderer.end();
+  renderer->endFrame();
 }
 
 void reshape (int w, int h)
@@ -230,6 +232,7 @@ void initGlut (int argc, char **argv)
   glutIdleFunc( display );
   idleDraw = true;
   
+  /*
   Float L = 0.9f;
   GLfloat ambient[4] = {0.2f,0.2f,0.2f, 1.0f};
   GLfloat diffuse[4] = {L, L, L, 1.0f};
@@ -237,7 +240,7 @@ void initGlut (int argc, char **argv)
   glLightfv( GL_LIGHT0, GL_AMBIENT, ambient );
   glLightfv( GL_LIGHT0, GL_DIFFUSE, diffuse );
   glLightfv( GL_LIGHT0, GL_POSITION, position );
-  glEnable(  GL_LIGHT0 );
+  glEnable(  GL_LIGHT0 ); */
 }
 
 int main (int argc, char **argv)
@@ -247,36 +250,47 @@ int main (int argc, char **argv)
   
   Kernel kernel;
   kernel.enableVerticalSync( false );
+  renderer = kernel.getRenderer();
   printf( "Kernel loaded\n" );
   
   //Setup camera
   cam3D.setCenter( center );
-  cam3D.translate( 0,0,200 );
-  cam3D.orbitV( Util::DegToRad( -20 ), true );
+  cam3D.translate( 0,0,-200 );
+  cam3D.orbitV( Util::DegToRad( +20 ), true );
   cam3D.orbitH( Util::DegToRad( +45 ), true );
   cam3D.setNearClipPlane( 10.0f );
   cam3D.setFarClipPlane( 1000.0f );
+  
+  Shader *shader = new Shader;
+  shader->fromFile( "pixelphong.vert.c", "pixelphong.frag.c" );
   
   //VertColorMaterial mat;
   StandardMaterial mat;
   //PhongMaterial mat;
   //mat.setUseLighting( false );
   mat.setSpecularity( 0.5 );
+  //mat.setCullBack( false );
+  mat.setShader( shader );
   
   scene = new Actor;
 
-  TriMesh *sphereMesh = new SphereMesh( 40 );
+  //Light *light = new HeadLight;
+  Light *light = new PointLight( Vector3(120, 100, 120) );
+  scene->addChild( light );
+
+  TriMesh *sphereMesh = new SphereMesh( 20 );
   TriMeshActor *sphere = new TriMeshActor;
   sphere->setMaterial( &mat );
   sphere->setMesh( sphereMesh );
-  sphere->scale( 50 );
+  sphere->scale( 20 );
   scene->addChild( sphere );
   
   TriMesh *cubeMesh = new CubeMesh();
   TriMeshActor *cube = new TriMeshActor;
   cube->setMaterial( &mat );
   cube->setMesh( cubeMesh );
-  cube->scale( 40 );
+  cube->scale( 100, 10, 100 );
+  cube->translate( 0, -60, 0 );
   scene->addChild( cube );
 
   StandardMaterial axesMat;

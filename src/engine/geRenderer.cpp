@@ -55,17 +55,75 @@ namespace GE
 
   /*
   --------------------------------------
-  Initializes next frame for rendering
+  Rendering interface
   --------------------------------------*/
 
-  void Renderer::begin()
+  void Renderer::beginFrame()
   {
+    //Clear the framebuffer
     glClearColor (back.x, back.y, back.z, 0);
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    
+    //Initialize view to current camera
     if (camera != NULL) camera->updateView ();
   }
 
-  void Renderer::end()
+  void Renderer::beginScene( Actor *root )
+  {
+    //Init scene data
+    sceneRoot = root;
+    sceneLights.clear();
+
+    //Walk the scene tree and prepare actors
+    ArrayList<Actor*> actorStack;
+    actorStack.pushBack( root );
+    while (!actorStack.empty())
+    {
+      //Take last actor off the stack
+      Actor* act = actorStack.last();
+      actorStack.popBack();
+      
+      //Prepare the actor for rendering
+      act->prepare();
+      
+      //Store lights
+      if (act->getRenderRole() == RenderRole::Light)
+        sceneLights.pushBack( (Light*) act );
+      
+      //Put children actors onto the stack
+      for (UintSize c=0; c<act->getChildren()->size(); ++c)
+        actorStack.pushBack( act->getChildren()->at(c) );
+    }
+    
+    //Enable lights
+    for (UintSize l=0; l<sceneLights.size(); ++l)
+    {
+      //Setup transformation matrix
+      Matrix4x4 worldCtm = sceneLights[l]->getWorldMatrix();
+      glMatrixMode( GL_MODELVIEW );
+      glPushMatrix();
+      glMultMatrixf( (GLfloat*) worldCtm.m );
+      
+      //Setup light data
+      sceneLights[l]->enable( (int) l );
+      
+      glPopMatrix();
+    }
+  }
+
+  void Renderer::renderScene()
+  {
+    renderActor( sceneRoot );
+  }
+
+  void Renderer::endScene()
+  {
+    //Disable lights
+    for (UintSize l=0; l<sceneLights.size(); ++l)
+      glDisable( GL_LIGHT0 + (int) l );
+  }
+
+  void Renderer::endFrame()
   {
     glutSwapBuffers ();
   }
@@ -81,6 +139,9 @@ namespace GE
 
   void Renderer::renderActor( Actor *actor )
   {
+    //Must be enabled for rendering
+    if (!actor->isRenderable()) return;
+    
     actor->begin();
     
     //Find the type of material

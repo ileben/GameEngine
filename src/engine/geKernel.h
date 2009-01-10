@@ -53,7 +53,8 @@ namespace GE
     
     int textureUnits;
     bool hasMultitexture;
-    bool hasShaders;
+    bool hasShaderObjects;
+    bool hasFramebufferObjects;
     bool hasRangeElements;
     int maxElementsIndices;
     int maxElementsVertices;
@@ -61,6 +62,7 @@ namespace GE
     
     ArrayList<ObjectPtr> objects;
     ArraySet<KernelBuffer*> buffers;
+    Renderer *renderer;
     
   public:
     
@@ -74,6 +76,8 @@ namespace GE
     void* spawn (ClassPtr classPtr);
     void* spawn (const char *classString);
     void enableVerticalSync (bool on);
+
+    Renderer* getRenderer ();
   };
 }
 

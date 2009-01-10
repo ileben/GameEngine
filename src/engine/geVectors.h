@@ -22,8 +22,8 @@ namespace GE
   public:
     Float x, y;
     
-    Vector3 xy (Float z);
-    Vector4 xy (Float z, Float w);
+    Vector3 xy (Float z) const;
+    Vector4 xy (Float z, Float w) const;
     
     Vector2 ();
     Vector2 (Float x0, Float y0);
@@ -57,8 +57,8 @@ namespace GE
   public:
     Float x, y, z;
     
-    Vector2 xy ();
-    Vector4 xyz (Float w);
+    Vector2 xy () const;
+    Vector4 xyz (Float w) const;
     
     Vector3 ();
     Vector3 (Float x0, Float y0, Float z0);
@@ -92,8 +92,8 @@ namespace GE
   public:
     Float x, y, z, w;
     
-    Vector2 xy ();
-    Vector3 xyz ();
+    Vector2 xy () const;
+    Vector3 xyz () const;
     
     Vector4 ();
     Vector4 (Float x0, Float y0, Float z0, Float w0);
@@ -227,24 +227,24 @@ namespace GE
   Vector inline functions
   =============================================*/
   
-  inline Vector3 Vector2::xy (Float z)
+  inline Vector3 Vector2::xy (Float z) const
     { return Vector3 (x,y,z); }
   
-  inline Vector4 Vector2::xy (Float z, Float w)
+  inline Vector4 Vector2::xy (Float z, Float w) const
     { return Vector4 (x,y,z,w); }
   
   
-  inline Vector2 Vector3::xy ()
+  inline Vector2 Vector3::xy () const
     { return Vector2 (x,y); }
   
-  inline Vector4 Vector3::xyz (Float w)
+  inline Vector4 Vector3::xyz (Float w) const
     { return Vector4 (x,y,z,w); }
   
   
-  inline Vector2 Vector4::xy ()
+  inline Vector2 Vector4::xy () const
     { return Vector2 (x,y); }
   
-  inline Vector3 Vector4::xyz ()
+  inline Vector3 Vector4::xyz () const
     { return Vector3(x,y,z); }
   
   

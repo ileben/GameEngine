@@ -190,6 +190,68 @@ typedef void
 
 #endif
 
+
+/**********************************************
+GL_EXT_framebuffer_object
+***********************************************/
+
+#ifndef GL_EXT_framebuffer_object
+#define GL_FRAMEBUFFER_EXT                0x8D40
+#define GL_RENDERBUFFER_EXT               0x8D41
+#define GL_COLOR_ATTACHMENT0_EXT          0x8CE0
+#define GL_DEPTH_ATTACHMENT_EXT           0x8D00
+#define GL_STENCIL_ATTACHMENT_EXT         0x8D20
+#endif
+
+#ifndef GL_EXT_framebuffer_object
+
+typedef void
+  (APIENTRY* GE_PFGLGENFRAMEBUFFERS)
+  (GLsizei, GLuint *);
+
+typedef void
+  (APIENTRY* GE_PFGLBINDFRAMEBUFFER)
+  (GLenum, GLuint);
+
+typedef void
+  (APIENTRY* GE_PFGLDELETEFRAMEBUFFERS)
+  (GLsizei, const GLuint *);
+
+typedef GLenum
+  (APIENTRY* GE_PFGLCHECKFRAMEBUFFERSTATUS)
+  (GLenum);
+
+typedef void
+  (APIENTRY* GE_PFGLFRAMEBUFFERTEXTURE2D)
+  (GLenum, GLenum, GLenum, GLuint, GLint);
+
+typedef void
+  (APIENTRY* GE_PFGLFRAMEBUFFERRENDERBUFFER)
+  (GLenum, GLenum, GLenum, GLuint);
+
+typedef GLboolean
+  (APIENTRY* GE_PFGLISRENDERBUFFER)
+  (GLuint);
+
+typedef void
+  (APIENTRY* GE_PFGLBINDRENDERBUFFER)
+  (GLenum, GLuint);
+
+typedef void
+  (APIENTRY* GE_PFGLDELETERENDERBUFFERS)
+  (GLsizei, const GLuint *);
+
+typedef void
+  (APIENTRY* GE_PFGLGENRENDERBUFFERS)
+  (GLsizei, GLuint *);
+
+typedef void
+  (APIENTRY* GE_PFGLRENDERBUFFERSTORAGE)
+  (GLenum, GLenum, GLsizei, GLsizei);
+
+#endif
+
+
 /*******************************************************
 Function re-routing
 ********************************************************/
@@ -227,6 +289,21 @@ extern GE_PFGLUNIFORM3F                 GE_glUniform3f;
 extern GE_PFGLUNIFORM4F                 GE_glUniform4f;
 #endif
 
+#ifndef GL_EXT_framebuffer_object
+extern GE_PFGLGENFRAMEBUFFERS           GE_glGenFramebuffers;
+extern GE_PFGLBINDFRAMEBUFFER           GE_glBindFramebuffer;
+extern GE_PFGLDELETEFRAMEBUFFERS        GE_glDeleteFramebuffers;
+extern GE_PFGLCHECKFRAMEBUFFERSTATUS    GE_glCheckFramebufferStatus;
+extern GE_PFGLFRAMEBUFFERTEXTURE2D      GE_glFramebufferTexture2D;
+extern GE_PFGLFRAMEBUFFERRENDERBUFFER   GE_glFramebufferRenderbuffer;
+extern GE_PFGLISRENDERBUFFER            GE_glIsRenderbuffer;
+extern GE_PFGLBINDRENDERBUFFER          GE_glBindRenderbuffer;
+extern GE_PFGLDELETERENDERBUFFERS       GE_glDeleteRenderbuffers;
+extern GE_PFGLGENRENDERBUFFERS          GE_glGenRenderbuffers;
+extern GE_PFGLRENDERBUFFERSTORAGE       GE_glRenderbufferStorage;
+#endif
+
+
 
 #ifndef GE_NO_EXTENSION_ROUTING
 
@@ -262,6 +339,20 @@ extern GE_PFGLUNIFORM4F                 GE_glUniform4f;
 #define glUniform2f                  GE_glUniform2f
 #define glUniform3f                  GE_glUniform3f
 #define glUniform4f                  GE_glUniform4f
+#endif
+
+#ifndef GL_EXT_framebuffer_object
+#define glGenFramebuffers           GE_glGenFramebuffers;
+#define glBindFramebuffer           GE_glBindFramebuffer;
+#define glDeleteFramebuffers        GE_glDeleteFramebuffers;
+#define glCheckFramebufferStatus    GE_glCheckFramebufferStatus;
+#define glFramebufferTexture2D      GE_glFramebufferTexture2D;
+#define glFramebufferRenderbuffer   GE_glFramebufferRenderbuffer;
+#define glIsRenderbuffer            GE_glIsRenderbuffer;
+#define glBindRenderbuffer          GE_glBindRenderbuffer;
+#define glDeleteRenderbuffers       GE_glDeleteRenderbuffers;
+#define glGenRenderbuffers          GE_glGenRenderbuffers;
+#define glRenderbufferStorage       GE_glRenderbufferStorage;
 #endif
 
 #endif//!GE_NO_EXTENSION_ROUTING

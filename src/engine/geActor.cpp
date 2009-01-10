@@ -10,6 +10,7 @@ namespace GE
   {
     parent = NULL;
     material = NULL;
+    renderable = true;
   }
 
   Actor::~Actor ()
@@ -39,6 +40,20 @@ namespace GE
     actor2world = m;
     onMatrixChanged();
   }
+
+  Matrix4x4 Actor::getWorldMatrix ()
+  {
+    Actor *p = parent;
+    Matrix4x4 world = getMatrix();
+    
+    while (p != NULL)
+    {
+      world = p->getMatrix() * world;
+      p = p->getParent();
+    }
+    
+    return world;
+  }
   
   void Actor::translate (Float x, Float y, Float z)
   {
@@ -66,6 +81,16 @@ namespace GE
     Matrix4x4 m;
     m.fromAxisAngle( axis, angle );
     mulMatrixLeft( m );
+  }
+
+  void Actor::lookAt (const Vector3 &look, const Vector3 &up)
+  {
+    //Assume look is to be the zAxis in world space
+    Vector3 xAxis = Vector::Cross( up, look );
+    Vector3 yAxis = Vector::Cross( look, xAxis );
+    actor2world.setColumn( 0, xAxis.xyz(0.0f) );
+    actor2world.setColumn( 1, yAxis.xyz(0.0f) );
+    actor2world.setColumn( 2, look.xyz(0.0f) );
   }
 
   void Actor::setMaterial(Material *mat)
@@ -105,14 +130,29 @@ namespace GE
     return parent;
   }
 
-  void Actor::begin()
+  void Actor::setIsRenderable (bool r)
+  {
+    renderable = r;
+  }
+
+  bool Actor::isRenderable ()
+  {
+    return renderable;
+  }
+
+  RenderRole::Enum Actor::getRenderRole()
+  {
+    return RenderRole::Geometry;
+  }
+
+  void Actor::begin ()
   {
     glMatrixMode( GL_MODELVIEW );
     glPushMatrix();
     glMultMatrixf( (GLfloat*) getMatrix().m );
   }
   
-  void Actor::end()
+  void Actor::end ()
   {
     glMatrixMode( GL_MODELVIEW );
     glPopMatrix();

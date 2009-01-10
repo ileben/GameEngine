@@ -2,7 +2,7 @@
 #define __GESCENE_H
 
 namespace GE
-{ 
+{
   /*--------------------------------------------
    * Forward declarations
    *--------------------------------------------*/
@@ -18,11 +18,12 @@ namespace GE
     DECLARE_SUBCLASS (Scene, Actor); DECLARE_END;
 
   private:
+    Scene();
     Camera *cam;
 
   public:
 
-    void bindCamera(Camera *cam);
+    void bindCamera( Camera *cam );
   };
 }
 

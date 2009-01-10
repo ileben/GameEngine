@@ -421,11 +421,11 @@ namespace GE
       
       //Ambient color
       Vector4 ambient = ambientColor.xyz (1.0f);
-      glMaterialfv (GL_FRONT, GL_AMBIENT, (Float*) &ambient);
+      glMaterialfv (GL_FRONT_AND_BACK, GL_AMBIENT, (Float*) &ambient);
       
       //Diffuse color
       Vector4 diffuse = diffuseColor.xyz (opacity);
-      glMaterialfv (GL_FRONT, GL_DIFFUSE, (Float*) &diffuse);
+      glMaterialfv (GL_FRONT_AND_BACK, GL_DIFFUSE, (Float*) &diffuse);
       
       //Specularity
       if (specularity > 0.0f) {
@@ -436,17 +436,17 @@ namespace GE
         
         //Specular color
         Vector4 spec = (specularColor * specularity).xyz(1);
-        glMaterialfv (GL_FRONT, GL_SPECULAR, (Float*) &spec);
+        glMaterialfv (GL_FRONT_AND_BACK, GL_SPECULAR, (Float*) &spec);
         
         //GL uses an integer value for maximum glossiness
         int shininess = (int)(glossiness * _GL_MAX_SHININESS);
-        glMateriali (GL_FRONT, GL_SHININESS, shininess);
+        glMateriali (GL_FRONT_AND_BACK, GL_SHININESS, shininess);
         
       }else{
         
         //Just make specular color invisible
         Vector4 specular (0,0,0,0);
-        glMaterialfv (GL_FRONT, GL_SPECULAR, (Float*)&specular);
+        glMaterialfv (GL_FRONT_AND_BACK, GL_SPECULAR, (Float*)&specular);
       }
       
     }else{

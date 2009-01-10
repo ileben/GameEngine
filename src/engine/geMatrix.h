@@ -187,6 +187,9 @@ namespace GE
     void setScale (Float x, Float y, Float z);
     void setScale (const Vector3 &v);
     void setScale (Float k);
+
+    void setPerspectiveFovLH (Float fovY, Float aspect, Float zNear, Float zFar);
+    void setPerspectiveFovRH (Float fovY, Float aspect, Float zNear, Float zFar);
     
     void set (Float m00, Float m10, Float m20, Float m30,
               Float m01, Float m11, Float m21, Float m31,

@@ -70,6 +70,7 @@ namespace GE
   #define PI       3.1415926535f
   #define COS(a)   ((Float)std::cos(a))
   #define SIN(a)   ((Float)std::sin(a))
+  #define TAN(a)   ((Float)std::tan(a))
   #define ACOS(a)  ((Float)std::acos(a))
   #define SQRT(a)  ((Float)std::sqrt(a))
   #define FLOOR(a) ((Float)std::floor(a))

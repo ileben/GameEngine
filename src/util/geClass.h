@@ -294,6 +294,7 @@ type to be implemented by comparing the class factory pointer.
 
 #define __DECLARE( Interface, Name, Super ) \
 public: \
+friend class Interface <Name, Super >; \
 \
 class CLASS_DLL_ACTION ClassDesc : public Interface <Name, Super > { public: \
   \
@@ -315,6 +316,7 @@ class CLASS_DLL_ACTION ClassDesc : public Interface <Name, Super > { public: \
   } \
 }; \
 \
+friend class ClassDesc; \
 static ClassDesc classDesc; \
 \
 static ClassPtr GetClassPtr() { \

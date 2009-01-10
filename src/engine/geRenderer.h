@@ -3,13 +3,23 @@
 
 namespace GE
 {
-  /*----------------------------------------
-   * Renders a scene or single object
-   *----------------------------------------*/
+  /*
+  ------------------------------------------
+  Forward declaractions
+  ------------------------------------------*/
+  
+  class Light;
+
+  /*
+  -----------------------------------------
+  Performs scene traversal and rendering
+  -----------------------------------------*/
 
   class GE_API_ENTRY Renderer
   {
     DECLARE_CLASS (Renderer); DECLARE_END;
+    
+  private:
 
     int viewX;
     int viewY;
@@ -17,19 +27,29 @@ namespace GE
     int viewH;
     Vector3 back;
     Camera *camera;
+    
+    //Scene data
+    Actor *sceneRoot;
+    ArrayList< Light* > sceneLights;
 
+    //Rendering
+    void renderActor (Actor *actor);
+    
   public:
+    
     Renderer();
-
-    void setBackColor(const Vector3 &back);
-    void setViewport(int x, int y, int width, int height);
-    void setCamera(Camera *camera);
+    
+    void setBackColor (const Vector3 &back);
+    void setViewport (int x, int y, int width, int height);
+    void setCamera (Camera *camera);
     Camera* getCamera();
-
-    void begin();
-    void renderActor(Actor *actor);
-    void renderWidget(Widget *w);
-    void end();
+    
+    void beginFrame ();
+    void beginScene (Actor *root);
+    void renderScene ();
+    void renderWidget (Widget *w);
+    void endScene ();
+    void endFrame ();
   };
 }
 

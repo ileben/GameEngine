@@ -16,7 +16,7 @@ namespace GE
   {
     DECLARE_SUBABSTRACT (Camera, Actor); DECLARE_END;
     friend class Renderer;
-
+    
   private:
     virtual void updateProjection(int w, int h) = 0;
     virtual void updateView() = 0;
@@ -43,13 +43,13 @@ namespace GE
     Vector3 center;
     Matrix4x4 cPlus;
     Matrix4x4 cMinus;
-
+    
     void updateProjection(int w, int h);
     void updateView();
 
   public:
+
     Camera3D();
-    
     virtual void onMatrixChanged ();
     
     void setFov(Float fieldOfView);
@@ -93,7 +93,7 @@ namespace GE
     void updateView();
 
   public:
-
+    
     void zoom(Float factor);
     void pan(Float x, Float y);
   };

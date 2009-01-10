@@ -73,6 +73,20 @@ GE_PFGLUNIFORM3F                 GE_glUniform3f = NULL;
 GE_PFGLUNIFORM4F                 GE_glUniform4f = NULL;
 #endif
 
+#ifndef GL_EXT_framebuffer_object
+GE_PFGLGENFRAMEBUFFERS           GE_glGenFramebuffers = NULL;
+GE_PFGLBINDFRAMEBUFFER           GE_glBindFramebuffer = NULL;
+GE_PFGLDELETEFRAMEBUFFERS        GE_glDeleteFramebuffers = NULL;
+GE_PFGLCHECKFRAMEBUFFERSTATUS    GE_glCheckFramebufferStatus = NULL;
+GE_PFGLFRAMEBUFFERTEXTURE2D      GE_glFramebufferTexture2D = NULL;
+GE_PFGLFRAMEBUFFERRENDERBUFFER   GE_glFramebufferRenderbuffer = NULL;
+GE_PFGLISRENDERBUFFER            GE_glIsRenderbuffer = NULL;
+GE_PFGLBINDRENDERBUFFER          GE_glBindRenderbuffer = NULL;
+GE_PFGLDELETERENDERBUFFERS       GE_glDeleteRenderbuffers = NULL;
+GE_PFGLGENRENDERBUFFERS          GE_glGenRenderbuffers = NULL;
+GE_PFGLRENDERBUFFERSTORAGE       GE_glRenderbufferStorage = NULL;
+#endif
+
 GE_PFGLSWAPINTERVAL glSwapInterval = NULL;
 
 /*=================================================
@@ -274,7 +288,7 @@ namespace GE
     if (checkExtension(ext, "GL_ARB_shader_objects") &&
         checkExtension(ext, "GL_ARB_vertex_program") &&
         checkExtension(ext, "GL_ARB_fragment_program")) {
-      hasShaders = true;
+      hasShaderObjects = true;
       
       #ifndef GL_VERSION_2_0
       GE_glCreateProgram = (GE_PFGLCREATEPROGRAM)
@@ -332,10 +346,52 @@ namespace GE
           GE_glUniform3i==NULL || GE_glUniform4i==NULL ||
           GE_glUniform1f==NULL || GE_glUniform2f==NULL ||
           GE_glUniform3f==NULL || GE_glUniform4f==NULL)
-        hasShaders = false;
+        hasShaderObjects = false;
       #endif
       
-    }else{ hasShaders = false; }
+    }else{ hasShaderObjects = false; }
+
+    /*
+    Check framebuffer objects
+    *****************************************/
+
+    if (checkExtension(ext, "GL_EXT_framebuffer_objects")) {
+      hasFramebufferObjects = true;
+      
+      #ifndef GL_EXT_framebuffer_object
+      GE_glGenFramebuffers = (GE_PFGLGENFRAMEBUFFERS)
+        getProcAddress ("glGenFramebuffersEXT");
+      GE_glBindFramebuffer = (GE_PFGLBINDFRAMEBUFFER)
+        getProcAddress ("glBindFramebufferEXT");
+      GE_glDeleteFramebuffers = (GE_PFGLDELETEFRAMEBUFFERS)
+        getProcAddress ("glDeleteFramebuffersEXT");
+      GE_glCheckFramebufferStatus = (GE_PFGLCHECKFRAMEBUFFERSTATUS)
+        getProcAddress ("glCheckFramebufferStatusEXT");
+      GE_glFramebufferTexture2D = (GE_PFGLFRAMEBUFFERTEXTURE2D)
+        getProcAddress ("glFramebufferTexture2DEXT");
+      GE_glFramebufferRenderbuffer = (GE_PFGLFRAMEBUFFERRENDERBUFFER)
+        getProcAddress ("glFramebufferRenderbufferEXT");
+      GE_glIsRenderbuffer = (GE_PFGLISRENDERBUFFER)
+        getProcAddress ("glIsRenderbufferEXT");
+      GE_glBindRenderbuffer = (GE_PFGLBINDRENDERBUFFER)
+        getProcAddress ("glBindRenderbufferEXT");
+      GE_glDeleteRenderbuffers = (GE_PFGLDELETERENDERBUFFERS)
+        getProcAddress ("glDeleteRenderbuffersEXT");
+      GE_glGenRenderbuffers = (GE_PFGLGENRENDERBUFFERS)
+        getProcAddress ("glGenRenderbuffersEXT");
+      GE_glRenderbufferStorage = (GE_PFGLRENDERBUFFERSTORAGE)
+        getProcAddress ("glRenderbufferStorageEXT");
+
+      if (GE_glGenFramebuffers==NULL || GE_glBindFramebuffer==NULL ||
+          GE_glBindFramebuffer==NULL || GE_glDeleteFramebuffers==NULL ||
+          GE_glCheckFramebufferStatus==NULL || GE_glFramebufferTexture2D==NULL ||
+          GE_glFramebufferRenderbuffer==NULL || GE_glIsRenderbuffer==NULL ||
+          GE_glBindRenderbuffer==NULL || GE_glDeleteRenderbuffers==NULL ||
+          GE_glGenRenderbuffers==NULL || GE_glRenderbufferStorage==NULL)
+        hasFramebufferObjects = false;
+      #endif
+
+    }else{ hasFramebufferObjects = false; }
     
     /*
     Check vertical sync control
@@ -360,10 +416,14 @@ namespace GE
     
     //Load extensions
     this->loadExtensions();
+    
+    //Create renderer
+    renderer = new Renderer;
   }
   
   Kernel::~Kernel()
   {
+    delete renderer;
   }
   /*
   void* Kernel::spawnFromPackage (ClassPtr cn)
@@ -389,6 +449,11 @@ namespace GE
   {
     if (glSwapInterval)
       glSwapInterval(on ? 1 : 0);
+  }
+
+  Renderer* Kernel::getRenderer ()
+  {
+    return renderer;
   }
 
 }//namespace GE

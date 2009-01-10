@@ -102,7 +102,7 @@ namespace GE
     GLint status = 0;
     glCompileShader (handle);
     
-    return true; //TODO: glGetObjectParameterivARB doesn't work on linux
+    //return true; //TODO: glGetObjectParameterivARB doesn't work on linux
     glGetObjectParameterivARB ((GLhandleARB)handle,
                                GL_OBJECT_COMPILE_STATUS_ARB, &status);
     
@@ -186,7 +186,7 @@ namespace GE
   {
     GLint status1 = 1, status2 = 1, status3 = 0;
     glLinkProgram (handle);
-    return true; //TODO: glGetObjectParameterivARB doesn't work on linux
+    //return true; //TODO: glGetObjectParameterivARB doesn't work on linux
     
     if (vertex != NULL)
       glGetObjectParameterivARB ((GLhandleARB) vertex->handle,

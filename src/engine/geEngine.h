@@ -32,10 +32,11 @@
 //Actors
 #include "geActor.h"
 #include "geScene.h"
-#include "geTriMeshActor.h"
-#include "gePolyMeshActor.h"
-#include "geAxisActor.h"
 #include "geCamera.h"
+#include "geLight.h"
+#include "actors/geTriMeshActor.h"
+#include "actors/gePolyMeshActor.h"
+#include "actors/geAxisActor.h"
 
 //Widgets
 #include "widgets/geWidget.h"

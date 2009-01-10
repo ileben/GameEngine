@@ -136,7 +136,7 @@ FpsLabel lblFps;
 
 Camera2D cam2D;
 Camera3D cam3D;
-Renderer renderer;
+Renderer *renderer;
 bool down3D;
 Vector2 lastMouse3D;
 int boneColorIndex = 0;
@@ -296,23 +296,25 @@ void renderAxes ()
 
 void display ()
 {
-  renderer.begin();
+  renderer->beginFrame();
   
   //switch camera
-  renderer.setViewport( 0,0,resX, resY );
-  renderer.setCamera( &cam3D );
+  renderer->setViewport( 0,0,resX, resY );
+  renderer->setCamera( &cam3D );
   
   //draw model
-  //renderer.renderActor( polyActor );
-  renderer.renderActor( triActor );
+  renderer->beginScene( triActor );
+  //renderer->beginScene( polyActor );
+  renderer->renderScene( );
+  renderer->endScene();
   renderAxes();
   
   //Frames per second
-  renderer.setViewport( 0,0,resX, resY );
-  renderer.setCamera( &cam2D );
-  renderer.renderWidget( &lblFps );
+  renderer->setViewport( 0,0,resX, resY );
+  renderer->setCamera( &cam2D );
+  renderer->renderWidget( &lblFps );
   
-  renderer.end();
+  renderer->endFrame();
 }
 
 void reshape (int w, int h)
@@ -714,11 +716,12 @@ int main (int argc, char **argv)
   
   Kernel kernel;
   kernel.enableVerticalSync( false );
+  renderer = kernel.getRenderer();
   printf( "Kernel loaded\n" );
   
   //Setup camera
   cam3D.setCenter( center );
-  cam3D.translate( 0,0,200 );
+  cam3D.translate( 0,0,-200 );
   cam3D.orbitV( Util::DegToRad( -20 ), true );
   cam3D.orbitH( Util::DegToRad( -30 ), true );
   cam3D.setNearClipPlane( 10.0f );

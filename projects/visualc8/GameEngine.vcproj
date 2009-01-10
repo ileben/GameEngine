@@ -213,6 +213,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\engine\geLight.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\engine\geLight.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\engine\geLoad3ds.cpp"
 				>
 			</File>

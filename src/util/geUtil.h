@@ -26,6 +26,7 @@ namespace GE
     //General math
     template <class T> inline static T Min (const T &a, const T &b);
     template <class T> inline static T Max (const T &a, const T &b);
+    template <class T> inline static T Clamp (const T &a, const T &min, const T &max);
 
     //Pointer management
     inline static void PtrSet (void *pptr, UintSize address);
@@ -52,6 +53,11 @@ namespace GE
   template <class T> T Util::Max (const T &a, const T &b)
   {
     return (a >= b) ? a : b;
+  }
+
+  template <class T> T Util::Clamp (const T &a, const T &min, const T &max)
+  {
+    return Util::Min( Util::Max( a, min ), max );
   }
   
   /*

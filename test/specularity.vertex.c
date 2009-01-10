@@ -5,22 +5,22 @@ varying vec4 ambient, diffuse;
 
 void main()
 {
-  vec4 eyevert;
+  vec3 eyevert;
   vec3 aux;
   
   //Normal to eye coordinates
   normal = normalize(gl_NormalMatrix * gl_Normal);
   
   //Vertex to eye coordinates (light already)
-  eyevert = gl_ModelViewMatrix * gl_Vertex;
+  eyevert = vec3( gl_ModelViewMatrix * gl_Vertex );
   
   //Direction from vertex to light source
-  aux = vec3(gl_LightSource[0].position - eyevert);
+  aux = gl_LightSource[0].position.xyz - eyevert;
   light = normalize(aux);
   
   //Vector at half-way between light and look
   //halfvec = normalize(gl_LightSource[0].halfVector.xyz); //not working on Intel GMA 950!!!
-  halfvec = normalize( light + vec3(0,0,1) );
+  halfvec = normalize( light - normalize( eyevert ) );
   
   //Light ambient combined with material ambient color
   ambient = gl_FrontMaterial.ambient * gl_LightSource[0].ambient;

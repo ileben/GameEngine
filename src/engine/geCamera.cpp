@@ -154,7 +154,12 @@ namespace GE
   {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(fov, (GLfloat)w/h, nearClip, farClip);
+    //gluPerspective(fov, (GLfloat)w/h, nearClip, farClip);
+    Matrix4x4 m;
+    m.setPerspectiveFovLH( fov, (float)w/h, nearClip, farClip );
+    glLoadMatrixf( (GLfloat*) m.m );
+    
+    glFrontFace( GL_CW );
   }
 
   void Camera3D::updateView()

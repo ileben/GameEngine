@@ -3,6 +3,16 @@
 
 namespace GE
 {
+  namespace RenderRole
+  {
+    enum Enum
+    {
+      Geometry,
+      Light,
+      Camera
+    };
+  }
+
   /*
   -------------------------------------------------
   Actor represents a single node to be placed
@@ -16,35 +26,42 @@ namespace GE
   {
     DECLARE_SUBCLASS (Actor, Object); DECLARE_END;
     
-  private:
+    friend class Kernel;
+    friend class Renderer;
     
+  private:
+
     Material *material;
     ArrayList<Actor*> children;
-
+    virtual RenderRole::Enum getRenderRole();
+    
   protected:
 
-    Matrix4x4 actor2world;    
+    Matrix4x4 actor2world;
     Actor *parent;
     Float mass;
+    bool renderable;
     
   public:
-    
-    Actor();
-    ~Actor();
 
+    Actor();
+    virtual ~Actor();
+    
     //Transform matrix manipulation
     virtual void onMatrixChanged ();
     void mulMatrixLeft (const Matrix4x4 &m);
     void mulMatrixRight (const Matrix4x4 &m);
     void setMatrix (const Matrix4x4 &m);
     const Matrix4x4& getMatrix () { return actor2world; }
-
+    Matrix4x4 getWorldMatrix ();
+    
     //Transform helpers
     void translate (Float x, Float y, Float z);
     void scale (Float x, Float y, Float z);
     void scale (Float k);
     void rotate (const Vector3 &axis, Float angle);
-
+    void lookAt (const Vector3 &look, const Vector3 &up);
+    
     //Material assignment
     void setMaterial(Material *material);
     Material* getMaterial();
@@ -54,8 +71,11 @@ namespace GE
     void removeChild (Actor* o);
     const ArrayList<Actor*>* getChildren ();
     Actor* getParent ();
+    void setIsRenderable (bool renderable);
+    bool isRenderable ();
     
     //Rendering steps (as invoked by Renderer):
+    virtual void prepare () {}
     virtual void begin ();
     //- material begin
     virtual void render (MaterialID materialID) {}

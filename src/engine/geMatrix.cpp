@@ -98,6 +98,48 @@ namespace GE
          0, 0, 0, 1);
   }
 
+  /*
+  ----------------------------------------------
+  Left-handed projection into [-1, 1] ^ 3 cube
+  (looking down the positive Z axis)
+  ----------------------------------------------*/
+
+  void Matrix4x4::setPerspectiveFovLH (Float fovY, Float aspect, Float zNear, Float zFar)
+  {
+    Float t = 1.0f / TAN( fovY / 2 );
+    Float A = t * aspect;
+    Float B = t;
+    Float C = (zFar + zNear) / (zFar - zNear);
+    Float D = -(2 * zFar * zNear) / (zFar - zNear);
+    Float E = 1;
+
+    set (A, 0, 0, 0,
+         0, B, 0, 0,
+         0, 0, C, D,
+         0, 0, E, 0);
+  }
+  
+  /*
+  ----------------------------------------------
+  Right-handed projection into [-1, 1] ^ 3 cube
+  (looking down the negative Z axis)
+  ----------------------------------------------*/
+  
+  void Matrix4x4::setPerspectiveFovRH (Float fovY, Float aspect, Float zNear, Float zFar)
+  {
+    Float t = 1.0f / TAN( fovY / 2 );
+    Float A = t * aspect;
+    Float B = t;
+    Float C = (zFar + zNear) / (zNear - zFar);
+    Float D = (2 * zFar * zNear) / (zNear - zFar);
+    Float E = -1;
+    
+    set (A, 0, 0, 0,
+         0, B, 0, 0,
+         0, 0, C, D,
+         0, 0, E, 0);
+  }
+  
   Vector4 Matrix4x4::getColumn (int col)
   {
     return Vector4 (m[col][0],
