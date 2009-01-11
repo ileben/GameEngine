@@ -16,15 +16,11 @@ namespace GE
 
   Camera3D::Camera3D()
   {
-    //glFrustum (and gluPerspective) set up the projection
-    //matrix so that we are looking down the negative Z
-    //axis when the modelview matrix is identity
     eye .set (0,0,0);
     side.set (1,0,0);
     up  .set (0,1,0);
-    look.set (0,0,-1);
+    look.set (0,0,1);
     
-    //Projection parameters
     fov = 45.0f;
     nearClip = 0.1f;
     farClip = 300.0f;
@@ -91,13 +87,8 @@ namespace GE
     const Matrix4x4 &cam2world = getMatrix();
     side.set ( cam2world.m [0][0],  cam2world.m [0][1],  cam2world.m [0][2]);
     up  .set ( cam2world.m [1][0],  cam2world.m [1][1],  cam2world.m [1][2]);
-    look.set (-cam2world.m [2][0], -cam2world.m [2][1], -cam2world.m [2][2]);
+    look.set ( cam2world.m [2][0],  cam2world.m [2][1],  cam2world.m [2][2]);
     eye .set ( cam2world.m [3][0],  cam2world.m [3][1],  cam2world.m [3][2]);
-    
-    //glFrustum (and gluPerspective) set up the projection
-    //matrix so that we are looking down the negative Z
-    //axis when the modelview matrix is identity so we
-    //invert the look vector
   }
 
   void Camera3D::roll(Float radang)
@@ -161,7 +152,7 @@ namespace GE
     
     glFrontFace( GL_CW );
   }
-
+  
   void Camera3D::updateView()
   {
     Matrix4x4 world2cam = getMatrix().affineInverse();
