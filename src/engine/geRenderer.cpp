@@ -91,7 +91,7 @@ namespace GE
         sceneLights.pushBack( (Light*) act );
       
       //Put children actors onto the stack
-      for (UintSize c=0; c<act->getChildren()->size(); ++c)
+      for (int c=(int)act->getChildren()->size(); c > 0; --c)
         actorStack.pushBack( act->getChildren()->at(c) );
     }
     

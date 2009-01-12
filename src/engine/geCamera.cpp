@@ -157,11 +157,10 @@ namespace GE
 
   void Camera3D::updateProjection(int w, int h)
   {
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    
     Matrix4x4 m;
     m.setPerspectiveFovLH( fov, (float)w/h, nearClip, farClip );
+
+    glMatrixMode(GL_PROJECTION);
     glLoadMatrixf( (GLfloat*) m.m );
     
     glLightModeli( GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE );
@@ -171,6 +170,7 @@ namespace GE
   void Camera3D::updateView()
   {
     Matrix4x4 world2cam = getMatrix().affineInverse();
+
     glMatrixMode(GL_MODELVIEW);
     glLoadMatrixf ((GLfloat*) world2cam.m);
   }

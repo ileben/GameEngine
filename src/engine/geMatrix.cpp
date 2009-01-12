@@ -107,7 +107,7 @@ namespace GE
   void Matrix4x4::setPerspectiveFovLH (Float fovY, Float aspect, Float zNear, Float zFar)
   {
     Float t = 1.0f / TAN( fovY / 2 );
-    Float A = t * aspect;
+    Float A = t / aspect;
     Float B = t;
     Float C = (zFar + zNear) / (zFar - zNear);
     Float D = -(2 * zFar * zNear) / (zFar - zNear);
@@ -128,7 +128,7 @@ namespace GE
   void Matrix4x4::setPerspectiveFovRH (Float fovY, Float aspect, Float zNear, Float zFar)
   {
     Float t = 1.0f / TAN( fovY / 2 );
-    Float A = t * aspect;
+    Float A = t / aspect;
     Float B = t;
     Float C = (zFar + zNear) / (zNear - zFar);
     Float D = (2 * zFar * zNear) / (zNear - zFar);
