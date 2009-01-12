@@ -140,7 +140,7 @@ namespace GE
          0, 0, E, 0);
   }
   
-  Vector4 Matrix4x4::getColumn (int col)
+  Vector4 Matrix4x4::getColumn (int col) const
   {
     return Vector4 (m[col][0],
                     m[col][1],

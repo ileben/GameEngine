@@ -91,6 +91,7 @@ namespace GE
     actor2world.setColumn( 0, xAxis.xyz(0.0f) );
     actor2world.setColumn( 1, yAxis.xyz(0.0f) );
     actor2world.setColumn( 2, look.xyz(0.0f) );
+    actor2world.affineNormalize();
   }
 
   void Actor::setMaterial(Material *mat)

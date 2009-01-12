@@ -140,16 +140,31 @@ namespace GE
     mzoom.setTranslation (look * dist);
     mulMatrixLeft (mzoom);
   }
-  
+
+  /*
+  -----------------------------------------------------------
+  A left-handed projection matrix is set up, making the
+  camera look down the positive Z axis.
+
+  By default OpenGL uses a constant eye-to-vertex vector
+  as if the viewpoint was at an infinite distance. This
+  vector is (regardless of the handedness of the projection
+  matrix) assumed to point towards negative Z axis. This
+  makes specular highlights invisible when the projection
+  matrix is left-handed. As a workaround the more realistic
+  local-viewer model is enabled.
+  -----------------------------------------------------------*/
+
   void Camera3D::updateProjection(int w, int h)
   {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    //gluPerspective(fov, (GLfloat)w/h, nearClip, farClip);
+    
     Matrix4x4 m;
     m.setPerspectiveFovLH( fov, (float)w/h, nearClip, farClip );
     glLoadMatrixf( (GLfloat*) m.m );
     
+    glLightModeli( GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE );
     glFrontFace( GL_CW );
   }
   

@@ -332,8 +332,8 @@ namespace GE
   
   StandardMaterial::StandardMaterial()
   {
+    ambientColor.set (0.2f, 0.2f, 0.2f);
     diffuseColor.set (1, 1, 1);
-    ambientColor.set (0, 0, 0);
     specularColor.set (1, 1, 1);
     specularity = 0.0f;
     glossiness = 0.5f;

@@ -171,8 +171,8 @@ void drag3D (int x, int y)
   Vector2 diff = Vector2( (Float)x,(Float)y ) - lastMouse3D;
   float eyeDist = ( cam3D.getEye() - center ).norm();
   
-  Float angleH = -diff.x * (2*PI) / 400;
-  Float angleV = -diff.y * (2*PI) / 400;
+  Float angleH = diff.x * (2*PI) / 400;
+  Float angleV = diff.y * (2*PI) / 400;
   Float panH = -diff.x * ( eyeDist * 0.002f );
   Float panV =  diff.y * ( eyeDist * 0.002f );
   Float zoom = -diff.y * ( eyeDist * 0.01f );

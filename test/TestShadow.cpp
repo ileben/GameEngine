@@ -20,6 +20,7 @@ enum CameraMode
 Actor *scene;
 FpsLabel lblFps;
 
+Light *light;
 Camera2D cam2D;
 Camera3D cam3D;
 Renderer *renderer;
@@ -79,8 +80,11 @@ void drag3D (int x, int y)
 
   case CAMERA_MODE_PAN:
 
-    cam3D.panH( panH );
-    cam3D.panV( panV );
+    //cam3D.panH( panH );
+    //cam3D.panV( panV );
+    light->translate( panH, 0, panV );
+    light->lookAt( center - light->getMatrix().getColumn(3).xyz(), Vector3(0,1,0) );
+
     break;
   }
   
@@ -230,7 +234,7 @@ int main (int argc, char **argv)
   
   //Setup camera
   cam3D.setCenter( center );
-  cam3D.translate( 0,0,-200 );
+  cam3D.translate( 0,0,-250 );
   cam3D.orbitV( Util::DegToRad( +20 ), true );
   cam3D.orbitH( Util::DegToRad( +45 ), true );
   cam3D.setNearClipPlane( 10.0f );
@@ -250,9 +254,11 @@ int main (int argc, char **argv)
   scene = new Actor;
 
   //Light *light = new HeadLight;
-  Light *light = new PointLight( Vector3(-120, 100, -120) );
+  //Light *light = new DirLight( Vector3(1,-1,1) );
+  //Light *light = new PointLight( Vector3(-120,100,-120) );
+  light = new SpotLight( Vector3(-100,100,-100), Vector3(1,-1,1), 30, 0 );
   scene->addChild( light );
-
+  
   TriMesh *sphereMesh = new SphereMesh( 20 );
   TriMeshActor *sphere = new TriMeshActor;
   sphere->setMaterial( &mat );
