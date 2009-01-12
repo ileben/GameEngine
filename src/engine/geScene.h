@@ -18,7 +18,6 @@ namespace GE
     DECLARE_SUBCLASS (Scene, Actor); DECLARE_END;
 
   private:
-    Scene();
     Camera *cam;
 
   public:

@@ -17,7 +17,8 @@ EXTRA_DIST =\
   showcase.cpp \
   test.cpp
 
-noinst_PROGRAMS = TexPainter TestSkin
+#noinst_PROGRAMS = TexPainter TestSkin
+noinst_PROGRAMS = TestShadow
 
 TexPainter_CXXFLAGS = @GE_CXXFLAGS@ -I${prefix}/include -I$(top_builddir)/src/
 TexPainter_LDFLAGS = @GE_LDFLAGS@ -L${prefix}/lib 
@@ -28,3 +29,9 @@ TestSkin_CXXFLAGS = @GE_CXXFLAGS@ -I${prefix}/include -I$(top_builddir)/src/
 TestSkin_LDFLAGS = @GE_LDFLAGS@ -L${prefix}/lib
 TestSkin_LDADD = @GE_LDADD@ ${GE_LIBS}
 TestSkin_SOURCES = TestSkin.cpp
+
+TestShadow_CXXFLAGS = @GE_CXXFLAGS@ -I${prefix}/include -I$(top_builddir)/src/
+TestShadow_LDFLAGS = @GE_LDFLAGS@ -L${prefix}/lib
+TestShadow_LDADD = @GE_LDADD@ ${GE_LIBS}
+TestShadow_SOURCES = TestShadow.cpp
+

@@ -11,6 +11,7 @@ GE_HEADS =\
 	geHmeshAdjiter.h\
 	geHmeshDataiter.h\
 	geKernel.h\
+	geLight.h\
 	geLoad3ds.h\
 	geLoadObj.h\
 	geLoader.h\
@@ -50,6 +51,7 @@ libGameEngine_la_SOURCES =\
 	geCharacter.cpp\
 	geHMesh.cpp\
 	geKernel.cpp\
+	geLight.cpp\
 	geLoad3ds.cpp\
 	geLoadObj.cpp\
 	geLoadTex.cpp\

@@ -136,21 +136,6 @@ void keyboard (unsigned char key, int x, int y)
   }
 }
 
-void renderAxes ()
-{
-  StandardMaterial mat;
-  mat.setUseLighting( false );
-  mat.begin();
-
-  glMatrixMode( GL_MODELVIEW );
-  glPushMatrix();
-  glScalef( 100, 100, 100 );
-
-  glPopMatrix();
-  
-  mat.end();
-}
-
 class PointMeshActor : public TriMeshActor
 { public:
   void renderMesh( MaterialID materialID )
@@ -231,16 +216,6 @@ void initGlut (int argc, char **argv)
   glutMotionFunc( drag );
   glutIdleFunc( display );
   idleDraw = true;
-  
-  /*
-  Float L = 0.9f;
-  GLfloat ambient[4] = {0.2f,0.2f,0.2f, 1.0f};
-  GLfloat diffuse[4] = {L, L, L, 1.0f};
-  GLfloat position[4] = {0.0f, 0.0f, 0.0f, 1.0f};
-  glLightfv( GL_LIGHT0, GL_AMBIENT, ambient );
-  glLightfv( GL_LIGHT0, GL_DIFFUSE, diffuse );
-  glLightfv( GL_LIGHT0, GL_POSITION, position );
-  glEnable(  GL_LIGHT0 ); */
 }
 
 int main (int argc, char **argv)
