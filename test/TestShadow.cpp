@@ -161,6 +161,7 @@ class PointMeshActor : public TriMeshActor
 
 void display ()
 {
+  renderer->renderShadowMap( light, scene );
   renderer->beginFrame();
   
   //Switch 3D camera
@@ -176,6 +177,7 @@ void display ()
   renderer->setViewport( 0,0,resX, resY );
   renderer->setCamera( &cam2D );
   renderer->renderWidget( &lblFps );
+  //renderer->renderShadowQuad();
   
   renderer->endFrame();
 }
@@ -232,6 +234,8 @@ int main (int argc, char **argv)
   renderer = kernel.getRenderer();
   printf( "Kernel loaded\n" );
   
+  printf( "GLError: 0x%x\n", glGetError());
+
   //Setup camera
   cam3D.setCenter( center );
   cam3D.translate( 0,0,-250 );
@@ -239,10 +243,24 @@ int main (int argc, char **argv)
   cam3D.orbitH( Util::DegToRad( +45 ), true );
   cam3D.setNearClipPlane( 10.0f );
   cam3D.setFarClipPlane( 1000.0f );
+
+  printf( "GLError: 0x%x\n", glGetError());
+  
+  Image *img = new Image;
+  img->readFile( "smile.jpg", "JPG" );
+  
+  Texture *tex = new Texture;
+  tex->fromImage( img );
+
+  printf( "GLError: 0x%x\n", glGetError());
   
   Shader *shader = new Shader;
   shader->fromFile( "pixelphong.vert.c", "pixelphong.frag.c" );
-  
+  printf( "GLError: 0x%x\n", glGetError());
+  //shader->registerUniform( "sampler", GE_UNIFORM_TEXTURE, 1 );
+
+  printf( "GLError: 0x%x\n", glGetError());
+
   //VertColorMaterial mat;
   StandardMaterial mat;
   //PhongMaterial mat;
@@ -250,13 +268,14 @@ int main (int argc, char **argv)
   mat.setSpecularity( 0.5 );
   //mat.setCullBack( false );
   mat.setShader( shader );
+  //mat.setProperty( "sampler", tex );
   
   scene = new Actor;
 
   //Light *light = new HeadLight;
   //Light *light = new DirLight( Vector3(1,-1,1) );
   //Light *light = new PointLight( Vector3(-120,100,-120) );
-  light = new SpotLight( Vector3(-100,100,-100), Vector3(1,-1,1), 30, 0 );
+  light = new SpotLight( Vector3(-50,50,-50), Vector3(1,-1,1), 60, 0 );
   scene->addChild( light );
   
   TriMesh *sphereMesh = new SphereMesh( 20 );
@@ -270,7 +289,7 @@ int main (int argc, char **argv)
   TriMeshActor *cube = new TriMeshActor;
   cube->setMaterial( &mat );
   cube->setMesh( cubeMesh );
-  cube->scale( 100, 10, 100 );
+  cube->scale( 300, 10, 300 );
   cube->translate( 0, -60, 0 );
   scene->addChild( cube );
 
@@ -280,7 +299,6 @@ int main (int argc, char **argv)
   axes->scale( 100 );
   axes->setMaterial( &axesMat );
   scene->addChild( axes );
-
   
   lblFps.setLocation( Vector2( 0.0f, (Float)resY ));
   lblFps.setColor( Vector3( 1.0f, 1.0f, 1.0f ));

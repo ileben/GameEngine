@@ -10,5 +10,6 @@ void main (void)
 	//Use this for POINT light
 	light = gl_LightSource[0].position.xyz - point;
 	
+  gl_TexCoord[0] = gl_TextureMatrix[0] * gl_ModelViewMatrix * gl_Vertex;
   gl_Position  = gl_ModelViewProjectionMatrix * gl_Vertex;
 }

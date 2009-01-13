@@ -29,11 +29,16 @@ namespace GE
     Camera *camera;
     
     //Scene data
+    bool shadowInit;
+    Uint32 shadowMap;
+    Uint32 shadowMap2;
+    Uint32 shadowFB;
     Actor *sceneRoot;
     ArrayList< Light* > sceneLights;
 
     //Rendering
     void renderActor (Actor *actor);
+    void renderActorShadow( Actor *actor );
     
   public:
     
@@ -44,6 +49,9 @@ namespace GE
     void setCamera (Camera *camera);
     Camera* getCamera();
     
+    void renderShadowMap (Light *light, Actor *root);
+    void renderShadowQuad ();
+
     void beginFrame ();
     void beginScene (Actor *root);
     void renderScene ();

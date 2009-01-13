@@ -103,9 +103,9 @@ namespace GE
     Vector4 gldir( 0, 0, 1, 0 );
 
     //Angle must be clamped to GL accepted values
-    Float glangleOuter = Util::Clamp( angleOuter, 0.0f , 90.0f );
+    Float glangleOuter = Util::Clamp( angleOuter * 0.5f, 0.0f , 90.0f );
     Float glangleInner = (angleInner < 0.0f) ? angleOuter : Util::Min( angleInner, angleOuter );
-
+    
     glLightfv( GL_LIGHT0 + index, GL_POSITION, (GLfloat*) &glpos );
     glLightfv( GL_LIGHT0 + index, GL_SPOT_DIRECTION, (GLfloat*) &gldir );
     glLightf(  GL_LIGHT0 + index, GL_SPOT_CUTOFF, glangleOuter );
@@ -126,7 +126,7 @@ namespace GE
   Matrix4x4 SpotLight::getProjection (Float nearClip, Float farClip)
   {
     Matrix4x4 m;
-    m.setPerspectiveFovLH( angleOuter, 1.0f, nearClip, farClip );
+    m.setPerspectiveFovLH( Util::DegToRad( angleOuter ), 1.0f, nearClip, farClip );
     return m;
   }
 

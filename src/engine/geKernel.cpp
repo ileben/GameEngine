@@ -355,7 +355,7 @@ namespace GE
     Check framebuffer objects
     *****************************************/
 
-    if (checkExtension(ext, "GL_EXT_framebuffer_objects")) {
+    if (checkExtension(ext, "GL_EXT_framebuffer_object")) {
       hasFramebufferObjects = true;
       
       #ifndef GL_EXT_framebuffer_object

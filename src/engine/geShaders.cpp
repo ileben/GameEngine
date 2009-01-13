@@ -187,14 +187,14 @@ namespace GE
     GLint status1 = 1, status2 = 1, status3 = 0;
     glLinkProgram (handle);
     //return true; //TODO: glGetObjectParameterivARB doesn't work on linux
-    
+    /*
     if (vertex != NULL)
       glGetObjectParameterivARB ((GLhandleARB) vertex->handle,
                                  GL_OBJECT_LINK_STATUS_ARB, &status1);
     if (fragment != NULL)
       glGetObjectParameterivARB ((GLhandleARB) fragment->handle,
                                  GL_OBJECT_LINK_STATUS_ARB, &status2);
-    
+    */
     glGetObjectParameterivARB ((GLhandleARB) handle,
                               GL_OBJECT_LINK_STATUS_ARB, &status3);
     

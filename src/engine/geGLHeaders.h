@@ -342,17 +342,17 @@ extern GE_PFGLRENDERBUFFERSTORAGE       GE_glRenderbufferStorage;
 #endif
 
 #ifndef GL_EXT_framebuffer_object
-#define glGenFramebuffers           GE_glGenFramebuffers;
-#define glBindFramebuffer           GE_glBindFramebuffer;
-#define glDeleteFramebuffers        GE_glDeleteFramebuffers;
-#define glCheckFramebufferStatus    GE_glCheckFramebufferStatus;
-#define glFramebufferTexture2D      GE_glFramebufferTexture2D;
-#define glFramebufferRenderbuffer   GE_glFramebufferRenderbuffer;
-#define glIsRenderbuffer            GE_glIsRenderbuffer;
-#define glBindRenderbuffer          GE_glBindRenderbuffer;
-#define glDeleteRenderbuffers       GE_glDeleteRenderbuffers;
-#define glGenRenderbuffers          GE_glGenRenderbuffers;
-#define glRenderbufferStorage       GE_glRenderbufferStorage;
+#define glGenFramebuffers           GE_glGenFramebuffers
+#define glBindFramebuffer           GE_glBindFramebuffer
+#define glDeleteFramebuffers        GE_glDeleteFramebuffers
+#define glCheckFramebufferStatus    GE_glCheckFramebufferStatus
+#define glFramebufferTexture2D      GE_glFramebufferTexture2D
+#define glFramebufferRenderbuffer   GE_glFramebufferRenderbuffer
+#define glIsRenderbuffer            GE_glIsRenderbuffer
+#define glBindRenderbuffer          GE_glBindRenderbuffer
+#define glDeleteRenderbuffers       GE_glDeleteRenderbuffers
+#define glGenRenderbuffers          GE_glGenRenderbuffers
+#define glRenderbufferStorage       GE_glRenderbufferStorage
 #endif
 
 #endif//!GE_NO_EXTENSION_ROUTING

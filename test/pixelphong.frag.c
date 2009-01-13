@@ -1,6 +1,7 @@
 varying vec3 normal;
 varying vec3 light; //Use this for POINT light
 varying vec3 point;
+uniform sampler2D sampler;
 
 void main (void)
 {
@@ -9,6 +10,15 @@ void main (void)
 	vec4 diffuse = gl_FrontMaterial.diffuse * gl_LightSource[0].diffuse;
 	vec4 specular = gl_FrontMaterial.specular * gl_LightSource[0].specular;
 	vec4 Color = ambient;
+
+  vec3 shadowCoord = gl_TexCoord[0].xyz / gl_TexCoord[0].w;
+  shadowCoord = shadowCoord * 0.5 + vec3(0.5,0.5,0.5);
+
+  vec4 shadowValue = texture2D( sampler, shadowCoord.xy );
+  if (shadowCoord.x >= 0.0 && shadowCoord.x <= 1.0 &&
+      shadowCoord.y >= 0.0 && shadowCoord.y <= 1.0)
+    if (shadowCoord.z > shadowValue.r)
+      diffuse *= 0.2;
 
   //Input vectors
 	vec3 N = normalize( normal );
