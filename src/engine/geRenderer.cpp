@@ -137,7 +137,7 @@ namespace GE
   
   void Renderer::renderShadowMap (Light *light, Actor *root)
   {
-    const Uint32 S = 512;
+    const Uint32 S = 2048;
 
     if (!shadowInit)
     {
@@ -154,8 +154,8 @@ namespace GE
       glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
       
       glGenFramebuffers( 1, &shadowFB );
-      glBindFramebuffer( GL_FRAMEBUFFER_EXT, shadowFB );
-      glFramebufferTexture2D( GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, shadowMap, 0 );
+      glBindFramebuffer( GL_FRAMEBUFFER, shadowFB );
+      glFramebufferTexture2D( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadowMap, 0 );
       
       shadowInit = true;
     }
@@ -169,17 +169,19 @@ namespace GE
     glEnable( GL_POLYGON_OFFSET_FILL );
     glPolygonOffset( 1.0f, 2.0f );
 
-    glBindFramebuffer( GL_FRAMEBUFFER_EXT, shadowFB );
+    glBindFramebuffer( GL_FRAMEBUFFER, shadowFB );
     glDrawBuffer( GL_NONE );
     glReadBuffer( GL_NONE );
     
     glClear( GL_DEPTH_BUFFER_BIT );
 
-    //Setup view form the lights perspective
+    //Setup view from the lights perspective
+    glViewport( 0, 0, S, S );
+
     Matrix4x4 lightProj = light->getProjection( 1.0f, 1000.0f );
     glMatrixMode( GL_PROJECTION );
     glLoadMatrixf( (GLfloat*) lightProj.m );
-
+    
     Matrix4x4 lightView = light->getMatrix().affineInverse();
     glMatrixMode( GL_MODELVIEW );
     glLoadMatrixf( (GLfloat*) lightView.m );
@@ -189,7 +191,7 @@ namespace GE
 
     //Restore state
     glDisable( GL_POLYGON_OFFSET_FILL );
-    glBindFramebuffer( GL_FRAMEBUFFER_EXT, 0 );
+    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 
 
     ////////////////////////////////////////////////////////

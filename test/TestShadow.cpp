@@ -34,6 +34,8 @@ float maxTime = 0.0f;
 int resY = 512;
 int resX = 512;
 Vector3 center(0, 0, 0);
+Vector3 min(0, 0, 0);
+Vector3 max(0, 0, 0);
 CameraMode cameraMode;
 
 //Makes toggling idle draw easier
@@ -251,20 +253,14 @@ int main (int argc, char **argv)
   
   Texture *tex = new Texture;
   tex->fromImage( img );
-
-  printf( "GLError: 0x%x\n", glGetError());
   
   Shader *shader = new Shader;
   shader->fromFile( "pixelphong.vert.c", "pixelphong.frag.c" );
-  printf( "GLError: 0x%x\n", glGetError());
   //shader->registerUniform( "sampler", GE_UNIFORM_TEXTURE, 1 );
-
-  printf( "GLError: 0x%x\n", glGetError());
 
   //VertColorMaterial mat;
   StandardMaterial mat;
   //PhongMaterial mat;
-  //mat.setUseLighting( false );
   mat.setSpecularity( 0.5 );
   //mat.setCullBack( false );
   mat.setShader( shader );

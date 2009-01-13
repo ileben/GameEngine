@@ -132,6 +132,9 @@ TriMeshActor *triActor;
 ArrayList <Vector3> triPosePoints;
 ArrayList <Vector3> triPoseNormals;
 
+Actor *scene;
+Light *light;
+
 FpsLabel lblFps;
 
 Camera2D cam2D;
@@ -147,7 +150,9 @@ float maxTime = 0.0f;
 
 int resY = 512;
 int resX = 512;
-Vector3 center(0, 0, 0);
+Vector3 center( 0,0,0 );
+Vector3 boundsMin( 0,0,0 );
+Vector3 boundsMax( 0,0,0 );
 CameraMode cameraMode;
 
 //Makes toggling idle draw easier
@@ -194,8 +199,13 @@ void drag3D (int x, int y)
 
   case CAMERA_MODE_PAN:
 
-    cam3D.panH( panH );
-    cam3D.panV( panV );
+    //cam3D.panH( panH );
+    //cam3D.panV( panV );
+    Vector3 flatLook = cam3D.getLook();
+    flatLook.y = 0.0f; flatLook.normalize();
+    Vector3 t = flatLook * -panV + cam3D.getSide() * -panH;
+    light->translate( t.x, t.y, t.z );
+    light->lookAt( center - light->getMatrix().getColumn(3).xyz(), Vector3(0,1,0) );
     break;
   }
   
@@ -265,37 +275,9 @@ void keyboard (unsigned char key, int x, int y)
   }
 }
 
-void renderAxes ()
-{
-  StandardMaterial mat;
-  mat.setUseLighting( false );
-  mat.begin();
-
-  glMatrixMode( GL_MODELVIEW );
-  glPushMatrix();
-  glScalef( 100, 100, 100 );
-  
-  glBegin( GL_LINES );
-  glColor3f ( 1, 0, 0 );
-  glVertex3f( 0, 0, 0 );
-  glVertex3f( 1, 0, 0 );
-
-  glColor3f ( 0, 1, 0 );
-  glVertex3f( 0, 0, 0 );
-  glVertex3f( 0, 1, 0 );
-
-  glColor3f ( 0, 0, 1 );
-  glVertex3f( 0, 0, 0 );
-  glVertex3f( 0, 0, 1 );
-  glEnd();
-
-  glPopMatrix();
-  
-  mat.end();
-}
-
 void display ()
 {
+  renderer->renderShadowMap( light, scene );
   renderer->beginFrame();
   
   //switch camera
@@ -303,11 +285,9 @@ void display ()
   renderer->setCamera( &cam3D );
   
   //draw model
-  renderer->beginScene( triActor );
-  //renderer->beginScene( polyActor );
-  renderer->renderScene( );
+  renderer->beginScene( scene );
+  renderer->renderScene();
   renderer->endScene();
-  renderAxes();
   
   //Frames per second
   renderer->setViewport( 0,0,resX, resY );
@@ -326,7 +306,9 @@ void reshape (int w, int h)
 void findCenter ()
 {
   int count = 0;
-  center.set (0,0,0);
+  center.set( 0,0,0 );
+  boundsMin.set( 0,0,0 );
+  boundsMax.set( 0,0,0 );
 
   PolyMesh *mesh = polyActor->getMesh();
   for (PolyMesh::VertIter v(mesh); !v.end(); ++v) {
@@ -357,15 +339,6 @@ void initGlut (int argc, char **argv)
   glutMotionFunc( drag );
   glutIdleFunc( display );
   idleDraw = true;
-  
-  Float L = 0.9f;
-  GLfloat ambient[4] = {0.2f,0.2f,0.2f, 1.0f};
-  GLfloat diffuse[4] = {L, L, L, 1.0f};
-  GLfloat position[4] = {0.0f, 0.0f, 0.0f, 1.0f};
-  glLightfv( GL_LIGHT0, GL_AMBIENT, ambient );
-  glLightfv( GL_LIGHT0, GL_DIFFUSE, diffuse );
-  glLightfv( GL_LIGHT0, GL_POSITION, position );
-  glEnable(  GL_LIGHT0 );
 }
 
 class VertColorMaterial : public StandardMaterial { public:
@@ -722,19 +695,23 @@ int main (int argc, char **argv)
   //Setup camera
   cam3D.setCenter( center );
   cam3D.translate( 0,0,-200 );
-  cam3D.orbitV( Util::DegToRad( -20 ), true );
-  cam3D.orbitH( Util::DegToRad( -30 ), true );
+  cam3D.orbitV( Util::DegToRad( 20 ), true );
+  cam3D.orbitH( Util::DegToRad( 30 ), true );
   cam3D.setNearClipPlane( 10.0f );
   cam3D.setFarClipPlane( 1000.0f );
   
+  Shader *shader = new Shader;
+  shader->fromFile( "pixelphong.vert.c", "pixelphong.frag.c" );
+  //shader->registerUniform( "sampler", GE_UNIFORM_TEXTURE, 1 );
+
   //VertColorMaterial mat;
-  //StandardMaterial mat;
-  PhongMaterial mat;
+  StandardMaterial mat;
+  //PhongMaterial mat;
   mat.setSpecularity( 0.5 );
-  
-  //StandardMaterial mat;
   //mat.setCullBack( false );
-  //mat.setUseLighting( false );
+  mat.setShader( shader );
+
+  scene = new Actor;
   
   loadPackage( "bub.pak" );
   
@@ -745,8 +722,28 @@ int main (int argc, char **argv)
   triActor = new TriMeshActor;
   triActor->setMaterial( &mat );
   triActor->setMesh( triMesh );
+  triActor->rotate( Vector3(0,1,0), Util::DegToRad(180) );
+  scene->addChild( triActor );
   
   applyFK( 0 );
+
+  TriMesh *cubeMesh = new CubeMesh;
+  TriMeshActor *cube = new TriMeshActor;
+  cube->setMaterial( &mat );
+  cube->setMesh( cubeMesh );
+  cube->scale( 300, 10, 300 );
+  cube->translate( 0, -70, 0 );
+  scene->addChild( cube );
+
+  StandardMaterial axesMat;
+  axesMat.setUseLighting( false );
+  AxisActor *axes = new AxisActor;
+  axes->scale( 100 );
+  axes->setMaterial( &axesMat );
+  //scene->addChild( axes );
+
+  light = new SpotLight( Vector3(-200,200,-200), Vector3(1,-1,1), 60, 0 );
+  scene->addChild( light );
   
   lblFps.setLocation( Vector2( 0.0f, (Float)resY ));
   lblFps.setColor( Vector3( 1.0f, 1.0f, 1.0f ));

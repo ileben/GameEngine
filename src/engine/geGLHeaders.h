@@ -196,11 +196,11 @@ GL_EXT_framebuffer_object
 ***********************************************/
 
 #ifndef GL_EXT_framebuffer_object
-#define GL_FRAMEBUFFER_EXT                0x8D40
-#define GL_RENDERBUFFER_EXT               0x8D41
-#define GL_COLOR_ATTACHMENT0_EXT          0x8CE0
-#define GL_DEPTH_ATTACHMENT_EXT           0x8D00
-#define GL_STENCIL_ATTACHMENT_EXT         0x8D20
+#define GL_FRAMEBUFFER                    0x8D40
+#define GL_RENDERBUFFER                   0x8D41
+#define GL_COLOR_ATTACHMENT0              0x8CE0
+#define GL_DEPTH_ATTACHMENT               0x8D00
+#define GL_STENCIL_ATTACHMENT             0x8D20
 #endif
 
 #ifndef GL_EXT_framebuffer_object
