@@ -81,6 +81,38 @@ typedef void
 #endif
 
 /*******************************************************
+GL_VERSION_1_5
+********************************************************/
+
+#ifndef GL_VERSION_1_5
+#define GL_ARRAY_BUFFER                   0x8892
+#define GL_ELEMENT_ARRAY_BUFFER           0x8893
+#define GL_DYNAMIC_DRAW                   0x88E8
+typedef ptrdiff_t                         GLintptr;
+typedef ptrdiff_t                         GLsizeiptr;
+#endif
+
+#ifndef GL_VERSION_1_5
+
+typedef void
+  (APIENTRY *GE_PFGLGENBUFFERS)
+  (GLsizei n, GLuint * buffers);
+
+typedef void
+  (APIENTRY *GE_PFGLBINDBUFFER)
+  (GLenum target, GLuint buffer);
+
+typedef void
+  (APIENTRY *GE_PFGLBUFFERDATA)
+  (GLenum, GLsizeiptr, const GLvoid *, GLenum);
+
+typedef void
+  (APIENTRY *GE_PFGLBUFFERSUBDATA)
+  (GLenum, GLintptr, GLsizeiptr, const GLvoid *);
+
+#endif
+
+/*******************************************************
 GL_ARB_shader_objects
 ********************************************************/
 
@@ -265,6 +297,13 @@ extern GE_PFGLACTIVETEXTURE             GE_glActiveTexture;
 extern GE_PFGLMULTITEXCOORD2F           GE_glMultiTexCoord2f;
 #endif
 
+#ifndef GL_VERSION_1_5
+extern GE_PFGLGENBUFFERS                GE_glGenBuffers;
+extern GE_PFGLBINDBUFFER                GE_glBindBuffer;
+extern GE_PFGLBUFFERDATA                GE_glBufferData;
+extern GE_PFGLBUFFERSUBDATA             GE_glBufferSubData;
+#endif
+
 #ifndef GL_VERSION_2_0
 extern GE_PFGLCREATEPROGRAM             GE_glCreateProgram;
 extern GE_PFGLCREATESHADER              GE_glCreateShader;
@@ -314,6 +353,13 @@ extern GE_PFGLRENDERBUFFERSTORAGE       GE_glRenderbufferStorage;
 #ifndef GL_VERSION_1_3
 #define glActiveTexture              GE_glActiveTexture
 #define glMultiTexCoord2f            GE_glMultiTexCoord2f
+#endif
+
+#ifndef GL_VERSION_1_5
+#define glGenBuffers                GE_glGenBuffers
+#define glBindBuffer                GE_glBindBuffer
+#define glBufferData                GE_glBufferData
+#define glBufferSubData             GE_glBufferSubData
 #endif
 
 #ifndef GL_VERSION_2_0

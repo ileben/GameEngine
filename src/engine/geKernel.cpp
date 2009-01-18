@@ -4,6 +4,8 @@
 #define GE_NO_EXTENSION_ROUTING
 #include "geGLHeaders.h"
 
+#include <cstdio>
+
 #if !defined(WIN32) && !defined(__APPLE__)
 #  include <X11/Xlib.h>
 #  include <X11/Xutil.h>
@@ -12,7 +14,6 @@
 #  include <X11/keysym.h>
 #endif
 
-#include <stdio.h>
 
 /*========================================
  *
@@ -47,6 +48,13 @@ GE_PFGLDRAWRANGEELEMENTS         GE_glDrawRangeElements = NULL;
 #ifndef GL_VERSION_1_3
 GE_PFGLACTIVETEXTURE             GE_glActiveTexture = NULL;
 GE_PFGLMULTITEXCOORD2F           GE_glMultiTexCoord2f = NULL;
+#endif
+
+#ifndef GL_VERSION_1_5
+GE_PFGLGENBUFFERS                GE_glGenBuffers = NULL;
+GE_PFGLBINDBUFFER                GE_glBindBuffer = NULL;
+GE_PFGLBUFFERDATA                GE_glBufferData = NULL;
+GE_PFGLBUFFERSUBDATA             GE_glBufferSubData = NULL;
 #endif
 
 #ifndef GL_VERSION_2_0
@@ -280,9 +288,33 @@ namespace GE
       #endif
 
     }else{ hasMultitexture = false; }
+
+    /*
+    Check vertex buffer objects
+    *****************************************/
+
+    if (checkExtension(ext, "GL_ARB_vertex_buffer_object")) {
+      hasVertexBufferObjects = true;
+
+      #ifndef GL_VERSION_1_5
+      GE_glGenBuffers = (GE_PFGLGENBUFFERS)
+        getProcAddress("glGenBuffersARB");
+      GE_glBindBuffer = (GE_PFGLBINDBUFFER)
+        getProcAddress("glBindBufferARB");
+      GE_glBufferData = (GE_PFGLBUFFERDATA)
+        getProcAddress("glBufferDataARB");
+      GE_glBufferSubData = (GE_PFGLBUFFERSUBDATA)
+        getProcAddress("glBufferSubDataARB");
+
+      if (GE_glGenBuffers==NULL || GE_glBindBuffer==NULL ||
+          GE_glBufferData==NULL || GE_glBufferSubData==NULL)
+        hasVertexBufferObjects = false;
+      #endif
+    
+    }else{ hasVertexBufferObjects = false; }
     
     /*
-    Check shaders
+    Check shader objects
     *****************************************/
     
     if (checkExtension(ext, "GL_ARB_shader_objects") &&

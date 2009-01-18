@@ -55,6 +55,7 @@ namespace GE
     bool hasMultitexture;
     bool hasShaderObjects;
     bool hasFramebufferObjects;
+    bool hasVertexBufferObjects;
     bool hasRangeElements;
     int maxElementsIndices;
     int maxElementsVertices;
