@@ -149,6 +149,7 @@ namespace GE
       
       glGenTextures( 1, &shadowMap );
       glBindTexture( GL_TEXTURE_2D, shadowMap );
+      //glTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, S, S, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL );
       glTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, S, S, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL );
       glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
       glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
@@ -167,12 +168,12 @@ namespace GE
     glEnable( GL_DEPTH_TEST );
 
     glEnable( GL_POLYGON_OFFSET_FILL );
-    glPolygonOffset( 1.0f, 2.0f );
+    glPolygonOffset( 1.0f, 1.0f );
 
     glBindFramebuffer( GL_FRAMEBUFFER, shadowFB );
     glDrawBuffer( GL_NONE );
     glReadBuffer( GL_NONE );
-    
+
     glClear( GL_DEPTH_BUFFER_BIT );
 
     //Setup view from the lights perspective
@@ -185,7 +186,7 @@ namespace GE
     Matrix4x4 lightView = light->getMatrix().affineInverse();
     glMatrixMode( GL_MODELVIEW );
     glLoadMatrixf( (GLfloat*) lightView.m );
-    
+
     //Render scene
     renderActorShadow( root );
 

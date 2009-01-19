@@ -233,6 +233,8 @@ GL_EXT_framebuffer_object
 #define GL_COLOR_ATTACHMENT0              0x8CE0
 #define GL_DEPTH_ATTACHMENT               0x8D00
 #define GL_STENCIL_ATTACHMENT             0x8D20
+#define GL_DEPTH_COMPONENT24              0x81A6
+#define GL_DEPTH_COMPONENT32              0x81A7
 #endif
 
 #ifndef GL_EXT_framebuffer_object

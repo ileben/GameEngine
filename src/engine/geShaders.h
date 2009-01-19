@@ -64,7 +64,7 @@ namespace GE
     char* getInfoLog ();
     void use ();
     static void UseFixed ();
-    Uint32 getUniform (const char *name);
+    Int32 getUniform (const char *name);
   };
 
 }/* namespace GE */

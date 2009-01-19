@@ -216,7 +216,7 @@ namespace GE
     glUseProgram (0);
   }
   
-  Uint32 GLProgram::getUniform (const char *name)
+  Int32 GLProgram::getUniform (const char *name)
   {
     //TODO: the following gl call throws an exception if the
     //uniform with given name is not found in the program
