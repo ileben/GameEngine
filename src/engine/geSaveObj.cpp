@@ -1,5 +1,7 @@
-#define GE_API_EXPORT
-#include "geEngine.h"
+#include "geSaveObj.h"
+#include "geTexMesh.h"
+#include "gePolyMesh.h"
+#include "actors/gePolyMeshActor.h"
 
 namespace GE
 {

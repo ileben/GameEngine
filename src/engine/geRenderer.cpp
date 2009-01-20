@@ -1,5 +1,8 @@
-#define GE_API_EXPORT
-#include "geEngine.h"
+#include "geRenderer.h"
+#include "geCamera.h"
+#include "geLight.h"
+#include "geShaders.h"
+#include "widgets/geWidget.h"
 #include "geGLHeaders.h"
 
 namespace GE

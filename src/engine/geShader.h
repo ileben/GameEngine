@@ -1,13 +1,25 @@
 #ifndef __GE_SHADER_H
 #define __GE_SHADER_H
 
+#include "util/geUtil.h"
+#include "geResource.h"
+
 #pragma warning(push)
 #pragma warning(disable:4251)
 
 namespace GE
 {
-  //forward declarations
-  class Material;
+  /*
+  ------------------------------------
+  Forward declarations
+  ------------------------------------*/
+  class GLShader;
+  class GLProgram;
+
+  /*
+  ------------------------------------
+  Shader
+  ------------------------------------*/
   
   enum UniformType
   {

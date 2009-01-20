@@ -1,6 +1,9 @@
 #ifndef __GERENDERER_H
 #define __GERENDERER_H
 
+#include "util/geUtil.h"
+#include "geVectors.h"
+
 namespace GE
 {
   /*
@@ -8,7 +11,10 @@ namespace GE
   Forward declaractions
   ------------------------------------------*/
   
+  class Actor;
+  class Camera;
   class Light;
+  class Widget;
 
   /*
   -----------------------------------------

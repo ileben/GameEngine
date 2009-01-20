@@ -1,14 +1,29 @@
 #ifndef __GELOADOBJ_H
 #define __GELOADOBJ_H
+
+#include "util/geUtil.h"
+#include "io/geFile.h"
+#include "geVectors.h"
+#include "geLoader.h"
+#include "geTexMesh.h"
+#include "gePolyMesh.h"
+
 #pragma warning(push)
 #pragma warning(disable:4251)
 
 namespace GE
 {
+  /*
+  ---------------------------------------
+  Forward declarations
+  ---------------------------------------*/
 
-/*-----------------------------------------
-   * Main loader class
-   *---------------------------------------*/
+  class PolyMeshActor;
+
+  /*
+  ---------------------------------------
+  Main loader class
+  ---------------------------------------*/
 
   class GE_API_ENTRY LoaderObj : public Loader
   {

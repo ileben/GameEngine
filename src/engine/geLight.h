@@ -1,6 +1,11 @@
 #ifndef __GELIGHT_H
 #define __GELIGHT_H
 
+#include "util/geUtil.h"
+#include "geVectors.h"
+#include "geMatrix.h"
+#include "geActor.h"
+
 namespace GE
 {
 

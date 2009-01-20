@@ -1,6 +1,9 @@
 #ifndef __WIDGET_H
 #define __WIDGET_H
 
+#include "util/geUtil.h"
+#include "engine/geVectors.h"
+
 namespace GE
 {
 

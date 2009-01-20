@@ -1,9 +1,24 @@
 #ifndef __GECHARACTER_H
 #define __GECHARACTER_H
 
+#include "util/geUtil.h"
+
 namespace GE
 {
-  
+  /*
+  ----------------------------------------
+  Forward declarations
+  ----------------------------------------*/
+
+  class SkinMesh;
+  class SkinPose;
+  class SkinAnim;
+
+  /*
+  ----------------------------------------
+  Forward declarations
+  ----------------------------------------*/
+
   class GE_API_ENTRY MaxCharacter
   {
     DECLARE_SERIAL_CLASS (MaxCharacter)
@@ -26,26 +41,9 @@ namespace GE
       ((SM*)sm)->objectVar( &anims );
     }
     
-    MaxCharacter (SM *sm) : anims (sm)
-    {}
-    
-    MaxCharacter ()
-    {
-      mesh = NULL;
-      pose = NULL;
-    }
-    
-    ~MaxCharacter ()
-    {
-      if (mesh != NULL)
-        delete mesh;
-
-      if (pose != NULL)
-        delete pose;
-      
-      for (UintSize a=0; a<anims.size(); ++a)
-        delete anims[ a ];
-    }
+    MaxCharacter (SM *sm) : anims (sm) {}
+    MaxCharacter ();
+    ~MaxCharacter();
   };
 
 

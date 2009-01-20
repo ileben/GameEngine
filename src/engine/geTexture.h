@@ -1,6 +1,10 @@
 #ifndef __GETEXTURE_H
 #define __GETEXTURE_H
 
+#include "util/geUtil.h"
+#include "image/geImage.h"
+#include "geResource.h"
+
 namespace GE
 {
   class Renderer;

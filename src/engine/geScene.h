@@ -1,6 +1,9 @@
 #ifndef __GESCENE_H
 #define __GESCENE_H
 
+#include "util/geUtil.h"
+#include "geActor.h"
+
 namespace GE
 {
   /*--------------------------------------------

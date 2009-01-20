@@ -1,6 +1,9 @@
 #ifndef __GERESOURCE_H
 #define __GERESOURCE_H
 
+#include "util/geUtil.h"
+#include "geObject.h"
+
 #pragma warning(push)
 #pragma warning(disable:4251)
 

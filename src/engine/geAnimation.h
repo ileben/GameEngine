@@ -1,6 +1,8 @@
 #ifndef __GEANIMATION_H
 #define __GEANIMATION_H
 
+#include "util/geUtil.h"
+
 namespace GE
 {
 

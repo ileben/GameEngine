@@ -1,6 +1,8 @@
 #ifndef __GEPROPERTY_H
 #define __GEPROPERTY_H
 
+#include "util/geUtil.h"
+
 namespace GE
 {
   using namespace TextParserCommon;

@@ -1,6 +1,9 @@
 #ifndef __GEHMESH_H
 #define __GEHMESH_H
 
+#include "util/geUtil.h"
+#include "geResource.h"
+
 #pragma warning(push)
 #pragma warning(disable:4251)
 

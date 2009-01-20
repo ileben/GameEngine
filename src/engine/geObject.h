@@ -1,6 +1,8 @@
 #ifndef __GEOBJECT_H
 #define __GEOBJECT_H
 
+#include "util/geUtil.h"
+
 #pragma warning(push)
 #pragma warning(disable:4251)
 

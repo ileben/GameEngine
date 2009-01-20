@@ -1,6 +1,5 @@
-#define GE_API_EXPORT
-#include "../geEngine.h"
-#include "../geGLHeaders.h"
+#include "geLabel.h"
+#include "engine/geGLHeaders.h"
 
 namespace GE
 {

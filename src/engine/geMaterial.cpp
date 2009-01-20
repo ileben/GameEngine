@@ -1,5 +1,7 @@
-#define GE_API_EXPORT
-#include "geEngine.h"
+#include "geMaterial.h"
+#include "geTexture.h"
+#include "geShaders.h"
+#include "geShader.h"
 #include "geGLHeaders.h"
 
 namespace GE

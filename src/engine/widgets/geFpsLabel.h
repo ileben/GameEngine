@@ -1,6 +1,9 @@
 #ifndef __GEFPSLABEL_H
 #define __GEFPSLABEL_H
 
+#include "util/geUtil.h"
+#include "geLabel.h"
+
 namespace GE
 {
 

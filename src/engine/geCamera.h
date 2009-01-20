@@ -1,6 +1,11 @@
 #ifndef __GECAMERA_H
 #define __GECAMERA_H
 
+#include "util/geUtil.h"
+#include "geVectors.h"
+#include "geMatrix.h"
+#include "geActor.h"
+
 namespace GE
 {
   /*------------------------------------------

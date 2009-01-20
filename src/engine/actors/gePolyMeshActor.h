@@ -1,11 +1,17 @@
 #ifndef __GESHAPE_H
 #define __GESHAPE_H
 
+#include "util/geUtil.h"
+#include "engine/geActor.h"
+#include "engine/geMaterial.h"
+
 namespace GE
 {
   /*----------------------------------------------
    * Forward declarations
    *----------------------------------------------*/
+  class PolyMesh;
+  class TexMesh;
   class Renderer;
   class SaverObj;
 

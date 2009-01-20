@@ -1,6 +1,9 @@
 #ifndef __GEMATRIX_H
 #define __GEMATRIX_H
 
+#include "util/geUtil.h"
+#include "geVectors.h"
+
 namespace GE
 {
   

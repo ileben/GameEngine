@@ -1,5 +1,8 @@
 #ifndef __GEKERNEL_H
 #define __GEKERNEL_H
+
+#include "util/geUtil.h"
+
 #pragma warning(push)
 #pragma warning(disable:4251)
 
@@ -11,6 +14,7 @@ namespace GE
   -------------------------------------
   Forward declarations
   -------------------------------------*/
+  class Renderer;
   class Kernel;
   
   /*

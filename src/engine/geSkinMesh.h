@@ -1,6 +1,9 @@
 #ifndef __GESKINPOLYMESH_H
 #define __GESKINPOLYMESH_H
 
+#include "util/geUtil.h"
+#include "geVectors.h"
+
 namespace GE
 {
   struct GE_API_ENTRY SkinVertex

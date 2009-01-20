@@ -1,5 +1,12 @@
 #ifndef __GELOAD3DS_H
 #define __GELOAD3DS_H
+
+#include "util/geUtil.h"
+#include "io/geFile.h"
+#include "geVectors.h"
+#include "geLoader.h"
+#include "gePolyMesh.h"
+
 #pragma warning(push)
 #pragma warning(disable:4251)
 

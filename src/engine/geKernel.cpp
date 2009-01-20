@@ -1,5 +1,5 @@
-#define GE_API_EXPORT
-#include "geEngine.h"
+#include "geKernel.h"
+#include "geRenderer.h"
 
 #define GE_NO_EXTENSION_ROUTING
 #include "geGLHeaders.h"

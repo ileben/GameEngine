@@ -1,6 +1,13 @@
 #ifndef __GESTATICMESH_H
 #define __GESTATICMESH_H
 
+#include "util/geUtil.h"
+#include "geVectors.h"
+#include "geResource.h"
+#include "geMaterial.h"
+#include "gePolyMesh.h"
+#include "geTexMesh.h"
+
 #pragma warning(push)
 #pragma warning(disable:4251)
 

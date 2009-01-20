@@ -4,7 +4,9 @@
 #pragma warning(push)
 #pragma warning(disable:4251)
 
-#include "geShaders.h"
+#include "util/geUtil.h"
+#include "geVectors.h"
+#include "geResource.h"
 
 namespace GE
 {
@@ -15,6 +17,7 @@ namespace GE
   class Renderer;
   class Shader;
   class Texture;
+  class GLProgram;
 
   /*
   =========================================================

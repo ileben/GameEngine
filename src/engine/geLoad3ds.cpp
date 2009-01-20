@@ -1,6 +1,5 @@
-#define GE_API_EXPORT
-#include "geEngine.h"
 #include "geLoad3ds.h"
+#include "actors/gePolyMeshActor.h"
 
 namespace GE
 {

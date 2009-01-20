@@ -1,6 +1,6 @@
-#define GE_API_EXPORT
-#include "../geEngine.h"
-#include "../geGLHeaders.h"
+#include "geTriMeshActor.h"
+#include "engine/geTriMesh.h"
+#include "engine/geGLHeaders.h"
 
 namespace GE
 {

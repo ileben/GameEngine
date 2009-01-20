@@ -1,12 +1,17 @@
 #ifndef __GETRIMESHACTOR_H
 #define __GETRIMESHACTOR_H
 
+#include "util/geUtil.h"
+#include "engine/geActor.h"
+#include "engine/geMaterial.h"
+
 namespace GE
 {
   /*
   ----------------------------------------------
   Forward declarations
   ----------------------------------------------*/
+  class TriMesh;
   class Renderer;
   class SaverObj;
 

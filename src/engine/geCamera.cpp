@@ -1,12 +1,3 @@
-#include "util/geUtil.h"
-
-#include "geVectors.h"
-#include "geMatrix.h"
-#include "geObject.h"
-#include "geResource.h"
-#include "geMaterial.h"
-#include "geActor.h"
-
 #include "geCamera.h"
 #include "geGLHeaders.h"
 

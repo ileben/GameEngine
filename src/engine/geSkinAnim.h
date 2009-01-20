@@ -1,6 +1,9 @@
 #ifndef __GESKELANIM_H
 #define __GESKELANIM_H
 
+#include "util/geUtil.h"
+#include "geVectors.h"
+
 namespace GE
 {
 

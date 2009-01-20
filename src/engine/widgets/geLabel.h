@@ -1,6 +1,10 @@
 #ifndef __GELABEL_H
 #define __GELABEL_H
 
+#include "util/geUtil.h"
+#include "engine/geVectors.h"
+#include "geWidget.h"
+
 #pragma warning(push)
 #pragma warning(disable:4251)
 

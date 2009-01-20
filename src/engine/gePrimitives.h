@@ -1,6 +1,10 @@
 #ifndef __GEPRIMITIVES_H
 #define __GEPRIMITIVES_H
 
+#include "util/geUtil.h"
+#include "geVectors.h"
+#include "geTriMesh.h"
+
 namespace GE
 {
   class CubeMesh : public TriMesh

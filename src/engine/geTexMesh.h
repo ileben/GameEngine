@@ -1,6 +1,10 @@
 #ifndef __GEUVMESH_H
 #define __GEUVMESH_H
 
+#include "util/geUtil.h"
+#include "geHmesh.h"
+#include "geVectors.h"
+
 namespace GE
 {
 

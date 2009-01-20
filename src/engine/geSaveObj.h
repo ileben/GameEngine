@@ -1,10 +1,29 @@
 #ifndef __GESAVEOBJ_H
 #define __GESAVEOBJ_H
+
+#include "util/geUtil.h"
+#include "io/geFile.h"
+
 #pragma warning(push)
 #pragma warning(disable:4251)
 
 namespace GE
 {
+  /*
+  ---------------------------------------------
+  Forward declarations
+  ---------------------------------------------*/
+
+  class Object;
+  class TexMesh;
+  class PolyMesh;
+  class PolyMeshActor;
+
+  /*
+  ---------------------------------------------
+  Forward declarations
+  ---------------------------------------------*/
+
   class GE_API_ENTRY Saver
   {
     DECLARE_ABSTRACT (Saver); DECLARE_END;

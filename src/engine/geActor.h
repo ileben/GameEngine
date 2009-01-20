@@ -1,6 +1,12 @@
 #ifndef __GEACTOR_H
 #define __GEACTOR_H
 
+#include "util/geUtil.h"
+#include "geVectors.h"
+#include "geMatrix.h"
+#include "geObject.h"
+#include "geMaterial.h"
+
 namespace GE
 {
   /*

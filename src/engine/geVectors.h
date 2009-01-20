@@ -1,6 +1,8 @@
 #ifndef __VECTORS_H
 #define __VECTORS_H
 
+#include "util/geUtil.h"
+
 namespace GE
 { 
   /*

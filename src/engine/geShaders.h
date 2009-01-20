@@ -1,6 +1,8 @@
 #ifndef __GESHADERS_H
 #define __GESHADERS_H
 
+#include "util/geUtil.h"
+
 namespace GE
 {
   /*================================

@@ -1,6 +1,10 @@
 #ifndef __GESKELETON_RES_H
 #define __GESKELETON_RES_H
 
+#include "util/geUtil.h"
+#include "geVectors.h"
+#include "geMatrix.h"
+
 namespace GE
 {
   struct GE_API_ENTRY SkinBone

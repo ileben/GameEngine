@@ -1,15 +1,26 @@
 #ifndef __GELOADER_H
 #define __GELOADER_H
 
+#include "util/geUtil.h"
+
 namespace GE
 {
-  /*----------------------------------------------------
-   * Loader class loads objects from multiple file
-   * formats and builts a temporary scene tree.
-   * The objects, selected to be "retained" by the
-   * user are preserved while the rest is automatically
-   * deleted when the Loader class is destroyed
-   *----------------------------------------------------*/
+  /*
+  ----------------------------------------------------
+  Forward declarations
+  ----------------------------------------------------*/
+
+  class Actor;
+  class Resource;
+
+  /*
+  ----------------------------------------------------
+  Loader class loads objects from multiple file
+  formats and builts a temporary scene tree.
+  The objects, selected to be "retained" by the
+  user are preserved while the rest is automatically
+  deleted when the Loader class is destroyed
+  ----------------------------------------------------*/
 
 #pragma warning(push)
 #pragma warning(disable:4251)
