@@ -15,6 +15,7 @@ namespace GE
   class Camera;
   class Light;
   class Widget;
+  class Scene;
 
   /*
   -----------------------------------------
@@ -59,7 +60,7 @@ namespace GE
     void renderShadowQuad ();
 
     void beginFrame ();
-    void beginScene (Actor *root);
+    void beginScene (Scene *root);
     void renderScene ();
     void renderWidget (Widget *w);
     void endScene ();

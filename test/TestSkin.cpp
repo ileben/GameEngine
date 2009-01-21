@@ -132,7 +132,7 @@ TriMeshActor *triActor;
 ArrayList <Vector3> triPosePoints;
 ArrayList <Vector3> triPoseNormals;
 
-Actor *scene;
+Scene *scene;
 Light *light;
 
 FpsLabel lblFps;
@@ -711,7 +711,7 @@ int main (int argc, char **argv)
   //mat.setCullBack( false );
   mat.setShader( shader );
 
-  scene = new Actor;
+  scene = new Scene;
   
   loadPackage( "bub.pak" );
   

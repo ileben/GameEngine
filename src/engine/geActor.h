@@ -15,6 +15,9 @@ namespace GE
   -----------------------------------------*/
 
   class Material;
+  class Scene;
+  class Kernel;
+  class Renderer;
 
   /*
   -----------------------------------------
@@ -59,7 +62,7 @@ namespace GE
     Actor *parent;
     Float mass;
     bool renderable;
-    
+
   public:
 
     Actor();
@@ -89,6 +92,7 @@ namespace GE
     void removeChild (Actor* o);
     const ArrayList<Actor*>* getChildren ();
     Actor* getParent ();
+    Scene* getScene();
     void setIsRenderable (bool renderable);
     bool isRenderable ();
     

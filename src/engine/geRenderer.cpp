@@ -2,6 +2,7 @@
 #include "geCamera.h"
 #include "geLight.h"
 #include "geShaders.h"
+#include "geScene.h"
 #include "widgets/geWidget.h"
 #include "geGLHeaders.h"
 
@@ -72,8 +73,9 @@ namespace GE
     if (camera != NULL) camera->updateView ();
   }
 
-  void Renderer::beginScene( Actor *root )
+  void Renderer::beginScene( Scene *scene )
   {
+    /*
     //Init scene data
     sceneRoot = root;
     sceneLights.clear();
@@ -97,26 +99,40 @@ namespace GE
       //Put children actors onto the stack
       for (int c=(int)act->getChildren()->size()-1; c >= 0; --c)
         actorStack.pushBack( act->getChildren()->at(c) );
+    }*/
+
+    //Update scene
+    if (scene->hasChanged())
+      scene->updateChanges();
+
+    //Prepare the actors for rendering
+    for (UintSize t=0; t<scene->getTraversal()->size(); ++t)
+    {
+      TravNode node = scene->getTraversal()->at( t );
+      if (node.event != TravEvent::Begin) continue;
+      node.actor->prepare();
     }
     
     //Enable lights
-    for (UintSize l=0; l<sceneLights.size(); ++l)
+    for (UintSize l=0; l<scene->getLights()->size(); ++l)
     {
+      Light *light = scene->getLights()->at( l );
+
       //Setup transformation matrix
-      Matrix4x4 worldCtm = sceneLights[l]->getWorldMatrix();
+      Matrix4x4 worldCtm = light->getWorldMatrix();
       glMatrixMode( GL_MODELVIEW );
       glPushMatrix();
       glMultMatrixf( (GLfloat*) worldCtm.m );
       
       //Setup light data
-      sceneLights[l]->enable( (int) l );
+      light->enable( (int)l );
       
       glPopMatrix();
     }
 
-    if (!sceneLights.empty())
+    if (!scene->getLights()->empty())
     {
-      Light *l = sceneLights.first();
+      Light *l = scene->getLights()->first();
 
       Matrix4x4 bias;
       bias.set

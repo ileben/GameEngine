@@ -1,4 +1,5 @@
 #include "geActor.h"
+#include "geScene.h"
 #include "geGLHeaders.h"
 
 namespace GE
@@ -113,12 +114,18 @@ namespace GE
     
     children.pushBack( o );
     o->parent = this;
+
+    Scene *scene = getScene();
+    if (scene != NULL) scene->markChanged();
   }
   
   void Actor::removeChild (Actor* o)
   {
     children.remove( o );
     o->parent = NULL;
+
+    Scene *scene = getScene();
+    if (scene != NULL) scene->markChanged();
   }
   
   const ArrayList<Actor*>* Actor::getChildren() {
@@ -128,6 +135,20 @@ namespace GE
   Actor* Actor::getParent()
   {
     return parent;
+  }
+
+  Scene* Actor::getScene()
+  {
+    Actor *a = this;
+
+    while (a != NULL)
+    {
+      Scene *s = SafeCast( Scene, a );
+      if (s != NULL) return s;
+      a = a->getParent();
+    }
+
+    return NULL;
   }
 
   void Actor::setIsRenderable (bool r)
