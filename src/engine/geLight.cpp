@@ -3,6 +3,12 @@
 
 namespace GE
 {
+  DEFINE_CLASS( Light );
+  DEFINE_CLASS( DirLight );
+  DEFINE_CLASS( PointLight );
+  DEFINE_CLASS( SpotLight );
+  DEFINE_CLASS( HeadLight );
+
   Light::Light()
   {
     setIsRenderable( false );

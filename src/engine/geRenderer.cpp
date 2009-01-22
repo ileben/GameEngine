@@ -20,7 +20,7 @@ namespace GE
     shadowInit = false;
   }
 
-  void Renderer::setBackColor(const Vector3 &color)
+  void Renderer::setBackColor (const Vector3 &color)
   {
     back = color;
   }
@@ -30,16 +30,12 @@ namespace GE
   Changes the target rendering area on the GL window
   ----------------------------------------------------*/
 
-  void Renderer::setViewport(int x, int y, int width, int height)
+  void Renderer::setViewport (int x, int y, int width, int height)
   {
     viewX = x;
     viewY = y;
     viewW = width;
     viewH = height;
-    glViewport(x, y, width, height);
-
-    if (camera != NULL)
-      camera->updateProjection(viewW, viewH);
   }
 
   /*
@@ -47,11 +43,8 @@ namespace GE
   Changes the camera used for rendering
   -----------------------------------------*/
 
-  void Renderer::setCamera(Camera *camera)
-  {
+  void Renderer::setCamera (Camera *camera) {
     this->camera = camera;
-    camera->updateProjection(viewW, viewH);
-    camera->updateView();
   }
 
   Camera* Renderer::getCamera() {
@@ -63,98 +56,34 @@ namespace GE
   Rendering interface
   --------------------------------------*/
 
-  void Renderer::beginFrame()
+  void Renderer::renderShadowQuad ()
   {
-    //Clear the framebuffer
-    glClearColor (back.x, back.y, back.z, 0);
-    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glMatrixMode( GL_TEXTURE );
+    glLoadIdentity();
+
+    GLProgram::UseFixed();
+    glDisable( GL_DEPTH_TEST );
+    glDisable( GL_CULL_FACE );
+    glDisable( GL_LIGHTING );
+    glDisable( GL_BLEND );
+    glEnable( GL_COLOR_MATERIAL );
+    glColor3f( 1.0, 1.0, 1.0 );
+
+    glActiveTexture( GL_TEXTURE0 );
+    glBindTexture( GL_TEXTURE_2D, shadowMap );
+    glEnable( GL_TEXTURE_2D );
     
-    //Initialize view to current camera
-    if (camera != NULL) camera->updateView ();
+    glBegin( GL_QUADS );
+    glTexCoord2f( 0, 0 ); glVertex2f( 0, 0 );
+    glTexCoord2f( 1, 0 ); glVertex2f( 100, 0 );
+    glTexCoord2f( 1, 1 ); glVertex2f( 100, 100 );
+    glTexCoord2f( 0, 1 ); glVertex2f( 0, 100 );
+    glEnd();
+    
+    glDisable( GL_TEXTURE_2D );
   }
 
-  void Renderer::beginScene( Scene *scene )
-  {
-    /*
-    //Init scene data
-    sceneRoot = root;
-    sceneLights.clear();
-
-    //Walk the scene tree and prepare actors
-    ArrayList<Actor*> actorStack;
-    actorStack.pushBack( root );
-    while (!actorStack.empty())
-    {
-      //Take last actor off the stack
-      Actor* act = actorStack.last();
-      actorStack.popBack();
-      
-      //Prepare the actor for rendering
-      act->prepare();
-      
-      //Store lights
-      if (act->getRenderRole() == RenderRole::Light)
-        sceneLights.pushBack( (Light*) act );
-      
-      //Put children actors onto the stack
-      for (int c=(int)act->getChildren()->size()-1; c >= 0; --c)
-        actorStack.pushBack( act->getChildren()->at(c) );
-    }*/
-
-    //Update scene
-    if (scene->hasChanged())
-      scene->updateChanges();
-
-    //Prepare the actors for rendering
-    for (UintSize t=0; t<scene->getTraversal()->size(); ++t)
-    {
-      TravNode node = scene->getTraversal()->at( t );
-      if (node.event != TravEvent::Begin) continue;
-      node.actor->prepare();
-    }
-    
-    //Enable lights
-    for (UintSize l=0; l<scene->getLights()->size(); ++l)
-    {
-      Light *light = scene->getLights()->at( l );
-
-      //Setup transformation matrix
-      Matrix4x4 worldCtm = light->getWorldMatrix();
-      glMatrixMode( GL_MODELVIEW );
-      glPushMatrix();
-      glMultMatrixf( (GLfloat*) worldCtm.m );
-      
-      //Setup light data
-      light->enable( (int)l );
-      
-      glPopMatrix();
-    }
-
-    if (!scene->getLights()->empty())
-    {
-      Light *l = scene->getLights()->first();
-
-      Matrix4x4 bias;
-      bias.set
-        (0.5, 0.0, 0.0, 0.5,
-         0.0, -0.5, 0.0, 0.5,
-         0.0, 0.0, 0.5, 0.5,
-         0.0, 0.0, 0.0, 1);
-      
-      Matrix4x4 cam = camera->getMatrix();
-      Matrix4x4 lightProj = l->getProjection( 1.0f, 1000.0f );
-      Matrix4x4 lightInv = l->getMatrix().affineInverse();
-      Matrix4x4 tex = lightProj * lightInv * cam;
-      
-      glMatrixMode( GL_TEXTURE );
-      glLoadMatrixf( (GLfloat*) tex.m );
-
-      glEnable( GL_TEXTURE_2D );
-      glBindTexture( GL_TEXTURE_2D, shadowMap );
-    }
-  }
-  
-  void Renderer::renderShadowMap (Light *light, Actor *root)
+  void Renderer::renderShadowMap (Light *light, Scene *scene)
   {
     const Uint32 S = 2048;
 
@@ -180,6 +109,7 @@ namespace GE
       shadowInit = true;
     }
 
+    //Setup GL state to render to shadow texture
     glUseProgram( 0 );
     glDisable( GL_LIGHTING );
     glDisable( GL_BLEND );
@@ -207,7 +137,25 @@ namespace GE
     glLoadMatrixf( (GLfloat*) lightView.m );
 
     //Render scene
-    renderActorShadow( root );
+    for (UintSize t=0; t<scene->getTraversal()->size(); ++t)
+    {
+      TravNode node = scene->getTraversal()->at( t );
+      switch (node.event)
+      {
+      case TravEvent::Begin:
+        
+        node.actor->begin();
+
+        if (node.actor->isRenderable())
+          node.actor->render( GE_ANY_MATERIAL_ID );
+
+        break;
+      case TravEvent::End:
+
+        node.actor->end();
+        break;
+      }
+    }
 
     //Restore state
     glDisable( GL_POLYGON_OFFSET_FILL );
@@ -246,63 +194,83 @@ namespace GE
     delete[] pixels;*/
   }
 
-  void Renderer::renderActorShadow (Actor *actor)
+  void Renderer::beginFrame()
   {
-    if (!actor->isRenderable()) return;
-
-    actor->begin();
-    actor->render( GE_ANY_MATERIAL_ID );
-
-    for (UintSize c=0; c<actor->getChildren()->size(); ++c)
-      renderActorShadow( actor->getChildren()->at( c ) );
-
-    actor->end();
-  }
-
-  void Renderer::renderShadowQuad ()
-  {
-    glMatrixMode( GL_TEXTURE );
-    glLoadIdentity();
-
-    GLProgram::UseFixed();
-    glDisable( GL_DEPTH_TEST );
-    glDisable( GL_CULL_FACE );
-    glDisable( GL_LIGHTING );
-    glDisable( GL_BLEND );
-    glEnable( GL_COLOR_MATERIAL );
-    glColor3f( 1.0, 1.0, 1.0 );
-
-    glActiveTexture( GL_TEXTURE0 );
-    glBindTexture( GL_TEXTURE_2D, shadowMap );
-    glEnable( GL_TEXTURE_2D );
+    //Clear the framebuffer
+    glClearColor (back.x, back.y, back.z, 0);
+    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
-    glBegin( GL_QUADS );
-    glTexCoord2f( 0, 0 ); glVertex2f( 0, 0 );
-    glTexCoord2f( 1, 0 ); glVertex2f( 100, 0 );
-    glTexCoord2f( 1, 1 ); glVertex2f( 100, 100 );
-    glTexCoord2f( 0, 1 ); glVertex2f( 0, 100 );
-    glEnd();
+    //Initialize view to current camera
+    if (camera != NULL) camera->updateView ();
+  }
+
+  void Renderer::beginScene( Scene *scene )
+  {
+    //Store scene pointer
+    this->scene = scene;
+
+    //Update scene
+    if (scene->hasChanged())
+      scene->updateChanges();
+
+    //Setup view and projection
+    glViewport( viewX, viewY, viewW, viewH );
     
-    glDisable( GL_TEXTURE_2D );
-  }
+    if (camera != NULL) {
+      camera->updateProjection( viewW, viewH );
+      camera->updateView();
+    }
 
-  void Renderer::renderScene()
-  {
-    renderActor( sceneRoot );
-  }
+    //Prepare the actors for rendering
+    for (UintSize t=0; t<scene->getTraversal()->size(); ++t)
+    {
+      TravNode node = scene->getTraversal()->at( t );
+      if (node.event != TravEvent::Begin) continue;
+      node.actor->prepare();
+    }
+    
+    //Enable lights
+    for (UintSize l=0; l<scene->getLights()->size(); ++l)
+    {
+      Light *light = scene->getLights()->at( l );
 
-  void Renderer::endScene()
-  {
-    //Disable lights
-    for (UintSize l=0; l<sceneLights.size(); ++l)
-      glDisable( GL_LIGHT0 + (int) l );
-  }
+      //Setup transformation matrix
+      Matrix4x4 worldCtm = light->getWorldMatrix();
+      glMatrixMode( GL_MODELVIEW );
+      glPushMatrix();
+      glMultMatrixf( (GLfloat*) worldCtm.m );
+      
+      //Setup light data
+      light->enable( (int)l );
+      
+      glPopMatrix();
+    }
 
-  void Renderer::endFrame()
-  {
-    glutSwapBuffers ();
-  }
+    //Setup camera-eye to light-clip matrix
+    if (!scene->getLights()->empty())
+    {
+      Light *l = scene->getLights()->first();
 
+      Matrix4x4 bias;
+      bias.set
+        (0.5, 0.0, 0.0, 0.5,
+         0.0, -0.5, 0.0, 0.5,
+         0.0, 0.0, 0.5, 0.5,
+         0.0, 0.0, 0.0, 1);
+      
+      Matrix4x4 cam = camera->getMatrix();
+      Matrix4x4 lightProj = l->getProjection( 1.0f, 1000.0f );
+      Matrix4x4 lightInv = l->getMatrix().affineInverse();
+      Matrix4x4 tex = lightProj * lightInv * cam;
+      
+      glMatrixMode( GL_TEXTURE );
+      glLoadMatrixf( (GLfloat*) tex.m );
+
+      glEnable( GL_TEXTURE_2D );
+      glBindTexture( GL_TEXTURE_2D, shadowMap );
+    }
+  }
+  
   /*
   ------------------------------------------------------
   Renderer class has authority over the rendering steps
@@ -312,50 +280,69 @@ namespace GE
   shading programs) might not be desired.
   ------------------------------------------------------*/
 
-  void Renderer::renderActor( Actor *actor )
+  void Renderer::renderScene()
   {
-    //Must be enabled for rendering
-    if (!actor->isRenderable()) return;
-    
-    actor->begin();
-    
-    //Find the type of material
-    Material *mat = actor->getMaterial();
-    if( mat == NULL ){
-      
-      //Use default if none
-      Material::BeginDefault();
-      actor->render( GE_ANY_MATERIAL_ID );
-      
-    }else if( ClassOf(mat) == Class(MultiMaterial) ){
-      
-      //Render with each sub-material if multi
-      MultiMaterial *mmat = (MultiMaterial*) mat;
-      for( UintSize s=0; s<mmat->getNumSubMaterials(); ++s )
+    for (UintSize t=0; t<scene->getTraversal()->size(); ++t)
+    {
+      TravNode node = scene->getTraversal()->at( t );
+      if (node.event == TravEvent::Begin)
       {
-        mmat->selectSubMaterial( (MaterialID)s );
-        mmat->begin();
-        actor->render( (MaterialID)s );
-        mmat->end();
+        node.actor->begin();
+
+        //Skip if disabled for rendering
+        if (!node.actor->isRenderable())
+          continue;
+
+        //Find the type of material
+        Material *mat = node.actor->getMaterial();
+        if (mat == NULL) {
+          
+          //Use default if none
+          Material::BeginDefault();
+          node.actor->render( GE_ANY_MATERIAL_ID );
+          
+        }else if (ClassOf(mat) == Class(MultiMaterial)) {
+          
+          //Render with each sub-material if multi
+          MultiMaterial *mmat = (MultiMaterial*) mat;
+          for (UintSize s=0; s<mmat->getNumSubMaterials(); ++s)
+          {
+            mmat->selectSubMaterial( (MaterialID)s );
+            mmat->begin();
+            node.actor->render( (MaterialID)s );
+            mmat->end();
+          }
+        
+        }else{
+          
+          //Render with given material
+          mat->begin();
+          node.actor->render( GE_ANY_MATERIAL_ID );
+          mat->end();
+        }
       }
-    
-    }else{
-      
-      //Render with given material
-      mat->begin();
-      actor->render( GE_ANY_MATERIAL_ID );
-      mat->end();
+      else if (node.event == TravEvent::End)
+      {
+        node.actor->end();
+      }
     }
-    
-    //Recurse to each child
-    for (UintSize c=0; c<actor->getChildren()->size(); ++c)
-      renderActor( actor->getChildren()->at( c ) );
-    
-    actor->end();
+  }
+
+  void Renderer::endScene()
+  {
+    //Disable lights
+    for (UintSize l=0; l<scene->getLights()->size(); ++l)
+      glDisable( GL_LIGHT0 + (int) l );
+  }
+
+  void Renderer::endFrame()
+  {
+    glutSwapBuffers ();
   }
   
   void Renderer::renderWidget( Widget *w )
   {
+    //Setup GL state
     GLProgram::UseFixed();
     glDisable( GL_DEPTH_TEST );
     glDisable( GL_CULL_FACE );
@@ -363,7 +350,16 @@ namespace GE
     glDisable( GL_BLEND );
     
     glEnable( GL_COLOR_MATERIAL );
+
+    //Setup view and projection
+    glViewport( viewX, viewY, viewW, viewH );
     
+    if (camera != NULL) {
+      camera->updateProjection( viewW, viewH );
+      camera->updateView();
+    }
+    
+    //Render the widget
     w->draw();
   }
 

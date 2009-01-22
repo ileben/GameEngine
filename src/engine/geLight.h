@@ -11,6 +11,8 @@ namespace GE
 
   class Light : public Actor
   {
+    DECLARE_SUBCLASS( Light, Actor ); DECLARE_END;
+
   private:
     virtual RenderRole::Enum getRenderRole();
     
@@ -24,6 +26,8 @@ namespace GE
   
   class DirLight : public Light
   {
+    DECLARE_SUBCLASS( DirLight, Light ); DECLARE_END;
+
   public:
     DirLight () {}
     DirLight (const Vector3 &dir);
@@ -32,6 +36,8 @@ namespace GE
   
   class PointLight : public Light
   {
+    DECLARE_SUBCLASS( PointLight, Light ); DECLARE_END;
+
   public:
     PointLight () {}
     PointLight (const Vector3 &pos);
@@ -40,6 +46,8 @@ namespace GE
   
   class SpotLight : public Light
   {
+    DECLARE_SUBCLASS( SpotLight, Light ); DECLARE_END;
+
   protected:
     Float angleInner;
     Float angleOuter;
@@ -58,6 +66,8 @@ namespace GE
   
   class HeadLight : public PointLight
   {
+    DECLARE_SUBCLASS( HeadLight, Light ); DECLARE_END;
+
   public:
     HeadLight () {}
     HeadLight (const Vector3 &pos) : PointLight (pos) {}

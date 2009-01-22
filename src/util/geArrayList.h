@@ -144,7 +144,7 @@ namespace GE
       this->eltCls = eltCls;
       
       sz = 0;
-      cap = (Uint32) newCap;
+      cap = (Uint32) (newCap > 0 ? newCap : 1);
       elements = (Uint8*) std::malloc( cap * eltSize );
     }
       

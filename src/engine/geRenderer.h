@@ -40,12 +40,10 @@ namespace GE
     Uint32 shadowMap;
     Uint32 shadowMap2;
     Uint32 shadowFB;
-    Actor *sceneRoot;
-    ArrayList< Light* > sceneLights;
+    Scene *scene;
 
     //Rendering
     void renderActor (Actor *actor);
-    void renderActorShadow( Actor *actor );
     
   public:
     
@@ -56,11 +54,11 @@ namespace GE
     void setCamera (Camera *camera);
     Camera* getCamera();
     
-    void renderShadowMap (Light *light, Actor *root);
+    void renderShadowMap (Light *light, Scene *scene);
     void renderShadowQuad ();
 
     void beginFrame ();
-    void beginScene (Scene *root);
+    void beginScene (Scene *scene);
     void renderScene ();
     void renderWidget (Widget *w);
     void endScene ();
