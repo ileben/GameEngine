@@ -9,6 +9,9 @@ EXTRA_DIST =\
   specularity.jpg\
   specularity.vertex.c\
   specularity.fragment.c\
+  pixelphong.frag.c\
+  pixelphong.vert.c\
+  bub.pak\
   zekko.obj\
   venusm.obj\
   plane.obj\
@@ -17,8 +20,8 @@ EXTRA_DIST =\
   showcase.cpp \
   test.cpp
 
-#noinst_PROGRAMS = TexPainter TestSkin
-noinst_PROGRAMS = TestShadow
+#noinst_PROGRAMS = TexPainter TestSkin TestShadow
+noinst_PROGRAMS = TestShadow TestSkin
 
 TexPainter_CXXFLAGS = @GE_CXXFLAGS@ -I${prefix}/include -I$(top_builddir)/src/
 TexPainter_LDFLAGS = @GE_LDFLAGS@ -L${prefix}/lib 

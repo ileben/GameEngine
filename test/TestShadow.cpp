@@ -17,7 +17,7 @@ enum CameraMode
   CAMERA_MODE_ZOOM
 };
 
-Actor *scene;
+Scene *scene;
 FpsLabel lblFps;
 
 Light *light;
@@ -266,7 +266,7 @@ int main (int argc, char **argv)
   mat.setShader( shader );
   //mat.setProperty( "sampler", tex );
   
-  scene = new Actor;
+  scene = new Scene;
 
   //Light *light = new HeadLight;
   //Light *light = new DirLight( Vector3(1,-1,1) );
