@@ -19,6 +19,7 @@ missing
 *.la
 *~
 TestSkin
+TestShadow
 TexPainter
 TexPainter_DEBUG.exe
 TexPainter_RELEASE.exe
