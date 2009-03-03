@@ -117,7 +117,7 @@ namespace GE
     glEnable( GL_DEPTH_TEST );
 
     glEnable( GL_POLYGON_OFFSET_FILL );
-    glPolygonOffset( 1.0f, 1.0f );
+    glPolygonOffset( 2.0f, 2.0f );
 
     glBindFramebuffer( GL_FRAMEBUFFER, shadowFB );
     glDrawBuffer( GL_NONE );
