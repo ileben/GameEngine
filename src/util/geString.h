@@ -11,11 +11,50 @@ namespace GE
   # define vsnprintf win_vsnprintf
   #endif
 
-
+  /*
+  ----------------------------------------
+  Forward declarations
+  ----------------------------------------*/
   class File;
   typedef unsigned int Unicode;
   
-  template <class C> class BasicString
+  /*
+  ----------------------------------------
+  Serialization base
+  ----------------------------------------*/
+
+  class SerialString
+  {
+    DECLARE_SERIAL_CLASS( SerialString );
+    DECLARE_CALLBACK( ClassEvent::Serialize, serialize );
+    DECLARE_END();
+
+  protected:
+    void *buf;
+    int cap;
+    int size;
+    Uint8 charSize;
+
+  public:
+    SerialString () {}
+    SerialString (SerializeManager *sm) {}
+    virtual void serialize (void *param)
+    {
+      SerializeManager *sm = (SM*)param;
+      sm->dataVar( &size );
+      sm->dataPtr( &buf, (size+1) * charSize );
+      if (sm->isLoading()) cap = size+1;
+    }
+  };
+
+  /*
+  ----------------------------------------
+  Base template class
+  ----------------------------------------*/
+  
+  //#define buf ((CharType*)buf)
+
+  template <class C> class BasicString : public SerialString
   {
     friend class File;
     friend class BasicString<char>;
@@ -27,17 +66,22 @@ namespace GE
     typedef C CharType;
     
   protected:
+    /*
     CharType *buf;
     int cap;
     int size;
-    
+    */
   public:
+
+    BasicString (SerializeManager *sm) : SerialString (sm)
+    {}
+
     BasicString ()
     {
-      buf = (CharType*) malloc (sizeof (CharType));
+      buf = (CharType*) malloc( sizeof(CharType) );
       cap = 1;
       size = 0;
-      buf [size] = (CharType) 0;
+      buf[ size ] = (CharType) 0;
     }
     
     BasicString (const CharType *chars, int size)
@@ -46,9 +90,9 @@ namespace GE
       int newsize = (size<=0) ? 0 : size;
       this->cap = newcap;
       this->size = newsize;
-      buf = (CharType*) malloc (cap * sizeof (CharType));
-      memcpy (buf, chars, newsize * sizeof (CharType));
-      buf [size] = (CharType) 0;
+      buf = (CharType*) malloc( cap * sizeof(CharType) );
+      memcpy( buf, chars, newsize * sizeof(CharType) );
+      buf[ size ] = (CharType) 0;
     }
     
     BasicString (const BasicString<CharType> &str)
@@ -57,9 +101,9 @@ namespace GE
       int newsize = (str.size<=0) ? 0 : str.size;
       cap = newcap;
       size = newsize;
-      buf = (CharType*) malloc (cap * sizeof (CharType));
-      memcpy (buf, str.buf, newsize * sizeof (CharType));
-      buf [size] = (CharType) 0;
+      buf = (CharType*) malloc( cap * sizeof(CharType) );
+      memcpy( buf, str.buf, newsize * sizeof(CharType) );
+      buf[ size ] = (CharType) 0;
     }
     
     template <class OtherCharType>
@@ -69,9 +113,9 @@ namespace GE
       int newsize = (str.size<=0) ? 0 : str.size;
       cap = newcap;
       size = newsize;
-      buf = (CharType*) malloc (cap * sizeof (CharType));
+      buf = (CharType*) malloc( cap * sizeof(CharType) );
       for (int s=0; s<newsize; ++s) buf[s] = (CharType) str[s];
-      buf [size] = (CharType) 0;
+      buf[ size ] = (CharType) 0;
     }
  
     BasicString (const char *str)
@@ -81,9 +125,9 @@ namespace GE
       int newsize = (len<=0) ? 0 : len;
       cap = newcap;
       size = newsize;
-      buf = (CharType*) malloc (cap * sizeof (CharType));
+      buf = (CharType*) malloc( cap * sizeof(CharType) );
       for (int s=0; s<newsize; ++s) buf[s] = (CharType) str[s];
-      buf [size] = (CharType) 0;
+      buf[ size ] = (CharType) 0;
     }
     
     BasicString (int capacity)
@@ -91,20 +135,20 @@ namespace GE
       if (capacity < 0) capacity = 0;
       cap = capacity + 1;
       size = 0;
-      buf = (CharType*) malloc (cap * sizeof (CharType));
-      buf [size] = (CharType) 0;
+      buf = (CharType*) malloc( cap * sizeof(CharType) );
+      buf[ size ] = (CharType) 0;
     }
     
     virtual ~BasicString()
     {
       if (buf)
-        free(buf);
+        free( buf );
     }
     
     void clear()
     {
       size = 0;
-      buf [size] = (CharType) 0;
+      buf[ size ] = (CharType) 0;
     }
     
     /**
@@ -117,11 +161,11 @@ namespace GE
         
         free(buf);
         cap = capacity + 1;
-        buf = (CharType*) malloc (cap * sizeof (CharType));
+        buf = (CharType*) malloc( cap * sizeof(CharType) );
       }
       
       size = 0;
-      buf [size] = 0;
+      buf[ size ] = 0;
     }
     
     /**
@@ -133,7 +177,7 @@ namespace GE
       if (cap >= capacity + 1) return;
       
       cap = capacity + 1;
-      buf = (CharType*) realloc (buf, cap * sizeof (CharType));
+      buf = (CharType*) realloc( buf, cap * sizeof(CharType) );
     }
     
     
@@ -149,8 +193,8 @@ namespace GE
       
       cap = capacity + 1;
       size = newsize;
-      buf = (CharType*) realloc (buf, cap * sizeof (CharType));
-      buf [size] = (CharType) 0;
+      buf = (CharType*) realloc( buf, cap * sizeof(CharType) );
+      buf[ size ] = (CharType) 0;
     }
     
   private:
@@ -165,14 +209,14 @@ namespace GE
     {
       if (cap < asize + 1) {
         
-        free (buf);
+        free( buf );
         cap = asize + 1;
-        buf = (CharType*) malloc (cap * sizeof (CharType));
+        buf = (CharType*) malloc( cap * sizeof(CharType) );
       }
       
-      memcpy (buf, achars, asize * sizeof(CharType));
+      memcpy( buf, achars, asize * sizeof(CharType) );
       size = asize;
-      buf [size] = 0;
+      buf[ size ] = 0;
       
       return *this;
     }
@@ -187,15 +231,15 @@ namespace GE
     {
       if (cap < asize + 1) {
         
-        free (buf);
+        free( buf );
         cap = asize + 1;
-        buf = (CharType*) malloc (cap * sizeof (CharType));
+        buf = (CharType*) malloc( cap * sizeof(CharType) );
       }
       
       for (int c=0; c<asize; ++c)
         buf[c] = (CharType) achars[c];
       size = asize;
-      buf [size] = 0;
+      buf[ size ] = 0;
       
       return *this;
     }
@@ -899,22 +943,22 @@ namespace GE
       }
     }
   
-    void flipBytes(char *buf, int size) {
+    void flipBytes (char *ptr, int size) {
       int max = size/2 + (size % 2);
       for (int b=0; b<max; b++) {
-        char tmp = buf[b];
-        buf[b] = buf[size-1-b];
-        buf[size-1-b] = tmp;
+        char tmp = ptr[b];
+        ptr[b] = ptr[size-1-b];
+        ptr[size-1-b] = tmp;
       }
     }
     
-    bool findIsLilEndian()
+    bool findIsLilEndian ()
     {
       unsigned int a = 1;
       return ( ((unsigned char*)&a)[0] == 1 );
     }
   
-    int lengthUTF16() const
+    int lengthUTF16 () const
     {
       int outsize = 0;
       
@@ -933,7 +977,7 @@ namespace GE
       return outsize;
     }
     
-    void toUTF16(char *outbuf, int maxsize) const
+    void toUTF16 (char *outbuf, int maxsize) const
     { 
       char *bufp = outbuf + 2;
       int cursize = 0;

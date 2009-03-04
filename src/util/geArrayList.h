@@ -45,7 +45,8 @@ namespace GE
       sm->dataVar( &eltSize );
       sm->dataVar( &eltClsID );
       
-      //Make sure it is usable after loading
+      //Make sure it is modifiable after loading
+      //(deserialized is non-modifiable so cap and class don't matter)
       if (sm->isLoading()) {
         eltCls = IClass::FromID( eltClsID );
         cap = sz;
@@ -59,7 +60,7 @@ namespace GE
         else sm->dataPtr( &elements, sz * eltSize );
       }
       
-      //Make sure it is usable after loading
+      //Make sure it is modifiable after loading
       if (sm->isLoading() && sz == 0) {
         elements = (Uint8*) std::malloc( eltSize );
         cap = 1;
