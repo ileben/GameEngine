@@ -3,6 +3,11 @@
 namespace GE
 {
 
+  DEFINE_SERIAL_CLASS( BasicString<char>,     CLSID_CHARSTRING );
+  DEFINE_SERIAL_CLASS( BasicString<Byte>,     CLSID_BYTESTRING );
+  DEFINE_SERIAL_CLASS( BasicString<Unicode>,  CLSID_UNICODESTRING );
+  
+  
   #if defined(WIN32)
 
   int win_snprintf(char *str, size_t size, const char *format, ...)

@@ -386,6 +386,9 @@ namespace GE
   #define CLSID_SKINANIM             ClassID (0xf8b465a8u, 0x8729, 0x4406, 0x973c8a80f8950480ull)
   #define CLSID_SKINTRACK            ClassID (0x8ff2d758u, 0xa624, 0x445a, 0x87197d3e14bb22c5ull)
   #define CLSID_MAXCHARACTER         ClassID (0xc0db7169u, 0x65dd, 0x4375, 0xa4b2d9a505703db8ull)
+  #define CLSID_CHARSTRING           ClassID (0xd7f2841bu, 0xadbc, 0x4d81, 0xbc5889e771dd4496ull)
+  #define CLSID_BYTESTRING           ClassID (0xf7bca47cu, 0x4089, 0x4d7f, 0xb22d9bab68d87c42ull)
+  #define CLSID_UNICODESTRING        ClassID (0xf54b6286u, 0xaebb, 0x48fb, 0x84cf8ffaca844ed8ull)
 
 
 }//namespace GE

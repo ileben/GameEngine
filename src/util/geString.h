@@ -5,8 +5,8 @@ namespace GE
 {
 
   #if defined( WIN32 )
-  int GE_API_ENTRY win_snprintf(char *str, size_t size, const char *format, ...);
-  int GE_API_ENTRY win_vsnprintf(char *str, size_t size, const char *format, va_list ap);
+  int GE_API_ENTRY win_snprintf (char *str, size_t size, const char *format, ...);
+  int GE_API_ENTRY win_vsnprintf (char *str, size_t size, const char *format, va_list ap);
   # define snprintf win_snprintf
   # define vsnprintf win_vsnprintf
   #endif
@@ -15,47 +15,21 @@ namespace GE
   ----------------------------------------
   Forward declarations
   ----------------------------------------*/
+
   class File;
   typedef unsigned int Unicode;
   
   /*
   ----------------------------------------
-  Serialization base
-  ----------------------------------------*/
-
-  class SerialString
-  {
-    DECLARE_SERIAL_CLASS( SerialString );
-    DECLARE_CALLBACK( ClassEvent::Serialize, serialize );
-    DECLARE_END();
-
-  protected:
-    void *buf;
-    int cap;
-    int size;
-    Uint8 charSize;
-
-  public:
-    SerialString () {}
-    SerialString (SerializeManager *sm) {}
-    virtual void serialize (void *param)
-    {
-      SerializeManager *sm = (SM*)param;
-      sm->dataVar( &size );
-      sm->dataPtr( &buf, (size+1) * charSize );
-      if (sm->isLoading()) cap = size+1;
-    }
-  };
-
-  /*
-  ----------------------------------------
   Base template class
   ----------------------------------------*/
-  
-  //#define buf ((CharType*)buf)
 
-  template <class C> class BasicString : public SerialString
+  template <class C> class BasicString
   {
+    DECLARE_SERIAL_CLASS( BasicString );
+    DECLARE_CALLBACK( ClassEvent::Serialize, serialize );
+    DECLARE_END;
+
     friend class File;
     friend class BasicString<char>;
     friend class BasicString<Byte>;
@@ -66,14 +40,22 @@ namespace GE
     typedef C CharType;
     
   protected:
-    /*
+    
     CharType *buf;
     int cap;
     int size;
-    */
+    
   public:
 
-    BasicString (SerializeManager *sm) : SerialString (sm)
+    virtual void serialize (void *param)
+    {
+      SerializeManager *sm = (SM*)param;
+      sm->dataVar( &size );
+      sm->dataPtr( &buf, (size+1) * sizeof(CharType) );
+      if (sm->isLoading()) cap = size+1;
+    }
+
+    BasicString (SerializeManager *sm)
     {}
 
     BasicString ()
