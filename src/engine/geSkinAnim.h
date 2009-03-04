@@ -61,15 +61,16 @@ namespace GE
     DECLARE_END;
     
   public:
-    CharString *name;
+    CharString name;
     ClassArrayList <SkinTrack> tracks;
     
     void serialize (void *sm)
     {
+      ((SM*)sm)->objectVar( &name );
       ((SM*)sm)->objectVar( &tracks );
     }
     
-    SkinAnim (SM *sm) : tracks (sm)
+    SkinAnim (SM *sm) : name (sm), tracks (sm)
     {}
     
     SkinAnim ()

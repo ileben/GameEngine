@@ -409,11 +409,18 @@ void loadPackage (String fileName)
   SkinMesh *inMesh = character->mesh;
   numFrames = character->anims.first()->tracks.first()->keys.size();
   maxTime = character->anims.first()->tracks.first()->totalTime;
+
+  SkinAnim *anim = character->anims.first();
   
-  printf ("Imported %d verts, %d faces, %d indices\n",
+  printf ("Imported %d verts, %d faces, %d indices, %d animations\n",
           inMesh->verts.size(),
           inMesh->faces.size(),
-          inMesh->indices.size());
+          inMesh->indices.size(),
+          character->anims.size());
+
+  printf ("Animation name: '%s'\n",
+          character->anims.first()->name.buffer());
+
   
   //Add vertices to the mesh
   polyMesh = new SPolyMesh;
