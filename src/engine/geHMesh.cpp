@@ -9,10 +9,12 @@ namespace GE
   DEFINE_CLASS (HMesh::Edge);
   DEFINE_CLASS (HMesh::Face);
   
-  typedef HMesh::Vertex Vertex;
-  typedef HMesh::HalfEdge HalfEdge;
-  typedef HMesh::Edge Edge;
-  typedef HMesh::Face Face;
+  typedef HMesh::Vertex         Vertex;
+  typedef HMesh::HalfEdge       HalfEdge;
+  typedef HMesh::Edge           Edge;
+  typedef HMesh::Face           Face;
+  typedef HMesh::VertHedgeIter  VertHedgeIter;
+  typedef HMesh::VertVertIter   VertVertIter;
 
   /*---------------------------------------------------
   Vertex

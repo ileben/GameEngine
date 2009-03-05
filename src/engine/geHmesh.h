@@ -11,16 +11,16 @@ namespace GE
 {
 
   typedef LinkedList<void*>::Iterator ListHandle;
+
+  //a helper for various operations
+  union ItemTag {
+    void* ptr;
+    int id;
+    ItemTag() : id(0) {};
+  };
   
-
-  /*-----------------------------------------
-  Half-edge mesh class
-  ------------------------------------------*/
-
-  class GE_API_ENTRY HMesh : public Resource
+  class HMeshTraits
   {
-    DECLARE_SUBCLASS (HMesh, Resource); DECLARE_END;
-    
   public:
 
     //forward-declare base data types
@@ -29,18 +29,8 @@ namespace GE
     class Edge;
     class Face;
 
-    //data and adjacency iterators
-    #include "geHmeshDataiter.h"
-    #include "geHmeshAdjiter.h"
-
-    //a helper for various operations
-    union ItemTag {
-      void* ptr;
-      int id;
-      ItemTag() : id(0) {};
-    };
-
-    /*-----------------------------------------
+    /*
+    ------------------------------------------
     Vertex class
     ------------------------------------------*/
 
@@ -62,7 +52,8 @@ namespace GE
       int degree();
     };
     
-    /*-----------------------------------------
+    /*
+    ------------------------------------------
     HalfEdge class
     ------------------------------------------*/
 
@@ -100,7 +91,8 @@ namespace GE
       Vertex* oppositeVertex();
     };
 
-    /*-----------------------------------------
+    /*
+    ------------------------------------------
     Edge class
     ------------------------------------------*/
     
@@ -124,7 +116,8 @@ namespace GE
       INLINE HalfEdge* hedge2() { return hedge->twin; }
     };
     
-    /*-----------------------------------------
+    /*
+    ------------------------------------------
     Face class
     ------------------------------------------*/
 
@@ -147,8 +140,30 @@ namespace GE
       int vertexCount();
       bool isTriangle();
     };
+  };
 
-    /*-----------------------------------------------
+  /*
+  ------------------------------------------
+  Half-edge mesh class
+  ------------------------------------------*/
+
+  class GE_API_ENTRY HMesh : public Resource
+  {
+    DECLARE_SUBCLASS (HMesh, Resource); DECLARE_END;
+    
+  public:
+
+    typedef HMeshTraits::Vertex    Vertex;
+    typedef HMeshTraits::HalfEdge  HalfEdge;
+    typedef HMeshTraits::Edge      Edge;
+    typedef HMeshTraits::Face      Face;
+
+    //data and adjacency iterators
+    #include "geHmeshDataiter.h"
+    #include "geHmeshAdjiter.h"
+
+    /*
+    ------------------------------------------------
     Classes to be used when entities are constructed
     ------------------------------------------------*/
     
@@ -162,7 +177,8 @@ namespace GE
     void setClasses(ClassPtr cnVertex, ClassPtr cnHedge,
                     ClassPtr cnEdge, ClassPtr cnFace);
     
-    /*------------------------------------------------
+    /*
+    -------------------------------------------------
     Main data collections, holding all the entities
     that define the mesh structure.
     -------------------------------------------------*/
@@ -172,7 +188,8 @@ namespace GE
     LinkedList<void*> edges;
     LinkedList<void*> faces;
     
-    /*---------------------------------------------------
+    /*
+    ----------------------------------------------------
     The entities removed as a result of certain mesh
     operations (e.g. WeldVertices) are marked invalid
     and temporarily stored into invalidation collections
@@ -186,7 +203,8 @@ namespace GE
     LinkedList<void*> invalid_edges;
     LinkedList<void*> invalid_faces;
 
-    /*--------------------------------------------
+    /*
+    ---------------------------------------------
     Constructor
     ---------------------------------------------*/
 
@@ -200,7 +218,8 @@ namespace GE
       classFace = Class(Face);
     }
     
-    /*--------------------------------------------
+    /*
+    ---------------------------------------------
     Counters return numbers of a type of entity
     currently in the mesh structure.
     ---------------------------------------------*/
@@ -210,7 +229,8 @@ namespace GE
     INLINE int edgeCount() {return edges.size();}
     INLINE int faceCount() {return faces.size();}
     
-    /*--------------------------------------------
+    /*
+    ---------------------------------------------
     Entity insertion and removal functions.
     These make sure that entities have proper
     handles to list nodes for removal and
@@ -231,7 +251,8 @@ namespace GE
     virtual ListHandle deleteFace(Face *f);
     virtual void deleteEdgeWhole(Edge *e);
 
-    /*----------------------------------------------
+    /*
+    -----------------------------------------------
     Finally deletes the invalidated mesh entities
     which were removed by mesh operations
     -----------------------------------------------*/
@@ -239,14 +260,16 @@ namespace GE
   public:    
     void clearInvalid();
     
-    /*-----------------------------------------------
+    /*
+    ------------------------------------------------
     Deletes all the mesh entities and destroys the
     entire mesh structure.
     ------------------------------------------------*/
 
     void clear();
 
-    /*--------------------------------------
+    /*
+    ---------------------------------------
     Destructor
     ---------------------------------------*/
     
@@ -254,7 +277,8 @@ namespace GE
       clear();
     }
     
-    /*------------------------------------------------------------
+    /*
+    -------------------------------------------------------------
     Transfers the mesh entities from given HMesh to this one
     adding them to existing mesh structure. Just the pointers
     to entities are transfered without actually copying their
@@ -264,7 +288,8 @@ namespace GE
 
     void mergeWith(HMesh *mesh);
 
-    /*--------------------------------------------------------------
+    /*
+    ---------------------------------------------------------------
     Stores the mesh structure into a chunk of memory independent
     of its actual memory layout by swapping the pointer
     references with indexed entity id's. The resulting mesh
@@ -273,7 +298,8 @@ namespace GE
 
     void* serialize(int *outSize=NULL);
 
-    /*-----------------------------------------------------------------
+    /*
+    -----------------------------------------------------------------
     Unpacks the mesh structure from given serialized representation
     back into pointer-referenced representation for fast operations
     on mesh. The unserialized entities are added to the existing
@@ -304,7 +330,8 @@ namespace GE
   
   
   
-  /*------------------------------------------------------------
+  /*
+  -------------------------------------------------------------
   The following template classes act as a bridge between new
   derived versions of HMesh entity classes and the original
   ones. They insert overriden versions of basic mesh traversal
@@ -315,6 +342,28 @@ namespace GE
   adjancency query invoked on a derived level classes returns
   the derived version of pointers as well.
   -------------------------------------------------------------*/
+
+  template <class Derived, class Base> class MeshBase : public Base
+  {
+  public:
+    typedef typename Derived::Vertex    Vertex;
+    typedef typename Derived::HalfEdge  HalfEdge;
+    typedef typename Derived::Edge      Edge;
+    typedef typename Derived::Face      Face;
+
+    //data and adjacency iterators
+    #include "geHmeshDataiter.h"
+    #include "geHmeshAdjiter.h"
+
+    MeshBase ()
+    {
+      setClasses(
+        Class( Vertex ),
+        Class( HalfEdge ),
+        Class( Edge ),
+        Class( Face ));
+    }
+  };
 
   template <class Derived, class Base> class VertexBase : public Base::Vertex
   {

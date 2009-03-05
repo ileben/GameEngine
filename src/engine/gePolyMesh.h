@@ -12,46 +12,88 @@
 namespace GE
 {
 
-  /*======================================================
-   *
-   * Shading model determines whether face or per-vertex
-   * normals will be used when drawing this mesh.
-   *
-   *======================================================*/
+  /*
+  ========================================================
+  Shading model determines whether face or per-vertex
+  normals will be calculated.
+  ======================================================*/
 
   enum ShadingModel
   {
-    SHADING_FLAT         = 1,
-    SHADING_SMOOTH       = 2
+    SHADING_FLAT     = 1,
+    SHADING_SMOOTH   = 2
   };
-  
 
-  /*===========================================================
-   *
-   * DynamicMesh is derived from a HMesh instantiation with
-   * custom traits to hold data needed for animation and
-   * rendering of the avatars. The base for this mesh allows
-   * fast adjacency queries, necessary editing, calculation of
-   * normals and many other mesh operations.
-   *
-   *===========================================================*/
-  
-  class GE_API_ENTRY PolyMesh : public HMesh
+  /*
+  ==========================================================
+  Traits defining the entity classes for the polygonal mesh
+  ==========================================================*/
+
+  class PolyMeshTraits
   {
-    friend class TriMesh;
-    friend class LoaderObj;
-    friend class Renderer;
-    DECLARE_SUBCLASS (PolyMesh, HMesh);
-    DECLARE_END;
-    
   public:
 
-    class Vertex;
-    class Edge;
-    class HalfEdge;
-    class Face;
+    class Vertex; class Edge; class HalfEdge; class Face; class VertexNormal;
 
-    /*---------------------------------------------
+    /*
+    -----------------------------------------------------------
+    Vertex holds the point in 3D space
+    -----------------------------------------------------------*/
+
+    class GE_API_ENTRY Vertex : public VertexBase <PolyMeshTraits,HMesh> {
+      DECLARE_SUBCLASS (Vertex, HMesh::Vertex); DECLARE_END;
+    public:
+      Vector3 point;
+    };
+
+    /*
+    ----------------------------------------------------------
+    No special data per edge
+    ----------------------------------------------------------*/
+
+    class GE_API_ENTRY Edge : public EdgeBase <PolyMeshTraits,HMesh> {
+      DECLARE_SUBCLASS (Edge, HMesh::Edge); DECLARE_END;
+    };
+
+    /*
+    --------------------------------------------------------
+    Half edge holds uvw coordinate and final normal for the
+    target vertex with regard to its face. These can differ
+    from one to another face for each vertex in case the
+    adjacent faces are detached in the uvw map and/or the
+    two faces are not in the same smoothing group
+    -------------------------------------------------------*/
+
+    class GE_API_ENTRY HalfEdge : public HalfEdgeBase <PolyMeshTraits,HMesh> {
+      DECLARE_SUBCLASS (HalfEdge, HMesh::HalfEdge); DECLARE_END;
+    public:
+      VertexNormal *vnormal;
+      HalfEdge() {vnormal = NULL;}
+      INLINE VertexNormal* vertexNormal() { return vnormal; }
+    };
+    
+    /*
+    -------------------------------------------------
+    Bits in the 32-bit field define which of the 32
+    smoothing groups the face belongs to. MaterialID
+    is an index into material's sub-material array.
+    -------------------------------------------------*/
+
+    class GE_API_ENTRY Face : public FaceBase <PolyMeshTraits,HMesh> {
+      DECLARE_SUBCLASS (Face, HMesh::Face); DECLARE_END;
+      friend class PolyMesh;
+    private:
+      Uint8 matId;
+    public:
+      Vector3 center;
+      Vector3 normal;
+      Uint32 smoothGroups;
+      Face() { smoothGroups = 0; matId = 0; }
+      Uint8 materialID() { return matId; }
+    };
+
+    /*
+    -----------------------------------------------
     Smooth normals are dynamically allocated like
     the rest of the mesh entities and referenced
     by halfedges via pointers. This minimizes the
@@ -71,6 +113,28 @@ namespace GE
       VertexNormal () {};
       VertexNormal (const Vector3 &c) {coord = c;}
     };
+  };
+  
+  /*
+  =============================================================
+  PolyMesh is derived from a HMesh instantiation with custom
+  traits to hold aditional data per each mesh entity. The fast
+  adjacency queries allow for calculation of normals and other
+  complex mesh operations.
+  =============================================================*/
+
+  class GE_API_ENTRY PolyMesh : public MeshBase <PolyMeshTraits,HMesh>
+  {
+    friend class TriMesh;
+    friend class LoaderObj;
+    friend class Renderer;
+    DECLARE_SUBCLASS (PolyMesh, HMesh);
+    DECLARE_END;
+    
+  public:
+
+    typedef PolyMeshTraits::VertexNormal VertexNormal;
+    #include "gePolyMeshIters.h"
 
   private:
     bool useSmoothGroups;
@@ -78,7 +142,8 @@ namespace GE
     DynamicArrayList<VertexNormal> vertexNormals;
     virtual void insertHalfEdge (HMesh::HalfEdge *he);
     
-    /*--------------------------------------------
+    /*
+    -----------------------------------------------
     We keep track of all the material IDs used on
     this mesh so the renderer knows how many times
     to traverse it.
@@ -91,64 +156,6 @@ namespace GE
     void subMaterialID (MaterialID m);
     virtual void insertFace (HMesh::Face *f);
     virtual ListHandle deleteFace (HMesh::Face *f);
-    
-
-    /*----------------------------------------------
-    Custom mesh entities
-    ------------------------------------------------*/
-
-  public:
-    
-    class GE_API_ENTRY Vertex : public VertexBase <PolyMesh,HMesh> {
-      DECLARE_SUBCLASS (Vertex, HMesh::Vertex); DECLARE_END;
-    public:
-      Vector3 point;
-    };
-
-    class GE_API_ENTRY Edge : public EdgeBase <PolyMesh,HMesh> {
-      DECLARE_SUBCLASS (Edge, HMesh::Edge); DECLARE_END;
-    };
-
-    /*------------------------------------------------------
-    Half edge holds uvw coordinate and final normal for the
-    target vertex with regard to its face. These can differ
-    from one to another face for each vertex in case the
-    adjacent faces are detached in the uvw map and/or the
-    two faces are not in the same smoothing group
-    -------------------------------------------------------*/
-
-    class GE_API_ENTRY HalfEdge : public HalfEdgeBase <PolyMesh,HMesh> {
-      DECLARE_SUBCLASS (HalfEdge, HMesh::HalfEdge); DECLARE_END;
-    public:
-      VertexNormal *vnormal;
-      HalfEdge() {vnormal = NULL;}
-      INLINE VertexNormal* vertexNormal() { return vnormal; }
-    };
-    
-    /*--------------------------------------------------
-    Bits in the 32-bit field define whether the Face
-    belongs to any of the 32 smoothing groups.
-    MaterialID is an index into material's sub-material
-    array.
-    ----------------------------------------------------*/
-
-    class GE_API_ENTRY Face : public FaceBase <PolyMesh,HMesh> {
-      DECLARE_SUBCLASS (Face, HMesh::Face); DECLARE_END;
-      friend class PolyMesh;
-    private:
-      Uint8 matId;
-    public:
-      Vector3 center;
-      Vector3 normal;
-      Uint32 smoothGroups;
-      Face() { smoothGroups = 0; matId = 0; }
-      Uint8 materialID() { return matId; }
-    };
-
-    //Data and adjancency iterators
-    #include "geHmeshDataiter.h"
-    #include "geHmeshAdjiter.h"
-    #include "gePolyMeshIters.h"
 
 
   public:
@@ -177,23 +184,6 @@ namespace GE
     void updateNormals (ShadingModel shadingModel);
     void setMaterialID (Face *f, MaterialID id);
   };
-  
-
-  //class Bone
-  //- ID
-  //- origin
-  //- rotation
-  //- children->*
-  
-  //class Skin
-  //- bones(ID?)->*
-  //- weight*
-  //- bindToSkeleton(rootBone) ?
-  
-  //class SkeletonAnimation
-  //- boneID - keys*/values*
-  //- bindToSkeleton(rootBone) { boneID <= bone-> }
-  //- play(), setOffset(), ...
 
 
 }//namespace GE

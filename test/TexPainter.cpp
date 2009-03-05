@@ -5,90 +5,33 @@ using namespace GE;
 #include <cstdlib>
 #include <cstdio>
 
-
-class Testy : public Object
-{
-public:
-  DECLARE_SUBCLASS (Testy, Object);
-  DECLARE_PROPERTY (int, a);
-  DECLARE_PROPERTY (int, b);
-  DECLARE_CALLBACK (ClassEvent::Create, createMe);
-  DECLARE_END;
-  
-public:
-  
-  int a;
-  int b;
-
-  void createMe (void *param)
-  {
-    printf ("Creating Testy!\n");
-  }
-};
-
-DEFINE_CLASS (Testy);
-
-
-class SubTesty : public Testy
-{
-  DECLARE_SUBCLASS (SubTesty, Testy);
-  DECLARE_PROPERTY (int, c);
-  DECLARE_END;
-  
-public:
-  
-  int c;
-  
-  /*
-  PROPBEGIN (Testy);
-  PROPERTY  (c);
-  PROPEND;
-  
-  DEFAULT (int, c, 55);
-  DEFAULT (int, b, 440); */
-};
-
-DEFINE_CLASS (SubTesty);
-
-
-class ETexMesh : public TexMesh
-{
-  DECLARE_SUBCLASS (ETexMesh, TexMesh);
-  DECLARE_END;
-  
-public:
+class ETexMeshTraits { public:
 
   class Vertex; class HalfEdge; class Edge; class Face;
 
-  class Vertex : public VertexBase <ETexMesh,TexMesh> {
+  class Vertex : public VertexBase <ETexMeshTraits,TexMesh> {
     DECLARE_SUBCLASS (Vertex, TexMesh::Vertex); DECLARE_END;
   public:
     bool selected;
     Vertex() : selected(false) {};
   };
 
-  class HalfEdge : public HalfEdgeBase <ETexMesh,TexMesh> {
+  class HalfEdge : public HalfEdgeBase <ETexMeshTraits,TexMesh> {
     DECLARE_SUBCLASS (HalfEdge, TexMesh::HalfEdge); DECLARE_END;
   };
 
-  class Edge : public EdgeBase <ETexMesh,TexMesh> {
+  class Edge : public EdgeBase <ETexMeshTraits,TexMesh> {
     DECLARE_SUBCLASS (Edge, TexMesh::Edge); DECLARE_END;
   };
 
-  class Face : public FaceBase <ETexMesh,TexMesh> {
+  class Face : public FaceBase <ETexMeshTraits,TexMesh> {
     DECLARE_SUBCLASS (Face, TexMesh::Face); DECLARE_END;
   };
+};
 
-  ETexMesh() {
-    setClasses(
-      Class(Vertex),
-      Class(HalfEdge),
-      Class(Edge),
-      Class(Face));
-  }
-
-  #include "engine/geHmeshDataiter.h"
-  #include "engine/geHmeshAdjiter.h"
+class ETexMesh : public MeshBase <ETexMeshTraits,TexMesh>
+{
+  DECLARE_SUBCLASS (ETexMesh, TexMesh); DECLARE_END;
 };
 
 DEFINE_CLASS (ETexMesh);
@@ -115,7 +58,8 @@ FpsLabel lblFps;
 
 Camera3D cam3D;
 Camera2D cam2D;
-Renderer renderer;
+Renderer *renderer;
+Scene *scene;
 
 int resX3D = 512;
 int resX2D = 512;
@@ -149,6 +93,85 @@ void INLINE postRedisplay()
   if (!idleDraw)
     glutPostRedisplay();
 }
+
+class Canvas : public Widget
+{
+public:
+  virtual void draw ()
+  {
+    //draw texture
+    ///////////////////////////
+    glColor3f(1,1,1);
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, texDiff->getHandle());
+    
+    glBegin(GL_QUADS);
+    glTexCoord2f(0, 0);
+    glVertex2i(0, 0);
+    glTexCoord2f(1, 0);
+    glVertex2i(resX2D, 0);
+    glTexCoord2f(1, 1);
+    glVertex2i(resX2D, resY);
+    glTexCoord2f(0, 1);
+    glVertex2i(0, resY);
+    glEnd();
+    
+    //overlay UV mesh
+    /////////////////////////////
+    
+    //edges
+    glColor3f(0,1,0);
+    glDisable(GL_TEXTURE_2D);
+    glBegin(GL_LINES);
+    for (ETexMesh::EdgeIter e(uvmesh); !e.end(); ++e) {
+    Vector2 uv1 = e->vertex1()->point;
+    Vector2 uv2 = e->vertex2()->point;
+    uv1.x *= resX2D; uv1.y *= resY;
+    uv2.x *= resX2D; uv2.y *= resY;
+    glVertex2fv((Float*)&uv1);
+    glVertex2fv((Float*)&uv2); }
+    glEnd();
+    
+    //vertices
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    glBegin(GL_QUADS);
+    float R = 1.0f;
+    for (ETexMesh::VertIter v(uvmesh); !v.end(); ++v) {
+      
+      Vector2 uv = (*v)->point;
+      uv.x *= resX2D; uv.y *= resY;
+      
+      if (v->selected)
+        {glColor3f(1,0,0); R=2.0f;}
+      else {glColor3f(0,0,0); R=1.0f;}
+      
+      glVertex2f(uv.x-R, uv.y-R);
+      glVertex2f(uv.x+R, uv.y-R);
+      glVertex2f(uv.x+R, uv.y+R);
+      glVertex2f(uv.x-R, uv.y+R);
+    }
+    glEnd();
+    
+    //draw brush
+    if (!edit) {
+      int S = (*brushSize)/2;
+      int E = *brushSize - S;
+      if (paint) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+      else glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+      Vector2 M(mouse2D.x, mouse2D.y);
+      
+      glColor3f(0,0,0);
+      glBegin(GL_QUADS);
+      glVertex2f(M.x-S, M.y-S);
+      glVertex2f(M.x+E, M.y-S);
+      glVertex2f(M.x+E, M.y+E);
+      glVertex2f(M.x-S, M.y+E);
+      glEnd();
+    }
+  }
+};
+
+Canvas wdgCanvas;
 
 
 void saveImage()
@@ -404,12 +427,12 @@ void drag3D(int x, int y)
     Vector2 diff = Vector2((Float)x,(Float)y) - lastMouse3D;
     float eyeDist = (cam3D.getEye() - center).norm();
     
-    Float angleH = -diff.x * (2*PI) / 400;
-    Float angleV = -diff.y * (2*PI) / 400;
-    Float panH = -diff.x * (eyeDist * 0.002f);
-    Float panV = diff.y * (eyeDist * 0.002f);
-    Float zoom = -diff.y * (eyeDist * 0.01f);
-    lastMouse3D.set ((Float)x, (Float)y);
+    Float angleH = diff.x * (2*PI) / 400;
+    Float angleV = diff.y * (2*PI) / 400;
+    Float panH = -diff.x * ( eyeDist * 0.002f );
+    Float panV =  diff.y * ( eyeDist * 0.002f );
+    Float zoom = -diff.y * ( eyeDist * 0.01f );
+    lastMouse3D.set( (Float)x, (Float)y );
     
     switch (cameraMode)
     {  
@@ -543,21 +566,21 @@ void keyboard(unsigned char key, int x, int y)
 
 void display()
 {
-  renderer.begin();
+  renderer->beginFrame();
   
   //3D view (left)
   ///////////////////////////////////
 
-  //TODO: remove following line - just testing purpose
-  //zekko->getDynamic()->updateNormals();
-
   //switch camera
-  renderer.setViewport(0,0,resX3D, resY);
-  renderer.setCamera(&cam3D);
+  renderer->setViewport( 0,0,resX3D, resY );
+  renderer->setCamera( &cam3D );
 
   //draw model
-  renderer.renderActor(zekko);
-  
+  renderer->beginScene( scene );
+  glMatrixMode( GL_TEXTURE );
+  glLoadIdentity();
+  renderer->renderScene();
+  renderer->endScene();
   
   //2D view (right)
   ///////////////////////////////////
@@ -565,91 +588,16 @@ void display()
   Material::BeginDefault ();
   
   //switch camera
-  renderer.setViewport(resX3D,0,resX2D,resY);
-  renderer.setCamera(&cam2D);
-  
-  glDisable(GL_LIGHTING);
-  glDisable(GL_DEPTH_TEST);
-  glDisable(GL_BLEND);
-  glDisable(GL_CULL_FACE);
-  
-  //draw texture
-  ///////////////////////////
-  glColor3f(1,1,1);
-  //glActiveTexture (GL_TEXTURE0);
-  glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, texDiff->getHandle());
-  
-  glBegin(GL_QUADS);
-  glTexCoord2f(0, 0);
-  glVertex2i(0, 0);
-  glTexCoord2f(1, 0);
-  glVertex2i(resX2D, 0);
-  glTexCoord2f(1, 1);
-  glVertex2i(resX2D, resY);
-  glTexCoord2f(0, 1);
-  glVertex2i(0, resY);
-  glEnd();
-  
-  //overlay UV mesh
-  /////////////////////////////
-  
-  //edges
-  glColor3f(0,1,0);
-  glDisable(GL_TEXTURE_2D);
-  glBegin(GL_LINES);
-  for (ETexMesh::EdgeIter e(uvmesh); !e.end(); ++e) {
-  Vector2 uv1 = e->vertex1()->point;
-  Vector2 uv2 = e->vertex2()->point;
-  uv1.x *= resX2D; uv1.y *= resY;
-  uv2.x *= resX2D; uv2.y *= resY;
-  glVertex2fv((Float*)&uv1);
-  glVertex2fv((Float*)&uv2); }
-  glEnd();
-  
-  //vertices
-  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-  glBegin(GL_QUADS);
-  float R = 1.0f;
-  for (ETexMesh::VertIter v(uvmesh); !v.end(); ++v) {
-    
-    Vector2 uv = (*v)->point;
-    uv.x *= resX2D; uv.y *= resY;
-    
-    if (v->selected)
-      {glColor3f(1,0,0); R=2.0f;}
-    else {glColor3f(0,0,0); R=1.0f;}
-    
-    glVertex2f(uv.x-R, uv.y-R);
-    glVertex2f(uv.x+R, uv.y-R);
-    glVertex2f(uv.x+R, uv.y+R);
-    glVertex2f(uv.x-R, uv.y+R);
-  }
-  glEnd();
-  
-  //draw brush
-  if (!edit) {
-    int S = (*brushSize)/2;
-    int E = *brushSize - S;
-    if (paint) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    else glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    Vector2 M(mouse2D.x, mouse2D.y);
-    
-    glColor3f(0,0,0);
-    glBegin(GL_QUADS);
-    glVertex2f(M.x-S, M.y-S);
-    glVertex2f(M.x+E, M.y-S);
-    glVertex2f(M.x+E, M.y+E);
-    glVertex2f(M.x-S, M.y+E);
-    glEnd();
-  }
+  renderer->setViewport( resX3D,0,resX2D,resY );
+  renderer->setCamera( &cam2D );
+  renderer->renderWidget( &wdgCanvas );
 
   //Frames per second
-  renderer.setViewport(0,0,resX2D, resY);
-  renderer.setCamera(&cam2D);
-  renderer.renderWidget(&lblFps);
+  renderer->setViewport( 0,0, resX2D,resY );
+  renderer->setCamera( &cam2D );
+  renderer->renderWidget( &lblFps );
 
-  renderer.end();
+  renderer->endFrame();
 }
 
 void reshape(int w, int h)
@@ -710,36 +658,10 @@ int main (int argc, char **argv)
   initGlut(argc, argv);
   
   Kernel kernel;
-  kernel.enableVerticalSync(false);
-  printf("Kernel loaded\n");
-  /*
-  printf("Testy::Default a: %d\n", GetClassDefault (Testy, a));
-  printf("Testy::Default b: %d\n", GetClassDefault (Testy, b));
-  printf("SubTesty::Default b: %d\n", GetClassDefault (SubTesty, b));
-  */
-  //Testy* testy = (Testy*) kernel.spawn (Class(Testy));
-  Testy* testy = (Testy*) kernel.spawn ("Testy");
-  //printf("testy->default a: %d\n", GetDefault (testy, a));
-  //printf("testy->default b: %d\n", GetDefault (testy, b));
+  kernel.enableVerticalSync( false );
+  renderer = kernel.getRenderer();
+  printf( "Kernel loaded\n" );
   
-  Testy *subtesty = (SubTesty*) kernel.spawn ("SubTesty");
-  //printf("subtesty->default b: %d\n", GetDefault (subtesty, b));
-  
-  ByteString btesty;
-  testy->a = 33;
-  testy->b = 44;
-  /*
-  IClass::SaveText (testy, btesty);
-  printf ("Testy:\n%s", btesty.buffer());
-  
-  ByteString ttesty =
-    "a = 100; b = 200\n";
-  
-  IClass::LoadText (testy, ttesty, 0);
-  IClass::Create (testy, NULL, 0);
-  printf ("testy->a: %d\n", testy->a);
-  printf ("testy->b: %d\n", testy->b);
-  */
   //Load shape model
   LoaderObj ldr;
   File f( "zekko.obj" );
@@ -759,27 +681,27 @@ int main (int argc, char **argv)
   if (zekko == NULL) return EXIT_FAILURE;
   
   //Check if UV mesh type correct
-  printf ("uvmesh = %s\n", StringOf (ClassOf (zekko->getTexMesh())));
+  printf( "uvmesh = %s\n", StringOf( ClassOf( zekko->getTexMesh() )));
   
-  printf ("uvmesh %s ETexMesh\n",
-          SafeCast (ETexMesh, zekko->getTexMesh()) ?
+  printf( "uvmesh %s ETexMesh\n",
+          SafeCast( ETexMesh, zekko->getTexMesh() ) ?
           "IS" : "is NOT");
   
-  printf ("uvmesh %s TexMesh\n",
-          SafeCast (TexMesh, zekko->getTexMesh()) ?
+  printf( "uvmesh %s TexMesh\n",
+          SafeCast( TexMesh, zekko->getTexMesh() ) ?
           "IS" : "is NOT");
   
-  printf ("uvmesh %s Resource\n",
-          SafeCast (Resource, zekko->getTexMesh()) ?
+  printf( "uvmesh %s Resource\n",
+          SafeCast( Resource, zekko->getTexMesh() ) ?
           "IS" : "is NOT");
   
-  printf ("uvmesh %s PolyMesh\n",
-          SafeCast (PolyMesh, zekko->getTexMesh()) ?
+  printf( "uvmesh %s PolyMesh\n",
+          SafeCast( PolyMesh, zekko->getTexMesh() ) ?
           "IS" : "is NOT");
   
   //Setup camera
-  cam3D.translate(0,35,100);
-  cam3D.setCenter(center);
+  cam3D.translate( 0,35,-100 );
+  cam3D.setCenter( center );
   //cam3D.setNearClipPlane(100.0f);
   //cam3D.setFarClipPlane(100000.0f);
   
@@ -795,7 +717,6 @@ int main (int argc, char **argv)
   //Convert to static mesh
   //dmesh->updateNormals();
   smesh.fromPoly( dmesh, uvmesh );
-  //zekko->setStatic(&smesh);
   
   //Load texture image
   imgDiff.readFile( "texture.jpg", "" );
@@ -814,32 +735,39 @@ int main (int argc, char **argv)
   
   //Create material using texture
   PhongMaterial mat;
-  mat.setDiffuseTexture(texDiff);
-  //mat.setSpecularityTexture(texSpec);
-  mat.setDiffuseColor(Vector3(1,0.0f,0.0f));
-  mat.setAmbientColor(Vector3(0.2f,0.2f,0.2f));
-  mat.setSpecularity(1.0f);
-  mat.setGlossiness(0.2f);
+  mat.setDiffuseTexture( texDiff );
+  //mat.setSpecularityTexture( texSpec );
+  mat.setDiffuseColor( Vector3( 1,0.0f,0.0f ));
+  mat.setAmbientColor( Vector3( 0.2f,0.2f,0.2f ));
+  mat.setSpecularity( 1.0f );
+  mat.setGlossiness( 0.2f );
   
   PhongMaterial mat2;
-  mat2.setDiffuseTexture(texDiff);
-  //mat2.setSpecularityTexture(texSpec);
-  mat2.setDiffuseColor(Vector3(0.0f, 1.0f, 0.0f));
-  mat2.setAmbientColor(Vector3(0.2f, 0.2f, 0.2f));
-  mat2.setSpecularity(1.0f);
-  mat2.setGlossiness(0.2f);
+  mat2.setDiffuseTexture( texDiff );
+  //mat2.setSpecularityTexture( texSpec );
+  mat2.setDiffuseColor( Vector3( 0.0f, 1.0f, 0.0f ));
+  mat2.setAmbientColor( Vector3( 0.2f, 0.2f, 0.2f ));
+  mat2.setSpecularity( 1.0f );
+  mat2.setGlossiness( 0.2f );
   
   MultiMaterial mm;
-  mm.setNumSubMaterials(2);
-  mm.setSubMaterial(0, &mat);
-  mm.setSubMaterial(1, &mat2);
-  zekko->setMaterial(&mm);
+  mm.setNumSubMaterials( 2 );
+  mm.setSubMaterial( 0, &mat );
+  mm.setSubMaterial( 1, &mat2 );
+  zekko->setMaterial( &mm );
+
+  scene = new Scene;
+  scene->addChild( zekko );
+
+  //Light *light = new SpotLight( Vector3(-200,200,-200), Vector3(1,-1,1), 60, 0 );
+  Light *light = new HeadLight;
+  scene->addChild( light );
   
-  lblFps.setLocation(Vector2(0.0f,(Float)resY));
-  lblFps.setColor(Vector3(1.0f,1.0f,1.0f));
+  lblFps.setLocation( Vector2( 0.0f,(Float)resY ));
+  lblFps.setColor( Vector3( 1.0f,1.0f,1.0f ));
   
   //Run application
-  atexit(cleanup);
+  atexit( cleanup );
   glutMainLoop();
   cleanup();
 

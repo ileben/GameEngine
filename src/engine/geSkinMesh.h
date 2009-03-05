@@ -14,43 +14,34 @@ namespace GE
   SkinPolyMesh - PolyMesh with per-vertex skin data
   ==========================================================*/
 
-  class SPolyMesh : public PolyMesh
+  class SPolyMeshTraits
   {
-    DECLARE_SUBCLASS( SPolyMesh, PolyMesh ); DECLARE_END;
-
   public:
-
     class Vertex; class HalfEdge; class Edge; class Face;
 
-    class Vertex : public VertexBase <SPolyMesh,PolyMesh> {
+    class Vertex : public VertexBase <SPolyMeshTraits,PolyMesh> {
       DECLARE_SUBCLASS( Vertex, PolyMesh::Vertex ); DECLARE_END;
     public:
       Uint32 boneIndex [4];
       Float boneWeight [4];
     };
     
-    class HalfEdge : public HalfEdgeBase <SPolyMesh,PolyMesh> {
+    class HalfEdge : public HalfEdgeBase <SPolyMeshTraits,PolyMesh> {
       DECLARE_SUBCLASS( HalfEdge, PolyMesh::HalfEdge ); DECLARE_END;
     };
     
-    class Edge : public EdgeBase <SPolyMesh,PolyMesh>  {
+    class Edge : public EdgeBase <SPolyMeshTraits,PolyMesh>  {
       DECLARE_SUBCLASS( Edge, PolyMesh::Edge ); DECLARE_END;
     };
     
-    class Face : public FaceBase <SPolyMesh,PolyMesh> {
+    class Face : public FaceBase <SPolyMeshTraits,PolyMesh> {
       DECLARE_SUBCLASS( Face, PolyMesh::Face ); DECLARE_END;
     };
-    
-    #include "engine/geHmeshDataiter.h"
-    #include "engine/geHmeshAdjiter.h"
-    
-    SPolyMesh() {
-      setClasses(
-        Class( Vertex ),
-        Class( HalfEdge ),
-        Class( Edge ),
-        Class( Face ));
-    }
+  };
+
+  class SPolyMesh : public MeshBase <SPolyMeshTraits,PolyMesh>
+  {
+    DECLARE_SUBCLASS( SPolyMesh, PolyMesh ); DECLARE_END;
   };
 
 

@@ -15,13 +15,6 @@ namespace GE
 
   PolyMesh::PolyMesh ()
   {
-    
-    setClasses(
-      Class(Vertex),
-      Class(HalfEdge),
-      Class(Edge),
-      Class(Face));
-    
     useSmoothGroups = true;
     
     for (MaterialID m=0; m<GE_MAX_MATERIAL_ID; ++m)
