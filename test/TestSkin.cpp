@@ -11,7 +11,7 @@ void applyFK( UintSize frame );
 ==========================================================
 SkinPolyMesh
 ==========================================================*/
-
+/*
 class SPolyMesh : public PolyMesh
 {
   DECLARE_SUBCLASS( SPolyMesh, PolyMesh ); DECLARE_END;
@@ -56,7 +56,7 @@ DEFINE_CLASS( SPolyMesh::Vertex );
 DEFINE_CLASS( SPolyMesh::HalfEdge );
 DEFINE_CLASS( SPolyMesh::Edge );
 DEFINE_CLASS( SPolyMesh::Face );
-
+*/
 
 class SPolyActor : public PolyMeshActor { public:
   virtual void renderMesh (MaterialID materialID);
@@ -66,7 +66,7 @@ class SPolyActor : public PolyMeshActor { public:
 ==========================================================
 SkinTriMesh
 ==========================================================*/
-
+/*
 struct SkinTriVertex
 {
   Vector2 texcoord;
@@ -80,7 +80,7 @@ class SkinTriMesh : public TriMesh
 {
 public:
   
-  SkinTriMesh() : TriMesh( sizeof( SkinTriVertex )) {}
+  SkinTriMesh() : TriMesh( sizeof(SkinTriVertex) ) {}
   
 protected:
   
@@ -106,6 +106,7 @@ protected:
     addVertex( &triVert );
   }
 };
+*/
 
 /*
 ==========================================================

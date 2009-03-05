@@ -61,7 +61,7 @@ namespace GE
     virtual void faceFromPoly (PolyMesh::Face *polyFace);
     
   public:
-        
+    
     void serialize (void *sm)
     {
       ( (SM*)sm )->objectVar( &data );
@@ -83,7 +83,17 @@ namespace GE
     void addFace (VertexID v1, VertexID v2, VertexID v3);
     void fromPoly (PolyMesh *m, TexMesh *uv);
   };
+/*
+  template <class Vertex> class TriMesh : public GenericTriMesh
+  {
+  public:
+    TriMesh (SerializeManager *sm) : GenericTriMesh (sm)
+    {}
 
+    TriMesh () : GenericTriMesh (sizeof(Vertex))
+    {}
+  };
+*/
 
 }//namespace GE
 #pragma warning(pop)

@@ -380,16 +380,16 @@ namespace GE
   Known class IDs
   --------------------------------------------------------*/
 
+  #define CLSID_CHARSTRING           ClassID (0xd7f2841bu, 0xadbc, 0x4d81, 0xbc5889e771dd4496ull)
+  #define CLSID_BYTESTRING           ClassID (0xf7bca47cu, 0x4089, 0x4d7f, 0xb22d9bab68d87c42ull)
+  #define CLSID_UNICODESTRING        ClassID (0xf54b6286u, 0xaebb, 0x48fb, 0x84cf8ffaca844ed8ull)
   #define CLSID_GENARRAYLIST         ClassID (0x66fd1aa8u, 0xc068, 0x4072, 0x8699a02e75e1a55dull)
+  #define CLSID_GENTRIMESH           ClassID (0x827c9bdfu, 0x8e80, 0x47bf, 0x8c6b2f0505bcdd6dull)
   #define CLSID_SKINMESH             ClassID (0xb9a1c7cdu, 0xcf04, 0x46b3, 0x837765467e60293bull)
   #define CLSID_SKINPOSE             ClassID (0x4b2c0c9au, 0xa47f, 0x4675, 0x88e0bf3aa5955a16ull)
   #define CLSID_SKINANIM             ClassID (0xf8b465a8u, 0x8729, 0x4406, 0x973c8a80f8950480ull)
   #define CLSID_SKINTRACK            ClassID (0x8ff2d758u, 0xa624, 0x445a, 0x87197d3e14bb22c5ull)
   #define CLSID_MAXCHARACTER         ClassID (0xc0db7169u, 0x65dd, 0x4375, 0xa4b2d9a505703db8ull)
-  #define CLSID_CHARSTRING           ClassID (0xd7f2841bu, 0xadbc, 0x4d81, 0xbc5889e771dd4496ull)
-  #define CLSID_BYTESTRING           ClassID (0xf7bca47cu, 0x4089, 0x4d7f, 0xb22d9bab68d87c42ull)
-  #define CLSID_UNICODESTRING        ClassID (0xf54b6286u, 0xaebb, 0x48fb, 0x84cf8ffaca844ed8ull)
-
 
 }//namespace GE
 #endif//__GECLASS_H_TWO
