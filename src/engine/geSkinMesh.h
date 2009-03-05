@@ -50,16 +50,20 @@ namespace GE
   SkinTriMesh - triangular mesh export from 3DSMax
   ==========================================================*/
 
-  struct SkinTriVertex
+  class SkinTriMeshTraits
   {
-    Vector2 texcoord;
-    Vector3 normal;
-    Vector3 point;
-    Uint32 boneIndex[4];
-    Float32 boneWeight[4];
+  public:
+    struct Vertex
+    {
+      Vector2 texcoord;
+      Vector3 normal;
+      Vector3 point;
+      Uint32 boneIndex[4];
+      Float32 boneWeight[4];
+    };
   };
 
-  class SkinTriMesh : public TriMesh
+  class SkinTriMesh : public TriMeshBase <SkinTriMeshTraits, TriMesh>
   {/*
     DECLARE_SERIAL_SUBCLASS( SkinTriMesh, TriMesh );
     DECLARE_CALLBACK( ClassEvent::Serialize, serialize );
@@ -67,8 +71,8 @@ namespace GE
 
   public:
     
-    SkinTriMesh (SerializeManager *sm) : TriMesh (sm) {}
-    SkinTriMesh () : TriMesh (sizeof(SkinTriVertex)) {}
+    SkinTriMesh (SerializeManager *sm) : TriMeshBase <SkinTriMeshTraits, TriMesh> (sm) {}
+    SkinTriMesh () {}
     
   protected:
     

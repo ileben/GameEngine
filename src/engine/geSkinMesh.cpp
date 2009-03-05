@@ -16,7 +16,7 @@ namespace GE
                                     TexMesh::Vertex *texVert)
   {
     SPolyMesh::Vertex *skinVert = (SPolyMesh::Vertex*) polyVert;
-    SkinTriVertex triVert;
+    Vertex triVert;
     
     if (texVert != NULL)
       triVert.texcoord = texVert->point;

@@ -20,7 +20,7 @@ namespace GE
     //given array and with given normal
     for (int i=0; i<4; ++i)
     {
-      TriMeshVertex vert;
+      TriMesh::Vertex vert;
       vert.point = points[ *pi[i] ];
       vert.normal = normal;
       addVertex( &vert );
@@ -71,7 +71,7 @@ namespace GE
     float xza, ya;
     
     //South pole
-    TriMeshVertex sPole;
+    TriMesh::Vertex sPole;
     sPole.point = Vector3( 0.0f, -1.0f, 0.0f );
     sPole.normal = sPole.point;
     addVertex( &sPole );
@@ -92,7 +92,7 @@ namespace GE
         float z = SIN( xza ) * r;
         
         //Insert vertex
-        TriMeshVertex vert;
+        TriMesh::Vertex vert;
         vert.point = Vector3( x,y,z );
         vert.normal = vert.point;
         addVertex( &vert );
@@ -100,7 +100,7 @@ namespace GE
     }
     
     //North pole
-    TriMeshVertex nPole;
+    TriMesh::Vertex nPole;
     nPole.point = Vector3( 0.0f, 1.0f, 0.0f );
     nPole.normal = nPole.point;
     addVertex( &nPole );

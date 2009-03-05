@@ -7,106 +7,10 @@ using namespace GE;
 
 void applyFK( UintSize frame );
 
-/*
-==========================================================
-SkinPolyMesh
-==========================================================*/
-/*
-class SPolyMesh : public PolyMesh
-{
-  DECLARE_SUBCLASS( SPolyMesh, PolyMesh ); DECLARE_END;
-
-public:
-
-  class Vertex; class HalfEdge; class Edge; class Face;
-
-  class Vertex : public VertexBase <SPolyMesh,PolyMesh> {
-    DECLARE_SUBCLASS( Vertex, PolyMesh::Vertex ); DECLARE_END;
-  public:
-    Uint32 boneIndex [4];
-    Float boneWeight [4];
-  };
-  
-  class HalfEdge : public HalfEdgeBase <SPolyMesh,PolyMesh> {
-    DECLARE_SUBCLASS( HalfEdge, PolyMesh::HalfEdge ); DECLARE_END;
-  };
-  
-  class Edge : public EdgeBase <SPolyMesh,PolyMesh>  {
-    DECLARE_SUBCLASS( Edge, PolyMesh::Edge ); DECLARE_END;
-  };
-  
-  class Face : public FaceBase <SPolyMesh,PolyMesh> {
-    DECLARE_SUBCLASS( Face, PolyMesh::Face ); DECLARE_END;
-  };
-  
-  #include "engine/geHmeshDataiter.h"
-  #include "engine/geHmeshAdjiter.h"
-  
-  SPolyMesh() {
-    setClasses(
-      Class( Vertex ),
-      Class( HalfEdge ),
-      Class( Edge ),
-      Class( Face ));
-  }
-};
-
-DEFINE_CLASS( SPolyMesh );
-DEFINE_CLASS( SPolyMesh::Vertex );
-DEFINE_CLASS( SPolyMesh::HalfEdge );
-DEFINE_CLASS( SPolyMesh::Edge );
-DEFINE_CLASS( SPolyMesh::Face );
-*/
-
 class SPolyActor : public PolyMeshActor { public:
   virtual void renderMesh (MaterialID materialID);
 };
 
-/*
-==========================================================
-SkinTriMesh
-==========================================================*/
-/*
-struct SkinTriVertex
-{
-  Vector2 texcoord;
-  Vector3 normal;
-  Vector3 point;
-  Uint32 boneIndex[4];
-  Float32 boneWeight[4];
-};
-
-class SkinTriMesh : public TriMesh
-{
-public:
-  
-  SkinTriMesh() : TriMesh( sizeof(SkinTriVertex) ) {}
-  
-protected:
-  
-  virtual void vertexFromPoly (PolyMesh::Vertex *polyVert,
-                               PolyMesh::VertexNormal *polyNormal,
-                               TexMesh::Vertex *texVert)
-  {
-    SPolyMesh::Vertex *skinVert = (SPolyMesh::Vertex*) polyVert;
-    SkinTriVertex triVert;
-    
-    if (texVert != NULL)
-      triVert.texcoord = texVert->point;
-    
-    triVert.normal = polyNormal->coord;
-    triVert.point = polyVert->point;
-    
-    for (int i=0; i<4; ++i)
-      triVert.boneIndex[ i ] = skinVert->boneIndex[ i ];
-    
-    for (int i=0; i<4; ++i)
-      triVert.boneWeight[ i ] = skinVert->boneWeight[ i ];
-    
-    addVertex( &triVert );
-  }
-};
-*/
 
 /*
 ==========================================================
@@ -470,8 +374,8 @@ void loadPackage (String fileName)
   for (SPolyMesh::VertexNormalIter ni( polyMesh ); !ni.end(); ++ni)
     polyPoseNormals.pushBack( ni->coord );
   
-  ArrayList <SkinTriVertex> *triVerts =
-    (ArrayList <SkinTriVertex> *) &triMesh->data;
+  ArrayList <SkinTriMesh::Vertex> *triVerts =
+    (ArrayList <SkinTriMesh::Vertex> *) &triMesh->data;
   
   for (UintSize v=0; v<triVerts->size(); ++v)
   {
@@ -550,12 +454,12 @@ void applyFK (UintSize frame)
     }
   } */
   
-  ArrayList <SkinTriVertex> *triVerts =
-    (ArrayList <SkinTriVertex> *) &triMesh->data;
+  ArrayList <SkinTriMesh::Vertex> *triVerts =
+    (ArrayList <SkinTriMesh::Vertex> *) &triMesh->data;
   
   for (UintSize index=0; index<triVerts->size(); ++index)
   {
-    SkinTriVertex &v = triVerts->at( index );
+    SkinTriMesh::Vertex &v = triVerts->at( index );
     
     v.point.set( 0,0,0 );
     for (int i=0; i<4; ++i)

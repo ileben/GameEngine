@@ -14,25 +14,28 @@
 namespace GE
 {
   /*
-  ------------------------------------------------------------
-  Static mesh is highly optimized for rendering. Note that
-  since OpenGL doesn't allow separate indices for vertex
+  ---------------------------------------------------------
+  Triangular mesh is highly optimized for rendering.
+  Since OpenGL doesn't allow separate indices for vertex
   and texture/color/normal arrays, certain information has
   to be duplicated many times in the respective array in
-  case another varies across different faces, adjacent to
-  a certain vertex (like normals when flat-shading is used).
-  ------------------------------------------------------------*/
+  case another varies across faces adjacent to a vertex.
+  ---------------------------------------------------------*/
   
   typedef Uint32 VertexID;
   
-  struct TriMeshVertex
+  class TriMeshTraits
   {
-    Vector2 texcoord;
-    Vector3 normal;
-    Vector3 point;
+  public:
+    struct Vertex
+    {
+      Vector2 texcoord;
+      Vector3 normal;
+      Vector3 point;
+    };
   };
   
-  class GE_API_ENTRY TriMesh : public Resource
+  class TriMesh : public Resource
   {
     friend class Renderer;
     DECLARE_SERIAL_SUBCLASS( TriMesh, Resource );
@@ -40,6 +43,8 @@ namespace GE
     DECLARE_END;
     
   public:
+
+    typedef TriMeshTraits::Vertex Vertex;
     
     struct IndexGroup
     {
@@ -75,7 +80,7 @@ namespace GE
     TriMesh (Uint32 vertexSize) : data (vertexSize, NULL)
     {}
     
-    TriMesh () : data (sizeof(TriMeshVertex), NULL)
+    TriMesh () : data (sizeof(Vertex), NULL)
     {}
     
     void addVertex (void *data);
@@ -83,17 +88,19 @@ namespace GE
     void addFace (VertexID v1, VertexID v2, VertexID v3);
     void fromPoly (PolyMesh *m, TexMesh *uv);
   };
-/*
-  template <class Vertex> class TriMesh : public GenericTriMesh
+  
+  template <class Derived, class Base> class TriMeshBase : public Base
   {
   public:
-    TriMesh (SerializeManager *sm) : GenericTriMesh (sm)
+
+    typedef typename Derived::Vertex Vertex;
+
+    TriMeshBase (SerializeManager *sm) : Base (sm)
     {}
 
-    TriMesh () : GenericTriMesh (sizeof(Vertex))
+    TriMeshBase () : Base (sizeof(Derived::Vertex))
     {}
   };
-*/
 
 }//namespace GE
 #pragma warning(pop)

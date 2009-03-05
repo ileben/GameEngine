@@ -185,7 +185,7 @@ namespace GE
                                 PolyMesh::VertexNormal *polyNormal,
                                 TexMesh::Vertex *texVert)
   {
-    TriMeshVertex vert;
+    Vertex vert;
     
     if (texVert != NULL)
       vert.texcoord = texVert->point;
