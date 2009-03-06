@@ -216,8 +216,7 @@ namespace GE
     
     //Create mesh face if at least triangle
     if( faceVerts.size() < 3 ) return;
-    PolyMesh::Face *face = (PolyMesh::Face*)mesh->addFace
-      ( (HMesh::Vertex**)faceVerts.buffer(), (int)faceVerts.size() );
+    PolyMesh::Face *face = mesh->addFace( faceVerts.buffer(), (int)faceVerts.size() );
     
     //Assign the smoothing group
     if( face == NULL ) return;
@@ -225,7 +224,7 @@ namespace GE
     
     //Create UV mesh face if at least triangle
     if (faceUverts.size() >= 3)
-      umesh->addFace( (HMesh::Vertex**)faceUverts.buffer(), (int)faceUverts.size() );
+      umesh->addFace( faceUverts.buffer(), (int)faceUverts.size() );
     
     //Apply normals to mesh face
     PolyMesh::HalfEdge *h = face->hedgeTo(faceVerts[0]);

@@ -18,11 +18,14 @@ namespace GE
   normals will be calculated.
   ======================================================*/
 
-  enum ShadingModel
+  namespace ShadingModel
   {
-    SHADING_FLAT     = 1,
-    SHADING_SMOOTH   = 2
-  };
+    enum Enum
+    {
+      Flat     = 1,
+      Smooth   = 2
+    };
+  }
 
   /*
   ==========================================================
@@ -181,7 +184,7 @@ namespace GE
 
   public:
 
-    void updateNormals (ShadingModel shadingModel);
+    void updateNormals (ShadingModel::Enum shadingModel);
     void setMaterialID (Face *f, MaterialID id);
   };
 

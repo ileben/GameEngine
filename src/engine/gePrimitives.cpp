@@ -49,12 +49,12 @@ namespace GE
 
     //Construct mesh
     addFaceGroup( 0 );
-    addQuad( Vector3( 0,-1, 0 ), 0,1,2,3, points );
-    addQuad( Vector3( 0, 1, 0 ), 7,6,5,4, points );
-    addQuad( Vector3( 0, 0,-1 ), 1,0,4,5, points );
-    addQuad( Vector3( 1, 0, 0 ), 2,1,5,6, points );
-    addQuad( Vector3( 0, 0, 1 ), 3,2,6,7, points );
-    addQuad( Vector3(-1, 0, 0 ), 0,3,7,4, points );
+    addQuad( Vector3( 0,-1, 0 ), 3,2,1,0, points );
+    addQuad( Vector3( 0, 1, 0 ), 4,5,6,7, points );
+    addQuad( Vector3( 0, 0,-1 ), 5,4,0,1, points );
+    addQuad( Vector3( 1, 0, 0 ), 6,5,1,2, points );
+    addQuad( Vector3( 0, 0, 1 ), 7,6,2,3, points );
+    addQuad( Vector3(-1, 0, 0 ), 4,7,3,0, points );
   }
   
   SphereMesh::SphereMesh (int numSegments)
@@ -114,7 +114,7 @@ namespace GE
     {
       int i1 = 1 + s;
       int i2 = 1 + ((s+1) % numSegments);
-      addFace( i1, i2, 0 );
+      addFace( 0, i2, i1 );
     }
 
     //Side
@@ -126,8 +126,8 @@ namespace GE
         int i2 = 1 + (y+0) * numSegments + ((s+1) % numSegments);
         int i3 = 1 + (y+1) * numSegments + s;
         int i4 = 1 + (y+1) * numSegments + ((s+1) % numSegments);
-        addFace( i1, i3, i2 );
-        addFace( i2, i3, i4 );
+        addFace( i1, i2, i3 );
+        addFace( i2, i4, i3 );
       }
     }
 
@@ -136,7 +136,7 @@ namespace GE
     {
       int i1 = 1 + (numYSegments-2) * numSegments + s;
       int i2 = 1 + (numYSegments-2) * numSegments + ((s+1) % numSegments);
-      addFace( i2, i1, (VertexID)data.size()-1 );
+      addFace( i1, i2, (VertexID)data.size()-1 );
     }
   }
 

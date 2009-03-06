@@ -595,7 +595,7 @@ namespace GE
      inbetween
   ---------------------------------------------------------*/
 
-  Face* HMesh::addFace(Vertex **vertices, int count)
+  Face* HMesh::addFace (Vertex **vertices, int count)
   {
     //Check for invalid input
     if (count < 3) return NULL;

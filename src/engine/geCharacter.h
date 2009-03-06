@@ -13,6 +13,7 @@ namespace GE
   class SkinMesh;
   class SkinPose;
   class SkinAnim;
+  class SkinTriMesh;
 
   /*
   ----------------------------------------
@@ -29,14 +30,17 @@ namespace GE
     
     SkinMesh *mesh;
     SkinPose *pose;
+    SkinTriMesh *trimesh;
     ClassArrayList <SkinAnim> anims;
     
     void serialize (void *sm)
     {
-      if (mesh != NULL)
-        ((SM*)sm)->objectPtr( &mesh );
-      if (pose != NULL)
+      //if (mesh != NULL)
+        //((SM*)sm)->objectPtr( &mesh );
+      //if (pose != NULL)
         ((SM*)sm)->objectPtr( &pose );
+      //if (trimesh != NULL)
+        ((SM*)sm)->objectPtr( &trimesh );
       
       ((SM*)sm)->objectVar( &anims );
     }

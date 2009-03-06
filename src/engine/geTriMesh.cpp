@@ -3,7 +3,7 @@
 
 namespace GE
 {
-  DEFINE_CLASS (TriMesh);
+  DEFINE_SERIAL_CLASS( TriMesh, CLSID_TRIMESH );
 
   /*
   ---------------------------------------------------

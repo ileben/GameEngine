@@ -18,7 +18,7 @@ void main (void)
   if (shadowCoord.x >= 0.0 && shadowCoord.x <= 1.0 &&
       shadowCoord.y >= 0.0 && shadowCoord.y <= 1.0)
     if (shadowCoord.z > shadowValue.r)
-      diffuse *= 0.2;
+      { diffuse *= 0.2; specular *= 0.0; }
 
   //Input vectors
 	vec3 N = normalize( normal );

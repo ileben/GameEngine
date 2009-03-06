@@ -31,6 +31,9 @@ UintSize numFrames = 0;
 float curTime = 0.0f;
 float maxTime = 0.0f;
 
+#undef min
+#undef max
+
 int resY = 512;
 int resX = 512;
 Vector3 center(0, 0, 0);
@@ -146,8 +149,8 @@ class PointMeshActor : public TriMeshActor
 { public:
   void renderMesh( MaterialID materialID )
   {
-    ArrayList< TriMeshVertex > *verts =
-      (ArrayList< TriMeshVertex >*) &mesh->data;
+    ArrayList< TriMesh::Vertex > *verts =
+      (ArrayList< TriMesh::Vertex >*) &mesh->data;
 
     glBegin( GL_POINTS );
     

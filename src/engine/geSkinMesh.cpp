@@ -7,8 +7,9 @@ namespace GE
   DEFINE_CLASS( SPolyMesh::HalfEdge );
   DEFINE_CLASS( SPolyMesh::Edge );
   DEFINE_CLASS( SPolyMesh::Face );
-
-  DEFINE_SERIAL_CLASS (SkinMesh, CLSID_SKINMESH);
+  
+  DEFINE_SERIAL_CLASS( SkinTriMesh, CLSID_SKINTRIMESH );
+  DEFINE_SERIAL_CLASS( SkinMesh, CLSID_SKINMESH );
 
 
   void SkinTriMesh::vertexFromPoly (PolyMesh::Vertex *polyVert,

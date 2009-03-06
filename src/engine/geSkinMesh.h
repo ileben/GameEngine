@@ -64,10 +64,10 @@ namespace GE
   };
 
   class SkinTriMesh : public TriMeshBase <SkinTriMeshTraits, TriMesh>
-  {/*
+  {
     DECLARE_SERIAL_SUBCLASS( SkinTriMesh, TriMesh );
     DECLARE_CALLBACK( ClassEvent::Serialize, serialize );
-    DECLARE_END;*/
+    DECLARE_END;
 
   public:
     

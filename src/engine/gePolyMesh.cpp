@@ -86,7 +86,7 @@ namespace GE
     Vector3 &p3 = f->firstHedge()->nextHedge()->nextHedge()->dstVertex()->point;
     Vector3 s1 = p2 - p1;
     Vector3 s2 = p3 - p1;
-    f->normal = Vector::Cross(s1, s2).normalize();
+    f->normal = Vector::Cross( s2, s1 ).normalize();
     f->center = (p1 + p2 + p3) / 3;
   }
   
@@ -268,7 +268,7 @@ namespace GE
   Updates face and vertex normals for the whole mesh
   ----------------------------------------------------*/
 
-  void PolyMesh::updateNormals (ShadingModel shadingModel)
+  void PolyMesh::updateNormals (ShadingModel::Enum shadingModel)
   {
     vertexNormals.clear();
     
@@ -277,13 +277,13 @@ namespace GE
     
     switch (shadingModel)
     {
-    case SHADING_FLAT:
+    case ShadingModel::Flat:
       
       for (PolyMesh::VertIter v(this); !v.end(); ++v)
         updateVertNormalFlat (*v);
       
       break;
-    case SHADING_SMOOTH:
+    case ShadingModel::Smooth:
       if (useSmoothGroups) {
         
         for (PolyMesh::VertIter v(this); !v.end(); ++v)

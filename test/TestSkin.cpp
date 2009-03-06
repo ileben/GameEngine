@@ -28,7 +28,7 @@ ByteString data;
 MaxCharacter *character;
 
 SPolyMesh *polyMesh;
-SPolyActor *polyActor;
+//SPolyActor *polyActor;
 ArrayList <Vector3> polyPosePoints;
 ArrayList <Vector3> polyPoseNormals;
 
@@ -214,14 +214,14 @@ void findCenter ()
   center.set( 0,0,0 );
   boundsMin.set( 0,0,0 );
   boundsMax.set( 0,0,0 );
-
+/*
   PolyMesh *mesh = polyActor->getMesh();
   for (PolyMesh::VertIter v(mesh); !v.end(); ++v) {
     center += v->point;
     count++;
   }
   
-  center /= (Float)count;
+  center /= (Float)count;*/
 }
 
 void cleanup()
@@ -316,17 +316,18 @@ void loadPackage (String fileName)
   maxTime = character->anims.first()->tracks.first()->totalTime;
 
   SkinAnim *anim = character->anims.first();
-  
+  /*
   printf ("Imported %d verts, %d faces, %d indices, %d animations\n",
           inMesh->verts.size(),
           inMesh->faces.size(),
           inMesh->indices.size(),
           character->anims.size());
+          */
 
   printf ("Animation name: '%s'\n",
           character->anims.first()->name.buffer());
 
-  
+  /*
   //Add vertices to the mesh
   polyMesh = new SPolyMesh;
   ArrayList <SPolyMesh::Vertex*> verts( inMesh->verts.size() );
@@ -366,14 +367,18 @@ void loadPackage (String fileName)
   //Convert to TriMesh
   triMesh = new SkinTriMesh;
   triMesh->fromPoly( polyMesh, NULL );
+  */
   
+  triMesh = character->trimesh;
+
   //Store original normals and points
+  /*
   for (SPolyMesh::VertIter vi( polyMesh ); !vi.end(); ++vi)
     polyPosePoints.pushBack( vi->point );
   
   for (SPolyMesh::VertexNormalIter ni( polyMesh ); !ni.end(); ++ni)
     polyPoseNormals.pushBack( ni->coord );
-  
+  */
   ArrayList <SkinTriMesh::Vertex> *triVerts =
     (ArrayList <SkinTriMesh::Vertex> *) &triMesh->data;
   
@@ -621,20 +626,20 @@ int main (int argc, char **argv)
   //PhongMaterial mat;
   mat.setSpecularity( 0.5 );
   //mat.setCullBack( false );
+  mat.setDiffuseColor( Vector3(1,0,0) );
   mat.setShader( shader );
 
   scene = new Scene;
   
   loadPackage( "bub.pak" );
-  
+  /*
   polyActor = new SPolyActor;
   polyActor->setMaterial( &mat );
   polyActor->setMesh( polyMesh );
-  
+  */
   triActor = new TriMeshActor;
   triActor->setMaterial( &mat );
   triActor->setMesh( triMesh );
-  triActor->rotate( Vector3(0,1,0), Util::DegToRad(180) );
   scene->addChild( triActor );
   
   applyFK( 0 );

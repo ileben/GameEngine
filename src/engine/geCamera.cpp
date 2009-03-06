@@ -163,7 +163,7 @@ namespace GE
     glLoadMatrixf( (GLfloat*) m.m );
     
     glLightModeli( GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE );
-    glFrontFace( GL_CW );
+    glFrontFace( GL_CCW );
   }
   
   void Camera3D::updateView()

@@ -351,6 +351,11 @@ namespace GE
     typedef typename Derived::Edge      Edge;
     typedef typename Derived::Face      Face;
 
+    INLINE typename Derived::Vertex* addVertex () {
+      return (typename Derived::Vertex*) HMesh::addVertex(); }
+    INLINE typename Derived::Face* addFace (typename Derived::Vertex **verts, int count) {
+      return (typename Derived::Face*) HMesh::addFace( (HMesh::Vertex**) verts, count ); }
+
     //data and adjacency iterators
     #include "geHmeshDataiter.h"
     #include "geHmeshAdjiter.h"

@@ -124,7 +124,7 @@ namespace GE
         verts->elementAt(i1),
         verts->elementAt(i2),
         verts->elementAt(i3) };
-      PolyMesh::Face* face = (PolyMesh::Face*)mesh->addFace((HMesh::Vertex**)v, 3);
+      PolyMesh::Face* face = mesh->addFace(v, 3);
       faces->pushBack(face);
 
       //Make sure indices are in UV range
