@@ -299,6 +299,16 @@ namespace GE
     {
       removeAt( sz-1 );
     }
+
+    void* at( UintSize index ) const
+    {
+      return elements + index * eltSize;
+    }
+    
+    void* operator[]( UintSize index ) const
+    {
+      return elements + index * eltSize;
+    }
     
     UintSize capacity() const
     {

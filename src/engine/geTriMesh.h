@@ -87,6 +87,7 @@ namespace GE
     void addFaceGroup (MaterialID matID);
     void addFace (VertexID v1, VertexID v2, VertexID v3);
     void fromPoly (PolyMesh *m, TexMesh *uv);
+    Vertex* getVertex (int index);
   };
   
   template <class Derived, class Base> class TriMeshBase : public Base
@@ -100,6 +101,9 @@ namespace GE
 
     TriMeshBase () : Base (sizeof(Derived::Vertex))
     {}
+
+    INLINE typename Derived::Vertex* getVertex (int index) {
+      return (typename Derived::Vertex*) Base::getVertex( index ); }
   };
 
 }//namespace GE

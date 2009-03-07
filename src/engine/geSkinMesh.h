@@ -2,9 +2,9 @@
 #define __GESKINPOLYMESH_H
 
 #include "util/geUtil.h"
-#include "geVectors.h"
-#include "geTriMesh.h"
-#include "gePolyMesh.h"
+#include "engine/geVectors.h"
+#include "engine/geTriMesh.h"
+#include "engine/gePolyMesh.h"
 
 namespace GE
 {

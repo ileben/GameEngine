@@ -219,4 +219,14 @@ namespace GE
     } while (next != prev);
   }
 
+  /*
+  ----------------------------------------------------
+  Helper functions for data retrieval
+  ----------------------------------------------------*/
+
+  TriMesh::Vertex* TriMesh::getVertex (int index)
+  {
+    return (TriMesh::Vertex*) data[ index ];
+  }
+
 }//namespace GE

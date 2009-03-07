@@ -452,6 +452,14 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\src\engine\actors\geSkinMeshActor.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\..\src\engine\actors\geSkinMeshActor.h"
+					>
+				</File>
+				<File
 					RelativePath="..\..\src\engine\actors\geTriMeshActor.cpp"
 					>
 				</File>

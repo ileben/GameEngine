@@ -1,7 +1,7 @@
-#include "geCharacter.h"
-#include "geSkinMesh.h"
-#include "geSkinPose.h"
-#include "geSkinAnim.h"
+#include "engine/geCharacter.h"
+#include "engine/geSkinMesh.h"
+#include "engine/geSkinPose.h"
+#include "engine/geSkinAnim.h"
 
 namespace GE
 {
