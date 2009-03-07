@@ -34,6 +34,7 @@ ArrayList <Vector3> polyPoseNormals;
 
 SkinTriMesh *triMesh;
 TriMeshActor *triActor;
+SkinMeshActor *skinActor;
 ArrayList <Vector3> triPosePoints;
 ArrayList <Vector3> triPoseNormals;
 
@@ -214,14 +215,14 @@ void findCenter ()
   center.set( 0,0,0 );
   boundsMin.set( 0,0,0 );
   boundsMax.set( 0,0,0 );
-/*
-  PolyMesh *mesh = polyActor->getMesh();
-  for (PolyMesh::VertIter v(mesh); !v.end(); ++v) {
-    center += v->point;
+
+  SkinTriMesh *mesh = character->trimesh;
+  for (UintSize v=0; v<mesh->data.size(); ++v) {
+    center += mesh->getVertex( v )->point;
     count++;
   }
   
-  center /= (Float)count;*/
+  center /= (Float)count;
 }
 
 void cleanup()
@@ -361,79 +362,27 @@ void loadPackage (String fileName)
     
     delete[] corners;
   }
+  */ 
   
-  polyMesh->updateNormals( SHADING_SMOOTH );
-  
-  //Convert to TriMesh
-  triMesh = new SkinTriMesh;
-  triMesh->fromPoly( polyMesh, NULL );
-  */
-  
+  //Store original normals and points
+
   triMesh = character->trimesh;
 
-  //Store original normals and points
-  /*
-  for (SPolyMesh::VertIter vi( polyMesh ); !vi.end(); ++vi)
-    polyPosePoints.pushBack( vi->point );
-  
-  for (SPolyMesh::VertexNormalIter ni( polyMesh ); !ni.end(); ++ni)
-    polyPoseNormals.pushBack( ni->coord );
-  */
-  ArrayList <SkinTriMesh::Vertex> *triVerts =
-    (ArrayList <SkinTriMesh::Vertex> *) &triMesh->data;
-  
-  for (UintSize v=0; v<triVerts->size(); ++v)
+  for (UintSize v=0; v<triMesh->data.size(); ++v)
   {
-    triPosePoints.pushBack( triVerts->at( v ).point );
-    triPoseNormals.pushBack( triVerts->at( v ).normal );
+    triPosePoints.pushBack( triMesh->getVertex( v )->point );
+    triPoseNormals.pushBack( triMesh->getVertex( v )->normal );
   }
 }
 
 void applyFK (UintSize frame)
 {
-  SkinPose *pose = character->pose;
-  SkinAnim *anim = character->anims.first();
-  ArrayList <Matrix4x4> fkMats;
-  ArrayList <Matrix4x4> skinMats;
-  int cindex = 1;
-  
-  UintSize numTracks = anim->tracks.size();
-  UintSize numKeys = anim->tracks.first()->keys.size();
-  
-  //Root FK matrix = local matrix
-  Matrix4x4 rootWorld;
-  //rootWorld.fromQuat( anim->tracks->first()->keys->at( frame ).value);
-  rootWorld.fromQuat( anim->tracks.first()->evalAt( curTime ));
-  rootWorld.setColumn( 3, pose->bones.first().localT );
-  rootWorld *= pose->bones.first().localS;
-  fkMats.pushBack( rootWorld );
-  
-  //Walk all the bones
-  for (UintSize b=0; b<pose->bones.size(); ++b)
-  {
-    //Final skin matrix = FK matrix * world matrix inverse
-    SkinBone *parent = &pose->bones[b];
-    skinMats.pushBack( fkMats[b] * parent->worldInv );
-    
-    //Walk the children
-    for (Uint32 c=0; c<parent->numChildren; ++c)
-    {
-      //Child FK matrix = parent FK matrix * local matrix
-      SkinBone *child = &pose->bones[ cindex ];
-      SkinTrack *track = anim->tracks[ cindex ];
-      cindex++;
-      
-      Matrix4x4 childLocal;
-      //childLocal.fromQuat( track->keys->at( frame ).value);
-      childLocal.fromQuat( track->evalAt( curTime ));
-      childLocal.setColumn( 3, child->localT );
-      childLocal *= child->localS;
-      fkMats.pushBack( fkMats[b] * childLocal );
-    }
-  }
+  skinActor->animate( curTime );
+  return;
 
-  int vindex = 0; int nindex = 0;
   /*
+  int vindex = 0; int nindex = 0;
+
   //Transform vertices
   for (SPolyMesh::VertIter v(polyMesh); !v.end(); ++v, ++vindex)
   {
@@ -458,149 +407,10 @@ void applyFK (UintSize frame)
       n->coord += skinNormal * v->boneWeight[i];
     }
   } */
-  
-  ArrayList <SkinTriMesh::Vertex> *triVerts =
-    (ArrayList <SkinTriMesh::Vertex> *) &triMesh->data;
-  
-  for (UintSize index=0; index<triVerts->size(); ++index)
-  {
-    SkinTriMesh::Vertex &v = triVerts->at( index );
-    
-    v.point.set( 0,0,0 );
-    for (int i=0; i<4; ++i)
-    {
-      Vector3 &posePoint = triPosePoints[ index ];
-      Vector3 skinPoint = skinMats[ v.boneIndex[i] ] * posePoint;
-      v.point += skinPoint * v.boneWeight[i];
-    }
-    
-    v.normal.set( 0,0,0 );
-    for (int i=0; i<4; ++i)
-    {
-      Vector3 &poseNormal = triPoseNormals[ index ];
-      Vector3 skinNormal = skinMats[ v.boneIndex[i] ].transformVector( poseNormal );
-      v.normal += skinNormal * v.boneWeight[i];
-    }
-  }
 }
-
-class DD
-{
-  DECLARE_SERIAL_CLASS( DD );
-  DECLARE_CALLBACK( ClassEvent::Serialize, serialize );
-  DECLARE_END;
-public:
-  int d;
-  DD() {}
-  DD( SM *sm ) {}
-  void serialize( void *sm )
-  {
-    int poke = 1;
-  }
-};
-
-DEFINE_SERIAL_CLASS( DD, ClassID(2,2,2,2) );
-
-class CC
-{
-  DECLARE_SERIAL_CLASS( CC );
-  DECLARE_CALLBACK( ClassEvent::Serialize, serialize );
-  DECLARE_END;
-public:
-  ClassArrayList<DD> list;
-  CC () {};//{list = new ClassArrayList<DD>;}
-  CC (SM *sm) : list (sm) {}
-  void serialize (void *sm)
-  {
-    ((SM*)sm)->objectVar( &list );
-  }
-};
-
-DEFINE_SERIAL_CLASS( CC, ClassID(1,1,1,1) );
-
-/*
-class DD
-{
-public:
-  DD() { printf( "DD::Ctor()\n" ); }
-  DD( int a ) { printf( "DD::Ctor(%d)\n", a ); }
-};
-
-class DD2 : public DD
-{
-public:
-  DD2() { printf( "DD2:Ctor()\n" ); }
-  DD2( int a ) : DD(a) { printf( "DD2::Ctor(%d)\n", a ); }
-};
-
-class CC
-{
-public:
-  DD2 dd;
-  CC() { printf( "CC::Ctor\n" ); }
-  ~CC() { printf( "~CC::Dtor\n" ); }
-  CC( int a ) : dd(a) { printf( "CC::Ctor(%d)\n", a ); }
-};*/
 
 int main (int argc, char **argv)
 {
-  /*
-  ArrayList<CC> *list = new ArrayList<CC>;
-  CC cc;
-  
-  list->pushBack( cc );
-  list->pushBack( cc );
-  list->pushBack( cc );
-  list->pushBack( cc );
-
-  delete list;
-  
-  getchar();
-  return 0;
-  */
-
-  /*
-  CC cc;
-  for( int d=0; d<5; ++d ){
-    cc.list.pushBack( new DD );
-    cc.list.last()->d = d;
-  }
-
-  SM sm;
-  void *data;
-  UintSize size;
-  sm.save( &cc, &data, &size );
-
-  CC *ccc = (CC*) sm.load( data );
-  return 0;*/
-  /*
-  SkinVertex vert1, vert2, vert3;
-  vert1.point.set( 1,2,3 );
-  vert2.point.set( 4,5,6 );
-  vert3.point.set( 7,8,9 );
-
-  SkinMesh *mesh = new SkinMesh;
-  mesh->verts->pushBack( vert1 );
-  mesh->verts->pushBack( vert2 );
-  mesh->verts->pushBack( vert3 );
-
-  SkinPose *pose = new SkinPose;
-  SkinAnim *anim = new SkinAnim;
-
-  MaxCharacter mchar;
-  mchar.mesh = mesh;
-  mchar.pose = pose;
-  mchar.anim = anim;
-
-  SM sm;
-  void *data;
-  UintSize size;
-  //sm.serialize (&mchar, &data, &size);
-  //sm.deserialize (data);
-  sm.save (&mchar, &data, &size);
-  MaxCharacter *outChar = (MaxCharacter*) sm.load (data);
-  */
-
   //Initialize GLUT
   initGlut( argc, argv );
   
@@ -626,21 +436,17 @@ int main (int argc, char **argv)
   //PhongMaterial mat;
   mat.setSpecularity( 0.5 );
   //mat.setCullBack( false );
-  mat.setDiffuseColor( Vector3(1,0,0) );
+  //mat.setDiffuseColor( Vector3(1,0,0) );
   mat.setShader( shader );
 
   scene = new Scene;
   
   loadPackage( "bub.pak" );
-  /*
-  polyActor = new SPolyActor;
-  polyActor->setMaterial( &mat );
-  polyActor->setMesh( polyMesh );
-  */
-  triActor = new TriMeshActor;
-  triActor->setMaterial( &mat );
-  triActor->setMesh( triMesh );
-  scene->addChild( triActor );
+
+  skinActor = new SkinMeshActor;
+  skinActor->setMaterial( &mat );
+  skinActor->setMesh( character );
+  scene->addChild( skinActor );
   
   applyFK( 0 );
 

@@ -30,12 +30,17 @@ namespace GE
     Vector3 *poseNormals;
     Quat *boneRotations;
 
-  private:
+    void freeAnimData();
+    void initAnimData();
+
+  public:
     SkinMeshActor();
     virtual ~SkinMeshActor();
 
     void setMesh (MaxCharacter *mesh);
     MaxCharacter* getMesh();
+
+    void animate (Float time);
   };
 
 

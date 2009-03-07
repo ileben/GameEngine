@@ -224,7 +224,7 @@ namespace GE
   Helper functions for data retrieval
   ----------------------------------------------------*/
 
-  TriMesh::Vertex* TriMesh::getVertex (int index)
+  TriMesh::Vertex* TriMesh::getVertex (UintSize index)
   {
     return (TriMesh::Vertex*) data[ index ];
   }

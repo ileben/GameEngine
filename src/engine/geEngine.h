@@ -36,6 +36,7 @@
 #include "geLight.h"
 #include "actors/geTriMeshActor.h"
 #include "actors/gePolyMeshActor.h"
+#include "actors/geSkinMeshActor.h"
 #include "actors/geAxisActor.h"
 
 //Widgets
