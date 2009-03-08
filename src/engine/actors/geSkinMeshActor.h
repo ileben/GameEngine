@@ -13,6 +13,7 @@ namespace GE
   ------------------------------------*/
 
   class MaxCharacter;
+  class SkinAnim;
 
   /*
   ------------------------------------------------
@@ -32,6 +33,17 @@ namespace GE
 
     void freeAnimData();
     void initAnimData();
+    void loadPoseRotations();
+    void loadAnimRotations();
+    void applySkin();
+
+    SkinAnim *anim;
+    Float animTime;
+    Float animStart;
+    Float animSpeed;
+    bool animIsPlaying;
+    bool animIsLooping;
+    bool animIsPaused;
 
   public:
     SkinMeshActor();
@@ -40,7 +52,16 @@ namespace GE
     void setMesh (MaxCharacter *mesh);
     MaxCharacter* getMesh();
 
-    void animate (Float time);
+    void playAnimation (const CharString &name, Float speed=1.0f);
+    void loopAnimation (const CharString &name, Float speed=1.0f);
+    void pauseAnimation ();
+    void stopAnimation ();
+    void tick ();
+
+    void setAnimationSpeed (Float speed);
+    Float getAnimationSpeed ();
+    bool isAnimationPlaying ();
+    bool isAnimationPaused ();
   };
 
 

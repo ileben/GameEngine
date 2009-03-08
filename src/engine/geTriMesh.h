@@ -87,7 +87,10 @@ namespace GE
     void addFaceGroup (MaterialID matID);
     void addFace (VertexID v1, VertexID v2, VertexID v3);
     void fromPoly (PolyMesh *m, TexMesh *uv);
+
     Vertex* getVertex (UintSize index);
+    UintSize getVertexCount ();
+    UintSize getFaceCount ();
   };
   
   template <class Derived, class Base> class TriMeshBase : public Base

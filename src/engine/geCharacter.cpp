@@ -26,4 +26,13 @@ namespace GE
       delete anims[ a ];
   }
 
+  SkinAnim* MaxCharacter::findAnimByName (const CharString &name)
+  {
+    for (UintSize a=0; a < anims.size(); ++a)
+      if (anims[ a ]->name == name)
+        return anims[ a ];
+
+    return NULL;
+  }
+
 }//namespace GE

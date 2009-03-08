@@ -68,6 +68,10 @@ namespace GE
     ArrayList<ObjectPtr> objects;
     ArraySet<KernelBuffer*> buffers;
     Renderer *renderer;
+
+    bool timeInit;
+    Float time;
+    Float dtime;
     
   public:
     
@@ -81,7 +85,11 @@ namespace GE
     void* spawn (ClassPtr classPtr);
     void* spawn (const char *classString);
     void enableVerticalSync (bool on);
+    void tick (Float time);
+    Float getTime ();
+    Float getInterval ();
 
+    static Kernel* GetInstance ();
     Renderer* getRenderer ();
   };
 }

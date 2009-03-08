@@ -229,4 +229,14 @@ namespace GE
     return (TriMesh::Vertex*) data[ index ];
   }
 
+  UintSize TriMesh::getVertexCount ()
+  {
+    return data.size();
+  }
+  
+  UintSize TriMesh::getFaceCount ()
+  {
+    return indices.size() / 3;
+  }
+
 }//namespace GE

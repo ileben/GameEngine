@@ -113,7 +113,10 @@ namespace GE
   -------------------------------------*/
 
   Kernel* Kernel::Instance = NULL;
-  
+  Kernel* Kernel::GetInstance () {
+    return Kernel::Instance;
+  }
+
   /*
   -------------------------------------
   Kernel-managed memory
@@ -451,6 +454,11 @@ namespace GE
     
     //Create renderer
     renderer = new Renderer;
+
+    //Time
+    timeInit = false;
+    time = 0.0f;
+    dtime = 0.0f;
   }
   
   Kernel::~Kernel()
@@ -486,6 +494,25 @@ namespace GE
   Renderer* Kernel::getRenderer ()
   {
     return renderer;
+  }
+
+  void Kernel::tick (Float t)
+  {
+    if (timeInit)
+      dtime = t - time;
+
+    time = t;
+    timeInit = true;
+  }
+
+  Float Kernel::getTime ()
+  {
+    return time;
+  }
+
+  Float Kernel::getInterval()
+  {
+    return dtime;
   }
 
 }//namespace GE

@@ -28,26 +28,22 @@ namespace GE
 
   public:
     
-    SkinMesh *mesh;
     SkinPose *pose;
-    SkinTriMesh *trimesh;
+    SkinTriMesh *mesh;
     ClassArrayList <SkinAnim> anims;
     
     void serialize (void *sm)
     {
-      //if (mesh != NULL)
-        //((SM*)sm)->objectPtr( &mesh );
-      //if (pose != NULL)
-        ((SM*)sm)->objectPtr( &pose );
-      //if (trimesh != NULL)
-        ((SM*)sm)->objectPtr( &trimesh );
-      
+      ((SM*)sm)->objectPtr( &pose );
+      ((SM*)sm)->objectPtr( &mesh );
       ((SM*)sm)->objectVar( &anims );
     }
     
     MaxCharacter (SM *sm) : anims (sm) {}
     MaxCharacter ();
     ~MaxCharacter();
+
+    SkinAnim* findAnimByName (const CharString &name);
   };
 
 

@@ -11,32 +11,19 @@ class SPolyActor : public PolyMeshActor { public:
   virtual void renderMesh (MaterialID materialID);
 };
 
-
-/*
-==========================================================
-State
-==========================================================*/
-
-enum CameraMode
+namespace CameraMode
 {
-  CAMERA_MODE_PAN,
-  CAMERA_MODE_ORBIT,
-  CAMERA_MODE_ZOOM
-};
+  enum Enum
+  {
+    Pan,
+    Orbit,
+    Zoom
+  };
+}
 
 ByteString data;
 MaxCharacter *character;
-
-SPolyMesh *polyMesh;
-//SPolyActor *polyActor;
-ArrayList <Vector3> polyPosePoints;
-ArrayList <Vector3> polyPoseNormals;
-
-SkinTriMesh *triMesh;
-TriMeshActor *triActor;
 SkinMeshActor *skinActor;
-ArrayList <Vector3> triPosePoints;
-ArrayList <Vector3> triPoseNormals;
 
 Scene *scene;
 Light *light;
@@ -59,7 +46,7 @@ int resX = 512;
 Vector3 center( 0,0,0 );
 Vector3 boundsMin( 0,0,0 );
 Vector3 boundsMax( 0,0,0 );
-CameraMode cameraMode;
+CameraMode::Enum cameraMode;
 
 //Makes toggling idle draw easier
 bool idleDraw = false;
@@ -91,19 +78,19 @@ void drag3D (int x, int y)
   
   switch (cameraMode)
   {  
-  case CAMERA_MODE_ZOOM:
+  case CameraMode::Zoom:
 
     cam3D.zoom( zoom );
     break;
     
-  case CAMERA_MODE_ORBIT:
+  case CameraMode::Orbit:
     
     cam3D.setCenter( center );
     cam3D.orbitH( angleH, true );
     cam3D.orbitV( angleV, true );
     break;
 
-  case CAMERA_MODE_PAN:
+  case CameraMode::Pan:
 
     //cam3D.panH( panH );
     //cam3D.panV( panV );
@@ -130,16 +117,16 @@ void click3D (int button, int state, int x, int y)
   
   if (mods & GLUT_ACTIVE_SHIFT)
   {
-    cameraMode = CAMERA_MODE_ORBIT;
+    cameraMode = CameraMode::Orbit;
   }
   else if ((mods & GLUT_ACTIVE_CTRL) ||
            button == GLUT_RIGHT_BUTTON)
   {
-    cameraMode = CAMERA_MODE_ZOOM;
+    cameraMode = CameraMode::Zoom;
   }
   else
   {
-    cameraMode = CAMERA_MODE_PAN;
+    cameraMode = CameraMode::Pan;
   }
   
   lastMouse3D.set( (Float)x, (Float)y );
@@ -159,22 +146,36 @@ void drag (int x, int y)
 
 void keyboard (unsigned char key, int x, int y)
 {
+  Float speed;
+
   switch (key)
   {
-  case '+':
-    //boneColorIndex++;
-    //printf ("BoneIndex: %d\n", boneColorIndex);
-    if (frame < numFrames-1) ++frame;
-    if (curTime < maxTime) curTime += 0.01f;
-    applyFK( frame );
+  case ' ':
+    if (!skinActor->isAnimationPlaying())
+      skinActor->loopAnimation( "MyAnimation", 0.5f );
+    else skinActor->pauseAnimation();
     break;
-  case '-':
+
+  case '+':
+    speed = skinActor->getAnimationSpeed();
+    skinActor->setAnimationSpeed( speed + 0.1f );
+    printf ("Animation speed: %f\n", skinActor->getAnimationSpeed() );
+    break;
     //if (boneColorIndex > 0) boneColorIndex--;
     //printf ("BoneIndex: %d\n", boneColorIndex);
-    if (frame > 0) --frame; 
-    if (curTime > 0.0f) curTime -= 0.01f;
-    applyFK( frame );
+    //if (frame < numFrames-1) ++frame;
+    //if (curTime < maxTime) curTime += 0.01f;
+    //break;
+  case '-':
+    speed = skinActor->getAnimationSpeed();
+    if (speed > 0.11f) skinActor->setAnimationSpeed( speed - 0.1f );
+    printf ("Animation speed: %f\n", skinActor->getAnimationSpeed() );
     break;
+    //if (boneColorIndex > 0) boneColorIndex--;
+    //printf ("BoneIndex: %d\n", boneColorIndex);
+    //if (frame > 0) --frame; 
+    //if (curTime > 0.0f) curTime -= 0.01f;
+    //break;
   case 27:
     //Quit on escape
     exit(0);
@@ -216,7 +217,7 @@ void findCenter ()
   boundsMin.set( 0,0,0 );
   boundsMax.set( 0,0,0 );
 
-  SkinTriMesh *mesh = character->trimesh;
+  SkinTriMesh *mesh = character->mesh;
   for (UintSize v=0; v<mesh->data.size(); ++v) {
     center += mesh->getVertex( v )->point;
     count++;
@@ -227,6 +228,15 @@ void findCenter ()
 
 void cleanup()
 {
+}
+
+void animate()
+{
+  Float time = (Float) glutGet( GLUT_ELAPSED_TIME ) * 0.001f;
+  Kernel::GetInstance()->tick( time );
+  skinActor->tick( );
+
+  glutPostRedisplay();
 }
 
 void initGlut (int argc, char **argv)
@@ -243,7 +253,7 @@ void initGlut (int argc, char **argv)
   glutKeyboardFunc( keyboard );
   glutMouseFunc( click );
   glutMotionFunc( drag );
-  glutIdleFunc( display );
+  glutIdleFunc( animate );
   idleDraw = true;
 }
 
@@ -312,21 +322,16 @@ void loadPackage (String fileName)
   SerializeManager sm;
   character = (MaxCharacter*) sm.load( (void*)data.buffer() );
   
-  SkinMesh *inMesh = character->mesh;
-  numFrames = character->anims.first()->tracks.first()->keys.size();
-  maxTime = character->anims.first()->tracks.first()->totalTime;
-
-  SkinAnim *anim = character->anims.first();
-  /*
-  printf ("Imported %d verts, %d faces, %d indices, %d animations\n",
-          inMesh->verts.size(),
-          inMesh->faces.size(),
-          inMesh->indices.size(),
+  printf ("Imported %d verts, %d faces, %d animations\n",
+          character->mesh->getVertexCount(),
+          character->mesh->getFaceCount(),
           character->anims.size());
-          */
-
+  
   printf ("Animation name: '%s'\n",
           character->anims.first()->name.buffer());
+
+  numFrames = character->anims.first()->tracks.first()->keys.size();
+  maxTime = character->anims.first()->tracks.first()->totalTime;
 
   /*
   //Add vertices to the mesh
@@ -363,23 +368,10 @@ void loadPackage (String fileName)
     delete[] corners;
   }
   */ 
-  
-  //Store original normals and points
-
-  triMesh = character->trimesh;
-
-  for (UintSize v=0; v<triMesh->data.size(); ++v)
-  {
-    triPosePoints.pushBack( triMesh->getVertex( v )->point );
-    triPoseNormals.pushBack( triMesh->getVertex( v )->normal );
-  }
 }
 
 void applyFK (UintSize frame)
 {
-  skinActor->animate( curTime );
-  return;
-
   /*
   int vindex = 0; int nindex = 0;
 
