@@ -27,8 +27,8 @@ namespace GE
 
   private:
     MaxCharacter *character;
-    Vector3 *poseVertices;
-    Vector3 *poseNormals;
+    Vector3 *skinVertices;
+    Vector3 *skinNormals;
     Vector3 *boneTranslations;
     Quat    *boneRotations;
 
@@ -45,6 +45,9 @@ namespace GE
     bool animIsPlaying;
     bool animIsLooping;
     bool animIsPaused;
+
+  protected:
+    virtual void renderMesh (MaterialID materialID);
 
   public:
     SkinMeshActor();

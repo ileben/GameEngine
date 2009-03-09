@@ -4,6 +4,7 @@
 #include "engine/geSkinMesh.h"
 #include "engine/geSkinAnim.h"
 #include "engine/geKernel.h"
+#include "engine/geGLHeaders.h"
 
 namespace GE
 {
@@ -14,8 +15,8 @@ namespace GE
   SkinMeshActor::SkinMeshActor()
   {
     character = NULL;
-    poseVertices = NULL;
-    poseNormals = NULL;
+    skinVertices = NULL;
+    skinNormals = NULL;
     boneRotations = NULL;
     boneTranslations = NULL;
   }
@@ -42,10 +43,10 @@ namespace GE
 
   void SkinMeshActor::freeAnimData()
   {
-    if (poseVertices != NULL)
-      delete [] poseVertices;
-    if (poseNormals != NULL)
-      delete [] poseNormals;
+    if (skinVertices != NULL)
+      delete [] skinVertices;
+    if (skinNormals != NULL)
+      delete [] skinNormals;
     if (boneRotations != NULL)
       delete [] boneRotations;
     if (boneTranslations != NULL)
@@ -58,15 +59,15 @@ namespace GE
 
     SkinTriMesh *mesh = character->mesh;
 
-    poseVertices = new Vector3[ mesh->data.size() ];
-    poseNormals = new Vector3[ mesh->data.size() ];
+    skinVertices = new Vector3[ mesh->data.size() ];
+    skinNormals = new Vector3[ mesh->data.size() ];
     boneRotations = new Quat[ character->pose->bones.size() ];
     boneTranslations = new Vector3[ character->pose->bones.size() ];
 
     for (UintSize v=0; v < mesh->data.size(); ++v)
     {
-      poseVertices[ v ] = mesh->getVertex( v )->point;
-      poseNormals[ v ] = mesh->getVertex( v )->normal;
+      skinVertices[ v ] = mesh->getVertex( v )->point;
+      skinNormals[ v ] = mesh->getVertex( v )->normal;
     }
 
     anim = NULL;
@@ -139,20 +140,18 @@ namespace GE
     {
       SkinTriMesh::Vertex &v = *mesh->getVertex( index );
       
-      v.point.set( 0,0,0 );
+      skinVertices[ index ].set( 0,0,0 );
       for (int i=0; i<4; ++i)
       {
-        Vector3 &posePoint = poseVertices[ index ];
-        Vector3 skinPoint = skinMats[ v.boneIndex[i] ] * posePoint;
-        v.point += skinPoint * v.boneWeight[i];
+        Vector3 skinPoint = skinMats[ v.boneIndex[i] ] * v.point;
+        skinVertices[ index ] += skinPoint * v.boneWeight[i];
       }
       
-      v.normal.set( 0,0,0 );
+      skinNormals[ index ].set( 0,0,0 );
       for (int i=0; i<4; ++i)
       {
-        Vector3 &poseNormal = poseNormals[ index ];
-        Vector3 skinNormal = skinMats[ v.boneIndex[i] ].transformVector( poseNormal );
-        v.normal += skinNormal * v.boneWeight[i];
+        Vector3 skinNormal = skinMats[ v.boneIndex[i] ].transformVector( v.normal );
+        skinNormals[ index ] += skinNormal * v.boneWeight[i];
       }
     }
   }
@@ -243,6 +242,39 @@ namespace GE
       //Update model
       loadAnimRotations();
       applySkin();
+    }
+  }
+
+  void SkinMeshActor::renderMesh (MaterialID materialID)
+  {
+    //Walk material index groups
+    for (UintSize g=0; g<mesh->groups.size(); ++g)
+    {
+      //Check if the material id matches
+      TriMesh::IndexGroup &grp = mesh->groups[ g ];
+      if (materialID != grp.materialID &&
+          materialID != GE_ANY_MATERIAL_ID)
+        continue;
+      
+      //Pass the geometry to OpenGL
+      glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+      
+      glEnableClientState( GL_VERTEX_ARRAY );
+      glEnableClientState( GL_NORMAL_ARRAY );
+      glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+
+      glTexCoordPointer( 2, GL_FLOAT, (GLsizei) mesh->data.elementSize(),
+                         mesh->data.buffer() );
+
+      glNormalPointer( GL_FLOAT, 0, this->skinNormals );
+
+      glVertexPointer( 3, GL_FLOAT, 0, this->skinVertices );
+      
+      glDrawElements( GL_TRIANGLES, grp.count, GL_UNSIGNED_INT,
+                      mesh->indices.buffer() + grp.start);
+      
+      if (materialID != GE_ANY_MATERIAL_ID)
+        break;
     }
   }
 

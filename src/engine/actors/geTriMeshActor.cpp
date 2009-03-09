@@ -58,12 +58,9 @@ namespace GE
       
       glDrawElements( GL_TRIANGLES, grp.count, GL_UNSIGNED_INT,
                       mesh->indices.buffer() + grp.start);
-      
-      glDisableClientState( GL_VERTEX_ARRAY );
-      glDisableClientState( GL_NORMAL_ARRAY );
-      glDisableClientState( GL_TEXTURE_COORD_ARRAY );
-      
-      break;
+
+      if (materialID != GE_ANY_MATERIAL_ID)
+        break;
     }
   }
 }

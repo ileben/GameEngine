@@ -24,6 +24,7 @@ namespace CameraMode
 ByteString data;
 MaxCharacter *character;
 SkinMeshActor *skinActor;
+SkinMeshActor *skinActor2;
 
 Scene *scene;
 Light *light;
@@ -150,6 +151,10 @@ void keyboard (unsigned char key, int x, int y)
 
   switch (key)
   {
+  case 13://return
+    skinActor2->playAnimation( "MyAnimation", 0.8f );
+    break;
+
   case ' ':
     if (!skinActor->isAnimationPlaying())
       skinActor->loopAnimation( "MyAnimation", 0.6f );
@@ -234,7 +239,8 @@ void animate()
 {
   Float time = (Float) glutGet( GLUT_ELAPSED_TIME ) * 0.001f;
   Kernel::GetInstance()->tick( time );
-  skinActor->tick( );
+  skinActor->tick();
+  skinActor2->tick();
 
   glutPostRedisplay();
 }
@@ -424,27 +430,70 @@ int main (int argc, char **argv)
   //shader->registerUniform( "sampler", GE_UNIFORM_TEXTURE, 1 );
 
   //VertColorMaterial mat;
-  StandardMaterial mat;
+  StandardMaterial matWhite;
   //PhongMaterial mat;
-  mat.setSpecularity( 0.5 );
+  matWhite.setSpecularity( 0.5 );
   //mat.setCullBack( false );
   //mat.setDiffuseColor( Vector3(1,0,0) );
-  mat.setShader( shader );
+  matWhite.setShader( shader );
+
+  StandardMaterial matBlue;
+  matBlue.setSpecularity( 0.5 );
+  matBlue.setDiffuseColor( Vector3(0,0.5,1) );
+  matBlue.setShader( shader );
+
+  StandardMaterial matGreen;
+  matGreen.setSpecularity( 0.5 );
+  matGreen.setDiffuseColor( Vector3(0,0.6,0) );
+  matGreen.setShader( shader );
+
+  StandardMaterial matYellow;
+  matYellow.setSpecularity( 0.5 );
+  matYellow.setDiffuseColor( Vector3(1,1,0.7) );
+  matYellow.setShader( shader );
+
+  StandardMaterial matBlack;
+  matBlack.setSpecularity( 0.5 );
+  matBlack.setDiffuseColor( Vector3(0.2,0.2,0.2) );
+  matBlack.setShader( shader );
+
+  MultiMaterial mm;
+  mm.setNumSubMaterials( 5 );
+  mm.setSubMaterial( 0, &matBlue );
+  mm.setSubMaterial( 1, &matYellow );
+  mm.setSubMaterial( 2, &matWhite );
+  mm.setSubMaterial( 3, &matBlack );
+  mm.setSubMaterial( 4, &matBlue );
+
+  MultiMaterial mm2;
+  mm2.setNumSubMaterials( 5 );
+  mm2.setSubMaterial( 0, &matGreen );
+  mm2.setSubMaterial( 1, &matYellow );
+  mm2.setSubMaterial( 2, &matWhite );
+  mm2.setSubMaterial( 3, &matBlack );
+  mm2.setSubMaterial( 4, &matGreen );
 
   scene = new Scene;
   
-  loadPackage( "bub.pak" );
+  loadPackage( "bubz.pak" );
 
   skinActor = new SkinMeshActor;
-  skinActor->setMaterial( &mat );
+  skinActor->setMaterial( &mm );
   skinActor->setMesh( character );
+  skinActor->translate( 60, 0, 0 );
   scene->addChild( skinActor );
+
+  skinActor2 = new SkinMeshActor;
+  skinActor2->setMaterial( &mm2 );
+  skinActor2->setMesh( character );
+  skinActor2->translate( -60, 0, 0 );
+  scene->addChild( skinActor2 );
   
   applyFK( 0 );
 
   TriMesh *cubeMesh = new CubeMesh;
   TriMeshActor *cube = new TriMeshActor;
-  cube->setMaterial( &mat );
+  cube->setMaterial( &matWhite );
   cube->setMesh( cubeMesh );
   cube->scale( 300, 10, 300 );
   cube->translate( 0, -70, 0 );
