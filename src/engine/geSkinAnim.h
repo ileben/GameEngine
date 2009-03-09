@@ -6,32 +6,21 @@
 
 namespace GE
 {
-
-  /*
-  -----------------------------------
-  Animation key
-  -----------------------------------*/
-
-  struct SkinKey
-  {
-    Quat value;
-  };
-
   /*
   -----------------------------------
   Track is a set of keys
   -----------------------------------*/
   
-  class GE_API_ENTRY SkinTrack
+  template <class Traits> class AnimTrack
   {
-    DECLARE_SERIAL_CLASS( SkinTrack );
+    DECLARE_SERIAL_CLASS( AnimTrack );
     DECLARE_CALLBACK( ClassEvent::Serialize, serialize );
     DECLARE_END;
     
   public:
     Float32 totalTime;
     Float32 frameTime;
-    ArrayList <SkinKey> keys;
+    ArrayList <typename Traits::Key> keys;
     
     void serialize (void *sm)
     {
@@ -40,21 +29,98 @@ namespace GE
       ((SM*)sm)->objectVar( &keys );
     }
 
-    SkinTrack (SM *sm) : keys (sm)
-    {}
+    AnimTrack (SM *sm) : keys (sm) {}
+    AnimTrack () : totalTime(0.0f), frameTime(0.0f) {}
 
-    SkinTrack () : totalTime(0.0f), frameTime(0.0f)
-    {}
-    
-    Quat evalAt (Float time);
+    typename Traits::Value evalAt (Float time);
   };
-  
+
+  /*
+  -------------------------------------------
+  Traits for Quaternion and Vector3 tracks
+  -------------------------------------------*/
+
+  class QuatTrackTraits
+  { public:
+    typedef Quat Value;
+    struct Key { Quat value; };
+    inline static Quat Interpolate (Quat q1, Quat q2, Float t);
+  };
+
+  class Vec3TrackTraits
+  { public:
+    typedef Vector3 Value;
+    struct Key { Vector3 value; };
+    inline static Vector3 Interpolate (const Vector3 &v1, const Vector3 &v2, Float t);
+  };
+
+  typedef AnimTrack< Vec3TrackTraits > Vec3AnimTrack;
+  typedef AnimTrack< QuatTrackTraits > QuatAnimTrack;
+
+
+  /*
+  -------------------------------------------
+  Template implementations
+  -------------------------------------------*/
+
+  template <class Traits>
+  typename Traits::Value AnimTrack<Traits>::evalAt (Float time)
+  {
+    //Exit soon if just 1 key
+    if (keys.size() == 1)
+      return keys.first().value;
+    
+    //Exit soon if time negative
+    if (time <= 0.0f)
+      return keys.first().value;
+    
+    //Exit soon if time too large
+    if (time >= totalTime)
+      return keys.last().value;
+    
+    //Find 2 keys around the given time
+    Float frameCoeff = time / frameTime;
+    int k1 = (int) FLOOR( frameCoeff );
+    int k2 = (int) CEIL( frameCoeff );
+    if (k1 == k2) return keys[ k1 ].value;
+    
+    //Calculate interpolation coeff
+    float t = frameCoeff - (Float)k1;
+    
+    //Check for the sign flip in the adjacent keys
+    return Traits::Interpolate(
+      keys[ k1 ].value,
+      keys[ k2 ].value,
+      t );
+  }
+
+  Quat QuatTrackTraits::Interpolate (Quat q1, Quat q2, Float t)
+  {
+    //Check for sign flip in the adjacent keys
+    if (Quat::Dot( q1, q2 ) < 0.0f) {
+      q2.x = -q2.x;
+      q2.y = -q2.y;
+      q2.z = -q2.z;
+      q2.w = -q2.w;
+    }
+    
+    //Return normalized-linear interpolation
+    return Quat::Nlerp( q1, q2, t );
+  }
+
+  Vector3 Vec3TrackTraits::Interpolate (const Vector3 &v1, const Vector3 &v2, Float t)
+  {
+    //Return linear interpolation
+    return Vector::Lerp( v1, v2, t );
+  }
+
+
   /*
   -----------------------------------
   Animation is a set of tracks
   -----------------------------------*/
   
-  class GE_API_ENTRY SkinAnim
+  class SkinAnim
   {
     DECLARE_SERIAL_CLASS( SkinAnim );
     DECLARE_CALLBACK( ClassEvent::Serialize, serialize );
@@ -62,24 +128,26 @@ namespace GE
     
   public:
     CharString name;
-    ClassArrayList <SkinTrack> tracks;
+    Float duration;
+    ClassArrayList <Vec3AnimTrack> tracksT;
+    ClassArrayList <QuatAnimTrack> tracksR;
     
     void serialize (void *sm)
     {
       ((SM*)sm)->objectVar( &name );
-      ((SM*)sm)->objectVar( &tracks );
+      ((SM*)sm)->dataVar( &duration );
+      ((SM*)sm)->objectVar( &tracksT );
+      ((SM*)sm)->objectVar( &tracksR );
     }
     
-    SkinAnim (SM *sm) : name (sm), tracks (sm)
-    {}
-    
-    SkinAnim ()
-    {}
-    
+    SkinAnim (SM *sm) : name (sm), tracksT (sm), tracksR(sm) {}
+    SkinAnim () {}
     ~SkinAnim ()
     {
-      for (UintSize t=0; t<tracks.size(); ++t)
-        delete tracks[t];
+      for (UintSize t=0; t<tracksT.size(); ++t)
+        delete tracksT[t];
+      for (UintSize t=0; t<tracksR.size(); ++t)
+        delete tracksR[t];
     }
     
     void evalFrame (Float time);

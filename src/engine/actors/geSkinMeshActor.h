@@ -29,7 +29,8 @@ namespace GE
     MaxCharacter *character;
     Vector3 *poseVertices;
     Vector3 *poseNormals;
-    Quat *boneRotations;
+    Vector3 *boneTranslations;
+    Quat    *boneRotations;
 
     void freeAnimData();
     void initAnimData();

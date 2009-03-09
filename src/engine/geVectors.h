@@ -139,6 +139,8 @@ namespace GE
     
     static Float Cross (const Vector2 &v1, const Vector2 &v2);
     static Vector3 Cross (const Vector3 &v1, const Vector3 &v2);
+
+    template <class V> static V Lerp (const V &v1, const V &v2, Float t);
     
     static Float RotationOnPlane2 (const Vector2 &v);
     static Float RotationOnPlane2N (const Vector2 &v);
@@ -498,6 +500,10 @@ namespace GE
     return Vector3 (v1.y*v2.z - v2.y*v1.z,
                     v2.x*v1.z - v1.x*v2.z,
                     v1.x*v2.y - v2.x*v1.y);
+  }
+
+  template <class V> inline V Vector::Lerp (const V &v1, const V &v2, Float t) {
+    return v1 * (1.0f - t) + v2 * t;
   }
   
   /*

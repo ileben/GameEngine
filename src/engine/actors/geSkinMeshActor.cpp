@@ -17,6 +17,7 @@ namespace GE
     poseVertices = NULL;
     poseNormals = NULL;
     boneRotations = NULL;
+    boneTranslations = NULL;
   }
 
   SkinMeshActor::~SkinMeshActor()
@@ -47,6 +48,8 @@ namespace GE
       delete [] poseNormals;
     if (boneRotations != NULL)
       delete [] boneRotations;
+    if (boneTranslations != NULL)
+      delete [] boneTranslations;
   }
 
   void SkinMeshActor::initAnimData()
@@ -58,6 +61,7 @@ namespace GE
     poseVertices = new Vector3[ mesh->data.size() ];
     poseNormals = new Vector3[ mesh->data.size() ];
     boneRotations = new Quat[ character->pose->bones.size() ];
+    boneTranslations = new Vector3[ character->pose->bones.size() ];
 
     for (UintSize v=0; v < mesh->data.size(); ++v)
     {
@@ -74,15 +78,19 @@ namespace GE
 
   void SkinMeshActor::loadPoseRotations()
   {
-    for (UintSize b=0; b < character->pose->bones.size(); ++b)
+    for (UintSize b=0; b < character->pose->bones.size(); ++b) {
       boneRotations[ b ] = character->pose->bones[ b ].localR;
+      boneTranslations[ b ] = character->pose->bones[ b ].localT.xyz();
+    }
   }
 
   void SkinMeshActor::loadAnimRotations()
   {
-    for (UintSize b=0; b < character->pose->bones.size(); ++b)
-      boneRotations[ b ] = anim->tracks[ b ]->evalAt( animTime );
-    //boneRotations[ b ] = anim->tracks[ b ]->keys->at( frame ).value;
+    for (UintSize b=0; b < anim->tracksR.size(); ++b)
+      boneRotations[ b ] = anim->tracksR[ b ]->evalAt( animTime );
+
+    for (UintSize b=0; b < anim->tracksT.size(); ++b)
+      boneTranslations[ b ] = anim->tracksT[ b ]->evalAt( animTime );
   }
 
   void SkinMeshActor::applySkin ()
@@ -97,7 +105,7 @@ namespace GE
     //Root FK matrix = local matrix
     Matrix4x4 rootWorld;
     rootWorld.fromQuat( boneRotations[0] );
-    rootWorld.setColumn( 3, pose->bones.first().localT );
+    rootWorld.setColumn( 3, boneTranslations[0].xyz(1.0f) );
     rootWorld *= pose->bones.first().localS;
     fkMats.pushBack( rootWorld );
     
@@ -116,7 +124,7 @@ namespace GE
         
         Matrix4x4 childLocal;
         childLocal.fromQuat( boneRotations[ cindex ]);
-        childLocal.setColumn( 3, child->localT );
+        childLocal.setColumn( 3, boneTranslations[ cindex ].xyz(1.0f) );
         childLocal *= child->localS;
         fkMats.pushBack( fkMats[b] * childLocal );
         cindex++;
@@ -213,22 +221,21 @@ namespace GE
     if (animIsPlaying && !animIsPaused)
     {
       //Update animation time
-      Float totalTime = anim->tracks.first()->totalTime;
       animTime += Kernel::GetInstance()->getInterval() * animSpeed;
       
       //Check if animation has ended
-      if (animTime > totalTime)
+      if (animTime > anim->duration)
       {
         if (animIsLooping)
         {
           //Wrap the animation time if looping
-          while (animTime > totalTime)
-            animTime -= totalTime;
+          while (animTime > anim->duration)
+            animTime -= anim->duration;
         }
         else
         {
           //Clip and stop non-looping animation
-          animTime = totalTime;
+          animTime = anim->duration;
           animIsPlaying = false;
         }
       }

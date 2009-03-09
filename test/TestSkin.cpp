@@ -152,7 +152,7 @@ void keyboard (unsigned char key, int x, int y)
   {
   case ' ':
     if (!skinActor->isAnimationPlaying())
-      skinActor->loopAnimation( "MyAnimation", 0.5f );
+      skinActor->loopAnimation( "MyAnimation", 0.6f );
     else skinActor->pauseAnimation();
     break;
 
@@ -330,8 +330,8 @@ void loadPackage (String fileName)
   printf ("Animation name: '%s'\n",
           character->anims.first()->name.buffer());
 
-  numFrames = character->anims.first()->tracks.first()->keys.size();
-  maxTime = character->anims.first()->tracks.first()->totalTime;
+  numFrames = character->anims.first()->tracksR.first()->keys.size();
+  maxTime = character->anims.first()->tracksR.first()->totalTime;
 
   /*
   //Add vertices to the mesh
@@ -413,7 +413,7 @@ int main (int argc, char **argv)
   
   //Setup camera
   cam3D.setCenter( center );
-  cam3D.translate( 0,0,-200 );
+  cam3D.translate( 0,0,-400 );
   cam3D.orbitV( Util::DegToRad( 20 ), true );
   cam3D.orbitH( Util::DegToRad( 30 ), true );
   cam3D.setNearClipPlane( 10.0f );
