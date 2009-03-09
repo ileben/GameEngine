@@ -475,7 +475,7 @@ int main (int argc, char **argv)
 
   scene = new Scene;
   
-  loadPackage( "bubz.pak" );
+  loadPackage( "bub.pak" );
 
   skinActor = new SkinMeshActor;
   skinActor->setMaterial( &mm );
