@@ -3,9 +3,9 @@
 namespace GE
 {
 
-  DEFINE_SERIAL_CLASS( BasicString<char>,     CLSID_CHARSTRING );
-  DEFINE_SERIAL_CLASS( BasicString<Byte>,     CLSID_BYTESTRING );
-  DEFINE_SERIAL_CLASS( BasicString<Unicode>,  CLSID_UNICODESTRING );
+  DEFINE_SERIAL_TEMPL_CLASS( BasicString<char>,     CLSID_CHARSTRING );
+  DEFINE_SERIAL_TEMPL_CLASS( BasicString<Byte>,     CLSID_BYTESTRING );
+  DEFINE_SERIAL_TEMPL_CLASS( BasicString<Unicode>,  CLSID_UNICODESTRING );
   
   
   #if defined(WIN32)

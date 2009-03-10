@@ -38,6 +38,7 @@ GE_HEADS =\
 	actors/geAxisActor.h\
 	actors/gePolyMeshActor.h\
 	actors/geTriMeshActor.h\
+	actors/geSkinMeshActor.h\
 	widgets/geFpsLabel.h\
 	widgets/geLabel.h\
 	widgets/geWidget.h
@@ -78,6 +79,7 @@ libGameEngine_la_SOURCES =\
 	actors/geAxisActor.cpp\
 	actors/gePolyMeshActor.cpp\
 	actors/geTriMeshActor.cpp\
+	actors/geSkinMeshActor.cpp\
 	widgets/geFpsLabel.cpp\
 	widgets/geLabel.cpp\
 	widgets/geWidget.cpp
