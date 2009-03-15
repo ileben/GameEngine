@@ -102,7 +102,7 @@ namespace GE
     TriMeshBase (SerializeManager *sm) : Base (sm)
     {}
 
-    TriMeshBase () : Base (sizeof(Derived::Vertex))
+    TriMeshBase () : Base (sizeof(typename Derived::Vertex))
     {}
 
     INLINE typename Derived::Vertex* getVertex (UintSize index) {
