@@ -1,4 +1,5 @@
 #include "gePolyMesh.h"
+#include "engine/geMatrix.h"
 
 namespace GE
 {
@@ -299,6 +300,194 @@ namespace GE
     }
   }
 
+  /*
+  ----------------------------------------------------
+  Triangulation
+  ----------------------------------------------------*/
 
+  struct TrigNode
+  {
+    Vertex *vertex;
+    Vector2 point;
+    bool orientation;
+  };
+
+  struct TrigEdge
+  {
+    Face *face;
+    Vertex *vertex1;
+    Vertex *vertex2;
+  };
+
+  typedef LinkedList<TrigNode>::Iterator TrigIter;
+  typedef LinkedList<TrigNode>::CyclicIterator TrigCyclIter;
+
+  bool findNodeOrientation (const TrigNode &prev, TrigNode &cur, const TrigNode &next)
+  {
+    Vector2 prevV = prev.point - cur.point;
+    Vector2 nextV = next.point - cur.point;
+    cur.orientation = (Vector::Cross( prevV, nextV ) > 0.0f);
+    return cur.orientation;
+  }
+  
+  bool findNodeOrientation (const TrigCyclIter &cur)
+  {
+    TrigCyclIter prev( cur ); --prev;
+    TrigCyclIter next( cur ); ++next;
+    return findNodeOrientation( *prev, *cur, *next );
+  }
+
+  void PolyMesh::triangulate ()
+  {
+    int polycount = 0;
+
+    ArrayList< TrigEdge > trigEdges;
+
+    for (PolyMesh::FaceIter f(this); !f.end(); ++f)
+    {
+      polycount++;
+      if (polycount == 10480)
+        int oooo = 1;
+
+      PolyMesh::FaceVertIter fv;
+      UintSize numavg[3] = {0,0,0};
+      UintSize avgi = 0;
+      Vector3 avg[3];
+
+      //Split vertices into three groups
+      for (fv.begin(*f); !fv.end(); ++fv, ++avgi)
+        numavg[ avgi % 3 ] += 1;
+
+      //Skip if triangle
+      if (avgi == 3)
+        continue;
+
+      //Average vertices in each group
+      fv.begin(*f);
+      for (int g=0; g<3; ++g)
+        for (avgi=0; avgi<numavg[g]; ++avgi, ++fv)
+          avg[g] += fv->point;
+
+      avg[0] /= (Float) numavg[0];
+      avg[1] /= (Float) numavg[1];
+      avg[2] /= (Float) numavg[2];
+
+      //Define triangulation space
+      Vector3 s1 = (avg[1] - avg[0]).normalize();
+      Vector3 s2 = (avg[2] - avg[0]).normalize();
+      Vector3 avgN = Vector::Cross( s2, s1 ).normalize();
+      Vector3 avgY = Vector::Cross( avgN, s1 );
+      Vector3 avgX = s1;
+      
+      
+      /*
+      Vector3 avgX, avgY;
+      Vector3 Y(0,1,0), negY(0,-1,0), X(1,0,0);
+      if (avgN != Y && avgN != negY)
+        avgX = Vector::Cross( avgN, Y ).normalize();
+      else avgX = Vector::Cross( avgN, X ).normalize();
+      avgY = Vector::Cross( avgN, avgX );*/
+      
+
+      //Construct world-to-trig matrix
+      Matrix4x4 avgM;
+      avgM.setRow( 0, avgX );
+      avgM.setRow( 1, avgY );
+      avgM.setRow( 2, avgN );
+      
+      //Transform polygon into trig space and find bottom-left point
+      LinkedList< TrigNode > trigNodes;
+      bool minFirst = true;
+      TrigIter minI;
+
+      for (fv.begin(*f); !fv.end(); ++fv, ++avgi) {
+        
+        TrigNode node;
+        node.vertex = *fv;
+        node.point = ( avgM * fv->point ).xy();
+
+        TrigIter newI = trigNodes.pushBack( node );
+        bool newMin = false;
+        
+        if (minFirst)
+          newMin = true;
+        else if (node.point.x < minI->point.x)
+          newMin = true;
+        else if (node.point.x == minI->point.x && node.point.y < minI->point.y)
+          newMin = true;
+
+        if (newMin) minI = newI;
+        minFirst = false;
+      }
+
+      //Find which orientation is convex
+      Vector2 prevV, nextV;
+      TrigCyclIter prev, cur, next;
+      bool convex, convexInit = false;
+
+      prev.begin( trigNodes, minI ); --prev;
+      cur.begin( trigNodes, minI );
+      next.begin( trigNodes, minI ); ++next;
+
+      //Find all orientations
+      for ( ; !cur.end(); ++cur, ++prev, ++next)
+      {
+        findNodeOrientation( *prev, *cur, *next );
+        if (!convexInit) { convex = cur->orientation; convexInit = true; }
+      }
+
+      //Cut ears until triangle or no ears found
+      prev.begin( trigNodes ); --prev;
+      cur.begin( trigNodes );
+      next.begin( trigNodes ); ++next;
+
+      while (trigNodes.size() > 3 && !cur.end())
+      {
+        //Find next convex node
+        if (cur->orientation == convex)
+        {
+          //Check if a concave node is inside
+          bool isEar = true;
+          for (TrigCyclIter it( cur ); !it.end(); ++it) {
+            if (it == prev || it == cur || it == next) continue;
+            if (it->orientation == convex) continue;
+            if (Vector::InsideTriangle( it->point, prev->point, cur->point, next->point))
+              { isEar = false; break; }
+          }
+
+          //Cut an ear
+          if (isEar)
+          {
+            TrigEdge e;
+            e.face = *f;
+            e.vertex1 = prev->vertex;
+            e.vertex2 = next->vertex;
+            trigEdges.pushBack( e );
+
+            trigNodes.removeAt( cur );
+            findNodeOrientation( prev );
+            findNodeOrientation( next );
+            cur.begin( next ); ++next;
+            continue;
+          }
+        }
+
+        //Next corner
+        ++prev; ++cur; ++next;
+      }
+    }
+
+    //Create new edges
+    for (UintSize e=0; e<trigEdges.size(); e++)
+    {
+      TrigEdge &edge = trigEdges[e];
+      if (!connectVertices( edge.vertex1, edge.vertex2 )) continue;
+      Face *face1 = edge.vertex1->outHedgeTo( edge.vertex2 )->parentFace();
+      Face *face2 = edge.vertex2->outHedgeTo( edge.vertex1 )->parentFace();
+      face1->smoothGroups = face2->smoothGroups = edge.face->smoothGroups;
+      setMaterialID( face1, edge.face->materialID() );
+      setMaterialID( face2, edge.face->materialID() );
+    }
+  }
 
 }//namespace GE

@@ -185,6 +185,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\util\geLinkedListIter.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\util\geSerialize.cpp"
 				>
 			</File>

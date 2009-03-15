@@ -338,12 +338,14 @@ namespace GE
   {
   public:
     class Iterator;
+    class CyclicIterator;
     
   private:
     class Node
     {
       friend class LinkedList;
       friend class Iterator;
+      friend class CyclicIterator;
       
       T element;
       Node *next;
@@ -351,83 +353,9 @@ namespace GE
     };
     
   public:
-    
-    class Iterator
-    {
-      friend class LinkedList;
-      
-      Node *node;
-      
-      Iterator(Node *n)
-      {
-        node = n;
-      }
-      
-    public:
-      
-      Iterator()
-      {
-        node = NULL;
-      }
-      
-      Iterator(const Iterator &i)
-      {
-        node = i.node;
-      }
-      
-      Iterator& operator=(const Iterator &i)
-      {
-        node = i.node;
-        return *this;
-      }
-      
-      bool operator==(const Iterator &i) const
-      {
-        return node == i.node;
-      }
-      
-      bool operator!=(const Iterator &i) const
-      {
-        return node != i.node;
-      }
-      
-      Iterator& operator--()
-      {
-        node = node->prev;
-        return *this;
-      }
-      
-      Iterator& operator++()
-      {
-        node = node->next;
-        return *this;
-      }
-      
-      Iterator operator+ (int a) const
-      {
-        Iterator i = *this;
-        for (int ii=0; ii<a; ++ii) ++i;
-        return i;
-      }
-      
-      Iterator operator- (int a) const
-      {
-        Iterator i = *this;
-        for (int ii=0; ii<a; ++ii) --i;
-        return i;
-      }
-      
-      T& operator*() const
-      {
-        return node->element;
-      }
-      
-      T* operator->() const 
-      {
-        return &node->element;
-      }
-    };
 
+    #include "geLinkedListIter.h"
+    
     Iterator _begin;
     Iterator _end;
     int _size;

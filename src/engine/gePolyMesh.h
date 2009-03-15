@@ -184,6 +184,7 @@ namespace GE
 
   public:
 
+    void triangulate ();
     void updateNormals (ShadingModel::Enum shadingModel);
     void setMaterialID (Face *f, MaterialID id);
   };

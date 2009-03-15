@@ -155,6 +155,28 @@ namespace GE
     m[col][2] = v.z;
     m[col][3] = v.w;
   }
+
+  void Matrix4x4::setColumn (int col, const Vector3 &v)
+  {
+    m[col][0] = v.x;
+    m[col][1] = v.y;
+    m[col][2] = v.z;
+  }
+
+  void Matrix4x4::setRow (int row, const Vector4 &v)
+  {
+    m[0][row] = v.x;
+    m[1][row] = v.y;
+    m[2][row] = v.z;
+    m[3][row] = v.w;
+  }
+
+  void Matrix4x4::setRow (int row, const Vector3 &v)
+  {
+    m[0][row] = v.x;
+    m[1][row] = v.y;
+    m[2][row] = v.z;
+  }
   
   void Matrix4x4::set (const Vector4 &col1,
                        const Vector4 &col2,

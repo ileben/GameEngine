@@ -201,6 +201,9 @@ namespace GE
     
     Vector4 getColumn (int col) const;
     void setColumn (int col, const Vector4 &v);
+    void setColumn (int col, const Vector3 &v);
+    void setRow (int row, const Vector4 &v);
+    void setRow (int row, const Vector3 &v);
     void set (const Vector4 &col1,
               const Vector4 &col2,
               const Vector4 &col3,

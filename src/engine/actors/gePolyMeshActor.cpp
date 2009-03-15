@@ -81,6 +81,8 @@ namespace GE
         
         //Vertex coordinate
         glVertex3fv ((Float*)&h->dstVertex()->point);
+        Vector3 test = h->dstVertex()->point;
+        int ooo = 0;
       }
       
       glEnd();

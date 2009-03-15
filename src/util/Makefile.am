@@ -7,6 +7,7 @@ GE_UTIL_HEADS =\
 	geDefs.h\
 	geHeapArrayList.h\
 	geLinkedList.h\
+	geLinkedListIter.h\
 	geSerialize.h\
 	geString.h\
 	geTextParser.h\

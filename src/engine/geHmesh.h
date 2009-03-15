@@ -48,7 +48,9 @@ namespace GE
       virtual ~Vertex() {}
            
       INLINE HalfEdge* outHedge() { return hedge; }
-      HalfEdge* outHedgeTo(Vertex *v);
+      HalfEdge* outHedgeTo (Vertex *v);
+      bool isConnectedTo (Vertex *v);
+      Face* commonFaceTo (Vertex *v);
       int degree();
     };
     
@@ -286,7 +288,7 @@ namespace GE
     returns. This is the fastest way to merge two meshes.
     -------------------------------------------------------------*/
 
-    void mergeWith(HMesh *mesh);
+    void mergeWith (HMesh *mesh);
 
     /*
     ---------------------------------------------------------------
@@ -296,7 +298,7 @@ namespace GE
     representation is safe for transfer across network.
     --------------------------------------------------------------*/
 
-    void* serialize(int *outSize=NULL);
+    void* serialize (int *outSize=NULL);
 
     /*
     -----------------------------------------------------------------
@@ -306,26 +308,27 @@ namespace GE
     mesh structure rather than replacing it.
     -----------------------------------------------------------------*/
     
-    void deserialize(void *data);
+    void deserialize (void *data);
     
   private:
     
-    void linkOverPerpendicular(HalfEdge *he);
-    void linkOverLinear(HalfEdge *he);
-    void transferIncomingEdges(HalfEdge *first, HalfEdge *last, Vertex *target);
-    void transferIncomingEdges(Vertex *from, Vertex *to);
-    void connectManifolds(LinkedList<HalfEdge*> *outManifolds);
-    void mergeEdges(HalfEdge *he1, HalfEdge *he2);
+    void linkOverPerpendicular (HalfEdge *he);
+    void linkOverLinear (HalfEdge *he);
+    void transferIncomingEdges (HalfEdge *first, HalfEdge *last, Vertex *target);
+    void transferIncomingEdges (Vertex *from, Vertex *to);
+    void connectManifolds (LinkedList<HalfEdge*> *outManifolds);
+    void mergeEdges (HalfEdge *he1, HalfEdge *he2);
 
   public:
     
-    Vertex* addVertex();
-    Face* addFace(Vertex **vertices, int count);
-    void removeFace(Face *face);
-    bool removeEdge(Edge *edge);
-    bool collapseEdge(Edge *edge);
-    bool weldVertices(Vertex *vert1, Vertex *vert2);
-    HalfEdge* findBoundary();
+    Vertex* addVertex ();
+    Face* addFace (Vertex **vertices, int count);
+    bool connectVertices (Vertex *vert1, Vertex *vert2);
+    void removeFace (Face *face);
+    bool removeEdge (Edge *edge);
+    bool collapseEdge (Edge *edge);
+    bool weldVertices (Vertex *vert1, Vertex *vert2);
+    HalfEdge* findBoundary ();
   };
   
   
@@ -377,6 +380,8 @@ namespace GE
       return (typename Derived::HalfEdge*) HMesh::Vertex::outHedge(); }
     INLINE typename Derived::HalfEdge* outHedgeTo( typename Derived::Vertex *v) {
       return (typename Derived::HalfEdge*) HMesh::Vertex::outHedgeTo( v ); }
+    INLINE typename Derived::Face* commonFaceTo ( typename Derived::Vertex *v) {
+      return (typename Derived::Face*) HMesh::Vertex::commonFaceTo( v ); }
   };
 
   template <class Derived, class Base> class HalfEdgeBase : public Base::HalfEdge

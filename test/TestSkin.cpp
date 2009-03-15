@@ -23,6 +23,8 @@ namespace CameraMode
 
 ByteString data;
 MaxCharacter *character;
+TriMesh *mshLogo;
+TriMeshActor *actLogo;
 SkinMeshActor *skinActor;
 SkinMeshActor *skinActor2;
 
@@ -376,6 +378,29 @@ void loadPackage (String fileName)
   */ 
 }
 
+void loadLogo (String fileName)
+{
+  //Read the file
+  File file( fileName );
+  if( !file.open( "rb" ))
+  {
+    printf( "Failed opening file!\n" );
+    getchar();
+    exit( 1 );
+  }
+  
+  data = file.read( file.getSize() );
+  file.close();
+  
+  //Load character data
+  SerializeManager sm;
+  mshLogo = (TriMesh*) sm.load( (void*)data.buffer() );
+
+  printf ("Logo: %d verts, %d faces\n",
+          mshLogo->getVertexCount(),
+          mshLogo->getFaceCount());
+}
+
 void applyFK (UintSize frame)
 {
   /*
@@ -437,6 +462,11 @@ int main (int argc, char **argv)
   //mat.setDiffuseColor( Vector3(1,0,0) );
   matWhite.setShader( shader );
 
+  StandardMaterial matRed;
+  matRed.setSpecularity( 0.5 );
+  matRed.setDiffuseColor( Vector3(1,0,0) );
+  matRed.setShader( shader );
+
   StandardMaterial matBlue;
   matBlue.setSpecularity( 0.5 );
   matBlue.setDiffuseColor( Vector3(0,0.5,1) );
@@ -473,21 +503,33 @@ int main (int argc, char **argv)
   mm2.setSubMaterial( 3, &matBlack );
   mm2.setSubMaterial( 4, &matGreen );
 
+  MultiMaterial mmLogo;
+  mmLogo.setNumSubMaterials( 2 );
+  mmLogo.setSubMaterial( 0, &matWhite );
+  mmLogo.setSubMaterial( 1, &matRed );
+
   scene = new Scene;
   
   loadPackage( "bub.pak" );
+  loadLogo( "logo3.pak" );
+
+  actLogo = new TriMeshActor;
+  actLogo->setMesh( mshLogo );
+  actLogo->translate( 200, 0, 0 );
+  actLogo->setMaterial( &mmLogo );
+  scene->addChild( actLogo );
 
   skinActor = new SkinMeshActor;
   skinActor->setMaterial( &mm );
   skinActor->setMesh( character );
   skinActor->translate( 60, 0, 0 );
-  scene->addChild( skinActor );
+  //scene->addChild( skinActor );
 
   skinActor2 = new SkinMeshActor;
   skinActor2->setMaterial( &mm2 );
   skinActor2->setMesh( character );
   skinActor2->translate( -60, 0, 0 );
-  scene->addChild( skinActor2 );
+  //scene->addChild( skinActor2 );
   
   applyFK( 0 );
 
@@ -505,6 +547,30 @@ int main (int argc, char **argv)
   axes->scale( 100 );
   axes->setMaterial( &axesMat );
   //scene->addChild( axes );
+
+  ///////////////////////////////////////
+  //Test triangulation
+  PolyMesh p;
+  int numVerts = 6;
+  ArrayList< PolyMesh::Vertex* > verts;
+  for (int v=0; v<numVerts; ++v)
+    verts.pushBack( p.addVertex() );
+  p.addFace( verts.buffer(), numVerts );
+
+  verts[0]->point.set( 0,0,0 );
+  verts[1]->point.set( 1,0,0 );
+  verts[2]->point.set( 1,1,0 );
+  verts[3]->point.set( 2,1,0 );
+  verts[4]->point.set( 2,2,0 );
+  verts[5]->point.set( 0,2,0 );
+  p.triangulate();
+
+  PolyMeshActor *pa = new PolyMeshActor;
+  pa->setMesh( &p );
+  pa->scale( 100, 100, 100 );
+  //scene->addChild( pa );
+
+  /////////////////////////////////
 
   light = new SpotLight( Vector3(-200,200,-200), Vector3(1,-1,1), 60, 0 );
   scene->addChild( light );

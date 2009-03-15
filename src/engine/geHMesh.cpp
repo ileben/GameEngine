@@ -16,17 +16,33 @@ namespace GE
   typedef HMesh::VertHedgeIter  VertHedgeIter;
   typedef HMesh::VertVertIter   VertVertIter;
 
-  /*---------------------------------------------------
+  /*
+  -----------------------------------------------------
   Vertex
   -----------------------------------------------------*/
 
 
-  HalfEdge* Vertex::outHedgeTo(Vertex *v)
+  HalfEdge* Vertex::outHedgeTo (Vertex *v)
   {
     for (VertHedgeIter e((Vertex*)this); !e.end(); ++e)
       if ((*e)->vert == v)
         return (*e);
     return false;
+  }
+
+  bool Vertex::isConnectedTo (Vertex *v)
+  {
+    return outHedgeTo( v ) != NULL;
+  }
+
+  Face* Vertex::commonFaceTo (Vertex *v)
+  {
+    for (HMesh::VertFaceIter vf1(this); !vf1.end(); ++vf1)
+      for (HMesh::VertFaceIter vf2(v); !vf2.end(); ++vf2)
+        if (*vf1 == *vf2)
+          return *vf1;
+
+    return NULL;
   }
 
   int Vertex::degree()
@@ -37,7 +53,8 @@ namespace GE
     return deg;
   }
 
-  /*---------------------------------------------------
+  /*
+  -----------------------------------------------------
   HalfEdge
   -----------------------------------------------------*/
 
@@ -73,7 +90,8 @@ namespace GE
     return next->vert;
   }
 
-  /*---------------------------------------------------
+  /*
+  -----------------------------------------------------
   Face
   -----------------------------------------------------*/
 
@@ -96,7 +114,8 @@ namespace GE
     return hedge->isLoopTriangle();
   }
 
-  /*---------------------------------------------
+  /*
+  ----------------------------------------------
   Serialized mesh entity data types. Note that
   these don't use traits so all the custom data
   is lost when serializing.
@@ -124,9 +143,10 @@ namespace GE
     int hedge;
   };
 
-  /*---------------------------------------------------
+  /*
+  ------------------------------------------------------
   Sets classes to be used when entities are constructed
-  -----------------------------------------------------*/
+  ------------------------------------------------------*/
 
   void HMesh::setClasses(ClassPtr cnVertex, ClassPtr cnHedge,
                          ClassPtr cnEdge, ClassPtr cnFace)
@@ -137,7 +157,8 @@ namespace GE
     classFace = cnFace;
   }
 
-  /*--------------------------------------------
+  /*
+  ---------------------------------------------
   Entity insertion and removal functions.
   These make sure that entities have proper
   handles to list nodes for removal and
@@ -197,7 +218,8 @@ namespace GE
     invalid_hedges.pushBack(e->hedge->twin);
   }
 
-  /*----------------------------------------------
+  /*
+  -----------------------------------------------
   Finally deletes the invalidated mesh entities
   which were removed by mesh operations
   -----------------------------------------------*/
@@ -222,7 +244,8 @@ namespace GE
     invalid_faces.clear();
   }
 
-  /*-----------------------------------------------
+  /*
+  ------------------------------------------------
   Deletes all the mesh entities and destroys the
   entire mesh structure.
   ------------------------------------------------*/
@@ -249,7 +272,8 @@ namespace GE
     faces.clear();
   }
 
-  /*------------------------------------------------------------
+  /*
+  -------------------------------------------------------------
   Transfers the mesh entities from given HMesh to this one
   adding them to existing mesh structure. Just the pointers
   to entities are transfered without actually copying their
@@ -280,7 +304,8 @@ namespace GE
     mesh->faces.clear();
   }
 
-  /*--------------------------------------------------------------
+  /*
+  --------------------------------------------------------------
   Stores the mesh structure into a chunk of memory independent
   of its actual memory layout by swapping the pointer
   references with indexed entity id's. The resulting mesh
@@ -368,7 +393,8 @@ namespace GE
     return data;
   }
 
-  /*-----------------------------------------------------------------
+  /*
+  -----------------------------------------------------------------
   Unpacks the mesh structure from given serialized representation
   back into pointer-referenced representation for fast operations
   on mesh. The unserialized entities are added to the existing
@@ -446,11 +472,12 @@ namespace GE
       pointerFace[f]->hedge = pointerHedge[dataFace[f].hedge];
   }
 
-  /*--------------------------------------------------
+  /*
+  -----------------------------------------------------
   Helper functions that perform various sub-operations
   that make a part of greater high-level operations
   exposed to the final user.
-  ----------------------------------------------------*/
+  -----------------------------------------------------*/
 
   void HMesh::linkOverPerpendicular(HalfEdge *he)
   {
@@ -516,7 +543,8 @@ namespace GE
     return vert;
   }
 
-  /*-----------------------------------------------------------
+  /*
+  -------------------------------------------------------------
   If a vertex is non-singular and lies on the mesh border,
   then it must have exactly 1 outgoing and 1 incoming halfedge
   with no face. If we found the two, its valid to link them
@@ -575,7 +603,8 @@ namespace GE
     }
   }
 
-  /*-------------------------------------------------------
+  /*
+  -----------------------------------------------------------
   Adding a face is the only direct function allowing  mesh
   construction so this is where we need to check  for
   possible user errors. These can include:
@@ -593,7 +622,7 @@ namespace GE
      - a corner with both edges shared which completes a
      manifold (full face circle), but with another manifold
      inbetween
-  ---------------------------------------------------------*/
+  ----------------------------------------------------------*/
 
   Face* HMesh::addFace (Vertex **vertices, int count)
   {
@@ -796,7 +825,88 @@ namespace GE
     return face;
   }
 
-  void HMesh::removeFace(Face *face)
+  bool HMesh::connectVertices (Vertex *vert1, Vertex *vert2)
+  {
+    //Must be different vertices
+    if (vert1 == vert2)
+      return false;
+
+    //Find common face and outgoing half-edges
+    Face *face = NULL;
+    HalfEdge *hedge1in, *hedge1out;
+    HalfEdge *hedge2in, *hedge2out;
+
+    for (HMesh::VertFaceIter vf1(vert1); !vf1.end(); ++vf1) {
+      for (HMesh::VertFaceIter vf2(vert2); !vf2.end(); ++vf2) {
+
+        if (*vf1 == *vf2) {
+          face = *vf1;
+          hedge1in = vf1.hedgeToVertex();
+          hedge2in = vf2.hedgeToVertex();
+          hedge1out = hedge1in->next;
+          hedge2out = hedge2in->next;
+          break;
+        }}
+      
+      if (face != NULL)
+        break;
+    }
+
+    //Must belong to the same face
+    if (face == NULL)
+      return false;
+    
+    //Must not be directly connected
+    if (hedge1out->vert == vert2 || hedge2out->vert == vert1)
+      return false;
+
+    //Create new entities
+    HalfEdge *newHedge1 = (HalfEdge*) New( classHalfEdge );
+    HalfEdge *newHedge2 = (HalfEdge*) New( classHalfEdge );
+    Edge *newEdge = (Edge*) New( classEdge );
+    Face *newFace = (Face*) New( classFace );
+
+    //Setup new entities
+    newHedge1->vert = vert1;
+    newHedge2->vert = vert2;
+    newHedge1->face = face;
+    newHedge2->face = newFace;
+    newHedge1->edge = newEdge;
+    newHedge2->edge = newEdge;
+    newHedge1->next = hedge1out;
+    newHedge2->next = hedge2out;
+    newHedge1->prev = hedge2in;
+    newHedge2->prev = hedge1in;
+    newHedge1->twin = newHedge2;
+    newHedge2->twin = newHedge1;
+    newEdge->hedge = newHedge1;
+    newFace->hedge = newHedge2;
+    
+    //Setup old entities
+    hedge1in->next = newHedge2;
+    hedge2in->next = newHedge1;
+    hedge1out->prev = newHedge1;
+    hedge2out->prev = newHedge2;
+
+    //This might be pointing to wrong part of the loop
+    face->hedge = newHedge1;
+
+    //Adjust face pointers to both loops
+    for (HalfEdge *h1 = hedge1out; h1 != newHedge1; h1=h1->next)
+      h1->face = face;
+    for (HalfEdge *h2 = hedge2out; h2 != newHedge2; h2=h2->next)
+      h2->face = newFace;
+
+    //Insert new entities
+    insertHalfEdge( newHedge1 );
+    insertHalfEdge( newHedge2 );
+    insertEdge( newEdge );
+    insertFace( newFace );
+
+    return true;
+  }
+
+  void HMesh::removeFace (Face *face)
   {
     //traverse all edges/vertices
     bool deleteFirst = false;
@@ -870,7 +980,7 @@ namespace GE
   }
   
 
-  bool HMesh::removeEdge(Edge *edge)
+  bool HMesh::removeEdge (Edge *edge)
   {
     //pick the two half-edges involved
     HalfEdge *hedge1 = edge->hedge;
@@ -927,7 +1037,7 @@ namespace GE
     return true;
   }
 
-  void HMesh::mergeEdges(HalfEdge *he1, HalfEdge *he2)
+  void HMesh::mergeEdges (HalfEdge *he1, HalfEdge *he2)
   {
     //Two edges of a triangle are merged into one
     //preparing the ground for third edge collapse
@@ -967,7 +1077,7 @@ namespace GE
   }
 
 
-  bool HMesh::collapseEdge(Edge *edge)
+  bool HMesh::collapseEdge (Edge *edge)
   {
     //pick the hedges and verts of edge
     HalfEdge *hedge1 = edge->hedge;
