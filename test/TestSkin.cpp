@@ -29,12 +29,18 @@ SkinMeshActor *skinActor;
 SkinMeshActor *skinActor2;
 
 Scene *scene;
+Scene *sceneLogo;
+Scene *sceneRender = NULL;
 Light *light;
+Light *lightLogo;
+Light *lightRender;
 
 FpsLabel lblFps;
 
 Camera2D cam2D;
 Camera3D cam3D;
+Camera3D *camLogo;
+Camera3D *camRender = NULL;
 Renderer *renderer;
 bool down3D;
 Vector2 lastMouse3D;
@@ -70,7 +76,7 @@ void drag3D (int x, int y)
   //printMatrix (cam3D.getMatrix());
   
   Vector2 diff = Vector2( (Float)x,(Float)y ) - lastMouse3D;
-  float eyeDist = ( cam3D.getEye() - center ).norm();
+  float eyeDist = ( camRender->getEye() - center ).norm();
   
   Float angleH = diff.x * (2*PI) / 400;
   Float angleV = diff.y * (2*PI) / 400;
@@ -83,25 +89,25 @@ void drag3D (int x, int y)
   {  
   case CameraMode::Zoom:
 
-    cam3D.zoom( zoom );
+    camRender->zoom( zoom );
     break;
     
   case CameraMode::Orbit:
     
-    cam3D.setCenter( center );
-    cam3D.orbitH( angleH, true );
-    cam3D.orbitV( angleV, true );
+    camRender->setCenter( center );
+    camRender->orbitH( angleH, true );
+    camRender->orbitV( angleV, true );
     break;
 
   case CameraMode::Pan:
 
-    //cam3D.panH( panH );
-    //cam3D.panV( panV );
-    Vector3 flatLook = cam3D.getLook();
+    //camRender->panH( panH );
+    //camRender->panV( panV );
+    Vector3 flatLook = camRender->getLook();
     flatLook.y = 0.0f; flatLook.normalize();
-    Vector3 t = flatLook * -panV + cam3D.getSide() * -panH;
-    light->translate( t.x, t.y, t.z );
-    light->lookAt( center - light->getMatrix().getColumn(3).xyz(), Vector3(0,1,0) );
+    Vector3 t = flatLook * -panV + camRender->getSide() * -panH;
+    lightRender->translate( t.x, t.y, t.z );
+    lightRender->lookAt( center - lightRender->getMatrix().getColumn(3).xyz(), Vector3(0,1,0) );
     break;
   }
   
@@ -153,14 +159,21 @@ void keyboard (unsigned char key, int x, int y)
 
   switch (key)
   {
-  case 13://return
-    skinActor2->playAnimation( "MyAnimation", 0.8f );
-    break;
-
   case ' ':
+    if (sceneRender == sceneLogo) {
+      sceneRender = scene;
+      lightRender = light;
+      camRender = &cam3D;
+      break;
+    }
+
     if (!skinActor->isAnimationPlaying())
       skinActor->loopAnimation( "MyAnimation", 0.6f );
     else skinActor->pauseAnimation();
+    break;
+
+  case 13://return
+    skinActor2->playAnimation( "MyAnimation", 0.8f );
     break;
 
   case '+':
@@ -191,15 +204,16 @@ void keyboard (unsigned char key, int x, int y)
 
 void display ()
 {
-  renderer->renderShadowMap( light, scene );
-  renderer->beginFrame();
-  
   //switch camera
   renderer->setViewport( 0,0,resX, resY );
-  renderer->setCamera( &cam3D );
+  renderer->setCamera( camRender );
+
+  //draw shadows
+  renderer->renderShadowMap( lightRender, sceneRender );
+  renderer->beginFrame();
   
   //draw model
-  renderer->beginScene( scene );
+  renderer->beginScene( sceneRender );
   renderer->renderScene();
   renderer->endScene();
   
@@ -442,13 +456,6 @@ int main (int argc, char **argv)
   renderer = kernel.getRenderer();
   printf( "Kernel loaded\n" );
   
-  //Setup camera
-  cam3D.setCenter( center );
-  cam3D.translate( 0,0,-400 );
-  cam3D.orbitV( Util::DegToRad( 20 ), true );
-  cam3D.orbitH( Util::DegToRad( 30 ), true );
-  cam3D.setNearClipPlane( 10.0f );
-  cam3D.setFarClipPlane( 1000.0f );
   
   Shader *shader = new Shader;
   shader->fromFile( "pixelphong.vert.c", "pixelphong.frag.c" );
@@ -465,7 +472,13 @@ int main (int argc, char **argv)
   StandardMaterial matRed;
   matRed.setSpecularity( 0.5 );
   matRed.setDiffuseColor( Vector3(1,0,0) );
+  matRed.setAmbientColor( matRed.getDiffuseColor() * .8f );
   matRed.setShader( shader );
+
+  StandardMaterial matWhiteLogo;
+  matWhiteLogo.setSpecularity( 0.5 );
+  matWhiteLogo.setAmbientColor( matWhiteLogo.getDiffuseColor() * .8f );
+  matWhiteLogo.setShader( shader );
 
   StandardMaterial matBlue;
   matBlue.setSpecularity( 0.5 );
@@ -505,33 +518,44 @@ int main (int argc, char **argv)
 
   MultiMaterial mmLogo;
   mmLogo.setNumSubMaterials( 2 );
-  mmLogo.setSubMaterial( 0, &matWhite );
+  mmLogo.setSubMaterial( 0, &matWhiteLogo );
   mmLogo.setSubMaterial( 1, &matRed );
 
-  scene = new Scene;
-  
-  loadPackage( "bub.pak" );
-  loadLogo( "logo3.pak" );
+  //Setup Logo scene
 
+  sceneLogo = new Scene;
+
+  loadLogo( "logo.pak" );
   actLogo = new TriMeshActor;
   actLogo->setMesh( mshLogo );
   actLogo->translate( 200, 0, 0 );
   actLogo->setMaterial( &mmLogo );
-  scene->addChild( actLogo );
+  sceneLogo->addChild( actLogo );
 
+  camLogo = new Camera3D;
+  camLogo->translate( 0,0,-600 );
+  camLogo->setNearClipPlane( 10.0f );
+  camLogo->setFarClipPlane( 1000.0f );
+
+  lightLogo = new SpotLight( Vector3(0,0,-500), Vector3(0,0,1), 60, 0 );
+  sceneLogo->addChild( lightLogo );
+
+  //Setup Bub scene
+
+  loadPackage( "bub.pak" );
+  scene = new Scene;
+  
   skinActor = new SkinMeshActor;
   skinActor->setMaterial( &mm );
   skinActor->setMesh( character );
   skinActor->translate( 60, 0, 0 );
-  //scene->addChild( skinActor );
+  scene->addChild( skinActor );
 
   skinActor2 = new SkinMeshActor;
   skinActor2->setMaterial( &mm2 );
   skinActor2->setMesh( character );
   skinActor2->translate( -60, 0, 0 );
-  //scene->addChild( skinActor2 );
-  
-  applyFK( 0 );
+  scene->addChild( skinActor2 );
 
   TriMesh *cubeMesh = new CubeMesh;
   TriMeshActor *cube = new TriMeshActor;
@@ -547,6 +571,25 @@ int main (int argc, char **argv)
   axes->scale( 100 );
   axes->setMaterial( &axesMat );
   //scene->addChild( axes );
+
+  cam3D.setCenter( center );
+  cam3D.translate( 0,0,-400 );
+  cam3D.orbitV( Util::DegToRad( 20 ), true );
+  cam3D.orbitH( Util::DegToRad( 30 ), true );
+  cam3D.setNearClipPlane( 10.0f );
+  cam3D.setFarClipPlane( 1000.0f );
+
+  light = new SpotLight( Vector3(-200,200,-200), Vector3(1,-1,1), 60, 0 );
+  scene->addChild( light );
+
+  //Start with Logo scene
+  sceneRender = sceneLogo;
+  lightRender = lightLogo;
+  camRender = camLogo;
+
+  //sceneRender = scene;
+  //lightRender = light;
+  //camRender = &cam3D;
 
   ///////////////////////////////////////
   //Test triangulation
@@ -571,9 +614,6 @@ int main (int argc, char **argv)
   //scene->addChild( pa );
 
   /////////////////////////////////
-
-  light = new SpotLight( Vector3(-200,200,-200), Vector3(1,-1,1), 60, 0 );
-  scene->addChild( light );
   
   lblFps.setLocation( Vector2( 0.0f, (Float)resY ));
   lblFps.setColor( Vector3( 1.0f, 1.0f, 1.0f ));

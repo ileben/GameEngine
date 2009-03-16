@@ -322,19 +322,25 @@ namespace GE
   typedef LinkedList<TrigNode>::Iterator TrigIter;
   typedef LinkedList<TrigNode>::CyclicIterator TrigCyclIter;
 
-  bool findNodeOrientation (const TrigNode &prev, TrigNode &cur, const TrigNode &next)
+  bool findNodeOrientation (const TrigNode &prev, TrigNode &cur, const TrigNode &next,
+                            bool convex, bool convexInit)
   {
     Vector2 prevV = prev.point - cur.point;
     Vector2 nextV = next.point - cur.point;
-    cur.orientation = (Vector::Cross( prevV, nextV ) > 0.0f);
+    Float cross = Vector::Cross( prevV, nextV );
+
+    if (convexInit && cross > -0.001f && cross < 0.001f)
+      cur.orientation = !convex;
+    else cur.orientation = (cross > 0.0f);
+
     return cur.orientation;
   }
   
-  bool findNodeOrientation (const TrigCyclIter &cur)
+  bool findNodeOrientation (const TrigCyclIter &cur, bool convex, bool convexInit)
   {
     TrigCyclIter prev( cur ); --prev;
     TrigCyclIter next( cur ); ++next;
-    return findNodeOrientation( *prev, *cur, *next );
+    return findNodeOrientation( *prev, *cur, *next, convex, convexInit );
   }
 
   void PolyMesh::triangulate ()
@@ -346,93 +352,76 @@ namespace GE
     for (PolyMesh::FaceIter f(this); !f.end(); ++f)
     {
       polycount++;
-      if (polycount == 10480)
+      if (polycount == 9902)
         int oooo = 1;
 
-      PolyMesh::FaceVertIter fv;
-      UintSize numavg[3] = {0,0,0};
-      UintSize avgi = 0;
-      Vector3 avg[3];
+      //Find a good corner and calculate normal
+      Vector3 s1, s2, trigN, trigX, trigY;
+      PolyMesh::FaceVertIter fvPrev( *f );
+      PolyMesh::FaceVertIter fvCur( *f );
+      PolyMesh::FaceVertIter fvNext( *f );
+      ++fvCur; ++fvNext; ++fvNext;
+      bool foundN = false;
 
-      //Split vertices into three groups
-      for (fv.begin(*f); !fv.end(); ++fv, ++avgi)
-        numavg[ avgi % 3 ] += 1;
+      for ( ; !fvPrev.end(); ++fvPrev, ++fvCur, ++fvNext)
+      {
+        s1 = fvPrev->point - fvCur->point;
+        s2 = fvNext->point - fvCur->point;
+        trigN = Vector::Cross( s2, s1 );
+        Float norm = trigN.norm();
+        if (norm < -0.001f || norm > +0.001f)
+        {
+          trigN /= norm;
+          trigX = s1.normalize();
+          trigY = Vector::Cross( trigN, trigX );
+          foundN = true; break;
+        }
+      }
 
-      //Skip if triangle
-      if (avgi == 3)
-        continue;
-
-      //Average vertices in each group
-      fv.begin(*f);
-      for (int g=0; g<3; ++g)
-        for (avgi=0; avgi<numavg[g]; ++avgi, ++fv)
-          avg[g] += fv->point;
-
-      avg[0] /= (Float) numavg[0];
-      avg[1] /= (Float) numavg[1];
-      avg[2] /= (Float) numavg[2];
-
-      //Define triangulation space
-      Vector3 s1 = (avg[1] - avg[0]).normalize();
-      Vector3 s2 = (avg[2] - avg[0]).normalize();
-      Vector3 avgN = Vector::Cross( s2, s1 ).normalize();
-      Vector3 avgY = Vector::Cross( avgN, s1 );
-      Vector3 avgX = s1;
-      
-      
-      /*
-      Vector3 avgX, avgY;
-      Vector3 Y(0,1,0), negY(0,-1,0), X(1,0,0);
-      if (avgN != Y && avgN != negY)
-        avgX = Vector::Cross( avgN, Y ).normalize();
-      else avgX = Vector::Cross( avgN, X ).normalize();
-      avgY = Vector::Cross( avgN, avgX );*/
-      
+      if (!foundN) continue;
 
       //Construct world-to-trig matrix
-      Matrix4x4 avgM;
-      avgM.setRow( 0, avgX );
-      avgM.setRow( 1, avgY );
-      avgM.setRow( 2, avgN );
+      Matrix4x4 trigM;
+      trigM.setColumn( 0, trigX );
+      trigM.setColumn( 1, trigY );
+      trigM.setColumn( 2, trigN );
+      trigM.setColumn( 3, fvCur->point );
+      trigM = trigM.affineInverse();
       
       //Transform polygon into trig space and find bottom-left point
       LinkedList< TrigNode > trigNodes;
       bool minFirst = true;
       TrigIter minI;
 
-      for (fv.begin(*f); !fv.end(); ++fv, ++avgi) {
+      for (fvCur.begin(*f); !fvCur.end(); ++fvCur) {
         
         TrigNode node;
-        node.vertex = *fv;
-        node.point = ( avgM * fv->point ).xy();
-
+        node.vertex = *fvCur;
+        node.point = ( trigM * fvCur->point ).xy();
         TrigIter newI = trigNodes.pushBack( node );
-        bool newMin = false;
         
         if (minFirst)
-          newMin = true;
+          minI = newI;
         else if (node.point.x < minI->point.x)
-          newMin = true;
+          minI = newI;
         else if (node.point.x == minI->point.x && node.point.y < minI->point.y)
-          newMin = true;
-
-        if (newMin) minI = newI;
+          minI = newI;
+      
         minFirst = false;
       }
-
-      //Find which orientation is convex
+      
+      //Find orientation for all corners
       Vector2 prevV, nextV;
       TrigCyclIter prev, cur, next;
-      bool convex, convexInit = false;
+      bool convex = false, convexInit = false;
 
       prev.begin( trigNodes, minI ); --prev;
       cur.begin( trigNodes, minI );
       next.begin( trigNodes, minI ); ++next;
 
-      //Find all orientations
       for ( ; !cur.end(); ++cur, ++prev, ++next)
       {
-        findNodeOrientation( *prev, *cur, *next );
+        findNodeOrientation( *prev, *cur, *next, convex, convexInit );
         if (!convexInit) { convex = cur->orientation; convexInit = true; }
       }
 
@@ -465,8 +454,8 @@ namespace GE
             trigEdges.pushBack( e );
 
             trigNodes.removeAt( cur );
-            findNodeOrientation( prev );
-            findNodeOrientation( next );
+            findNodeOrientation( prev, convex, convexInit );
+            findNodeOrientation( next, convex, convexInit );
             cur.begin( next ); ++next;
             continue;
           }
