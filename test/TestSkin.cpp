@@ -209,12 +209,13 @@ void display ()
   renderer->setCamera( camRender );
 
   //draw shadows
-  renderer->renderShadowMap( lightRender, sceneRender );
+  //renderer->renderShadowMap( lightRender, sceneRender );
   renderer->beginFrame();
   
   //draw model
   renderer->beginScene( sceneRender );
-  renderer->renderScene();
+  //renderer->renderScene();
+  renderer->renderSceneDeferred();
   renderer->endScene();
   
   //Frames per second
@@ -456,10 +457,9 @@ int main (int argc, char **argv)
   renderer = kernel.getRenderer();
   printf( "Kernel loaded\n" );
   
-  
   Shader *shader = new Shader;
-  shader->fromFile( "pixelphong.vert.c", "pixelphong.frag.c" );
-  //shader->registerUniform( "sampler", GE_UNIFORM_TEXTURE, 1 );
+  //shader->fromFile( "pixelphong.vert.c", "pixelphong.frag.c" );
+  shader->fromFile( "deferred_geometry.vert.c", "deferred_geometry.frag.c" );
 
   //VertColorMaterial mat;
   StandardMaterial matWhite;
@@ -525,7 +525,7 @@ int main (int argc, char **argv)
 
   sceneLogo = new Scene;
 
-  loadLogo( "logo.pak" );
+  loadLogo( "logo2.pak" );
   actLogo = new TriMeshActor;
   actLogo->setMesh( mshLogo );
   actLogo->translate( 200, 0, 0 );
@@ -580,7 +580,12 @@ int main (int argc, char **argv)
   cam3D.setFarClipPlane( 1000.0f );
 
   light = new SpotLight( Vector3(-200,200,-200), Vector3(1,-1,1), 60, 0 );
+  //light->setColor( Vector3( 1,.2,.2 ) );
   scene->addChild( light );
+
+  Light* l = new SpotLight( Vector3(200,200,-200), Vector3(-1,-1,1), 60, 0 );
+  //l->setColor( Vector3( .2,.2,1 ) );
+  scene->addChild( l );
 
   //Start with Logo scene
   sceneRender = sceneLogo;

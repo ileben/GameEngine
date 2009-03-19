@@ -15,9 +15,13 @@ namespace GE
 
   private:
     virtual RenderRole::Enum getRenderRole();
+
+  protected:
+    Vector3 color;
     
   public:
     Light();
+    void setColor (const Vector3 &color);
     void setDirection (const Vector3 &dir);
     void setPosition (const Vector3 &dir);
     virtual void enable (int index);

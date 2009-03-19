@@ -1,16 +1,28 @@
-varying vec3 normal;
-varying vec3 light; //Use this for POINT light
-varying vec3 point;
-uniform sampler2D sampler;
+uniform sampler2D samplerVertex;
+uniform sampler2D samplerNormal;
+uniform sampler2D samplerColor;
+uniform sampler2D samplerSpec;
 
 void main (void)
 {
-	//Input colors
-	vec4 ambient = gl_FrontMaterial.ambient * gl_LightSource[0].ambient;
-	vec4 diffuse = gl_FrontMaterial.diffuse * gl_LightSource[0].diffuse;
-	vec4 specular = gl_FrontMaterial.specular * gl_LightSource[0].specular;
-	vec4 Color = ambient;
+  //Input data
+  vec4 vertexTexel = texture2D( samplerVertex, gl_TexCoord[0].xy );
+  vec4 normalTexel = texture2D( samplerNormal, gl_TexCoord[0].xy );
+  vec4 colorTexel = texture2D( samplerColor, gl_TexCoord[0].xy );
+  vec4 specTexel = texture2D( samplerSpec, gl_TexCoord[0].xy );
 
+  vec3 point = vertexTexel.xyz;
+  vec3 normal = normalTexel.xyz;
+  vec3 diffuse = colorTexel.rgb * gl_LightSource[0].diffuse.rgb;
+  vec3 specular = specTexel.rgb * gl_LightSource[0].specular.rgb;
+  float shininess = specTexel.a;
+
+  vec3 light = gl_LightSource[0].position.xyz - point;
+  
+  //Output color
+	vec3 Color = vec3( 0.0, 0.0, 0.0 );
+
+  /*
   //Perspective division and bias on shadow coordinate
   vec3 shadowCoord = gl_TexCoord[0].xyz / gl_TexCoord[0].w;
   shadowCoord = shadowCoord * 0.5 + vec3(0.5,0.5,0.5);
@@ -21,11 +33,11 @@ void main (void)
       shadowCoord.y >= 0.0 && shadowCoord.y <= 1.0)
     if (shadowCoord.z > shadowValue.r)
       { diffuse *= 0.2; specular *= 0.0; }
+  */
 
   //Input vectors
 	vec3 N = normalize( normal );
-	//vec3 L = normalize( gl_LightSource[0].position ).xyz; //Use this for DIR light
-	vec3 L = normalize( light ); //Use this for POINT light
+	vec3 L = normalize( light );
   
 	//Basic shading
 	float NdotL = max( dot(N,L), 0.0 );
@@ -45,16 +57,15 @@ void main (void)
       
       //Diffuse color term
 	    Color += diffuse * NdotL * spotCoeff;
-	    Color.a = diffuse.a;
       
 		  //Phong specular coefficient
 		  vec3 E = - normalize( point );
 		  vec3 R = normalize( 2.0 * dot(L,N) * N  - L );
 		  float specCoeff = max( dot (R,E), 0.0 );
-		  specCoeff = pow( specCoeff, gl_FrontMaterial.shininess );
+		  specCoeff = pow( specCoeff, shininess );
 		  Color += specular * specCoeff * spotCoeff;
 	  }
   }
 	
-	gl_FragColor = Color;
+	gl_FragColor = vec4( Color, 1.0 );
 }

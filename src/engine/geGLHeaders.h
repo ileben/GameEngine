@@ -231,10 +231,19 @@ GL_EXT_framebuffer_object
 #define GL_FRAMEBUFFER                    0x8D40
 #define GL_RENDERBUFFER                   0x8D41
 #define GL_COLOR_ATTACHMENT0              0x8CE0
+#define GL_COLOR_ATTACHMENT1              0x8CE1
+#define GL_COLOR_ATTACHMENT2              0x8CE2
+#define GL_COLOR_ATTACHMENT3              0x8CE3
+#define GL_COLOR_ATTACHMENT4              0x8CE4
 #define GL_DEPTH_ATTACHMENT               0x8D00
 #define GL_STENCIL_ATTACHMENT             0x8D20
 #define GL_DEPTH_COMPONENT24              0x81A6
 #define GL_DEPTH_COMPONENT32              0x81A7
+#define GL_FRAMEBUFFER_COMPLETE           0x8CD5
+#define GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT           0x8CD6
+#define GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT   0x8CD7
+#define GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER          0x8CDB
+#define GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER          0x8CDC
 #endif
 
 #ifndef GL_EXT_framebuffer_object
@@ -285,9 +294,42 @@ typedef void
 
 #endif
 
+/**********************************************
+GL_ARB_draw_buffers
+***********************************************/
+
+#ifndef GL_ARB_draw_buffers
+#define GL_MAX_DRAW_BUFFERS               0x8824
+
+typedef void
+  (APIENTRY* GE_PFGLDRAWBUFFERS)
+  (GLsizei, const GLenum *);
+
+#endif
+
+/**********************************************
+GL_ARB_texture_float
+***********************************************/
+
+#ifndef GL_ARB_texture_float
+#define GL_RGBA32F                        0x8814
+#define GL_LUMINANCE32F                   0x8818
+#define GL_RGBA16F                        0x881A
+#endif
+
+/***********************************************
+GL_ARB_pixel_buffer_object
+***********************************************/
+
+#ifndef GL_EXT_pixel_buffer_object
+#define GL_PIXEL_PACK_BUFFER              0x88EB
+#define GL_PIXEL_UNPACK_BUFFER            0x88EC
+#define GL_PIXEL_PACK_BUFFER_BINDING      0x88ED
+#define GL_PIXEL_UNPACK_BUFFER_BINDING    0x88EF
+#endif
 
 /*******************************************************
-Function re-routing
+Function pointers
 ********************************************************/
 
 #ifndef GL_VERSION_1_2
@@ -344,7 +386,14 @@ extern GE_PFGLGENRENDERBUFFERS          GE_glGenRenderbuffers;
 extern GE_PFGLRENDERBUFFERSTORAGE       GE_glRenderbufferStorage;
 #endif
 
+#ifndef GL_ARB_draw_buffers
+extern GE_PFGLDRAWBUFFERS               GE_glDrawBuffers;
+#endif
 
+
+/*******************************************************
+Function re-routing
+********************************************************/
 
 #ifndef GE_NO_EXTENSION_ROUTING
 
@@ -401,6 +450,10 @@ extern GE_PFGLRENDERBUFFERSTORAGE       GE_glRenderbufferStorage;
 #define glDeleteRenderbuffers       GE_glDeleteRenderbuffers
 #define glGenRenderbuffers          GE_glGenRenderbuffers
 #define glRenderbufferStorage       GE_glRenderbufferStorage
+#endif
+
+#ifndef GL_ARB_draw_buffers
+#define glDrawBuffers               GE_glDrawBuffers
 #endif
 
 #endif//!GE_NO_EXTENSION_ROUTING

@@ -11,12 +11,18 @@ namespace GE
 
   Light::Light()
   {
+    color.set( .9f, .9f, .9f );
     setIsRenderable( false );
   }
   
   RenderRole::Enum Light::getRenderRole()
   {
     return RenderRole::Light;
+  }
+
+  void Light::setColor (const Vector3 &c)
+  {
+    color = c;
   }
 
   void Light::setDirection (const Vector3 &dir)
@@ -64,9 +70,8 @@ namespace GE
   
   void Light::enable (int index)
   {
-    Float L = 0.9f;
     GLfloat ambient[4] = {0.2f,0.2f,0.2f, 1.0f};
-    GLfloat diffuse[4] = {L, L, L, 1.0f};
+    GLfloat diffuse[4] = {color.x, color.y, color.z, 1.0f};
     
     glEnable( GL_LIGHT0 + index );
     glLightfv( GL_LIGHT0 + index, GL_AMBIENT, ambient );

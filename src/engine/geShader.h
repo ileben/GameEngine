@@ -68,6 +68,7 @@ namespace GE
     
     UintSize getUniformCount ();
     Uniform& getUniform (UintSize index);
+    const GLProgram* getGLProgram ();
     void use ();
   };
 }

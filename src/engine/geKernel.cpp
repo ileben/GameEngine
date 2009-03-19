@@ -95,7 +95,12 @@ GE_PFGLGENRENDERBUFFERS          GE_glGenRenderbuffers = NULL;
 GE_PFGLRENDERBUFFERSTORAGE       GE_glRenderbufferStorage = NULL;
 #endif
 
+#ifndef GL_ARB_draw_buffers
+GE_PFGLDRAWBUFFERS               GE_glDrawBuffers = NULL;
+#endif
+
 GE_PFGLSWAPINTERVAL glSwapInterval = NULL;
+
 
 /*=================================================
  *
@@ -427,7 +432,25 @@ namespace GE
       #endif
 
     }else{ hasFramebufferObjects = false; }
-    
+
+    /*
+    Check multiple render targets
+    *****************************************/
+
+    if (checkExtension( ext, "GL_ARB_draw_buffers" )) {
+      hasMultipleRenderTargets = true;
+      glGetIntegerv( GL_MAX_DRAW_BUFFERS, &maxRenderTargets );
+
+      #ifndef GL_ARB_draw_buffers
+      GE_glDrawBuffers = (GE_PFGLDRAWBUFFERS)
+        getProcAddress( "glDrawBuffersARB" );
+
+      if (GE_glDrawBuffers==NULL)
+        hasMultipleRenderTargets = false;
+      #endif
+
+    }else{ hasMultipleRenderTargets = false; }
+
     /*
     Check vertical sync control
     *****************************************/

@@ -60,7 +60,9 @@ namespace GE
     bool hasShaderObjects;
     bool hasFramebufferObjects;
     bool hasVertexBufferObjects;
+    bool hasMultipleRenderTargets;
     bool hasRangeElements;
+    int maxRenderTargets;
     int maxElementsIndices;
     int maxElementsVertices;
     void loadExtensions ();

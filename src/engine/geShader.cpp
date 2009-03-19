@@ -123,5 +123,10 @@ namespace GE
     if (program != NULL)
       program->use ();
   }
+
+  const GLProgram* Shader::getGLProgram()
+  {
+    return program;
+  }
   
 }//namespace GE

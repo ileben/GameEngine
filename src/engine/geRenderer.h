@@ -16,11 +16,23 @@ namespace GE
   class Light;
   class Widget;
   class Scene;
+  class Shader;
 
   /*
   -----------------------------------------
   Performs scene traversal and rendering
   -----------------------------------------*/
+
+  namespace Deferred
+  {
+    enum Enum
+    {
+      Vertex = 0,
+      Normal = 1,
+      Color = 2,
+      Specular = 3
+    };
+  }
 
   class GE_API_ENTRY Renderer
   {
@@ -34,15 +46,20 @@ namespace GE
     int viewH;
     Vector3 back;
     Camera *camera;
+    Scene *scene;
     
-    //Scene data
     bool shadowInit;
     Uint32 shadowMap;
     Uint32 shadowMap2;
     Uint32 shadowFB;
-    Scene *scene;
 
-    //Rendering
+    bool deferredInit;
+    Uint32 deferredDepth;
+    Uint32 deferredMaps[4];
+    Uint32 deferredFB;
+    Int32 deferredSampler[4];
+    Shader *deferredShader;
+    
     void renderActor (Actor *actor);
     
   public:
@@ -60,6 +77,7 @@ namespace GE
     void beginFrame ();
     void beginScene (Scene *scene);
     void renderScene ();
+    void renderSceneDeferred ();
     void renderWidget (Widget *w);
     void endScene ();
     void endFrame ();
