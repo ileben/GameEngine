@@ -331,7 +331,7 @@ void loadPackage (String fileName)
   File file( fileName );
   if( !file.open( "rb" ))
   {
-    printf( "Failed opening file!\n" );
+    printf( "Failed opening file '%s'!\n", fileName.toCSTR().buffer() );
     getchar();
     exit( 1 );
   }
@@ -397,7 +397,7 @@ void loadLogo (String fileName)
   File file( fileName );
   if( !file.open( "rb" ))
   {
-    printf( "Failed opening file!\n" );
+    printf( "Failed opening file '%s'!\n", fileName.toCSTR().buffer() );
     getchar();
     exit( 1 );
   }
@@ -523,7 +523,7 @@ int main (int argc, char **argv)
 
   sceneLogo = new Scene;
 
-  loadLogo( "logo2.pak" );
+  loadLogo( "logo.pak" );
   actLogo = new TriMeshActor;
   actLogo->setMesh( mshLogo );
   actLogo->translate( 200, 0, 0 );
