@@ -66,6 +66,16 @@ GL_VERSION_1_3
 #define GL_MULTISAMPLE                    0x809D
 #define GL_TEXTURE0                       0x84C0
 #define GL_TEXTURE1                       0x84C1
+#define GL_TEXTURE2                       0x84C2
+#define GL_TEXTURE3                       0x84C3
+#define GL_TEXTURE4                       0x84C4
+#define GL_TEXTURE5                       0x84C5
+#define GL_TEXTURE6                       0x84C6
+#define GL_TEXTURE7                       0x84C7
+#define GL_TEXTURE8                       0x84C8
+#define GL_TEXTURE9                       0x84C9
+#define GL_TEXTURE10                      0x84CA
+
 #endif
 
 #ifndef GL_VERSION_1_3

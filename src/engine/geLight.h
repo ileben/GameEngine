@@ -17,13 +17,24 @@ namespace GE
     virtual RenderRole::Enum getRenderRole();
 
   protected:
-    Vector3 color;
+    bool shadowsOn;
+    Vector3 diffuseColor;
+    Vector3 shadowColor;
     
   public:
     Light();
-    void setColor (const Vector3 &color);
+    
+    void setCastShadows (bool cast);
+    bool getCastShadows ();
+
+    void setDiffuseColor (const Vector3 &color);
+    void setShadowColor (const Vector3 &color);
+    const Vector3& getDiffuseColor ();
+    const Vector3& getShadowColor ();
+
     void setDirection (const Vector3 &dir);
     void setPosition (const Vector3 &dir);
+    
     virtual void enable (int index);
     virtual Matrix4x4 getProjection (Float nearClip, Float farClip);
   };

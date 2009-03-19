@@ -576,11 +576,7 @@ void display()
   renderer->setCamera( &cam3D );
 
   //draw model
-  renderer->beginScene( scene );
-  glMatrixMode( GL_TEXTURE );
-  glLoadIdentity();
-  renderer->renderScene();
-  renderer->endScene();
+  renderer->renderScene( scene );
   
   //2D view (right)
   ///////////////////////////////////
@@ -602,6 +598,7 @@ void display()
 
 void reshape(int w, int h)
 {
+  renderer->setWindowSize( w, h );
 }
 
 

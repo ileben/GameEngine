@@ -14,6 +14,8 @@ namespace GE
   Renderer::Renderer()
   {
     camera = NULL;
+    winW = 0;
+    winH = 0;
     viewX = 0;
     viewY = 0;
     viewW = 0;
@@ -25,6 +27,13 @@ namespace GE
   void Renderer::setBackColor (const Vector3 &color)
   {
     back = color;
+  }
+
+  void Renderer::setWindowSize (int width, int height)
+  {
+    winW = width;
+    winH = height;
+    updateBuffers();
   }
 
   /*
@@ -58,6 +67,18 @@ namespace GE
   Rendering interface
   --------------------------------------*/
 
+  void Renderer::beginFrame()
+  {
+    //Clear the framebuffer
+    glClearColor (back.x, back.y, back.z, 0);
+    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  }
+
+  void Renderer::endFrame()
+  {
+    glutSwapBuffers ();
+  }
+
   void Renderer::renderShadowQuad ()
   {
     glMatrixMode( GL_TEXTURE );
@@ -72,7 +93,7 @@ namespace GE
     glColor3f( 1.0, 1.0, 1.0 );
 
     glActiveTexture( GL_TEXTURE0 );
-    glBindTexture( GL_TEXTURE_2D, shadowMap );
+    glBindTexture( GL_TEXTURE_2D, shadowMap2 );
     glEnable( GL_TEXTURE_2D );
     
     glBegin( GL_QUADS );
@@ -85,18 +106,73 @@ namespace GE
     glDisable( GL_TEXTURE_2D );
   }
 
+  void Renderer::updateBuffers ()
+  {
+    //Destroy old deferred buffers if present
+    if (deferredInit)
+    {
+      glDeleteTextures( 4, deferredMaps );
+      glDeleteRenderbuffers( 1, &deferredDepth );
+      glDeleteFramebuffers( 1, &deferredFB );
+    };
+
+    //Generate new deferred buffers
+    glGenFramebuffers( 1, &deferredFB );
+    glBindFramebuffer( GL_FRAMEBUFFER, deferredFB );
+
+    glGenRenderbuffers( 1, &deferredDepth );
+    glBindRenderbuffer( GL_RENDERBUFFER, deferredDepth );
+    glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, winW, winH );
+    glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, deferredDepth );
+
+    GLenum drawBuffers[4];
+    glGenTextures( 4, deferredMaps );
+    for (Uint32 d=0; d<4; ++d)
+    {
+      glBindTexture( GL_TEXTURE_2D, deferredMaps[ d ] );
+      glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA16F, winW, winH, 0, GL_RGBA, GL_FLOAT, NULL );
+      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+      glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + d, GL_TEXTURE_2D, deferredMaps[d], 0 );
+      drawBuffers[d] = GL_COLOR_ATTACHMENT0 + d;
+    }
+    
+    glDrawBuffers( 4, drawBuffers );
+    GLenum status = glCheckFramebufferStatus( GL_FRAMEBUFFER );
+    if (status != GL_FRAMEBUFFER_COMPLETE)
+      printf( "Deferred framebuffer INCOMPLETE! (status: 0x%x)\n", (int)status );
+    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+
+    //Load deferred light shader once
+    if (!deferredInit)
+    {
+      deferredShader = new Shader;
+      deferredShader->fromFile( "deferred_light.vert.c", "deferred_light.frag.c" );
+      const GLProgram *deferredProgram = deferredShader->getGLProgram();
+      deferredSampler[ Deferred::Vertex ] = deferredProgram->getUniform( "samplerVertex" );
+      deferredSampler[ Deferred::Normal ] = deferredProgram->getUniform( "samplerNormal" );
+      deferredSampler[ Deferred::Color ] = deferredProgram->getUniform( "samplerColor" );
+      deferredSampler[ Deferred::Specular ] = deferredProgram->getUniform( "samplerSpec" );
+      deferredSampler[ Deferred::Shadow ] = deferredProgram->getUniform( "samplerShadow" );
+      glUseProgram( 0 );
+    }
+
+    deferredInit = true;
+  }
+
   void Renderer::renderShadowMap (Light *light, Scene *scene)
   {
     const Uint32 S = 2048;
 
     if (!shadowInit)
     {
+      /*
       glGenTextures( 1, &shadowMap2 );
       glBindTexture( GL_TEXTURE_2D, shadowMap2 );
       glTexImage2D( GL_TEXTURE_2D, 0, GL_LUMINANCE, S, S, 0, GL_LUMINANCE, GL_FLOAT, NULL );
       glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
       glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-      
+      */
       glGenTextures( 1, &shadowMap );
       glBindTexture( GL_TEXTURE_2D, shadowMap );
       //glTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, S, S, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL );
@@ -107,7 +183,9 @@ namespace GE
       glGenFramebuffers( 1, &shadowFB );
       glBindFramebuffer( GL_FRAMEBUFFER, shadowFB );
       glFramebufferTexture2D( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadowMap, 0 );
-      
+      glDrawBuffer( GL_NONE );
+      glReadBuffer( GL_NONE );
+
       shadowInit = true;
     }
 
@@ -117,17 +195,14 @@ namespace GE
     glDisable( GL_BLEND );
     glDisable( GL_TEXTURE_2D );
     glEnable( GL_DEPTH_TEST );
-
+    
     glEnable( GL_POLYGON_OFFSET_FILL );
-    glPolygonOffset( 5.0f, 2.0f );
+    glPolygonOffset( 2.0f, 2.0f );
     glCullFace( GL_FRONT );
-
+    
     glBindFramebuffer( GL_FRAMEBUFFER, shadowFB );
-    glDrawBuffer( GL_NONE );
-    glReadBuffer( GL_NONE );
-
     glClear( GL_DEPTH_BUFFER_BIT );
-
+    
     //Setup view from the lights perspective
     glViewport( 0, 0, S, S );
 
@@ -140,25 +215,7 @@ namespace GE
     glLoadMatrixf( (GLfloat*) lightView.m );
 
     //Render scene
-    for (UintSize t=0; t<scene->getTraversal()->size(); ++t)
-    {
-      TravNode node = scene->getTraversal()->at( t );
-      switch (node.event)
-      {
-      case TravEvent::Begin:
-        
-        node.actor->begin();
-
-        if (node.actor->isRenderable())
-          node.actor->render( GE_ANY_MATERIAL_ID );
-
-        break;
-      case TravEvent::End:
-
-        node.actor->end();
-        break;
-      }
-    }
+    traverseSceneNoMats( scene );
 
     //Restore state
     glCullFace( GL_BACK );
@@ -168,7 +225,7 @@ namespace GE
 
     ////////////////////////////////////////////////////////
     /*
-    GLfloat *pixels = new GLfloat[ 512 * 512 ];
+    GLfloat *pixels = new GLfloat[ S * S ];
 
     glPixelStorei( GL_PACK_ALIGNMENT, 1 );
     glPixelStorei( GL_UNPACK_ALIGNMENT, 1 );
@@ -178,41 +235,28 @@ namespace GE
 
     
     float lastp = -1.0f;
-    for (int y=0; y<512; ++y)
+    for (int y=0; y<S; ++y)
     {
-      for (int x=0; x<512; ++x)
+      for (int x=0; x<S; ++x)
       {
-        float p = pixels[ y * 512 + x ];
+        float p = pixels[ y * S + x ];
         //if (lastp > 0.0f && p != lastp)
           //printf( "p: %f\n", p );
         //lastp = p;
-        float pp = (p - 0.9f) / 0.1f;
-        pixels[ y * 512 + x ] = pp;
+        float pp = (p - 0.95f) / 0.05f;
+        pixels[ y * S + x ] = pp;
         //pixels[ y * 512 + x ] = 0.2f;
       }
     }
     
     glBindTexture( GL_TEXTURE_2D, shadowMap2 );
-    glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, 512, 512, GL_LUMINANCE, GL_FLOAT, pixels );
+    glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, S, S, GL_LUMINANCE, GL_FLOAT, pixels );
 
     delete[] pixels;*/
   }
 
-  void Renderer::beginFrame()
+  void Renderer::renderSceneDeferred (Scene *scene)
   {
-    //Clear the framebuffer
-    glClearColor (back.x, back.y, back.z, 0);
-    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    
-    //Initialize view to current camera
-    if (camera != NULL) camera->updateView ();
-  }
-
-  void Renderer::beginScene( Scene *scene )
-  {
-    //Store scene pointer
-    this->scene = scene;
-
     //Update scene
     if (scene->hasChanged())
       scene->updateChanges();
@@ -223,6 +267,122 @@ namespace GE
     if (camera != NULL) {
       camera->updateProjection( viewW, viewH );
       camera->updateView();
+    }
+
+    //Render deferred textures
+    glBindFramebuffer( GL_FRAMEBUFFER, deferredFB );
+    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+    glViewport( viewX, viewY, viewW, viewH );
+
+    traverseSceneWithMats( scene );
+
+    //Perform shading for each light
+    for (UintSize l=0; l<scene->getLights()->size(); ++l)
+    {
+      Light* light = scene->getLights()->at( l );
+
+      //Render the shadow map
+      renderShadowMap( light, scene );
+
+      //Setup view and projection
+      glViewport( viewX, viewY, viewW, viewH );
+      
+      if (camera != NULL) {
+        camera->updateProjection( viewW, viewH );
+        camera->updateView();
+      }
+
+      //Setup camera-eye to light-clip matrix
+      Matrix4x4 cam = camera->getMatrix();
+      Matrix4x4 lightProj = light->getProjection( 1.0f, 1000.0f );
+      Matrix4x4 lightInv = light->getMatrix().affineInverse();
+      Matrix4x4 tex = lightProj * lightInv * cam;
+      
+      glMatrixMode( GL_TEXTURE );
+      glLoadMatrixf( (GLfloat*) tex.m );
+
+      //Enable the light
+      Matrix4x4 worldCtm = light->getWorldMatrix();
+      glMatrixMode( GL_MODELVIEW );
+      glPushMatrix();
+      glMultMatrixf( (GLfloat*) worldCtm.m );
+      light->enable( 0 );
+      glPopMatrix();
+
+      //Setup the deferred shader and textures
+      glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+      glDisable( GL_DEPTH_TEST );
+      glDisable( GL_CULL_FACE );
+      glEnable( GL_BLEND );
+      glBlendFunc( GL_ONE, GL_ONE );      
+      deferredShader->use();
+
+      glUniform1i( deferredSampler[Deferred::Shadow], Deferred::Shadow );
+      glActiveTexture( GL_TEXTURE0 + Deferred::Shadow );
+      glBindTexture( GL_TEXTURE_2D, shadowMap );
+      glEnable( GL_TEXTURE_2D );
+
+      for (int d=0; d<4; ++d)
+      {
+        glUniform1i( deferredSampler[d], d );
+        glActiveTexture( GL_TEXTURE0 + d );
+        glBindTexture( GL_TEXTURE_2D, deferredMaps[d] );
+        glEnable( GL_TEXTURE_2D );
+      }
+      
+      //Shader does no transformation (only viewport applied)
+      glBegin( GL_QUADS );
+      glTexCoord2f( 0.0f, 0.0f ); glVertex2f( -1.0f, -1.0f );
+      glTexCoord2f( 1.0f, 0.0f ); glVertex2f( +1.0f, -1.0f );
+      glTexCoord2f( 1.0f, 1.0f ); glVertex2f( +1.0f, +1.0f );
+      glTexCoord2f( 0.0f, 1.0f ); glVertex2f( -1.0f, +1.0f );
+      glEnd();
+
+      //Disable textures
+      glActiveTexture( GL_TEXTURE0 + Deferred::Shadow );
+      glDisable( GL_TEXTURE_2D );
+
+      for (int d=3; d>=0; --d)
+      {
+        glActiveTexture( GL_TEXTURE0 + d );
+        glDisable( GL_TEXTURE_2D );
+      }
+    }
+  }
+
+  void Renderer::renderScene (Scene *scene)
+  {
+    //Update scene
+    if (scene->hasChanged())
+      scene->updateChanges();
+
+    //Render shadow map for the first light
+    if (!scene->getLights()->empty())
+      renderShadowMap( scene->getLights()->first(), scene );
+
+    //Setup view and projection
+    glViewport( viewX, viewY, viewW, viewH );
+    
+    if (camera != NULL) {
+      camera->updateProjection( viewW, viewH );
+      camera->updateView();
+    }
+
+    //Setup camera-eye to light-clip matrix
+    if (!scene->getLights()->empty())
+    {
+      Light *l = scene->getLights()->first();
+      
+      Matrix4x4 cam = camera->getMatrix();
+      Matrix4x4 lightProj = l->getProjection( 1.0f, 1000.0f );
+      Matrix4x4 lightInv = l->getMatrix().affineInverse();
+      Matrix4x4 tex = lightProj * lightInv * cam;
+      
+      glMatrixMode( GL_TEXTURE );
+      glLoadMatrixf( (GLfloat*) tex.m );
+
+      glEnable( GL_TEXTURE_2D );
+      glBindTexture( GL_TEXTURE_2D, shadowMap );
     }
     
     //Enable lights
@@ -242,169 +402,14 @@ namespace GE
       glPopMatrix();
     }
 
-    //Setup camera-eye to light-clip matrix
-    if (!scene->getLights()->empty())
-    {
-      Light *l = scene->getLights()->first();
+    //Render geometry with materials
+    traverseSceneWithMats( scene );
 
-      Matrix4x4 bias;
-      bias.set
-        (0.5, 0.0, 0.0, 0.5,
-         0.0, -0.5, 0.0, 0.5,
-         0.0, 0.0, 0.5, 0.5,
-         0.0, 0.0, 0.0, 1);
-      
-      Matrix4x4 cam = camera->getMatrix();
-      Matrix4x4 lightProj = l->getProjection( 1.0f, 1000.0f );
-      Matrix4x4 lightInv = l->getMatrix().affineInverse();
-      Matrix4x4 tex = lightProj * lightInv * cam;
-      
-      glMatrixMode( GL_TEXTURE );
-      glLoadMatrixf( (GLfloat*) tex.m );
-
-      glEnable( GL_TEXTURE_2D );
-      glBindTexture( GL_TEXTURE_2D, shadowMap );
-    }
-
-    //Prepare the actors for rendering
-    for (UintSize t=0; t<scene->getTraversal()->size(); ++t)
-    {
-      TravNode node = scene->getTraversal()->at( t );
-      if (node.event != TravEvent::Begin) continue;
-      node.actor->prepare();
-    }
-  }
-
-  void Renderer::renderSceneDeferred()
-  {
-    if (!deferredInit)
-    {
-      glGenTextures( 4, deferredMaps );
-
-      Uint32 d;
-      for (d=0; d<4; ++d)
-      {
-        glBindTexture( GL_TEXTURE_2D, deferredMaps[ d ] );
-        glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA16F, viewW, viewH, 0, GL_RGBA, GL_FLOAT, NULL );
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-      }
-      
-      glGenRenderbuffers( 1, &deferredDepth);
-      glBindRenderbuffer( GL_RENDERBUFFER, deferredDepth );
-      glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, viewW, viewH );
-
-      glGenFramebuffers( 1, &deferredFB );
-      glBindFramebuffer( GL_FRAMEBUFFER, deferredFB );
-      glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, deferredDepth );
-
-      GLenum drawBuffers[4];
-      for (d=0; d<4; ++d)
-      {
-        glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + d, GL_TEXTURE_2D, deferredMaps[d], 0 );
-        drawBuffers[d] = GL_COLOR_ATTACHMENT0 + d;
-      }
-      
-      glDrawBuffers( 4, drawBuffers );
-      GLenum status = glCheckFramebufferStatus( GL_FRAMEBUFFER );
-
-      deferredShader = new Shader;
-      deferredShader->fromFile( "deferred_light.vert.c", "deferred_light.frag.c" );
-      const GLProgram *deferredProgram = deferredShader->getGLProgram();
-      deferredSampler[ Deferred::Vertex ] = deferredProgram->getUniform( "samplerVertex" );
-      deferredSampler[ Deferred::Normal ] = deferredProgram->getUniform( "samplerNormal" );
-      deferredSampler[ Deferred::Color ] = deferredProgram->getUniform( "samplerColor" );
-      deferredSampler[ Deferred::Specular ] = deferredProgram->getUniform( "samplerSpec" );
-      glUseProgram( 0 );
-      
-      deferredInit = true;
-    }
-
-    //Render deferred textures
-    glBindFramebuffer( GL_FRAMEBUFFER, deferredFB );
-    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-    glViewport( 0, 0, viewW, viewH );
-
-    renderScene();
-
-    //Perform shading for each light
-
-    /*
-    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
-
-    glViewport( viewX, viewY, viewW, viewH );
-    glClear( GL_COLOR_BUFFER_BIT );
-
-    glUseProgram( 0 );
-    glDisable( GL_DEPTH_TEST );
-    glDisable( GL_CULL_FACE );
-    glDisable( GL_BLEND );
-    glDisable( GL_LIGHTING );
-
-    glColor3f( 1,1,1 );
-    glActiveTexture( GL_TEXTURE0 );
-    glEnable( GL_TEXTURE_2D );
-    glBindTexture( GL_TEXTURE_2D, deferredMaps[ 0 ] );
-    glMatrixMode( GL_TEXTURE );
-    glLoadIdentity();
-
-    glBegin( GL_QUADS );
-    glTexCoord2f( 0.0f, 0.0f ); glVertex2f( -200, -200 );
-    glTexCoord2f( 1.0f, 0.0f ); glVertex2f( +200, -200 );
-    glTexCoord2f( 1.0f, 1.0f ); glVertex2f( +200, +200 );
-    glTexCoord2f( 0.0f, 1.0f ); glVertex2f( -200, +200 );
-    glEnd();
-
-    glDisable( GL_TEXTURE_2D );
-    */
-
-    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
-
-    glViewport( viewX, viewY, viewW, viewH );
-    glClear( GL_COLOR_BUFFER_BIT );
-    
-    deferredShader->use();
-    for (int d=0; d<4; ++d)
-    {
-      glUniform1i( deferredSampler[d], d );
-      glActiveTexture( GL_TEXTURE0 + d );
-      glBindTexture( GL_TEXTURE_2D, deferredMaps[d] );
-      glEnable( GL_TEXTURE_2D );
-    }
-
-    glDisable( GL_DEPTH_TEST );
-    glDisable( GL_CULL_FACE );
-    glEnable( GL_BLEND );
-    glBlendFunc( GL_ONE, GL_ONE );
-    glMatrixMode( GL_TEXTURE );
-    glLoadIdentity();
-
+    //Disable lights
     for (UintSize l=0; l<scene->getLights()->size(); ++l)
-    {
-      Light* light = scene->getLights()->at( l );
-      Matrix4x4 worldCtm = light->getWorldMatrix();
-      glMatrixMode( GL_MODELVIEW );
-      glPushMatrix();
-      glMultMatrixf( (GLfloat*) worldCtm.m );
-      light->enable( 0 );
-      glPopMatrix();
-
-      glBegin( GL_QUADS );
-      glTexCoord2f( 0.0f, 0.0f ); glVertex2f( -1.0f, -1.0f );
-      glTexCoord2f( 1.0f, 0.0f ); glVertex2f( +1.0f, -1.0f );
-      glTexCoord2f( 1.0f, 1.0f ); glVertex2f( +1.0f, +1.0f );
-      glTexCoord2f( 0.0f, 1.0f ); glVertex2f( -1.0f, +1.0f );
-      glEnd();
-    }
-
-    for (int d=3; d>=0; --d)
-    {
-      glActiveTexture( GL_TEXTURE0 + d );
-      glDisable( GL_TEXTURE_2D );
-    }
-    glDisable( GL_BLEND );
+      glDisable( GL_LIGHT0 + (int) l );
   }
-  
+
   /*
   ------------------------------------------------------
   Renderer class has authority over the rendering steps
@@ -414,7 +419,30 @@ namespace GE
   shading programs) might not be desired.
   ------------------------------------------------------*/
 
-  void Renderer::renderScene()
+  void Renderer::traverseSceneNoMats (Scene *scene)
+  {
+    for (UintSize t=0; t<scene->getTraversal()->size(); ++t)
+    {
+      TravNode node = scene->getTraversal()->at( t );
+      switch (node.event)
+      {
+      case TravEvent::Begin:
+        
+        node.actor->begin();
+
+        if (node.actor->isRenderable())
+          node.actor->render( GE_ANY_MATERIAL_ID );
+
+        break;
+      case TravEvent::End:
+
+        node.actor->end();
+        break;
+      }
+    }
+  }
+
+  void Renderer::traverseSceneWithMats (Scene *scene)
   {
     for (UintSize t=0; t<scene->getTraversal()->size(); ++t)
     {
@@ -460,18 +488,6 @@ namespace GE
         node.actor->end();
       }
     }
-  }
-
-  void Renderer::endScene()
-  {
-    //Disable lights
-    for (UintSize l=0; l<scene->getLights()->size(); ++l)
-      glDisable( GL_LIGHT0 + (int) l );
-  }
-
-  void Renderer::endFrame()
-  {
-    glutSwapBuffers ();
   }
   
   void Renderer::renderWidget( Widget *w )

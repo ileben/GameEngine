@@ -11,7 +11,9 @@ namespace GE
 
   Light::Light()
   {
-    color.set( .9f, .9f, .9f );
+    shadowsOn = false;
+    diffuseColor.set( .9f, .9f, .9f );
+    shadowColor.set( .2f, .2f, .2f );
     setIsRenderable( false );
   }
   
@@ -20,9 +22,28 @@ namespace GE
     return RenderRole::Light;
   }
 
-  void Light::setColor (const Vector3 &c)
-  {
-    color = c;
+  void Light::setCastShadows (bool cast) {
+    shadowsOn = cast;
+  }
+
+  bool Light::getCastShadows () {
+    return shadowsOn;
+  }
+
+  void Light::setDiffuseColor (const Vector3 &c) {
+    diffuseColor = c;
+  }
+
+  void Light::setShadowColor (const Vector3 &c) {
+    shadowColor = c;
+  }
+
+  const Vector3& Light::getDiffuseColor () {
+    return diffuseColor;
+  }
+
+  const Vector3& Light::getShadowColor () {
+    return shadowColor;
   }
 
   void Light::setDirection (const Vector3 &dir)
@@ -71,7 +92,7 @@ namespace GE
   void Light::enable (int index)
   {
     GLfloat ambient[4] = {0.2f,0.2f,0.2f, 1.0f};
-    GLfloat diffuse[4] = {color.x, color.y, color.z, 1.0f};
+    GLfloat diffuse[4] = {diffuseColor.x, diffuseColor.y, diffuseColor.z, 1.0f};
     
     glEnable( GL_LIGHT0 + index );
     glLightfv( GL_LIGHT0 + index, GL_AMBIENT, ambient );

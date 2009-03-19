@@ -41,7 +41,7 @@ Camera2D cam2D;
 Camera3D cam3D;
 Camera3D *camLogo;
 Camera3D *camRender = NULL;
-Renderer *renderer;
+Renderer *renderer = NULL;
 bool down3D;
 Vector2 lastMouse3D;
 int boneColorIndex = 0;
@@ -207,16 +207,11 @@ void display ()
   //switch camera
   renderer->setViewport( 0,0,resX, resY );
   renderer->setCamera( camRender );
-
-  //draw shadows
-  //renderer->renderShadowMap( lightRender, sceneRender );
   renderer->beginFrame();
   
   //draw model
-  renderer->beginScene( sceneRender );
-  //renderer->renderScene();
-  renderer->renderSceneDeferred();
-  renderer->endScene();
+  //renderer->renderScene( sceneRender );
+  renderer->renderSceneDeferred( sceneRender );
   
   //Frames per second
   renderer->setViewport( 0,0,resX, resY );
@@ -230,6 +225,9 @@ void reshape (int w, int h)
 {
   resX = w;
   resY = h;
+
+  if (renderer != NULL)
+    renderer->setWindowSize( w,h );
 }
 
 void findCenter ()

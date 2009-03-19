@@ -166,7 +166,6 @@ class PointMeshActor : public TriMeshActor
 
 void display ()
 {
-  renderer->renderShadowMap( light, scene );
   renderer->beginFrame();
   
   //Switch 3D camera
@@ -174,9 +173,8 @@ void display ()
   renderer->setCamera( &cam3D );
   
   //Render 3D stuff
-  renderer->beginScene( scene );
-  renderer->renderScene();
-  renderer->endScene();
+  renderer->renderScene( scene );
+  //renderer->renderSceneDeferred( scene );
   
   //Render 2D frames per second
   renderer->setViewport( 0,0,resX, resY );
@@ -191,6 +189,7 @@ void reshape (int w, int h)
 {
   resX = w;
   resY = h;
+  renderer->setWindowSize( w,h );
 }
 
 void findCenter ()
@@ -237,6 +236,7 @@ int main (int argc, char **argv)
   Kernel kernel;
   kernel.enableVerticalSync( false );
   renderer = kernel.getRenderer();
+  renderer->setWindowSize( resX, resY );
   printf( "Kernel loaded\n" );
   
   printf( "GLError: 0x%x\n", glGetError());
@@ -259,7 +259,7 @@ int main (int argc, char **argv)
   
   Shader *shader = new Shader;
   shader->fromFile( "pixelphong.vert.c", "pixelphong.frag.c" );
-  //shader->registerUniform( "sampler", GE_UNIFORM_TEXTURE, 1 );
+  //shader->fromFile( "deferred_geometry.vert.c", "deferred_geometry.frag.c" );
 
   //VertColorMaterial mat;
   StandardMaterial mat;
@@ -297,7 +297,7 @@ int main (int argc, char **argv)
   AxisActor *axes = new AxisActor;
   axes->scale( 100 );
   axes->setMaterial( &axesMat );
-  scene->addChild( axes );
+  //scene->addChild( axes );
   
   lblFps.setLocation( Vector2( 0.0f, (Float)resY ));
   lblFps.setColor( Vector3( 1.0f, 1.0f, 1.0f ));

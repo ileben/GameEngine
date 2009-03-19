@@ -27,10 +27,11 @@ namespace GE
   {
     enum Enum
     {
-      Vertex = 0,
-      Normal = 1,
-      Color = 2,
-      Specular = 3
+      Vertex     = 0,
+      Normal     = 1,
+      Color      = 2,
+      Specular   = 3,
+      Shadow     = 4
     };
   }
 
@@ -40,13 +41,14 @@ namespace GE
     
   private:
 
+    int winW;
+    int winH;
     int viewX;
     int viewY;
     int viewW;
     int viewH;
     Vector3 back;
     Camera *camera;
-    Scene *scene;
     
     bool shadowInit;
     Uint32 shadowMap;
@@ -57,29 +59,31 @@ namespace GE
     Uint32 deferredDepth;
     Uint32 deferredMaps[4];
     Uint32 deferredFB;
-    Int32 deferredSampler[4];
+    Int32 deferredSampler[5];
     Shader *deferredShader;
     
-    void renderActor (Actor *actor);
-    
+    void updateBuffers ();
+    void traverseSceneNoMats (Scene *scene);
+    void traverseSceneWithMats (Scene *scene);
+    void renderShadowMap (Light *light, Scene *scene);
+
   public:
     
     Renderer();
-    
+
+    void setWindowSize (int width, int height);
     void setBackColor (const Vector3 &back);
     void setViewport (int x, int y, int width, int height);
     void setCamera (Camera *camera);
     Camera* getCamera();
     
-    void renderShadowMap (Light *light, Scene *scene);
+    
     void renderShadowQuad ();
 
     void beginFrame ();
-    void beginScene (Scene *scene);
-    void renderScene ();
-    void renderSceneDeferred ();
+    void renderScene (Scene *scene);
+    void renderSceneDeferred (Scene *scene);
     void renderWidget (Widget *w);
-    void endScene ();
     void endFrame ();
   };
 }

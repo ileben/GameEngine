@@ -2,6 +2,7 @@ uniform sampler2D samplerVertex;
 uniform sampler2D samplerNormal;
 uniform sampler2D samplerColor;
 uniform sampler2D samplerSpec;
+uniform sampler2D samplerShadow;
 
 void main (void)
 {
@@ -22,18 +23,20 @@ void main (void)
   //Output color
 	vec3 Color = vec3( 0.0, 0.0, 0.0 );
 
-  /*
+  //Transform point into light clip space
+  vec4 pointEye = vec4( point, 1.0 );
+  vec4 shadowClip = gl_TextureMatrix[0] * pointEye;
+
   //Perspective division and bias on shadow coordinate
-  vec3 shadowCoord = gl_TexCoord[0].xyz / gl_TexCoord[0].w;
+  vec3 shadowCoord = shadowClip.xyz / shadowClip.w;
   shadowCoord = shadowCoord * 0.5 + vec3(0.5,0.5,0.5);
 
-  //Sample the light-nearest depth and compare to light-fragment depth
-  vec4 shadowValue = texture2D( sampler, shadowCoord.xy );
+  //Sample the light-nearest depth and compare to light-vertex depth
+  vec4 shadowValue = texture2D( samplerShadow, shadowCoord.xy );
   if (shadowCoord.x >= 0.0 && shadowCoord.x <= 1.0 &&
       shadowCoord.y >= 0.0 && shadowCoord.y <= 1.0)
     if (shadowCoord.z > shadowValue.r)
       { diffuse *= 0.2; specular *= 0.0; }
-  */
 
   //Input vectors
 	vec3 N = normalize( normal );
