@@ -263,7 +263,7 @@ void animate()
 void initGlut (int argc, char **argv)
 {
   glutInit( &argc, argv );
-  glutInitDisplayMode( GLUT_RGBA | GLUT_ALPHA | GLUT_DEPTH | GLUT_DOUBLE );
+  glutInitDisplayMode( GLUT_RGBA | GLUT_ALPHA | GLUT_DEPTH | GLUT_DOUBLE | GLUT_STENCIL );
 
   glutInitWindowPosition( 100,100 );
   glutInitWindowSize( resX,resY );
@@ -532,10 +532,10 @@ int main (int argc, char **argv)
 
   camLogo = new Camera3D;
   camLogo->translate( 0,0,-600 );
-  camLogo->setNearClipPlane( 10.0f );
-  camLogo->setFarClipPlane( 1000.0f );
+  camLogo->setNearClipPlane( 1.0f );
+  camLogo->setFarClipPlane( 3000.0f );
 
-  lightLogo = new SpotLight( Vector3(0,0,-500), Vector3(0,0,1), 60, 0 );
+  lightLogo = new SpotLight( Vector3(0,0,-500), Vector3(0,0,1), 60, 50 );
   sceneLogo->addChild( lightLogo );
 
   //Setup Bub scene
@@ -575,9 +575,9 @@ int main (int argc, char **argv)
   cam3D.orbitV( Util::DegToRad( 20 ), true );
   cam3D.orbitH( Util::DegToRad( 30 ), true );
   cam3D.setNearClipPlane( 10.0f );
-  cam3D.setFarClipPlane( 1000.0f );
+  cam3D.setFarClipPlane( 3000.0f );
 
-  light = new SpotLight( Vector3(-200,200,-200), Vector3(1,-1,1), 60, 0 );
+  light = new SpotLight( Vector3(-200,200,-200), Vector3(1,-1,1), 60, 59 );
   //light->setColor( Vector3( 1,.2,.2 ) );
   scene->addChild( light );
 

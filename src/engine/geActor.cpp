@@ -161,11 +161,6 @@ namespace GE
     return renderable;
   }
 
-  RenderRole::Enum Actor::getRenderRole()
-  {
-    return RenderRole::Geometry;
-  }
-
   void Actor::begin ()
   {
     glMatrixMode( GL_MODELVIEW );

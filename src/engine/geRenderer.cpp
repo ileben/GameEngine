@@ -111,33 +111,50 @@ namespace GE
     //Destroy old deferred buffers if present
     if (deferredInit)
     {
-      glDeleteTextures( 4, deferredMaps );
-      glDeleteRenderbuffers( 1, &deferredDepth );
       glDeleteFramebuffers( 1, &deferredFB );
+      glDeleteRenderbuffers( 1, &deferredStencil );
+      glDeleteRenderbuffers( 1, &deferredDepth );
+      glDeleteTextures( 1, &deferredAccum );
+      glDeleteTextures( 4, deferredMaps );
     };
 
-    //Generate new deferred buffers
+    //Generate deferred framebuffer
     glGenFramebuffers( 1, &deferredFB );
     glBindFramebuffer( GL_FRAMEBUFFER, deferredFB );
-
+    /*
+    //Generate deferred stencil buffer
+    glGenRenderbuffers( 1, &deferredStencil );
+    glBindRenderbuffer( GL_RENDERBUFFER, deferredStencil );
+    glRenderbufferStorage( GL_RENDERBUFFER, GL_STENCIL_INDEX1, winW, winH );
+    glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, deferredStencil );
+    */
+    //Generate deferred depth-stencil buffer
     glGenRenderbuffers( 1, &deferredDepth );
     glBindRenderbuffer( GL_RENDERBUFFER, deferredDepth );
-    glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, winW, winH );
+    glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, winW, winH );
     glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, deferredDepth );
+    glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, deferredDepth );
 
-    GLenum drawBuffers[4];
+    //Generate deferred lighting accumulation buffer
+    glGenTextures( 1, &deferredAccum );
+    glBindTexture( GL_TEXTURE_2D, deferredAccum );
+    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, winW, winH, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+    glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, deferredAccum, 0 );
+
+    //Generate deferred geometry buffers
     glGenTextures( 4, deferredMaps );
-    for (Uint32 d=0; d<4; ++d)
+    for (Uint32 d=Deferred::Vertex; d<=Deferred::Specular; ++d)
     {
       glBindTexture( GL_TEXTURE_2D, deferredMaps[ d ] );
       glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA16F, winW, winH, 0, GL_RGBA, GL_FLOAT, NULL );
       glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
       glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-      glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + d, GL_TEXTURE_2D, deferredMaps[d], 0 );
-      drawBuffers[d] = GL_COLOR_ATTACHMENT0 + d;
+      glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1 + d, GL_TEXTURE_2D, deferredMaps[d], 0 );
     }
-    
-    glDrawBuffers( 4, drawBuffers );
+
+    //Check framebuffer status
     GLenum status = glCheckFramebufferStatus( GL_FRAMEBUFFER );
     if (status != GL_FRAMEBUFFER_COMPLETE)
       printf( "Deferred framebuffer INCOMPLETE! (status: 0x%x)\n", (int)status );
@@ -154,6 +171,7 @@ namespace GE
       deferredSampler[ Deferred::Color ] = deferredProgram->getUniform( "samplerColor" );
       deferredSampler[ Deferred::Specular ] = deferredProgram->getUniform( "samplerSpec" );
       deferredSampler[ Deferred::Shadow ] = deferredProgram->getUniform( "samplerShadow" );
+      deferredWinSize = deferredProgram->getUniform( "winSize" );
       glUseProgram( 0 );
     }
 
@@ -195,10 +213,10 @@ namespace GE
     glDisable( GL_BLEND );
     glDisable( GL_TEXTURE_2D );
     glEnable( GL_DEPTH_TEST );
+    glEnable( GL_CULL_FACE );
     
     glEnable( GL_POLYGON_OFFSET_FILL );
     glPolygonOffset( 2.0f, 2.0f );
-    glCullFace( GL_FRONT );
     
     glBindFramebuffer( GL_FRAMEBUFFER, shadowFB );
     glClear( GL_DEPTH_BUFFER_BIT );
@@ -218,7 +236,6 @@ namespace GE
     traverseSceneNoMats( scene );
 
     //Restore state
-    glCullFace( GL_BACK );
     glDisable( GL_POLYGON_OFFSET_FILL );
     glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 
@@ -263,18 +280,28 @@ namespace GE
 
     //Setup view and projection
     glViewport( viewX, viewY, viewW, viewH );
-    
+
     if (camera != NULL) {
       camera->updateProjection( viewW, viewH );
       camera->updateView();
     }
 
-    //Render deferred textures
+    //Render into geometry textures
     glBindFramebuffer( GL_FRAMEBUFFER, deferredFB );
+    GLenum drawBuffers[] = {
+      GL_COLOR_ATTACHMENT1,
+      GL_COLOR_ATTACHMENT2,
+      GL_COLOR_ATTACHMENT3,
+      GL_COLOR_ATTACHMENT4 };
+    glDrawBuffers( 4, drawBuffers );
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
     glViewport( viewX, viewY, viewW, viewH );
 
     traverseSceneWithMats( scene );
+
+    //Clear the lighting accumulation texture
+    glDrawBuffer( GL_COLOR_ATTACHMENT0 );
+    glClear( GL_COLOR_BUFFER_BIT );
 
     //Perform shading for each light
     for (UintSize l=0; l<scene->getLights()->size(); ++l)
@@ -292,62 +319,151 @@ namespace GE
         camera->updateView();
       }
 
-      //Setup camera-eye to light-clip matrix
-      Matrix4x4 cam = camera->getMatrix();
-      Matrix4x4 lightProj = light->getProjection( 1.0f, 1000.0f );
-      Matrix4x4 lightInv = light->getMatrix().affineInverse();
-      Matrix4x4 tex = lightProj * lightInv * cam;
-      
-      glMatrixMode( GL_TEXTURE );
-      glLoadMatrixf( (GLfloat*) tex.m );
-
       //Enable the light
       Matrix4x4 worldCtm = light->getWorldMatrix();
       glMatrixMode( GL_MODELVIEW );
-      glPushMatrix();
       glMultMatrixf( (GLfloat*) worldCtm.m );
       light->enable( 0 );
-      glPopMatrix();
 
-      //Setup the deferred shader and textures
-      glBindFramebuffer( GL_FRAMEBUFFER, 0 );
-      glDisable( GL_DEPTH_TEST );
-      glDisable( GL_CULL_FACE );
-      glEnable( GL_BLEND );
-      glBlendFunc( GL_ONE, GL_ONE );      
+      ///////////////////////////////////////////////
+
+      //Clear stencil, only write to stencil buffer
+      glUseProgram( 0 );
+      glBindFramebuffer( GL_FRAMEBUFFER, deferredFB );
+      glDrawBuffer( GL_NONE );
+      glDepthMask( GL_FALSE );
+      glClear( GL_STENCIL_BUFFER_BIT );
+      glDisable( GL_BLEND );
+      glDisable( GL_LIGHTING );
+      glEnable( GL_STENCIL_TEST );
+      glEnable( GL_DEPTH_TEST );
+
+      //Incr stencil for pixel in front of light volume back
+      glDepthFunc( GL_GEQUAL );
+      glStencilFunc( GL_ALWAYS, 0x0, 0xFF );
+      glStencilOp( GL_KEEP, GL_KEEP, GL_INCR );
+
+      //Render light volume back faces
+      glEnable( GL_CULL_FACE );
+      glCullFace( GL_FRONT );
+      light->renderVolume();
+
+      //Incr stencil for pixel behind light volume front
+      glDepthFunc( GL_LESS );
+      glStencilFunc( GL_EQUAL, 0x1, 0xFF );
+      glStencilOp( GL_KEEP, GL_KEEP, GL_INCR );
+
+      //Render light volume front faces
+      glCullFace( GL_BACK );
+      light->renderVolume();
+
+      //TODO: Check whether any pixels in the volume at all,
+      //then render the shadow map and restore the state for
+      //rendering to the window framebuffer
+
+      //TODO: Do something for the case the camera eye is
+      //inside the light volume!!!
+
+      //Allow write only for pixels inside the light volume
+      glStencilFunc( GL_EQUAL, 0x2, 0xFF );
+      glStencilOp( GL_KEEP, GL_KEEP, GL_KEEP );
+      glDepthMask( GL_TRUE );
+
+      ///////////////////////////////////////////////
+
+      //Render into lighting accumulation texture
       deferredShader->use();
+      glUniform2f( deferredWinSize, (GLfloat) winW, (GLfloat) winH );
+      glBindFramebuffer( GL_FRAMEBUFFER, deferredFB );
+      glDrawBuffer( GL_COLOR_ATTACHMENT0 );
+      glDisable( GL_DEPTH_TEST );
+      glEnable( GL_CULL_FACE );
+      glEnable( GL_BLEND );
+      glBlendFunc( GL_ONE, GL_ONE );
 
+      //Bind geometry textures
       glUniform1i( deferredSampler[Deferred::Shadow], Deferred::Shadow );
       glActiveTexture( GL_TEXTURE0 + Deferred::Shadow );
       glBindTexture( GL_TEXTURE_2D, shadowMap );
       glEnable( GL_TEXTURE_2D );
 
-      for (int d=0; d<4; ++d)
+      for (int d=Deferred::Vertex; d<=Deferred::Specular; ++d)
       {
         glUniform1i( deferredSampler[d], d );
         glActiveTexture( GL_TEXTURE0 + d );
         glBindTexture( GL_TEXTURE_2D, deferredMaps[d] );
         glEnable( GL_TEXTURE_2D );
       }
-      
-      //Shader does no transformation (only viewport applied)
-      glBegin( GL_QUADS );
-      glTexCoord2f( 0.0f, 0.0f ); glVertex2f( -1.0f, -1.0f );
-      glTexCoord2f( 1.0f, 0.0f ); glVertex2f( +1.0f, -1.0f );
-      glTexCoord2f( 1.0f, 1.0f ); glVertex2f( +1.0f, +1.0f );
-      glTexCoord2f( 0.0f, 1.0f ); glVertex2f( -1.0f, +1.0f );
-      glEnd();
 
-      //Disable textures
+      //Setup camera-eye to light-clip matrix
+      Matrix4x4 cam = camera->getMatrix();
+      Matrix4x4 lightProj = light->getProjection( 1.0f, 1000.0f );
+      Matrix4x4 lightInv = light->getMatrix().affineInverse();
+      Matrix4x4 tex = lightProj * lightInv * cam;
+      glActiveTexture( GL_TEXTURE0 );
+      glMatrixMode( GL_TEXTURE );
+      glLoadMatrixf( (GLfloat*) tex.m );
+      
+      //Render light volume front
+      light->renderVolume();
+      
+      //Restore texture state
       glActiveTexture( GL_TEXTURE0 + Deferred::Shadow );
       glDisable( GL_TEXTURE_2D );
 
-      for (int d=3; d>=0; --d)
+      for (int d=Deferred::Specular; d>=Deferred::Vertex; --d)
       {
         glActiveTexture( GL_TEXTURE0 + d );
         glDisable( GL_TEXTURE_2D );
       }
+
+      //Restore stencil state
+      glDisable( GL_STENCIL_TEST );
+      
+      /*
+      //Draw light volume
+      glUseProgram( 0 );
+      glEnable( GL_DEPTH_TEST );
+      glEnable( GL_CULL_FACE );
+      glDisable( GL_BLEND );
+      glDisable( GL_LIGHTING );
+      glColor3f( 0,0,1 );
+      glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+
+      light->renderVolume();
+
+      glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+      */
     }
+
+    //Transfer the image into the window buffer
+    glUseProgram( 0 );
+    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+    glDisable( GL_LIGHTING );
+    glDisable( GL_BLEND );
+    glDisable( GL_DEPTH_TEST );
+    glDisable( GL_CULL_FACE );
+    glColor3f( 1,1,1 );
+
+    glActiveTexture( GL_TEXTURE0 );
+    glBindTexture( GL_TEXTURE_2D, deferredAccum );
+    glEnable( GL_TEXTURE_2D );
+
+    glMatrixMode( GL_TEXTURE );
+    glLoadIdentity();
+    glMatrixMode( GL_PROJECTION );
+    glLoadIdentity();
+    glMatrixMode( GL_MODELVIEW );
+    glLoadIdentity();
+    
+    glBegin( GL_QUADS );
+    glTexCoord2f( 0, 0 ); glVertex2f( -1, -1 );
+    glTexCoord2f( 1, 0 ); glVertex2f( +1, -1 );
+    glTexCoord2f( 1, 1 ); glVertex2f( +1, +1 );
+    glTexCoord2f( 0, 1 ); glVertex2f( -1, +1 );
+    glEnd();
+
+    glDisable( GL_TEXTURE_2D );
   }
 
   void Renderer::renderScene (Scene *scene)

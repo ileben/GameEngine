@@ -247,6 +247,11 @@ GL_EXT_framebuffer_object
 #define GL_COLOR_ATTACHMENT4              0x8CE4
 #define GL_DEPTH_ATTACHMENT               0x8D00
 #define GL_STENCIL_ATTACHMENT             0x8D20
+#define GL_STENCIL_INDEX1                 0x8D46
+#define GL_STENCIL_INDEX4                 0x8D47
+#define GL_STENCIL_INDEX8                 0x8D48
+#define GL_STENCIL_INDEX16                0x8D49
+#define GL_DEPTH_COMPONENT16              0x81A5
 #define GL_DEPTH_COMPONENT24              0x81A6
 #define GL_DEPTH_COMPONENT32              0x81A7
 #define GL_FRAMEBUFFER_COMPLETE           0x8CD5
@@ -303,6 +308,19 @@ typedef void
   (GLenum, GLenum, GLsizei, GLsizei);
 
 #endif
+
+
+/**********************************************
+GL_EXT_packed_depth_stencil
+***********************************************/
+
+#ifndef GL_EXT_packed_depth_stencil
+#define GL_DEPTH_STENCIL                  0x84F9
+#define GL_UNSIGNED_INT_24_8              0x84FA
+#define GL_DEPTH24_STENCIL8               0x88F0
+#define GL_TEXTURE_STENCIL_SIZE           0x88F1
+#endif
+
 
 /**********************************************
 GL_ARB_draw_buffers

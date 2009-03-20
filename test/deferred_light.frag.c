@@ -3,14 +3,17 @@ uniform sampler2D samplerNormal;
 uniform sampler2D samplerColor;
 uniform sampler2D samplerSpec;
 uniform sampler2D samplerShadow;
+uniform vec2 winSize;
 
 void main (void)
 {
   //Input data
-  vec4 vertexTexel = texture2D( samplerVertex, gl_TexCoord[0].xy );
-  vec4 normalTexel = texture2D( samplerNormal, gl_TexCoord[0].xy );
-  vec4 colorTexel = texture2D( samplerColor, gl_TexCoord[0].xy );
-  vec4 specTexel = texture2D( samplerSpec, gl_TexCoord[0].xy );
+  //vec2 texCoord = gl_TexCoord[0].xy;
+  vec2 texCoord = vec2( gl_FragCoord.x / winSize.x, gl_FragCoord.y / winSize.y );
+  vec4 vertexTexel = texture2D( samplerVertex, texCoord );
+  vec4 normalTexel = texture2D( samplerNormal, texCoord );
+  vec4 colorTexel = texture2D( samplerColor, texCoord );
+  vec4 specTexel = texture2D( samplerSpec, texCoord );
 
   vec3 point = vertexTexel.xyz;
   vec3 normal = normalTexel.xyz;

@@ -61,6 +61,7 @@ namespace GE
     bool hasFramebufferObjects;
     bool hasVertexBufferObjects;
     bool hasMultipleRenderTargets;
+    bool hasDepthStencilFormat;
     bool hasRangeElements;
     int maxRenderTargets;
     int maxElementsIndices;

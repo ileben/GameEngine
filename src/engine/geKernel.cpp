@@ -452,6 +452,14 @@ namespace GE
     }else{ hasMultipleRenderTargets = false; }
 
     /*
+    Check for packed depth-stencil format
+    *****************************************/
+
+    if (checkExtension( ext, "GL_EXT_packed_depth_stencil" )) {
+      hasDepthStencilFormat = true;
+    }else{ hasDepthStencilFormat = false; }
+
+    /*
     Check vertical sync control
     *****************************************/
     

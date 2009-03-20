@@ -56,10 +56,14 @@ namespace GE
     Uint32 shadowFB;
 
     bool deferredInit;
+    Uint32 deferredStencil;
     Uint32 deferredDepth;
+    Uint32 deferredAccum;
     Uint32 deferredMaps[4];
     Uint32 deferredFB;
+    Uint32 deferredPB;
     Int32 deferredSampler[5];
+    Int32 deferredWinSize;
     Shader *deferredShader;
     
     void updateBuffers ();

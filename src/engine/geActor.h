@@ -20,21 +20,6 @@ namespace GE
   class Renderer;
 
   /*
-  -----------------------------------------
-  Hrmmmmm....
-  -----------------------------------------*/
-
-  namespace RenderRole
-  {
-    enum Enum
-    {
-      Geometry,
-      Light,
-      Camera
-    };
-  }
-
-  /*
   -------------------------------------------------
   Actor represents a single node to be placed
   in the scene tree. It can be a shape, camera
@@ -54,7 +39,6 @@ namespace GE
 
     Material *material;
     ArrayList<Actor*> children;
-    virtual RenderRole::Enum getRenderRole();
     
   protected:
 

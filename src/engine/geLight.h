@@ -12,14 +12,15 @@ namespace GE
   class Light : public Actor
   {
     DECLARE_SUBCLASS( Light, Actor ); DECLARE_END;
-
-  private:
-    virtual RenderRole::Enum getRenderRole();
-
+    
   protected:
     bool shadowsOn;
     Vector3 diffuseColor;
     Vector3 shadowColor;
+
+    bool volumeDLinit;
+    Uint32 volumeDL;
+    virtual void updateVolumeDL () {};
     
   public:
     Light();
@@ -37,6 +38,7 @@ namespace GE
     
     virtual void enable (int index);
     virtual Matrix4x4 getProjection (Float nearClip, Float farClip);
+    void renderVolume ();
   };
   
   class DirLight : public Light
@@ -66,7 +68,8 @@ namespace GE
   protected:
     Float angleInner;
     Float angleOuter;
-    
+    virtual void updateVolumeDL ();
+
   public:
     SpotLight () : angleOuter( 30.0f ), angleInner( -1.0f ) {}
     SpotLight (const Vector3 &pos,

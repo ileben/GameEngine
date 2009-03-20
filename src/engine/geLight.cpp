@@ -15,11 +15,12 @@ namespace GE
     diffuseColor.set( .9f, .9f, .9f );
     shadowColor.set( .2f, .2f, .2f );
     setIsRenderable( false );
+    volumeDLinit = false;
   }
-  
-  RenderRole::Enum Light::getRenderRole()
+
+  void Light::renderVolume()
   {
-    return RenderRole::Light;
+    glCallList( volumeDL );
   }
 
   void Light::setCastShadows (bool cast) {
@@ -81,12 +82,14 @@ namespace GE
     setPosition( pos );
     setDirection( dir );
     setAngle( outerAngle, innerAngle );
+    updateVolumeDL();
   }
   
   void SpotLight::setAngle (Float outer, Float inner)
   {
     angleOuter = outer;
     angleInner = inner;
+    updateVolumeDL();
   }
   
   void Light::enable (int index)
@@ -135,7 +138,7 @@ namespace GE
 
     //Angle must be clamped to GL accepted values
     Float glangleOuter = Util::Clamp( angleOuter * 0.5f, 0.0f , 90.0f );
-    Float glangleInner = (angleInner < 0.0f) ? angleOuter : Util::Min( angleInner, angleOuter );
+    Float glangleInner = (angleInner < 0.0f) ? angleOuter : Util::Min( angleInner * 0.5f, angleOuter );
     
     glLightfv( GL_LIGHT0 + index, GL_POSITION, (GLfloat*) &glpos );
     glLightfv( GL_LIGHT0 + index, GL_SPOT_DIRECTION, (GLfloat*) &gldir );
@@ -159,6 +162,41 @@ namespace GE
     Matrix4x4 m;
     m.setPerspectiveFovLH( Util::DegToRad( angleOuter ), 1.0f, nearClip, farClip );
     return m;
+  }
+
+  void SpotLight::updateVolumeDL ()
+  {
+    if (!volumeDLinit)
+    {
+      volumeDL = glGenLists( 1 );
+      volumeDLinit = true;
+    }
+
+    glNewList( volumeDL, GL_COMPILE );
+
+    int s; float a;
+    int numSegments = 50;
+    float maxDistance = 1000.0f;
+    float step = 2 * PI / numSegments;
+    float r = maxDistance * TAN( Util::DegToRad( angleOuter * 0.5f ));
+    
+    glBegin( GL_TRIANGLE_FAN );
+    glVertex3f( 0, 0, 0 );
+    
+    for (s=0, a=0.0f; s <= numSegments; ++s, a += step)
+      glVertex3f( COS(a) * r, SIN(a) * r, maxDistance );
+    
+    glEnd();
+    
+    glBegin( GL_TRIANGLE_FAN );
+    glVertex3f( 0, 0, maxDistance );
+    
+    for (s=0, a=0.0f; s <= numSegments; ++s, a += step)
+      glVertex3f( - COS(a) * r, SIN(a) * r, maxDistance );
+    
+    glEnd();
+
+    glEndList();
   }
 
 }//namespace GE
