@@ -22,9 +22,32 @@ namespace GE
     DECLARE_SUBABSTRACT (Camera, Actor); DECLARE_END;
     friend class Renderer;
     
-  private:
+  protected:
+    Vector3 eye;
+    Vector3 look;
+    Vector3 side;
+    Vector3 up;
+    Float farClip;
+    Float nearClip;
+
+    virtual void onMatrixChanged ();
     virtual void updateProjection(int w, int h) = 0;
     virtual void updateView() = 0;
+
+  public:
+    Camera();
+    virtual ~Camera() {};
+
+    const Vector3& getEye();
+    const Vector3& getSide();
+    const Vector3& getLook();
+    const Vector3& getUp();
+
+    void setFarClipPlane(Float farClip);
+    Float getFarClipPlane();
+
+    void setNearClipPlane(Float nearClip);
+    Float getNearClipPlane();
   };
 
   /*------------------------------------------
@@ -37,13 +60,7 @@ namespace GE
     friend class Renderer;
 
   private:
-    Vector3 eye;
-    Vector3 look;
-    Vector3 side;
-    Vector3 up;
     Float fov;
-    Float farClip;
-    Float nearClip;
 
     Vector3 center;
     Matrix4x4 cPlus;
@@ -55,24 +72,12 @@ namespace GE
   public:
 
     Camera3D();
-    virtual void onMatrixChanged ();
     
     void setFov(Float fieldOfView);
     Float getFov();
-
-    void setFarClipPlane(Float farClip);
-    Float getFarClipPlane();
-
-    void setNearClipPlane(Float nearClip);
-    Float getNearClipPlane();
     
     void setCenter(const Vector3 &center);
-    
-    const Vector3& getEye();
     const Vector3& getCenter();
-    const Vector3& getSide();
-    const Vector3& getLook();
-    const Vector3& getUp();
 
     void orbitH(Float radang, bool useCenter=false);
     void orbitV(Float radang, bool useCenter=false);

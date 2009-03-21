@@ -18,9 +18,10 @@ namespace GE
     Vector3 diffuseColor;
     Vector3 shadowColor;
 
+    Float attenuationEnd;
     bool volumeDLinit;
     Uint32 volumeDL;
-    virtual void updateVolumeDL () {};
+    virtual void updateVolume() {};
     
   public:
     Light();
@@ -35,9 +36,13 @@ namespace GE
 
     void setDirection (const Vector3 &dir);
     void setPosition (const Vector3 &dir);
-    
+
+    void setAttenuationEnd (Float end);
+    Float getAttenuationEnd ();
+
     virtual void enable (int index);
     virtual Matrix4x4 getProjection (Float nearClip, Float farClip);
+    virtual bool isPointInVolume (const Vector3 &p, Float threshold=0.0f) { return false; }
     void renderVolume ();
   };
   
@@ -68,7 +73,7 @@ namespace GE
   protected:
     Float angleInner;
     Float angleOuter;
-    virtual void updateVolumeDL ();
+    virtual void updateVolume ();
 
   public:
     SpotLight () : angleOuter( 30.0f ), angleInner( -1.0f ) {}
@@ -80,6 +85,7 @@ namespace GE
     void setAngle (Float outer, Float inner = -1.0f);
     virtual void enable (int index);
     virtual Matrix4x4 getProjection (Float nearClip, Float farClip);
+    virtual bool isPointInVolume (const Vector3 &p, Float threshold=0.0f);
   };
   
   class HeadLight : public PointLight

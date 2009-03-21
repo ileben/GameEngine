@@ -6,6 +6,62 @@ namespace GE
   DEFINE_CLASS (Camera);
   DEFINE_CLASS (Camera3D);
   DEFINE_CLASS (Camera2D);
+
+  Camera::Camera()
+  {
+    eye .set (0,0,0);
+    side.set (1,0,0);
+    up  .set (0,1,0);
+    look.set (0,0,1);
+  }
+
+  void Camera::onMatrixChanged ()
+  {
+    Actor::onMatrixChanged ();
+    
+    //Normalize the matrix so the precision errors don't accumulate
+    actor2world.affineNormalize();
+    
+    //Camera vectors are first three columns of its transform matrix
+    const Matrix4x4 &cam2world = getMatrix();
+    side.set ( cam2world.m [0][0],  cam2world.m [0][1],  cam2world.m [0][2]);
+    up  .set ( cam2world.m [1][0],  cam2world.m [1][1],  cam2world.m [1][2]);
+    look.set ( cam2world.m [2][0],  cam2world.m [2][1],  cam2world.m [2][2]);
+    eye .set ( cam2world.m [3][0],  cam2world.m [3][1],  cam2world.m [3][2]);
+  }
+
+  const Vector3& Camera::getEye() {
+    return eye;
+  }
+
+  const Vector3& Camera::getSide() {
+    return side;
+  }
+
+  const Vector3& Camera::getLook() {
+    return look;
+  }
+
+  const Vector3& Camera::getUp() {
+    return up;
+  }
+
+  void Camera::setFarClipPlane(Float farClip) {
+    this->farClip = farClip;
+  }
+
+  Float Camera::getFarClipPlane(){
+    return farClip;
+  }
+
+  void Camera::setNearClipPlane(Float nearClip) {
+    this->nearClip = nearClip;
+  }
+
+  Float Camera::getNearClipPlane() {
+    return nearClip;
+  }
+
   
   /*======================================
    *
@@ -15,11 +71,6 @@ namespace GE
 
   Camera3D::Camera3D()
   {
-    eye .set (0,0,0);
-    side.set (1,0,0);
-    up  .set (0,1,0);
-    look.set (0,0,1);
-    
     fov = 45.0f;
     nearClip = 0.1f;
     farClip = 300.0f;
@@ -33,26 +84,6 @@ namespace GE
     return fov;
   }
 
-  void Camera3D::setFarClipPlane(Float farClip) {
-    this->farClip = farClip;
-  }
-
-  Float Camera3D::getFarClipPlane(){
-    return farClip;
-  }
-
-  void Camera3D::setNearClipPlane(Float nearClip) {
-    this->nearClip = nearClip;
-  }
-
-  Float Camera3D::getNearClipPlane() {
-    return nearClip;
-  }
-
-  const Vector3& Camera3D::getEye() {
-    return eye;
-  }
-
   void Camera3D::setCenter(const Vector3 &center) {
     this->center = center;
     cPlus.setTranslation (center.x, center.y, center.z);
@@ -61,33 +92,6 @@ namespace GE
 
   const Vector3& Camera3D::getCenter() {
     return center;
-  }
-
-  const Vector3& Camera3D::getSide() {
-    return side;
-  }
-
-  const Vector3& Camera3D::getLook() {
-    return look;
-  }
-
-  const Vector3& Camera3D::getUp() {
-    return up;
-  }
-  
-  void Camera3D::onMatrixChanged ()
-  {
-    Actor::onMatrixChanged ();
-    
-    //Normalize the matrix so the precision errors don't accumulate
-    actor2world.affineNormalize();
-    
-    //Camera vectors are first three columns of its transform matrix
-    const Matrix4x4 &cam2world = getMatrix();
-    side.set ( cam2world.m [0][0],  cam2world.m [0][1],  cam2world.m [0][2]);
-    up  .set ( cam2world.m [1][0],  cam2world.m [1][1],  cam2world.m [1][2]);
-    look.set ( cam2world.m [2][0],  cam2world.m [2][1],  cam2world.m [2][2]);
-    eye .set ( cam2world.m [3][0],  cam2world.m [3][1],  cam2world.m [3][2]);
   }
 
   void Camera3D::roll(Float radang)

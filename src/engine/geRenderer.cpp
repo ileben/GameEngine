@@ -180,7 +180,7 @@ namespace GE
 
   void Renderer::renderShadowMap (Light *light, Scene *scene)
   {
-    const Uint32 S = 2048;
+    const Uint32 S = 1024;
 
     if (!shadowInit)
     {
@@ -193,8 +193,7 @@ namespace GE
       */
       glGenTextures( 1, &shadowMap );
       glBindTexture( GL_TEXTURE_2D, shadowMap );
-      //glTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, S, S, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL );
-      glTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, S, S, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL );
+      glTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, S, S, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL );
       glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
       glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
       
@@ -348,26 +347,33 @@ namespace GE
       glCullFace( GL_FRONT );
       light->renderVolume();
 
-      //Incr stencil for pixel behind light volume front
-      glDepthFunc( GL_LESS );
-      glStencilFunc( GL_EQUAL, 0x1, 0xFF );
-      glStencilOp( GL_KEEP, GL_KEEP, GL_INCR );
+      //Avoid front faces being clipped by the camera near plane
+      if (!light->isPointInVolume( camera->getEye(), camera->getNearClipPlane()*2 ))
+      {
+        //Incr stencil for pixel behind light volume front
+        glDepthFunc( GL_LESS );
+        glStencilFunc( GL_EQUAL, 0x1, 0xFF );
+        glStencilOp( GL_KEEP, GL_KEEP, GL_INCR );
 
-      //Render light volume front faces
-      glCullFace( GL_BACK );
-      light->renderVolume();
+        //Render light volume front faces
+        glCullFace( GL_BACK );
+        light->renderVolume();
+
+        //Allow write only for pixels inside the light volume
+        glStencilFunc( GL_EQUAL, 0x2, 0xFF );
+        glStencilOp( GL_KEEP, GL_KEEP, GL_KEEP );
+      }
+      else
+      {
+        //Allow write only for pixels in front of light volume back
+        glDepthFunc( GL_LESS );
+        glStencilFunc( GL_EQUAL, 0x1, 0xFF );
+        glStencilOp( GL_KEEP, GL_KEEP, GL_KEEP );
+      }
 
       //TODO: Check whether any pixels in the volume at all,
       //then render the shadow map and restore the state for
       //rendering to the window framebuffer
-
-      //TODO: Do something for the case the camera eye is
-      //inside the light volume!!!
-
-      //Allow write only for pixels inside the light volume
-      glStencilFunc( GL_EQUAL, 0x2, 0xFF );
-      glStencilOp( GL_KEEP, GL_KEEP, GL_KEEP );
-      glDepthMask( GL_TRUE );
 
       ///////////////////////////////////////////////
 
@@ -404,7 +410,8 @@ namespace GE
       glMatrixMode( GL_TEXTURE );
       glLoadMatrixf( (GLfloat*) tex.m );
       
-      //Render light volume front
+      //Render light volume back faces
+      glCullFace( GL_FRONT );
       light->renderVolume();
       
       //Restore texture state
@@ -417,8 +424,10 @@ namespace GE
         glDisable( GL_TEXTURE_2D );
       }
 
-      //Restore stencil state
+      //Restore other state
       glDisable( GL_STENCIL_TEST );
+      glCullFace( GL_BACK );
+      glDepthMask( GL_TRUE );
       
       /*
       //Draw light volume

@@ -574,7 +574,7 @@ int main (int argc, char **argv)
   cam3D.translate( 0,0,-400 );
   cam3D.orbitV( Util::DegToRad( 20 ), true );
   cam3D.orbitH( Util::DegToRad( 30 ), true );
-  cam3D.setNearClipPlane( 10.0f );
+  cam3D.setNearClipPlane( 1.0f );
   cam3D.setFarClipPlane( 3000.0f );
 
   light = new SpotLight( Vector3(-200,200,-200), Vector3(1,-1,1), 60, 59 );

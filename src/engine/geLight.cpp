@@ -16,6 +16,7 @@ namespace GE
     shadowColor.set( .2f, .2f, .2f );
     setIsRenderable( false );
     volumeDLinit = false;
+    attenuationEnd = 1000.0f;
   }
 
   void Light::renderVolume()
@@ -65,6 +66,17 @@ namespace GE
     m.setIdentity();
     return m;
   }
+
+  void Light::setAttenuationEnd (Float end)
+  {
+    attenuationEnd = end;
+    updateVolume();
+  }
+
+  Float Light::getAttenuationEnd ()
+  {
+    return attenuationEnd;
+  }
   
   DirLight::DirLight (const Vector3 &dir)
   {
@@ -82,14 +94,14 @@ namespace GE
     setPosition( pos );
     setDirection( dir );
     setAngle( outerAngle, innerAngle );
-    updateVolumeDL();
+    updateVolume();
   }
   
   void SpotLight::setAngle (Float outer, Float inner)
   {
     angleOuter = outer;
     angleInner = inner;
-    updateVolumeDL();
+    updateVolume();
   }
   
   void Light::enable (int index)
@@ -164,7 +176,25 @@ namespace GE
     return m;
   }
 
-  void SpotLight::updateVolumeDL ()
+  bool SpotLight::isPointInVolume (const Vector3 &p, Float threshold)
+  {
+    Matrix4x4 worldToLight = getMatrix().affineInverse();
+    Vector3 lightP = worldToLight * p;
+
+    //Check whether point close enough
+    if (lightP.z > attenuationEnd)
+      return false;
+
+    //Check whether point inside the cone
+    Float volumeR = lightP.z * TAN( Util::DegToRad( angleOuter * 0.5f ));
+    Float pointR = lightP.xy().norm();
+    if (pointR > volumeR + threshold)
+      return false;
+
+    return true;
+  }
+
+  void SpotLight::updateVolume ()
   {
     if (!volumeDLinit)
     {
@@ -174,25 +204,24 @@ namespace GE
 
     glNewList( volumeDL, GL_COMPILE );
 
-    int s; float a;
+    int s; Float a;
     int numSegments = 50;
-    float maxDistance = 1000.0f;
-    float step = 2 * PI / numSegments;
-    float r = maxDistance * TAN( Util::DegToRad( angleOuter * 0.5f ));
+    Float step = 2 * PI / numSegments;
+    Float r = attenuationEnd * TAN( Util::DegToRad( angleOuter * 0.5f ));
     
     glBegin( GL_TRIANGLE_FAN );
     glVertex3f( 0, 0, 0 );
     
     for (s=0, a=0.0f; s <= numSegments; ++s, a += step)
-      glVertex3f( COS(a) * r, SIN(a) * r, maxDistance );
+      glVertex3f( COS(a) * r, SIN(a) * r, attenuationEnd );
     
     glEnd();
     
     glBegin( GL_TRIANGLE_FAN );
-    glVertex3f( 0, 0, maxDistance );
+    glVertex3f( 0, 0, attenuationEnd );
     
     for (s=0, a=0.0f; s <= numSegments; ++s, a += step)
-      glVertex3f( - COS(a) * r, SIN(a) * r, maxDistance );
+      glVertex3f( - COS(a) * r, SIN(a) * r, attenuationEnd );
     
     glEnd();
 
