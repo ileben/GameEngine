@@ -4,6 +4,7 @@
 #include "util/geUtil.h"
 #include "engine/geActor.h"
 #include "engine/geMaterial.h"
+#include "engine/geTriMesh.h"
 
 namespace GE
 {
@@ -29,8 +30,9 @@ namespace GE
 
   protected:
     TriMesh *mesh;
-
-    virtual void renderMesh (MaterialID materialID);
+    
+    void beginVertexData (Material *material, const VFormat &format, void *data);
+    void endVertexData (Material *material, const VFormat &format);
     
   public:
     TriMeshActor();
@@ -39,7 +41,7 @@ namespace GE
     void setMesh (TriMesh *mesh);
     TriMesh* getMesh();
     
-    virtual void render (MaterialID materialID);
+    virtual void render (Material *material, MaterialID materialID);
   };
 
 

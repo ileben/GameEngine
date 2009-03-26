@@ -3,7 +3,7 @@
 
 namespace GE
 {
-  void AxisActor::render (MaterialID materialID)
+  void AxisActor::render (Material *material, MaterialID materialID)
   {
     glBegin( GL_LINES );
     glColor3f ( 1, 0, 0 );

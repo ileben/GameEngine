@@ -211,11 +211,17 @@ namespace GE
     void invokeCallback (ClassEvent::Enum e, void *obj, void *param)
     {
       Name *nobj = (Name*) obj;
+
+      //Search for callback in this class
       for (UintSize f=0; f<funcs.size(); ++f) {
         if (funcs[f].evnt = e) {
           (nobj->*funcs[f].func) (param);
-          break;
+          return;
         }}
+
+      //If not found search in superclass
+      if (getSuper() != this)
+        getSuper()->invokeCallback (e, obj, param);
     }
   };
   

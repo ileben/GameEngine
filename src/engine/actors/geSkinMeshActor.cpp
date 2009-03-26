@@ -5,6 +5,8 @@
 #include "engine/geSkinAnim.h"
 #include "engine/geKernel.h"
 #include "engine/geGLHeaders.h"
+#include "engine/geShader.h"
+#include "engine/geShaders.h"
 
 namespace GE
 {
@@ -34,6 +36,7 @@ namespace GE
     freeAnimData();
     initAnimData();
     loadPoseRotations();
+    applySkin();
   }
 
   MaxCharacter* SkinMeshActor::getMesh()
@@ -96,11 +99,11 @@ namespace GE
 
   void SkinMeshActor::applySkin ()
   {
-    SkinTriMesh *mesh = character->mesh;
+    //SkinTriMesh *mesh = character->mesh;
     SkinPose *pose = character->pose;
     SkinAnim *anim = character->anims.first();
     ArrayList <Matrix4x4> fkMats;
-    ArrayList <Matrix4x4> skinMats;
+    skinMats.clear();
     int cindex = 1;
     
     //Root FK matrix = local matrix
@@ -133,7 +136,7 @@ namespace GE
     }
 
     //Apply rotations to vertices
-
+    /*
     int vindex = 0; int nindex = 0;
     
     for (UintSize index=0; index<mesh->data.size(); ++index)
@@ -153,7 +156,36 @@ namespace GE
         Vector3 skinNormal = skinMats[ v.boneIndex[i] ].transformVector( v.normal );
         skinNormals[ index ] += skinNormal * v.boneWeight[i];
       }
-    }
+    }*/
+
+    /*
+    SkinTriMesh *mesh = character->meshes.first();
+
+    //Construct a mesh-specific array of skin matrices
+    Matrix4x4 meshMats[24];
+    for (UintSize b=0; b<mesh->mesh2skinSize; ++b)
+      meshMats[b] = skinMats[ mesh->mesh2skinMap[b] ];
+
+    int vindex = 0; int nindex = 0;
+    
+    for (UintSize index=0; index<mesh->getVertexCount(); ++index)
+    {
+      SkinTriMesh::Vertex &v = *mesh->getVertex( index );
+      
+      skinVertices[ index ].set( 0,0,0 );
+      for (int i=0; i<4; ++i)
+      {
+        Vector3 skinPoint = meshMats[ v.boneIndex[i] ] * v.point;
+        skinVertices[ index ] += skinPoint * v.boneWeight[i];
+      }
+      
+      skinNormals[ index ].set( 0,0,0 );
+      for (int i=0; i<4; ++i)
+      {
+        Vector3 skinNormal = meshMats[ v.boneIndex[i] ].transformVector( v.normal );
+        skinNormals[ index ] += skinNormal * v.boneWeight[i];
+      }
+    }*/
   }
 
   void SkinMeshActor::playAnimation (const CharString &name, Float speed)
@@ -245,36 +277,64 @@ namespace GE
     }
   }
 
-  void SkinMeshActor::renderMesh (MaterialID materialID)
+  void SkinMeshActor::render (Material *material, MaterialID materialID)
   {
-    //Walk material index groups
-    for (UintSize g=0; g<mesh->groups.size(); ++g)
+    //Make sure there's something to render
+    if (character == NULL) return;
+    SkinTriMesh::VertexFormat format;
+
+    //Walk sub meshes
+    for (UintSize m=0; m<character->meshes.size(); ++m)
     {
-      //Check if the material id matches
-      TriMesh::IndexGroup &grp = mesh->groups[ g ];
-      if (materialID != grp.materialID &&
-          materialID != GE_ANY_MATERIAL_ID)
-        continue;
-      
-      //Pass the geometry to OpenGL
-      glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-      
-      glEnableClientState( GL_VERTEX_ARRAY );
-      glEnableClientState( GL_NORMAL_ARRAY );
-      glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+      SkinTriMesh *mesh = character->meshes[m];
 
-      glTexCoordPointer( 2, GL_FLOAT, (GLsizei) mesh->data.elementSize(),
-                         mesh->data.buffer() );
+      //Construct a mesh-specific array of skin matrices
+      Matrix4x4 meshMats[24];
+      for (UintSize b=0; b<mesh->mesh2skinSize; ++b)
+        meshMats[b] = skinMats[ mesh->mesh2skinMap[b] ];
 
-      glNormalPointer( GL_FLOAT, 0, this->skinNormals );
+      //Pass bone matrices to the shader
+      if (material != NULL) {
+        if (material->getShader() != NULL) {
+          Int32 uniMatrix = material->getShader()->getUniformID( "skinMatrix" );
+          glUniformMatrix4fv( uniMatrix, mesh->mesh2skinSize, GL_FALSE, (GLfloat*)meshMats );
+        }}
 
-      glVertexPointer( 3, GL_FLOAT, 0, this->skinVertices );
-      
-      glDrawElements( GL_TRIANGLES, grp.count, GL_UNSIGNED_INT,
-                      mesh->indices.buffer() + grp.start);
-      
-      if (materialID != GE_ANY_MATERIAL_ID)
-        break;
+      //Walk material index groups
+      for (UintSize g=0; g<mesh->groups.size(); ++g)
+      {
+        //Check if the material id matches
+        TriMesh::IndexGroup &grp = mesh->groups[ g ];
+        if (materialID != grp.materialID &&
+            materialID != GE_ANY_MATERIAL_ID)
+          continue;
+        
+        //Pass the geometry to OpenGL
+        glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+        
+        /*
+        glEnableClientState( GL_VERTEX_ARRAY );
+        glEnableClientState( GL_NORMAL_ARRAY );
+        glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+        
+        glTexCoordPointer( 2, GL_FLOAT, (GLsizei) mesh->data.elementSize(),
+                           mesh->data.buffer() );
+
+        glNormalPointer( GL_FLOAT, 0, this->skinNormals );
+
+        glVertexPointer( 3, GL_FLOAT, 0, this->skinVertices );
+        */
+
+        beginVertexData( material, format, mesh->data.buffer() );
+
+        glDrawElements( GL_TRIANGLES, grp.count, GL_UNSIGNED_INT,
+                        mesh->indices.buffer() + grp.start);
+
+        endVertexData( material, format );
+        
+        if (materialID != GE_ANY_MATERIAL_ID)
+          break;
+      }
     }
   }
 

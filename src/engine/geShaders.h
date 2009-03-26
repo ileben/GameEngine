@@ -38,7 +38,7 @@ namespace GE
     void fromString (const char *code);
     bool fromFile (const String &file);
     bool compile ();
-    char* getInfoLog ();
+    CharString getInfoLog ();
   };
 
   /*==============================
@@ -63,10 +63,12 @@ namespace GE
     GLShader* getVertex ();
     GLShader* getFragment ();
     bool link ();
-    char* getInfoLog ();
+    CharString getInfoLog ();
     void use ();
     static void UseFixed ();
+    void bindAttribute (Uint32 index, const char *name);
     Int32 getUniform (const char *name) const;
+    Int32 getAttribute (const char *name) const;
   };
 
 }/* namespace GE */

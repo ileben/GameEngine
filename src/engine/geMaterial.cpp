@@ -282,6 +282,11 @@ namespace GE
       }
     }
   }
+
+  Shader* Material::getShader()
+  {
+    return shader;
+  }
   
   void Material::begin()
   {

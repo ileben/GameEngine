@@ -14,6 +14,72 @@
 namespace GE
 {
   /*
+  --------------------------------------------------------
+  VertexFormat defines the type and position of the data
+  within the vertex structure
+  --------------------------------------------------------*/
+
+  namespace VFType
+  {
+    enum Enum
+    {
+      Uint  = 0,
+      Int   = 1,
+      Float = 2
+    };
+  }
+
+  namespace VFTarget
+  {
+    enum Enum
+    {
+      Attribute     = 0,
+      Coord         = 1,
+      TexCoord      = 2,
+      Normal        = 3,
+      Tangent       = 4,
+      Bitangent     = 5,
+      BoneIndex     = 6,
+      BoneWeight    = 7
+    };
+  }
+
+  struct VFMember
+  {
+    VFTarget::Enum target;
+    VFType::Enum type;
+    Uint32 count;
+    UintSize offset;
+    Int32 attribID;
+    bool attribNorm;
+
+    VFMember () {};
+    VFMember (VFTarget::Enum newTarget,
+              VFType::Enum newType,
+              Uint32 newCount,
+              UintSize newOffset,
+              Int32 newAttribID = 0,
+              bool newAttribNorm = false)
+    {
+      target = newTarget;
+      type = newType;
+      count = newCount;
+      offset = newOffset;
+      attribID = newAttribID;
+      attribNorm = newAttribNorm;
+    }
+  };
+
+  class VFormat
+  { public:
+    UintSize size;
+    ArrayList<VFMember> members;
+    void addMember (const VFMember &m) { members.pushBack( m ); }
+    VFormat( UintSize newSize ) { size = newSize; }
+  };
+
+
+  /*
   ---------------------------------------------------------
   Triangular mesh is highly optimized for rendering.
   Since OpenGL doesn't allow separate indices for vertex
@@ -33,6 +99,15 @@ namespace GE
       Vector3 normal;
       Vector3 point;
     };
+
+    class VertexFormat : public VFormat { public:
+      VertexFormat() : VFormat(sizeof(Vertex))
+      {
+        addMember( VFMember( VFTarget::TexCoord, VFType::Float, 2, 0 ) );
+        addMember( VFMember( VFTarget::Normal,   VFType::Float, 3, sizeof(Vector2) ) );
+        addMember( VFMember( VFTarget::Coord,    VFType::Float, 3, sizeof(Vector2)+sizeof(Vector3) ) );
+      }
+    };
   };
   
   class TriMesh : public Resource
@@ -45,6 +120,7 @@ namespace GE
   public:
 
     typedef TriMeshTraits::Vertex Vertex;
+    typedef TriMeshTraits::VertexFormat VertexFormat;
     
     struct IndexGroup
     {
@@ -53,14 +129,25 @@ namespace GE
       VertexID   count;
     };
     
+    //Mesh data
     GenericArrayList data;
     ArrayList <Uint32> indices;
     ArrayList <IndexGroup> groups;
     
+    //Drawing data
+    Uint32 dataVBO;
+    Uint32 indexVBO;
+    bool isOnGpu;
+
+    
   protected:
+
+    virtual bool isPolyVertexEqual (PolyMesh::Vertex *polyVert,
+                                    PolyMesh::HalfEdge *polyHedge1,
+                                    PolyMesh::HalfEdge *polyHedge2);
     
     virtual void vertexFromPoly (PolyMesh::Vertex *polyVert,
-                                 PolyMesh::VertexNormal *polyNormal,
+                                 PolyMesh::HalfEdge *polyHedge,
                                  TexMesh::Vertex *texVert);
     
     virtual void faceFromPoly (PolyMesh::Face *polyFace);
@@ -75,29 +162,40 @@ namespace GE
     }
     
     TriMesh (SerializeManager *sm) : data(sm), indices(sm), groups(sm)
-    {}
+    { isOnGpu = false; }
     
     TriMesh (Uint32 vertexSize) : data (vertexSize, NULL)
-    {}
+    { isOnGpu = false; }
     
     TriMesh () : data (sizeof(Vertex), NULL)
-    {}
+    { isOnGpu = false; }
     
     void addVertex (void *data);
     void addFaceGroup (MaterialID matID);
     void addFace (VertexID v1, VertexID v2, VertexID v3);
     void fromPoly (PolyMesh *m, TexMesh *uv);
+    void toSubMesh (TriMesh *m);
 
+    VertexID getCornerIndex (UintSize group, UintSize face, UintSize corner);
     Vertex* getVertex (UintSize index);
     UintSize getVertexCount ();
     UintSize getFaceCount ();
+    UintSize getGroupFaceCount (UintSize group);
+
+    void sendToGpu ();
   };
+
+  /*
+  ----------------------------------------------------------------
+  Glue base class
+  ----------------------------------------------------------------*/
   
   template <class Derived, class Base> class TriMeshBase : public Base
   {
   public:
 
     typedef typename Derived::Vertex Vertex;
+    typedef typename Derived::VertexFormat VertexFormat;
 
     TriMeshBase (SerializeManager *sm) : Base (sm)
     {}
@@ -105,9 +203,51 @@ namespace GE
     TriMeshBase () : Base (sizeof(typename Derived::Vertex))
     {}
 
+    INLINE void addVertex (typename Derived::Vertex *data) {
+      Base::addVertex( (void*) data );
+    }
+
     INLINE typename Derived::Vertex* getVertex (UintSize index) {
       return (typename Derived::Vertex*) Base::getVertex( index ); }
   };
+
+  /*
+  ----------------------------------------------------------------
+  Algorithm that copies a part of TriMesh into another sub-mesh
+  ----------------------------------------------------------------*/
+
+  typedef std::map<VertexID,VertexID> Super2SubMap;
+  typedef Super2SubMap::iterator Super2SubIter;
+
+  struct SubMeshInfo
+  {
+    TriMesh *mesh;
+    VertexID nextVertexID;
+    Super2SubMap super2subMap;
+    SubMeshInfo() : nextVertexID(0), mesh(NULL) {}
+  };
+
+  class SuperToSubMesh
+  {
+  private:
+    TriMesh *super;
+    ArrayList<SubMeshInfo> subs;
+
+  protected:
+    virtual UintSize subMeshForFace (UintSize superGroup, UintSize superFace);
+    virtual void newSubFace (UintSize subMeshID, VertexID subID1, VertexID subID2, VertexID subID3);
+    virtual void newSubVertex (UintSize subMeshID, VertexID superID);
+    virtual TriMesh* newSubMesh (UintSize subMeshID);
+
+  public:
+    SuperToSubMesh (TriMesh *superMesh);
+    TriMesh* getSuperMesh() { return super; }
+    TriMesh* getSubMesh (UintSize subMeshID) { return subs[ subMeshID ].mesh; }
+    UintSize getSubMeshCount () { return subs.size(); }
+    std::pair<bool,VertexID> getSubVertexID (UintSize subMeshID, VertexID superID);
+    virtual void split();
+  };
+
 
 }//namespace GE
 #pragma warning(pop)

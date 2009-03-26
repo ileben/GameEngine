@@ -30,6 +30,7 @@ namespace GE
     
     SkinPose *pose;
     SkinTriMesh *mesh;
+    ArrayList<SkinTriMesh*> meshes;
     ClassArrayList <SkinAnim> anims;
     
     void serialize (void *sm)

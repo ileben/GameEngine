@@ -37,9 +37,11 @@ namespace GE
     class Face : public FaceBase <SPolyMeshTraits,PolyMesh> {
       DECLARE_SUBCLASS( Face, PolyMesh::Face ); DECLARE_END;
     };
+
+    typedef PolyMesh::VertexNormal VertexNormal;
   };
 
-  class SPolyMesh : public MeshBase <SPolyMeshTraits,PolyMesh>
+  class SPolyMesh : public PolyMeshBase <SPolyMeshTraits,PolyMesh>
   {
     DECLARE_SUBCLASS( SPolyMesh, PolyMesh ); DECLARE_END;
   };
@@ -61,6 +63,26 @@ namespace GE
       Uint32 boneIndex[4];
       Float32 boneWeight[4];
     };
+
+    class VertexFormat : public VFormat { public:
+      VertexFormat() : VFormat(sizeof(Vertex))
+      {
+        addMember( VFMember( VFTarget::TexCoord, VFType::Float, 2,
+                             0 ));
+
+        addMember( VFMember( VFTarget::Normal, VFType::Float, 3,
+                             sizeof(Vector2) ));
+
+        addMember( VFMember( VFTarget::Coord, VFType::Float, 3,
+                             sizeof(Vector2)+sizeof(Vector3) ));
+
+        addMember( VFMember( VFTarget::Attribute, VFType::Uint, 4,
+                             sizeof(Vector2)+sizeof(Vector3)*2, 0 ));
+
+        addMember( VFMember( VFTarget::Attribute, VFType::Float, 4,
+                             sizeof(Vector2)+sizeof(Vector3)*2+sizeof(Uint32)*4, 1 ));
+      }
+    };
   };
 
   class SkinTriMesh : public TriMeshBase <SkinTriMeshTraits, TriMesh>
@@ -70,15 +92,61 @@ namespace GE
     DECLARE_END;
 
   public:
+
+    Uint32 mesh2skinSize;
+    Uint32 mesh2skinMap[24];
     
+    void serialize (void *sm)
+    {
+      TriMesh::serialize( sm );
+      //for (int i=0; i<24; ++i)
+        //((SM*)sm)->dataVar( &mesh2skinMap[i] );
+    }
+
     SkinTriMesh (SerializeManager *sm) : TriMeshBase <SkinTriMeshTraits, TriMesh> (sm) {}
-    SkinTriMesh () {}
+    SkinTriMesh () : mesh2skinSize(0) {}
     
   protected:
     
     virtual void vertexFromPoly (PolyMesh::Vertex *polyVert,
-                                 PolyMesh::VertexNormal *polyNormal,
+                                 PolyMesh::HalfEdge *polyHedge,
                                  TexMesh::Vertex *texVert);
+  };
+
+  /*
+  -------------------------------------------------------------
+  Algorithm that copies faces of a mesh into a sub mesh
+  and remaps the bone indices until the bone limit is reached
+  -------------------------------------------------------------*/
+
+  typedef std::map<Uint32,Uint32> Skin2MeshMap;
+  typedef Skin2MeshMap::iterator Skin2MeshIter;
+
+
+  struct SkinSubMeshInfo
+  {
+    Uint32 nextBoneID;
+    SkinTriMesh *mesh;
+    Skin2MeshMap skin2meshMap;
+    SkinSubMeshInfo() : nextBoneID(0) {}
+  };
+
+  class SkinSuperToSubMesh : public SuperToSubMesh
+  {
+  private:
+    Uint32 maxBones;
+    Uint32 subMeshCount;
+    ArrayList<SkinSubMeshInfo> subs;
+
+  protected:
+    std::pair<bool,Uint32> getSubBoneID ( UintSize subMeshID, Uint32 superID );
+    virtual UintSize subMeshForFace (UintSize superGroup, UintSize superFace);
+    virtual void newSubVertex (UintSize subMeshID, VertexID superID);
+    virtual TriMesh* newSubMesh (UintSize subMeshID);
+
+  public:
+    SkinSuperToSubMesh (SkinTriMesh *superMesh) : SuperToSubMesh(superMesh) {}
+    void splitByBoneLimit (UintSize maxBonesPerMesh);
   };
 
 

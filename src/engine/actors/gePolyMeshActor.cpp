@@ -49,7 +49,7 @@ namespace GE
     return polyMesh;
   }
 
-  void PolyMeshActor::render (MaterialID materialID)
+  void PolyMeshActor::render (Material *material, MaterialID materialID)
   {
     if (polyMesh != NULL)
       renderMesh (materialID);

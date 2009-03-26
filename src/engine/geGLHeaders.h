@@ -97,6 +97,7 @@ GL_VERSION_1_5
 #ifndef GL_VERSION_1_5
 #define GL_ARRAY_BUFFER                   0x8892
 #define GL_ELEMENT_ARRAY_BUFFER           0x8893
+#define GL_STATIC_DRAW                    0x88E4
 #define GL_DYNAMIC_DRAW                   0x88E8
 typedef ptrdiff_t                         GLintptr;
 typedef ptrdiff_t                         GLsizeiptr;
@@ -143,6 +144,15 @@ typedef char                              GLchar;
 /*******************************************************
 GL_VERSION_2_0
 ********************************************************/
+
+#ifndef GL_VERSION_2_0
+#define GL_MAX_VERTEX_ATTRIBS             0x8869
+#define GL_DELETE_STATUS                  0x8B80
+#define GL_COMPILE_STATUS                 0x8B81
+#define GL_LINK_STATUS                    0x8B82
+#define GL_VALIDATE_STATUS                0x8B83
+#define GL_INFO_LOG_LENGTH                0x8B84
+#endif
 
 #ifndef GL_VERSION_2_0
 
@@ -229,6 +239,46 @@ typedef void
 typedef void
   (APIENTRY* GE_PFGLUNIFORM4F)
   (GLint, GLfloat, GLfloat, GLfloat, GLfloat);
+
+typedef void
+  (APIENTRY* GE_PFGLUNIFORMMATRIX4FV)
+  (GLint, GLsizei, GLboolean, const GLfloat *);
+
+typedef void
+  (APIENTRY* GE_PFGLBINDATTRIBLOCATION)
+  (GLuint, GLuint, const GLchar *);
+
+typedef GLint
+  (APIENTRY* GE_PFGLGETATTRIBLOCATION)
+  (GLuint, const GLchar *);
+
+typedef void
+  (APIENTRY* GE_PFGLVERTEXATTRIBPOINTER)
+  (GLuint, GLint, GLenum, GLboolean, GLsizei, const GLvoid *);
+
+typedef void
+  (APIENTRY* GE_PFGLDISABLEVERTEXATTRIBARRAY)
+  (GLuint);
+
+typedef void
+  (APIENTRY* GE_PFGLENABLEVERTEXATTRIBARRAY)
+  (GLuint);
+
+typedef void
+  (APIENTRY* GE_PFGLGETSHADERIV)
+  (GLuint, GLenum, GLint *);
+
+typedef void
+  (APIENTRY* GE_PFGLGETSHADERINFOLOG)
+  (GLuint, GLsizei, GLsizei *, GLchar *);
+
+typedef void
+  (APIENTRY* GE_PFGLGETPROGRAMIV)
+  (GLuint, GLenum, GLint *);
+
+typedef void
+  (APIENTRY* GE_PFGLGETPROGRAMINFOLOG)
+  (GLuint, GLsizei, GLsizei *, GLchar *);
 
 #endif
 
@@ -398,6 +448,16 @@ extern GE_PFGLUNIFORM1F                 GE_glUniform1f;
 extern GE_PFGLUNIFORM2F                 GE_glUniform2f;
 extern GE_PFGLUNIFORM3F                 GE_glUniform3f;
 extern GE_PFGLUNIFORM4F                 GE_glUniform4f;
+extern GE_PFGLUNIFORMMATRIX4FV          GE_glUniformMatrix4fv;
+extern GE_PFGLBINDATTRIBLOCATION        GE_glBindAttribLocation;
+extern GE_PFGLGETATTRIBLOCATION         GE_glGetAttribLocation;
+extern GE_PFGLVERTEXATTRIBPOINTER       GE_glVertexAttribPointer;
+extern GE_PFGLDISABLEVERTEXATTRIBARRAY  GE_glDisableVertexAttribArray;
+extern GE_PFGLENABLEVERTEXATTRIBARRAY   GE_glEnableVertexAttribArray;
+extern GE_PFGLGETSHADERIV               GE_glGetShaderiv;
+extern GE_PFGLGETSHADERINFOLOG          GE_glGetShaderInfoLog;
+extern GE_PFGLGETPROGRAMIV              GE_glGetProgramiv;
+extern GE_PFGLGETPROGRAMINFOLOG         GE_glGetProgramInfoLog;
 #endif
 
 #ifndef GL_EXT_framebuffer_object
@@ -464,6 +524,16 @@ Function re-routing
 #define glUniform2f                  GE_glUniform2f
 #define glUniform3f                  GE_glUniform3f
 #define glUniform4f                  GE_glUniform4f
+#define glUniformMatrix4fv           GE_glUniformMatrix4fv
+#define glBindAttribLocation         GE_glBindAttribLocation
+#define glGetAttribLocation          GE_glGetAttribLocation
+#define glVertexAttribPointer        GE_glVertexAttribPointer
+#define glDisableVertexAttribArray   GE_glDisableVertexAttribArray
+#define glEnableVertexAttribArray    GE_glEnableVertexAttribArray
+#define glGetShaderiv                GE_glGetShaderiv
+#define glGetShaderInfoLog           GE_glGetShaderInfoLog
+#define glGetProgramiv               GE_glGetProgramiv
+#define glGetProgramInfoLog          GE_glGetProgramInfoLog
 #endif
 
 #ifndef GL_EXT_framebuffer_object

@@ -79,6 +79,16 @@ GE_PFGLUNIFORM1F                 GE_glUniform1f = NULL;
 GE_PFGLUNIFORM2F                 GE_glUniform2f = NULL;
 GE_PFGLUNIFORM3F                 GE_glUniform3f = NULL;
 GE_PFGLUNIFORM4F                 GE_glUniform4f = NULL;
+GE_PFGLUNIFORMMATRIX4FV          GE_glUniformMatrix4fv = NULL;
+GE_PFGLBINDATTRIBLOCATION        GE_glBindAttribLocation = NULL;
+GE_PFGLGETATTRIBLOCATION         GE_glGetAttribLocation = NULL;
+GE_PFGLVERTEXATTRIBPOINTER       GE_glVertexAttribPointer = NULL;
+GE_PFGLDISABLEVERTEXATTRIBARRAY  GE_glDisableVertexAttribArray = NULL;
+GE_PFGLENABLEVERTEXATTRIBARRAY   GE_glEnableVertexAttribArray = NULL;
+GE_PFGLGETSHADERIV               GE_glGetShaderiv = NULL;
+GE_PFGLGETSHADERINFOLOG          GE_glGetShaderInfoLog = NULL;
+GE_PFGLGETPROGRAMIV              GE_glGetProgramiv = NULL;
+GE_PFGLGETPROGRAMINFOLOG         GE_glGetProgramInfoLog = NULL;
 #endif
 
 #ifndef GL_EXT_framebuffer_object
@@ -373,6 +383,27 @@ namespace GE
         getProcAddress ("glUniform3fARB");
       GE_glUniform4f = (GE_PFGLUNIFORM4F)
         getProcAddress ("glUniform4fARB");
+      GE_glUniformMatrix4fv = (GE_PFGLUNIFORMMATRIX4FV)
+        getProcAddress ("glUniformMatrix4fvARB");
+      GE_glBindAttribLocation = (GE_PFGLBINDATTRIBLOCATION)
+        getProcAddress ("glBindAttribLocationARB");
+      GE_glGetAttribLocation = (GE_PFGLGETATTRIBLOCATION)
+        getProcAddress ("glGetAttribLocationARB");
+      GE_glVertexAttribPointer = (GE_PFGLVERTEXATTRIBPOINTER)
+        getProcAddress ("glVertexAttribPointerARB");
+      GE_glDisableVertexAttribArray = (GE_PFGLDISABLEVERTEXATTRIBARRAY)
+        getProcAddress ("glDisableVertexAttribArrayARB");
+      GE_glEnableVertexAttribArray = (GE_PFGLENABLEVERTEXATTRIBARRAY)
+        getProcAddress ("glEnableVertexAttribArrayARB");
+      GE_glGetShaderiv = (GE_PFGLGETSHADERIV)
+        getProcAddress ("glGetShaderiv");
+      GE_glGetShaderInfoLog = (GE_PFGLGETSHADERINFOLOG)
+        getProcAddress ("glGetShaderInfoLog");
+      GE_glGetProgramiv = (GE_PFGLGETPROGRAMIV)
+        getProcAddress ("glGetProgramiv");
+      GE_glGetProgramInfoLog = (GE_PFGLGETPROGRAMINFOLOG)
+        getProcAddress ("glGetProgramInfoLog");
+        
       
       if (GE_glCreateProgram==NULL || GE_glCreateShader==NULL ||
           GE_glCreateShader==NULL || GE_glAttachShader==NULL ||
@@ -385,7 +416,10 @@ namespace GE
           GE_glUniform1i==NULL || GE_glUniform2i==NULL ||
           GE_glUniform3i==NULL || GE_glUniform4i==NULL ||
           GE_glUniform1f==NULL || GE_glUniform2f==NULL ||
-          GE_glUniform3f==NULL || GE_glUniform4f==NULL)
+          GE_glUniform3f==NULL || GE_glUniform4f==NULL ||
+          GE_glUniformMatrix4fv==NULL || GE_glBindAttribLocation==NULL ||
+          GE_glGetAttribLocation==NULL || GE_glVertexAttribPointer==NULL ||
+          GE_glDisableVertexAttribArray==NULL || GE_glEnableVertexAttribArray==NULL)
         hasShaderObjects = false;
       #endif
       

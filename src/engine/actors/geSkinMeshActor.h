@@ -14,6 +14,7 @@ namespace GE
 
   class MaxCharacter;
   class SkinAnim;
+  class SkinTriMesh;
 
   /*
   ------------------------------------------------
@@ -31,6 +32,7 @@ namespace GE
     Vector3 *skinNormals;
     Vector3 *boneTranslations;
     Quat    *boneRotations;
+    ArrayList <Matrix4x4> skinMats;
 
     void freeAnimData();
     void initAnimData();
@@ -46,15 +48,14 @@ namespace GE
     bool animIsLooping;
     bool animIsPaused;
 
-  protected:
-    virtual void renderMesh (MaterialID materialID);
-
   public:
     SkinMeshActor();
     virtual ~SkinMeshActor();
 
     void setMesh (MaxCharacter *mesh);
     MaxCharacter* getMesh();
+
+    virtual void render (Material *material, MaterialID materialID);
 
     void playAnimation (const CharString &name, Float speed=1.0f);
     void loopAnimation (const CharString &name, Float speed=1.0f);

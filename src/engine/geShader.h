@@ -38,19 +38,31 @@ namespace GE
     
     struct Uniform
     {
-      String      name;
+      CharString  name;
       UniformType type;
       int count;
+      Int32 ID;
       
       Uniform () {};
-      Uniform (const String &newName, UniformType newType, int newCount)
+      Uniform (const CharString &newName, UniformType newType, int newCount)
         { name = newName; type = newType; count = newCount; }
+    };
+
+    struct VertexAttrib
+    {
+      CharString name;
+      Int32 ID;
+
+      VertexAttrib() {};
+      VertexAttrib(const CharString &newName)
+        { name = newName; }
     };
     
     GLShader  *vertex;
     GLShader  *fragment;
     GLProgram *program;
     ArrayList<Uniform> uniforms;
+    ArrayList<VertexAttrib> attribs;
     
     void freeProgram ();
     
@@ -58,13 +70,20 @@ namespace GE
     
     Shader ();
     virtual ~Shader ();
+
+    void registerVertexAttrib (const CharString &name);
     
-    void fromFile (const String &fileVertex,
-                   const String &fileFragment);
-    
-    void registerUniform (const String &name,
+    void registerUniform (const CharString &name,
                           UniformType type,
                           int count);
+
+    Int32 getVertexAttribID (UintSize index);
+    Int32 getVertexAttribID (const CharString &name);
+    Int32 getUniformID (UintSize index);
+    Int32 getUniformID (const CharString &name);
+
+    void fromFile (const String &fileVertex,
+                   const String &fileFragment);
     
     UintSize getUniformCount ();
     Uniform& getUniform (UintSize index);

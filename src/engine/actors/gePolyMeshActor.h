@@ -45,7 +45,7 @@ namespace GE
     PolyMesh* getMesh();
     TexMesh* getTexMesh ();
     
-    virtual void render (MaterialID materialID);
+    virtual void render (Material *material, MaterialID materialID);
   };
 }
 

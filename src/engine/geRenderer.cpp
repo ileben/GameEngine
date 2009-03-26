@@ -164,14 +164,23 @@ namespace GE
     if (!deferredInit)
     {
       deferredShader = new Shader;
+      deferredShader->registerUniform( "samplerVertex", GE_UNIFORM_TEXTURE, 1 );
+      deferredShader->registerUniform( "samplerNormal", GE_UNIFORM_TEXTURE, 1 );
+      deferredShader->registerUniform( "samplerColor", GE_UNIFORM_TEXTURE, 1 );
+      deferredShader->registerUniform( "samplerSpec", GE_UNIFORM_TEXTURE, 1 );
+      deferredShader->registerUniform( "samplerShadow", GE_UNIFORM_TEXTURE, 1 );
+      deferredShader->registerUniform( "castShadow", GE_UNIFORM_INT, 1 );
+      deferredShader->registerUniform( "winSize", GE_UNIFORM_FLOAT, 2 );
       deferredShader->fromFile( "deferred_light.vert.c", "deferred_light.frag.c" );
-      const GLProgram *deferredProgram = deferredShader->getGLProgram();
-      deferredSampler[ Deferred::Vertex ] = deferredProgram->getUniform( "samplerVertex" );
-      deferredSampler[ Deferred::Normal ] = deferredProgram->getUniform( "samplerNormal" );
-      deferredSampler[ Deferred::Color ] = deferredProgram->getUniform( "samplerColor" );
-      deferredSampler[ Deferred::Specular ] = deferredProgram->getUniform( "samplerSpec" );
-      deferredSampler[ Deferred::Shadow ] = deferredProgram->getUniform( "samplerShadow" );
-      deferredWinSize = deferredProgram->getUniform( "winSize" );
+
+      deferredSampler[ Deferred::Vertex ] = deferredShader->getUniformID( "samplerVertex" );
+      deferredSampler[ Deferred::Normal ] = deferredShader->getUniformID( "samplerNormal" );
+      deferredSampler[ Deferred::Color ] = deferredShader->getUniformID( "samplerColor" );
+      deferredSampler[ Deferred::Specular ] = deferredShader->getUniformID( "samplerSpec" );
+      deferredSampler[ Deferred::Shadow ] = deferredShader->getUniformID( "samplerShadow" );
+      deferredCastShadow = deferredShader->getUniformID( "castShadow" );
+      deferredWinSize = deferredShader->getUniformID( "winSize" );
+
       glUseProgram( 0 );
     }
 
@@ -307,8 +316,9 @@ namespace GE
     {
       Light* light = scene->getLights()->at( l );
 
-      //Render the shadow map
-      renderShadowMap( light, scene );
+      //Render the shadow map if needed
+      if (light->getCastShadows())
+        renderShadowMap( light, scene );
 
       //Setup view and projection
       glViewport( viewX, viewY, viewW, viewH );
@@ -387,12 +397,18 @@ namespace GE
       glEnable( GL_BLEND );
       glBlendFunc( GL_ONE, GL_ONE );
 
-      //Bind geometry textures
-      glUniform1i( deferredSampler[Deferred::Shadow], Deferred::Shadow );
-      glActiveTexture( GL_TEXTURE0 + Deferred::Shadow );
-      glBindTexture( GL_TEXTURE_2D, shadowMap );
-      glEnable( GL_TEXTURE_2D );
+      //Bind shadow texture if needed
+      if (light->getCastShadows())
+      {
+        glUniform1i( deferredCastShadow, 1);
+        glUniform1i( deferredSampler[Deferred::Shadow], Deferred::Shadow );
+        glActiveTexture( GL_TEXTURE0 + Deferred::Shadow );
+        glBindTexture( GL_TEXTURE_2D, shadowMap );
+        glEnable( GL_TEXTURE_2D );
+      }
+      else glUniform1i( deferredCastShadow, 0);
 
+      //Bind geometry textures
       for (int d=Deferred::Vertex; d<=Deferred::Specular; ++d)
       {
         glUniform1i( deferredSampler[d], d );
@@ -415,14 +431,14 @@ namespace GE
       light->renderVolume();
       
       //Restore texture state
-      glActiveTexture( GL_TEXTURE0 + Deferred::Shadow );
-      glDisable( GL_TEXTURE_2D );
-
       for (int d=Deferred::Specular; d>=Deferred::Vertex; --d)
       {
         glActiveTexture( GL_TEXTURE0 + d );
         glDisable( GL_TEXTURE_2D );
       }
+
+      glActiveTexture( GL_TEXTURE0 + Deferred::Shadow );
+      glDisable( GL_TEXTURE_2D );
 
       //Restore other state
       glDisable( GL_STENCIL_TEST );
@@ -556,7 +572,7 @@ namespace GE
         node.actor->begin();
 
         if (node.actor->isRenderable())
-          node.actor->render( GE_ANY_MATERIAL_ID );
+          node.actor->render( NULL, GE_ANY_MATERIAL_ID );
 
         break;
       case TravEvent::End:
@@ -586,7 +602,7 @@ namespace GE
           
           //Use default if none
           Material::BeginDefault();
-          node.actor->render( GE_ANY_MATERIAL_ID );
+          node.actor->render( NULL, GE_ANY_MATERIAL_ID );
           
         }else if (ClassOf(mat) == Class(MultiMaterial)) {
           
@@ -596,7 +612,7 @@ namespace GE
           {
             mmat->selectSubMaterial( (MaterialID)s );
             mmat->begin();
-            node.actor->render( (MaterialID)s );
+            node.actor->render( mmat->getSubMaterial((MaterialID)s), (MaterialID)s );
             mmat->end();
           }
         
@@ -604,7 +620,7 @@ namespace GE
           
           //Render with given material
           mat->begin();
-          node.actor->render( GE_ANY_MATERIAL_ID );
+          node.actor->render( mat, GE_ANY_MATERIAL_ID );
           mat->end();
         }
       }

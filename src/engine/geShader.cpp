@@ -57,15 +57,13 @@ namespace GE
     else
     {
       //Compile vertex shader
-      if (vertex->compile ()) {
+      if (vertex->compile ())
         printf ("Vertex shader compiled.\n");
-      }else{
-        printf ("Failed compiling vertex shader!");
-        char *infoLog = vertex->getInfoLog ();
-        if (infoLog != NULL) {
-          printf ("Info Log:\n%s\n", infoLog);
-          delete[] infoLog; }
-      }
+      else printf ("Failed compiling vertex shader!");
+
+      CharString infoLog = vertex->getInfoLog ();
+      if (infoLog.length() > 0)
+        printf ("Info Log:\n%s\n", infoLog.buffer());
     }
     
     //Load fragment source
@@ -76,36 +74,76 @@ namespace GE
     else
     {
       //Compile fragment shader
-      if (fragment->compile ()) {
+      if (fragment->compile())
         printf ("Fragment shader compiled.\n");
-      }else{
-        printf ("Failed compiling fragment shader!\n");
-        char *infoLog = fragment->getInfoLog ();
-        if (infoLog != NULL) {
-          printf ("Info Log:\n%s\n", infoLog);
-          delete[] infoLog; }
-      }
+      else printf ("Failed compiling fragment shader!\n");
+
+      CharString infoLog = fragment->getInfoLog ();
+      if (infoLog.length() > 0)
+        printf ("Info Log:\n%s\n", infoLog.buffer());
     }
 
     //Link shading program
-    program->attach (vertex);
-    program->attach (fragment);
-    if (program->link ()) {
+    program->attach( vertex );
+    program->attach( fragment );
+    
+    if (program->link())
       printf ("Shading program linked.\n");
-    }else{
-      printf ("Failed linking shading program!\n");
-      char *infoLog = program->getInfoLog ();
-      if (infoLog != NULL) {
-        printf ("Info Log:\n%s\n", infoLog);
-        delete[] infoLog; }
-    }
+    else printf ("Failed linking shading program!\n");
+
+    CharString infoLog = program->getInfoLog ();
+    if (infoLog.length() > 0)
+      printf ("Info Log:\n%s\n", infoLog.buffer());
+
+    //Query attribute locations
+    for (UintSize a=0; a<attribs.size(); ++a)
+      attribs[a].ID = program->getAttribute( attribs[a].name.buffer());
+
+    //Query uniform locations
+    for (UintSize u=0; u<uniforms.size(); ++u)
+      uniforms[u].ID = program->getUniform( uniforms[u].name.buffer() );
+  }
+
+  void Shader::registerVertexAttrib (const CharString &name)
+  {
+    attribs.pushBack( VertexAttrib( name ));
   }
   
-  void Shader::registerUniform (const String &name,
+  void Shader::registerUniform (const CharString &name,
                                 UniformType type,
                                 int count)
   {
-    uniforms.pushBack (Uniform (name, type, count));
+    uniforms.pushBack( Uniform( name, type, count ));
+  }
+
+  Int32 Shader::getVertexAttribID (UintSize index)
+  {
+    if (index > attribs.size()) return -1;
+    return attribs[ index ].ID;
+  }
+
+  Int32 Shader::getVertexAttribID (const CharString &name)
+  {
+    for (UintSize a=0; a<attribs.size(); ++a)
+      if (attribs[a].name == name)
+        return attribs[a].ID;
+
+    return -1;
+  }
+
+  Int32 Shader::getUniformID (UintSize index)
+  {
+    if (index > uniforms.size()) return -1;
+    return uniforms[ index ].ID;
+  }
+
+  Int32 Shader::getUniformID (const CharString &name)
+  {
+    for (UintSize u=0; u<uniforms.size(); ++u)
+      if (uniforms[u].name == name)
+        return uniforms[u].ID;
+
+    return -1;
   }
   
   UintSize Shader::getUniformCount()

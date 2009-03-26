@@ -102,15 +102,27 @@ namespace GE
     glCompileShader (handle);
     
     //return true; //TODO: glGetObjectParameterivARB doesn't work on linux
-    glGetObjectParameterivARB ((GLhandleARB)handle,
-                               GL_OBJECT_COMPILE_STATUS_ARB, &status);
-    
-    return (status == 1 ? true : false);
+    //glGetObjectParameterivARB ((GLhandleARB)handle,
+    //                           GL_OBJECT_COMPILE_STATUS_ARB, &status);
+    //return (status == 1 ? true : false);
+
+    glGetShaderiv( handle, GL_COMPILE_STATUS, &status );
+    return (status == GL_TRUE);
   }
 
-  char* GLShader::getInfoLog ()
+  CharString GLShader::getInfoLog ()
   {
-    return getObjectInfoLog ((GLhandleARB)handle);
+    //return getObjectInfoLog ((GLhandleARB)handle);
+
+    GLint len = 0;
+    glGetShaderiv( handle, GL_INFO_LOG_LENGTH, &len);
+    if (len == 0) return CharString();
+
+    char *clog = new char[len+1];
+    glGetShaderInfoLog( handle, len+1, NULL, clog );
+    clog[len] = '\0';
+
+    return CharString(clog);
   }
 
   /*==========================================
@@ -183,43 +195,58 @@ namespace GE
   
   bool GLProgram::link ()
   {
-    GLint status1 = 1, status2 = 1, status3 = 0;
+    GLint status;
     glLinkProgram (handle);
+
     //return true; //TODO: glGetObjectParameterivARB doesn't work on linux
-    /*
-    if (vertex != NULL)
-      glGetObjectParameterivARB ((GLhandleARB) vertex->handle,
-                                 GL_OBJECT_LINK_STATUS_ARB, &status1);
-    if (fragment != NULL)
-      glGetObjectParameterivARB ((GLhandleARB) fragment->handle,
-                                 GL_OBJECT_LINK_STATUS_ARB, &status2);
-    */
-    glGetObjectParameterivARB ((GLhandleARB) handle,
-                              GL_OBJECT_LINK_STATUS_ARB, &status3);
+    //glGetObjectParameterivARB ((GLhandleARB) handle,
+    //                          GL_OBJECT_LINK_STATUS_ARB, &status);    
+    //return (status1 == 1 ? true : false);
     
-    return (status1 == 1 && status2 == 1 && status3 == 1 ? true : false);
+    glGetProgramiv( handle, GL_LINK_STATUS, &status );
+    return (status == GL_TRUE);
   }
   
-  char* GLProgram::getInfoLog ()
+  CharString GLProgram::getInfoLog ()
   {
-    return getObjectInfoLog ((GLhandleARB)handle);
+    //return getObjectInfoLog( (GLhandleARB)handle );
+
+    GLint len = 0;
+    glGetProgramiv( handle, GL_INFO_LOG_LENGTH, &len);
+    if (len == 0) return CharString();
+
+    char *clog = new char[len+1];
+    glGetProgramInfoLog( handle, len+1, NULL, clog );
+    clog[len] = '\0';
+
+    return CharString(clog);
   }
   
   void GLProgram::use ()
   {
-    glUseProgram (handle);
+    glUseProgram( handle );
   }
   
   void GLProgram::UseFixed ()
   {
-    glUseProgram (0);
+    glUseProgram( 0 );
+  }
+
+  void GLProgram::bindAttribute (Uint32 index, const char *name)
+  {
+    glBindAttribLocation( handle, index, name );
+  }
+
+  Int32 GLProgram::getAttribute (const char *name) const
+  {
+    return GE_glGetAttribLocation( handle, name );
   }
   
   Int32 GLProgram::getUniform (const char *name) const
   {
     //TODO: the following gl call throws an exception if the
     //uniform with given name is not found in the program
-    return glGetUniformLocation (handle, name);
+    return glGetUniformLocation( handle, name );
   }
   
 }/* namespace GE */

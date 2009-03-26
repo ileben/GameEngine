@@ -83,13 +83,19 @@ namespace GE
     void*       uvertexPtr;
     void*       vnormalPtr;
   };
+
+  struct UniqueData
+  {
+    TexMesh::Vertex *texVertex;
+    VertexID vertexID;
+  };
   
   void TriMesh::fromPoly (PolyMesh *m, TexMesh *um)
   {
     PolyMesh::FaceIter f;
-    PolyMesh::FaceHedgeIter h;
+    PolyMesh::FaceHedgeIter fh;
     TexMesh::FaceIter uf;
-    TexMesh::FaceHedgeIter uh;
+    TexMesh::FaceHedgeIter ufh;
     ArrayList<UniqueVertex> uniqVerts;
     VertexID nextVertexID = 0;
     
@@ -103,12 +109,14 @@ namespace GE
     data.clear();
     indices.clear();
 
-    //Store UV pointers into vert-per-face hedges
-    //(These are later replaced with static vertex IDs)
+    //Allocate structures for vert-per-face unique data
+    //and store texture vertex pointers
     for (f.begin(m), uf.begin(um); !f.end(); ++f, ++uf) {
-      for (h.begin(*f), uh.begin(*uf); !h.end(); ++h, ++uh) {
-        if (!uh.end()) h->tag.ptr = uh->dstVertex();
-        else h->tag.ptr = NULL;
+      for (fh.begin(*f), ufh.begin(*uf); !fh.end(); ++fh, ++ufh) {
+        UniqueData *data = new UniqueData;
+        if (!ufh.end()) data->texVertex = ufh->dstVertex();
+        else data->texVertex = NULL;
+        fh->tag.ptr = data;
       }}
 
     //Walk all the vertices of the mesh
@@ -123,15 +131,15 @@ namespace GE
         
         //Walk existing vertex variants
         bool existingFound = false;
-        for( int u=(int)uniqVerts.size()-1; u>=0; --u )
-        {
+        for (PolyMesh::VertFaceIter vf2(*v); vf2 != vf; ++vf2) {
+          PolyMesh::HalfEdge *vfh2 = vf2.hedgeToVertex();
+
           //Check for match
-          if (uniqVerts[u].materialID == vf->materialID() &&
-              uniqVerts[u].uvertexPtr == vfh->tag.ptr &&
-              uniqVerts[u].vnormalPtr == vfh->vertexNormal())
+          if (isPolyVertexEqual( *v, vfh, vfh2))
           {
             //Assign existing vertex ID
-            vfh->tag.id = uniqVerts[u].vertexID;
+            ((UniqueData*)vfh->tag.ptr)->vertexID =
+              ((UniqueData*)vfh2->tag.ptr)->vertexID;
             existingFound = true;
             break;
           }
@@ -140,20 +148,11 @@ namespace GE
         //Output a new vertex variant
         if (!existingFound)
         {
-          //Uniqueness info
-          UniqueVertex uniq;
-          uniq.materialID = vf->materialID();
-          uniq.uvertexPtr = vfh->tag.ptr;
-          uniq.vnormalPtr = vfh->vertexNormal();
-          uniq.vertexID = nextVertexID;
-          uniqVerts.pushBack( uniq );
-          
           //Invoke the vertex exporter
-          vertexFromPoly (*v, vfh->vertexNormal(),
-                          (TexMesh::Vertex*) vfh->tag.ptr);
+          vertexFromPoly (*v, vfh, ((UniqueData*)vfh->tag.ptr)->texVertex);
           
           //Assign new vertex ID
-          vfh->tag.id = nextVertexID++;
+          ((UniqueData*)vfh->tag.ptr)->vertexID = nextVertexID++;
         }
         
       }//Walk adjacent faces
@@ -171,6 +170,30 @@ namespace GE
       for (PolyMesh::MaterialFaceIter mf( m, *mid ); !mf.end(); ++mf)
         faceFromPoly( *mf );
     }
+
+    //Deallocate vert-per-face unique data
+    for (f.begin(m); !f.end(); ++f)
+      for (fh.begin(*f); !fh.end(); ++fh)
+        delete fh->tag.ptr;
+  }
+
+  bool TriMesh::isPolyVertexEqual (PolyMesh::Vertex *polyVert,
+                                   PolyMesh::HalfEdge *polyHedge1,
+                                   PolyMesh::HalfEdge *polyHedge2)
+  {
+    if (((UniqueData*)polyHedge1->tag.ptr)->texVertex !=
+        ((UniqueData*)polyHedge2->tag.ptr)->texVertex)
+      return false;
+
+    if (polyHedge1->parentFace()->materialID() !=
+        polyHedge2->parentFace()->materialID())
+      return false;
+
+    if (polyHedge1->vertexNormal() !=
+        polyHedge2->vertexNormal())
+      return false;
+
+    return true;
   }
   
   /*
@@ -182,7 +205,7 @@ namespace GE
   -------------------------------------------------------*/
   
   void TriMesh::vertexFromPoly (PolyMesh::Vertex *polyVert,
-                                PolyMesh::VertexNormal *polyNormal,
+                                PolyMesh::HalfEdge *polyHedge,
                                 TexMesh::Vertex *texVert)
   {
     Vertex vert;
@@ -190,7 +213,7 @@ namespace GE
     if (texVert != NULL)
       vert.texcoord = texVert->point;
     
-    vert.normal = polyNormal->coord;
+    vert.normal = polyHedge->vertexNormal()->coord;
     vert.point = polyVert->point;
     
     addVertex( &vert );
@@ -211,7 +234,11 @@ namespace GE
     
     do {
       
-      addFace( prev->tag.id, cur->tag.id, next->tag.id );
+      addFace(
+        ((UniqueData*)prev->tag.ptr)->vertexID,
+        ((UniqueData*)cur->tag.ptr)->vertexID,
+        ((UniqueData*)next->tag.ptr)->vertexID
+      );
       
       cur = cur->nextHedge();
       next = next->nextHedge();
@@ -224,6 +251,11 @@ namespace GE
   Helper functions for data retrieval
   ----------------------------------------------------*/
 
+  VertexID TriMesh::getCornerIndex (UintSize group, UintSize face, UintSize corner)
+  {
+    return indices[ groups[ group ].start + face*3 + corner ];
+  }
+
   TriMesh::Vertex* TriMesh::getVertex (UintSize index)
   {
     return (TriMesh::Vertex*) data[ index ];
@@ -233,10 +265,136 @@ namespace GE
   {
     return data.size();
   }
-  
+
   UintSize TriMesh::getFaceCount ()
   {
     return indices.size() / 3;
+  }
+  
+  UintSize TriMesh::getGroupFaceCount (UintSize group)
+  {
+    return groups[ group ].count / 3;
+  }
+
+  void TriMesh::sendToGpu ()
+  {
+    if (!isOnGpu)
+    {
+      glGenBuffers( 1, &dataVBO );
+      glGenBuffers( 1, &indexVBO );
+    }
+
+    glBindBuffer( dataVBO, GL_ARRAY_BUFFER );
+    glBufferData( dataVBO, data.size() * data.elementSize(), data.buffer(), GL_STATIC_DRAW );
+
+    glBindBuffer( indexVBO, GL_ELEMENT_ARRAY_BUFFER );
+    glBufferData( indexVBO, indices.size() * sizeof(VertexID), indices.buffer(), GL_STATIC_DRAW );
+
+    glBindBuffer( 0, GL_ARRAY_BUFFER );
+    glBindBuffer( 0, GL_ELEMENT_ARRAY_BUFFER );
+
+    isOnGpu = true;
+  }
+
+  /*
+  ----------------------------------------------------
+  Copies a part of the mesh to another mesh
+  ----------------------------------------------------*/
+
+  SuperToSubMesh::SuperToSubMesh (TriMesh *super)
+  {
+    this->super = super;
+  }
+
+  UintSize SuperToSubMesh::subMeshForFace (UintSize superGroup, UintSize superFace)
+  {
+    return 0;
+  }
+
+  TriMesh* SuperToSubMesh::newSubMesh (UintSize subMeshID)
+  {
+    return new TriMesh;
+  }
+
+  void SuperToSubMesh::newSubFace (UintSize subMeshID, VertexID subID1, VertexID subID2, VertexID subID3)
+  {
+    subs[ subMeshID ].mesh->addFace( subID1, subID2, subID3 );
+  }
+
+  void SuperToSubMesh::newSubVertex (UintSize subMeshID, VertexID superID)
+  {
+    TriMesh::Vertex *superVert = super->getVertex( superID );
+    
+    TriMesh::Vertex subVert;
+    subVert.normal = superVert->normal;
+    subVert.texcoord = superVert->texcoord;
+    subVert.point = superVert->point;
+    
+    subs[ subMeshID ].mesh->addVertex( &subVert );
+  }
+
+  std::pair<bool,VertexID> SuperToSubMesh::getSubVertexID (UintSize subMeshID, VertexID superID)
+  {
+    std::pair<bool,VertexID> retval;
+    Super2SubIter it = subs[ subMeshID ].super2subMap.find( superID );
+    retval.first = (it != subs[ subMeshID ].super2subMap.end());
+    retval.second = (retval.first ? it->second : 0);
+    return retval;
+  }
+
+  void SuperToSubMesh::split()
+  {
+    VertexID subCorners[3];
+
+    //Walk groups
+    for (UintSize g=0; g<super->groups.size(); ++g)
+    {
+      //Walk faces in this group
+      for (VertexID face=0; face<super->getGroupFaceCount(g); ++face)
+      {
+        UintSize subMeshID = subMeshForFace( g, face );
+        
+        //Make sure sub mesh ID is valid
+        while (subMeshID >= subs.size())
+          subs.pushBack( SubMeshInfo() );
+
+        //Create new mesh if missing
+        if (subs[ subMeshID ].mesh == NULL)
+          subs[ subMeshID ].mesh = newSubMesh( subMeshID );
+
+        //Create new material group if missing
+        SubMeshInfo *sub = &subs[ subMeshID ];
+        if (sub->mesh->groups.empty())
+          sub->mesh->addFaceGroup( super->groups[g].materialID );
+        else if (sub->mesh->groups.last().materialID != super->groups[g].materialID)
+          sub->mesh->addFaceGroup( super->groups[g].materialID );
+
+        //Walk corners of the face
+        for (VertexID corner=0; corner<3; ++corner)
+        {
+          //Check if this vertex is missing in the sub mesh
+          VertexID superID = super->getCornerIndex( g, face, corner );
+          std::pair<bool,VertexID> subVertexID = getSubVertexID( subMeshID, superID );
+          if (subVertexID.first == false)
+          {
+            //Copy vertex to sub mesh and map super to sub ID
+            newSubVertex( subMeshID, superID );
+            subCorners[ corner ] = sub->nextVertexID;
+            sub->super2subMap[ superID ] = sub->nextVertexID;
+            sub->nextVertexID++;
+          }
+          else
+          {
+            //Use existing sub ID
+            subCorners[ corner ] = subVertexID.second;
+          }
+        }
+
+        //Add face corners to sub mesh
+        newSubFace( subMeshID, subCorners[0], subCorners[1], subCorners[2] );
+
+      }//Walk faces
+    }//Walk groups
   }
 
 }//namespace GE

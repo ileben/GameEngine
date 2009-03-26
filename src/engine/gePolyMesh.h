@@ -189,6 +189,12 @@ namespace GE
     void setMaterialID (Face *f, MaterialID id);
   };
 
+  template <class Derived, class Base> class PolyMeshBase : public MeshBase <Derived,Base>
+  {
+    typedef typename Derived::VertexNormal VertexNormal;
+    #include "gePolyMeshIters.h"
+  };
+
 
 }//namespace GE
 #pragma warning(pop)

@@ -63,6 +63,7 @@ namespace GE
     Uint32 deferredFB;
     Uint32 deferredPB;
     Int32 deferredSampler[5];
+    Int32 deferredCastShadow;
     Int32 deferredWinSize;
     Shader *deferredShader;
     

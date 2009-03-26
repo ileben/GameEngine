@@ -347,6 +347,16 @@ public:
     start = cur;
     moved = false;
   }
+
+  bool operator== (const VertFaceIter &it)
+  {
+    return (cur == it.cur);
+  }
+
+  bool operator != (const VertFaceIter &it)
+  {
+    return (cur != it.cur);
+  }
   
   VertFaceIter& operator++()
   {

@@ -354,6 +354,18 @@ void loadPackage (String fileName)
   numFrames = character->anims.first()->tracksR.first()->keys.size();
   maxTime = character->anims.first()->tracksR.first()->totalTime;
 
+  //Split into 24-bone sub meshes
+  SkinSuperToSubMesh splitter( character->mesh );
+  splitter.splitByBoneLimit( 24 );
+
+  UintSize numMeshes = splitter.getSubMeshCount();
+  for (UintSize m=0; m<numMeshes; ++m)
+  {
+    SkinTriMesh *mesh = (SkinTriMesh*) splitter.getSubMesh(m);
+    character->meshes.pushBack( mesh );
+    mesh->sendToGpu();
+  }
+
   /*
   //Add vertices to the mesh
   polyMesh = new SPolyMesh;
@@ -408,6 +420,7 @@ void loadLogo (String fileName)
   //Load character data
   SerializeManager sm;
   mshLogo = (TriMesh*) sm.load( (void*)data.buffer() );
+  mshLogo->sendToGpu();
 
   printf ("Logo: %d verts, %d faces\n",
           mshLogo->getVertexCount(),
@@ -459,44 +472,47 @@ int main (int argc, char **argv)
   //shader->fromFile( "pixelphong.vert.c", "pixelphong.frag.c" );
   shader->fromFile( "deferred_geometry.vert.c", "deferred_geometry.frag.c" );
 
-  //VertColorMaterial mat;
-  StandardMaterial matWhite;
-  //PhongMaterial mat;
-  matWhite.setSpecularity( 0.5 );
-  //mat.setCullBack( false );
-  //mat.setDiffuseColor( Vector3(1,0,0) );
-  matWhite.setShader( shader );
+  Shader *skinShader = new Shader;
+  skinShader->registerVertexAttrib( "boneIndex" );
+  skinShader->registerVertexAttrib( "boneWeight" );
+  skinShader->registerUniform( "skinMatrix", GE_UNIFORM_MATRIX, 1 );
+  skinShader->fromFile( "deferred_geometry_skin.vert.c", "deferred_geometry.frag.c" );
+  //skinShader->fromFile( "deferred_geometry.vert.c", "deferred_geometry.frag.c" );
 
-  StandardMaterial matRed;
-  matRed.setSpecularity( 0.5 );
-  matRed.setDiffuseColor( Vector3(1,0,0) );
-  matRed.setAmbientColor( matRed.getDiffuseColor() * .8f );
-  matRed.setShader( shader );
+  StandardMaterial matRedLogo;
+  matRedLogo.setSpecularity( 0.5 );
+  matRedLogo.setDiffuseColor( Vector3(1,0,0) );
+  matRedLogo.setAmbientColor( matRedLogo.getDiffuseColor() * .8f );
+  matRedLogo.setShader( shader );
 
   StandardMaterial matWhiteLogo;
   matWhiteLogo.setSpecularity( 0.5 );
   matWhiteLogo.setAmbientColor( matWhiteLogo.getDiffuseColor() * .8f );
   matWhiteLogo.setShader( shader );
 
+  StandardMaterial matWhite;
+  matWhite.setSpecularity( 0.5 );
+  matWhite.setShader( skinShader );
+
   StandardMaterial matBlue;
   matBlue.setSpecularity( 0.5 );
   matBlue.setDiffuseColor( Vector3(0,0.5,1) );
-  matBlue.setShader( shader );
+  matBlue.setShader( skinShader );
 
   StandardMaterial matGreen;
   matGreen.setSpecularity( 0.5 );
   matGreen.setDiffuseColor( Vector3(0,0.6,0) );
-  matGreen.setShader( shader );
+  matGreen.setShader( skinShader );
 
   StandardMaterial matYellow;
   matYellow.setSpecularity( 0.5 );
   matYellow.setDiffuseColor( Vector3(1,1,0.7) );
-  matYellow.setShader( shader );
+  matYellow.setShader( skinShader );
 
   StandardMaterial matBlack;
   matBlack.setSpecularity( 0.5 );
   matBlack.setDiffuseColor( Vector3(0.2,0.2,0.2) );
-  matBlack.setShader( shader );
+  matBlack.setShader( skinShader );
 
   MultiMaterial mm;
   mm.setNumSubMaterials( 5 );
@@ -517,7 +533,7 @@ int main (int argc, char **argv)
   MultiMaterial mmLogo;
   mmLogo.setNumSubMaterials( 2 );
   mmLogo.setSubMaterial( 0, &matWhiteLogo );
-  mmLogo.setSubMaterial( 1, &matRed );
+  mmLogo.setSubMaterial( 1, &matRedLogo );
 
   //Setup Logo scene
 
@@ -536,6 +552,7 @@ int main (int argc, char **argv)
   camLogo->setFarClipPlane( 3000.0f );
 
   lightLogo = new SpotLight( Vector3(0,0,-500), Vector3(0,0,1), 60, 50 );
+  lightLogo->setCastShadows( true );
   sceneLogo->addChild( lightLogo );
 
   //Setup Bub scene
@@ -557,7 +574,7 @@ int main (int argc, char **argv)
 
   TriMesh *cubeMesh = new CubeMesh;
   TriMeshActor *cube = new TriMeshActor;
-  cube->setMaterial( &matWhite );
+  cube->setMaterial( &matWhiteLogo );
   cube->setMesh( cubeMesh );
   cube->scale( 300, 10, 300 );
   cube->translate( 0, -70, 0 );

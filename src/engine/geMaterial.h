@@ -142,6 +142,7 @@ namespace GE
     
     void setShader (Shader *newShader);
     void setProperty (const String &name, void *value);
+    Shader* getShader();
     
     virtual void begin ();
     virtual void end ();
