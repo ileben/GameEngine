@@ -17,6 +17,7 @@ namespace GE
   class Widget;
   class Scene;
   class Shader;
+  class Material;
 
   /*
   -----------------------------------------
@@ -49,6 +50,8 @@ namespace GE
     int viewH;
     Vector3 back;
     Camera *camera;
+    Shader *curShader;
+    Material *curMaterial;
     
     bool shadowInit;
     Uint32 shadowMap;
@@ -65,7 +68,9 @@ namespace GE
     Int32 deferredSampler[5];
     Int32 deferredCastShadow;
     Int32 deferredWinSize;
-    Shader *deferredShader;
+    Shader *shaderGeomFbuf;
+    Shader *shaderGeomSkinFbuf;
+    Shader *shaderLightSpot;
     
     void updateBuffers ();
     void traverseSceneNoMats (Scene *scene);
@@ -84,6 +89,8 @@ namespace GE
     
     
     void renderShadowQuad ();
+    Shader* getCurrentShader();
+    Material* getCurrentMaterial();
 
     void beginFrame ();
     void renderScene (Scene *scene);

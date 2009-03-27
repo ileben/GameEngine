@@ -31,8 +31,8 @@ namespace GE
   protected:
     TriMesh *mesh;
     
-    void beginVertexData (Material *material, const VFormat &format, void *data);
-    void endVertexData (Material *material, const VFormat &format);
+    void beginVertexData (Shader *shader, const VFormat &format, void *data);
+    void endVertexData (Shader *shader, const VFormat &format);
     
   public:
     TriMeshActor();
@@ -41,7 +41,7 @@ namespace GE
     void setMesh (TriMesh *mesh);
     TriMesh* getMesh();
     
-    virtual void render (Material *material, MaterialID materialID);
+    virtual void render (MaterialID materialID);
   };
 
 

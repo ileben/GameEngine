@@ -55,7 +55,7 @@ namespace GE
     void setMesh (MaxCharacter *mesh);
     MaxCharacter* getMesh();
 
-    virtual void render (Material *material, MaterialID materialID);
+    virtual void render (MaterialID materialID);
 
     void playAnimation (const CharString &name, Float speed=1.0f);
     void loopAnimation (const CharString &name, Float speed=1.0f);

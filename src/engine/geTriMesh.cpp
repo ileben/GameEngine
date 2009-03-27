@@ -284,14 +284,14 @@ namespace GE
       glGenBuffers( 1, &indexVBO );
     }
 
-    glBindBuffer( dataVBO, GL_ARRAY_BUFFER );
-    glBufferData( dataVBO, data.size() * data.elementSize(), data.buffer(), GL_STATIC_DRAW );
+    glBindBuffer( GL_ARRAY_BUFFER, dataVBO );
+    glBufferData( GL_ARRAY_BUFFER, data.size() * data.elementSize(), data.buffer(), GL_STATIC_DRAW );
 
-    glBindBuffer( indexVBO, GL_ELEMENT_ARRAY_BUFFER );
-    glBufferData( indexVBO, indices.size() * sizeof(VertexID), indices.buffer(), GL_STATIC_DRAW );
+    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, indexVBO );
+    glBufferData( GL_ELEMENT_ARRAY_BUFFER, indices.size() * indices.elementSize(), indices.buffer(), GL_STATIC_DRAW );
 
-    glBindBuffer( 0, GL_ARRAY_BUFFER );
-    glBindBuffer( 0, GL_ELEMENT_ARRAY_BUFFER );
+    glBindBuffer( GL_ARRAY_BUFFER, 0 );
+    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );
 
     isOnGpu = true;
   }

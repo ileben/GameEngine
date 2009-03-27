@@ -6,6 +6,7 @@
 #include "engine/geShader.h"
 #include "widgets/geWidget.h"
 #include "engine/geGLHeaders.h"
+#include "engine/actors/geSkinMeshActor.h"
 
 namespace GE
 {
@@ -66,6 +67,14 @@ namespace GE
   --------------------------------------
   Rendering interface
   --------------------------------------*/
+
+  Shader* Renderer::getCurrentShader() {
+    return curShader;
+  }
+  
+  Material* Renderer::getCurrentMaterial() {
+    return curMaterial;
+  }
 
   void Renderer::beginFrame()
   {
@@ -163,23 +172,32 @@ namespace GE
     //Load deferred light shader once
     if (!deferredInit)
     {
-      deferredShader = new Shader;
-      deferredShader->registerUniform( "samplerVertex", GE_UNIFORM_TEXTURE, 1 );
-      deferredShader->registerUniform( "samplerNormal", GE_UNIFORM_TEXTURE, 1 );
-      deferredShader->registerUniform( "samplerColor", GE_UNIFORM_TEXTURE, 1 );
-      deferredShader->registerUniform( "samplerSpec", GE_UNIFORM_TEXTURE, 1 );
-      deferredShader->registerUniform( "samplerShadow", GE_UNIFORM_TEXTURE, 1 );
-      deferredShader->registerUniform( "castShadow", GE_UNIFORM_INT, 1 );
-      deferredShader->registerUniform( "winSize", GE_UNIFORM_FLOAT, 2 );
-      deferredShader->fromFile( "deferred_light.vert.c", "deferred_light.frag.c" );
+      shaderGeomFbuf = new Shader;
+      shaderGeomFbuf->fromFile( "shadevert_geom_fbuf.c", "shadefrag_geom_fbuf.c");
 
-      deferredSampler[ Deferred::Vertex ] = deferredShader->getUniformID( "samplerVertex" );
-      deferredSampler[ Deferred::Normal ] = deferredShader->getUniformID( "samplerNormal" );
-      deferredSampler[ Deferred::Color ] = deferredShader->getUniformID( "samplerColor" );
-      deferredSampler[ Deferred::Specular ] = deferredShader->getUniformID( "samplerSpec" );
-      deferredSampler[ Deferred::Shadow ] = deferredShader->getUniformID( "samplerShadow" );
-      deferredCastShadow = deferredShader->getUniformID( "castShadow" );
-      deferredWinSize = deferredShader->getUniformID( "winSize" );
+      shaderGeomSkinFbuf = new Shader;
+      shaderGeomSkinFbuf->registerVertexAttrib( "boneIndex" );
+      shaderGeomSkinFbuf->registerVertexAttrib( "boneWeight" );
+      shaderGeomSkinFbuf->registerUniform( "skinMatrix", GE_UNIFORM_MATRIX, 1 );
+      shaderGeomSkinFbuf->fromFile( "shadevert_geom_skin_fbuf.c", "shadefrag_geom_fbuf.c");
+
+      shaderLightSpot = new Shader;
+      shaderLightSpot->registerUniform( "samplerVertex", GE_UNIFORM_TEXTURE, 1 );
+      shaderLightSpot->registerUniform( "samplerNormal", GE_UNIFORM_TEXTURE, 1 );
+      shaderLightSpot->registerUniform( "samplerColor", GE_UNIFORM_TEXTURE, 1 );
+      shaderLightSpot->registerUniform( "samplerSpec", GE_UNIFORM_TEXTURE, 1 );
+      shaderLightSpot->registerUniform( "samplerShadow", GE_UNIFORM_TEXTURE, 1 );
+      shaderLightSpot->registerUniform( "castShadow", GE_UNIFORM_INT, 1 );
+      shaderLightSpot->registerUniform( "winSize", GE_UNIFORM_FLOAT, 2 );
+      shaderLightSpot->fromFile( "shadevert_light.c", "shadefrag_light.c" );
+
+      deferredSampler[ Deferred::Vertex ] = shaderLightSpot->getUniformID( "samplerVertex" );
+      deferredSampler[ Deferred::Normal ] = shaderLightSpot->getUniformID( "samplerNormal" );
+      deferredSampler[ Deferred::Color ] = shaderLightSpot->getUniformID( "samplerColor" );
+      deferredSampler[ Deferred::Specular ] = shaderLightSpot->getUniformID( "samplerSpec" );
+      deferredSampler[ Deferred::Shadow ] = shaderLightSpot->getUniformID( "samplerShadow" );
+      deferredCastShadow = shaderLightSpot->getUniformID( "castShadow" );
+      deferredWinSize = shaderLightSpot->getUniformID( "winSize" );
 
       glUseProgram( 0 );
     }
@@ -388,7 +406,7 @@ namespace GE
       ///////////////////////////////////////////////
 
       //Render into lighting accumulation texture
-      deferredShader->use();
+      shaderLightSpot->use();
       glUniform2f( deferredWinSize, (GLfloat) winW, (GLfloat) winH );
       glBindFramebuffer( GL_FRAMEBUFFER, deferredFB );
       glDrawBuffer( GL_COLOR_ATTACHMENT0 );
@@ -571,8 +589,26 @@ namespace GE
         
         node.actor->begin();
 
-        if (node.actor->isRenderable())
-          node.actor->render( NULL, GE_ANY_MATERIAL_ID );
+        if (!node.actor->isRenderable())
+          continue;
+
+        if (ClassOf(node.actor) == Class(SkinMeshActor))
+        {
+          curMaterial = NULL;
+          curShader = shaderGeomSkinFbuf;
+          shaderGeomSkinFbuf->use();
+        }
+        else
+        {
+          curMaterial = NULL;
+          curShader = shaderGeomFbuf;
+          shaderGeomFbuf->use();
+        }
+
+        node.actor->render( GE_ANY_MATERIAL_ID );
+
+        curShader = NULL;
+        glUseProgram(0);
 
         break;
       case TravEvent::End:
@@ -601,26 +637,36 @@ namespace GE
         if (mat == NULL) {
           
           //Use default if none
+          curMaterial = NULL;
+          curShader = NULL;
+
           Material::BeginDefault();
-          node.actor->render( NULL, GE_ANY_MATERIAL_ID );
+          node.actor->render( GE_ANY_MATERIAL_ID );
           
         }else if (ClassOf(mat) == Class(MultiMaterial)) {
           
-          //Render with each sub-material if multi
+          //Iterate through the sub materials
           MultiMaterial *mmat = (MultiMaterial*) mat;
           for (UintSize s=0; s<mmat->getNumSubMaterials(); ++s)
           {
+            //Render with each sub-material
+            curMaterial = mmat->getSubMaterial((MaterialID)s);
+            if (curMaterial != NULL) curShader = curMaterial->getShader();
+
             mmat->selectSubMaterial( (MaterialID)s );
             mmat->begin();
-            node.actor->render( mmat->getSubMaterial((MaterialID)s), (MaterialID)s );
+            node.actor->render( (MaterialID)s );
             mmat->end();
           }
         
         }else{
           
           //Render with given material
+          curMaterial = mat;
+          curShader = curMaterial->getShader();
+
           mat->begin();
-          node.actor->render( mat, GE_ANY_MATERIAL_ID );
+          node.actor->render( GE_ANY_MATERIAL_ID );
           mat->end();
         }
       }

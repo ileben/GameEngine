@@ -470,14 +470,13 @@ int main (int argc, char **argv)
   
   Shader *shader = new Shader;
   //shader->fromFile( "pixelphong.vert.c", "pixelphong.frag.c" );
-  shader->fromFile( "deferred_geometry.vert.c", "deferred_geometry.frag.c" );
+  shader->fromFile( "shadevert_geom_gbuf.c", "shadefrag_geom_gbuf.c" );
 
   Shader *skinShader = new Shader;
   skinShader->registerVertexAttrib( "boneIndex" );
   skinShader->registerVertexAttrib( "boneWeight" );
   skinShader->registerUniform( "skinMatrix", GE_UNIFORM_MATRIX, 1 );
-  skinShader->fromFile( "deferred_geometry_skin.vert.c", "deferred_geometry.frag.c" );
-  //skinShader->fromFile( "deferred_geometry.vert.c", "deferred_geometry.frag.c" );
+  skinShader->fromFile( "shadevert_geom_skin_gbuf.c", "shadefrag_geom_gbuf.c" );
 
   StandardMaterial matRedLogo;
   matRedLogo.setSpecularity( 0.5 );
@@ -595,11 +594,13 @@ int main (int argc, char **argv)
   cam3D.setFarClipPlane( 3000.0f );
 
   light = new SpotLight( Vector3(-200,200,-200), Vector3(1,-1,1), 60, 59 );
-  //light->setColor( Vector3( 1,.2,.2 ) );
+  light->setCastShadows( true );
+  //light->setDiffuseColor( Vector3( 1,.2,.2 ) );
   scene->addChild( light );
 
   Light* l = new SpotLight( Vector3(200,200,-200), Vector3(-1,-1,1), 60, 0 );
-  //l->setColor( Vector3( .2,.2,1 ) );
+  l->setCastShadows( true );
+  //l->setDiffuseColor( Vector3( .2,.2,1 ) );
   scene->addChild( l );
 
   //Start with Logo scene

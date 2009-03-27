@@ -7,6 +7,7 @@
 #include "engine/geGLHeaders.h"
 #include "engine/geShader.h"
 #include "engine/geShaders.h"
+#include "engine/geRenderer.h"
 
 namespace GE
 {
@@ -277,11 +278,12 @@ namespace GE
     }
   }
 
-  void SkinMeshActor::render (Material *material, MaterialID materialID)
+  void SkinMeshActor::render (MaterialID materialID)
   {
     //Make sure there's something to render
     if (character == NULL) return;
     SkinTriMesh::VertexFormat format;
+    Shader *shader = Kernel::GetInstance()->getRenderer()->getCurrentShader();
 
     //Walk sub meshes
     for (UintSize m=0; m<character->meshes.size(); ++m)
@@ -294,11 +296,10 @@ namespace GE
         meshMats[b] = skinMats[ mesh->mesh2skinMap[b] ];
 
       //Pass bone matrices to the shader
-      if (material != NULL) {
-        if (material->getShader() != NULL) {
-          Int32 uniMatrix = material->getShader()->getUniformID( "skinMatrix" );
-          glUniformMatrix4fv( uniMatrix, mesh->mesh2skinSize, GL_FALSE, (GLfloat*)meshMats );
-        }}
+      if (shader != NULL) {
+        Int32 uniMatrix = shader->getUniformID( "skinMatrix" );
+        glUniformMatrix4fv( uniMatrix, mesh->mesh2skinSize, GL_FALSE, (GLfloat*)meshMats );
+      }
 
       //Walk material index groups
       for (UintSize g=0; g<mesh->groups.size(); ++g)
@@ -310,28 +311,30 @@ namespace GE
           continue;
         
         //Pass the geometry to OpenGL
-        glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-        
-        /*
-        glEnableClientState( GL_VERTEX_ARRAY );
-        glEnableClientState( GL_NORMAL_ARRAY );
-        glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-        
-        glTexCoordPointer( 2, GL_FLOAT, (GLsizei) mesh->data.elementSize(),
-                           mesh->data.buffer() );
 
-        glNormalPointer( GL_FLOAT, 0, this->skinNormals );
+        if (mesh->isOnGpu)
+        {
+          GE_glBindBuffer( GL_ARRAY_BUFFER, mesh->dataVBO );
+          GE_glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, mesh->indexVBO );
+          beginVertexData( shader, format, NULL );
+          glDrawElements( GL_TRIANGLES, grp.count, GL_UNSIGNED_INT,
+                          Util::PtrOff( 0, grp.start * sizeof(VertexID)) );
+        }
+        else
+        {
+          beginVertexData( shader, format, mesh->data.buffer() );
+          glDrawElements( GL_TRIANGLES, grp.count, GL_UNSIGNED_INT,
+                          mesh->indices.buffer() + grp.start);
+        }
 
-        glVertexPointer( 3, GL_FLOAT, 0, this->skinVertices );
-        */
+        endVertexData( shader, format );
 
-        beginVertexData( material, format, mesh->data.buffer() );
+        if (mesh->isOnGpu)
+        {
+          glBindBuffer( GL_ARRAY_BUFFER, 0 );
+          glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );
+        }
 
-        glDrawElements( GL_TRIANGLES, grp.count, GL_UNSIGNED_INT,
-                        mesh->indices.buffer() + grp.start);
-
-        endVertexData( material, format );
-        
         if (materialID != GE_ANY_MATERIAL_ID)
           break;
       }

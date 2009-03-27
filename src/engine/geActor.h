@@ -84,7 +84,7 @@ namespace GE
     virtual void prepare () {}
     virtual void begin ();
     //- material begin
-    virtual void render (Material *material, MaterialID materialID) {}
+    virtual void render (MaterialID materialID) {}
     //- material end
     //- recurse to children
     virtual void end ();

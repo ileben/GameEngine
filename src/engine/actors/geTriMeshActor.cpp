@@ -2,6 +2,8 @@
 #include "engine/geTriMesh.h"
 #include "engine/geGLHeaders.h"
 #include "engine/geShader.h"
+#include "engine/geKernel.h"
+#include "engine/geRenderer.h"
 
 namespace GE
 {
@@ -32,7 +34,7 @@ namespace GE
     return mesh;
   }
 
-  void TriMeshActor::beginVertexData (Material *material, const VFormat &format, void *data)
+  void TriMeshActor::beginVertexData (Shader *shader, const VFormat &format, void *data)
   {
     for (UintSize m=0; m<format.members.size(); ++m)
     {
@@ -63,9 +65,8 @@ namespace GE
         glEnableClientState( GL_NORMAL_ARRAY );
         break;
       case VFTarget::Attribute:
-        if (material == NULL) break;
-        if (material->getShader() == NULL) break;
-        Int32 glattrib = material->getShader()->getVertexAttribID( member.attribID );
+        if (shader == NULL) break;
+        Int32 glattrib = shader->getVertexAttribID( member.attribID );
         glVertexAttribPointer( glattrib, member.count, gltype, glnormalize, (GLsizei) format.size, memberData );
         glEnableVertexAttribArray( glattrib );
         break;
@@ -73,7 +74,7 @@ namespace GE
     }
   }
 
-  void TriMeshActor::endVertexData (Material *material, const VFormat &format)
+  void TriMeshActor::endVertexData (Shader *shader, const VFormat &format)
   {
     for (UintSize m=0; m<format.members.size(); ++m)
     {
@@ -90,20 +91,20 @@ namespace GE
         glDisableClientState( GL_NORMAL_ARRAY );
         break;
       case VFTarget::Attribute:
-        if (material == NULL) break;
-        if (material->getShader() == NULL) break;
-        Int32 glattrib = material->getShader()->getVertexAttribID( member.attribID );
+        if (shader == NULL) break;
+        Int32 glattrib = shader->getVertexAttribID( member.attribID );
         glDisableVertexAttribArray( glattrib );
         break;
       }
     }
   }
   
-  void TriMeshActor::render (Material *material, MaterialID materialID)
+  void TriMeshActor::render (MaterialID materialID)
   {
     //Make sure there's something to render
     if (mesh == NULL) return;
     TriMesh::VertexFormat format;
+    Shader *shader = Kernel::GetInstance()->getRenderer()->getCurrentShader();
 
     //Walk material index groups
     for (UintSize g=0; g<mesh->groups.size(); ++g)
@@ -115,27 +116,28 @@ namespace GE
         continue;
       
       //Pass the geometry to OpenGL
-      glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-/*
+
       if (mesh->isOnGpu)
       {
-        GE_glBindBuffer( mesh->dataVBO, GL_ARRAY_BUFFER );
-        GE_glBindBuffer( mesh->indexVBO, GL_ELEMENT_ARRAY_BUFFER );
-        beginVertexData( material, format, NULL );
+        GE_glBindBuffer( GL_ARRAY_BUFFER, mesh->dataVBO );
+        GE_glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, mesh->indexVBO );
+        beginVertexData( shader, format, NULL );
+        glDrawElements( GL_TRIANGLES, grp.count, GL_UNSIGNED_INT,
+                        Util::PtrOff( 0, grp.start * sizeof(VertexID)) );
       }
-      else*/ beginVertexData( material, format, mesh->data.buffer() );
+      else
+      {
+        beginVertexData( shader, format, mesh->data.buffer() );
+        glDrawElements( GL_TRIANGLES, grp.count, GL_UNSIGNED_INT,
+                        mesh->indices.buffer() + grp.start);
+      }
 
-      glBindBuffer( mesh->dataVBO, GL_ARRAY_BUFFER );
-
-      glDrawElements( GL_TRIANGLES, grp.count, GL_UNSIGNED_INT,
-                      mesh->indices.buffer() + grp.start);
-
-      endVertexData( material, format );
+      endVertexData( shader, format );
 
       if (mesh->isOnGpu)
       {
-        glBindBuffer( 0, GL_ARRAY_BUFFER );
-        glBindBuffer( 0, GL_ELEMENT_ARRAY_BUFFER );
+        glBindBuffer( GL_ARRAY_BUFFER, 0 );
+        glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );
       }
 
       if (materialID != GE_ANY_MATERIAL_ID)
