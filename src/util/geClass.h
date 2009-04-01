@@ -252,7 +252,8 @@ namespace GE
     : public IClass2 <Name, Super> { public:
     
     void* newInstance (int count=1)
-      { return (void*) new Name [count]; }
+      { if (count == 1) return (void*) new Name;
+        else return (void*) new Name [count]; }
     
     void* newInPlace (void *pwhere)
       { return (void*) new (pwhere) Name; }
@@ -268,7 +269,8 @@ namespace GE
     : public IClass2 <Name, Super > { public:
     
     void* newInstance (int count=1)
-      { return (void*) new Name [count]; }
+      { if (count == 1) return (void*) new Name;
+        return (void*) new Name [count]; }
     
     void* newInPlace (void *pwhere)
       { return (void*) new (pwhere) Name; }

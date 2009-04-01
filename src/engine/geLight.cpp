@@ -60,6 +60,16 @@ namespace GE
     setMatrix( m );
   }
 
+  Vector3 Light::getDirection ()
+  {
+    return getMatrix().getColumn(2).xyz();
+  }
+
+  Vector3 Light::getPosition ()
+  {
+    return getMatrix().getColumn(3).xyz();
+  }
+
   Matrix4x4 Light::getProjection (Float nearClip, Float farClip)
   {
     Matrix4x4 m;

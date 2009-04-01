@@ -36,6 +36,8 @@ namespace GE
 
     void setDirection (const Vector3 &dir);
     void setPosition (const Vector3 &dir);
+    Vector3 getDirection ();
+    Vector3 getPosition ();
 
     void setAttenuationEnd (Float end);
     Float getAttenuationEnd ();

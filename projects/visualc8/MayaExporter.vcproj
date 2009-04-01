@@ -64,7 +64,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/export:initializePlugin /export:uninitializePlugin "
-				AdditionalDependencies="GameUtil.lib Foundation.lib OpenMaya.lib OpenMayaAnim.lib"
+				AdditionalDependencies="Foundation.lib OpenMaya.lib OpenMayaAnim.lib GameUtil.lib GameIO.lib GameImage.lib GameEngine.lib jpeg.lib libpng.lib zlib.lib"
 				OutputFile="$(OutDir)\GExporter4Maya.mll"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;C:\Program Files\Autodesk\Maya2009\lib&quot;"
@@ -143,7 +143,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/export:initializePlugin /export:uninitializePlugin "
-				AdditionalDependencies="GameUtil.lib Foundation.lib OpenMaya.lib OpenMayaAnim.lib"
+				AdditionalDependencies="Foundation.lib OpenMaya.lib OpenMayaAnim.lib GameUtil.lib GameIO.lib GameImage.lib GameEngine.lib jpeg.lib libpng.lib zlib.lib"
 				OutputFile="$(OutDir)\GExporter4Maya.mll"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;C:\Program Files\Autodesk\Maya2009\lib&quot;"

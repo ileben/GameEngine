@@ -41,6 +41,24 @@ namespace GE
     onMatrixChanged();
   }
 
+  void Actor::lookAt (const Vector3 &look, const Vector3 &up)
+  {
+    //Assume look is to be the zAxis in world space
+    Vector3 xAxis = Vector::Cross( up, look );
+    Vector3 yAxis = Vector::Cross( look, xAxis );
+    actor2world.setColumn( 0, xAxis.xyz(0.0f) );
+    actor2world.setColumn( 1, yAxis.xyz(0.0f) );
+    actor2world.setColumn( 2, look.xyz(0.0f) );
+    actor2world.affineNormalize();
+    onMatrixChanged();
+  }
+
+  void Actor::lookInto (const Vector3 &point, const Vector3 &up)
+  {
+    Vector3 center = actor2world.getColumn(3).xyz();
+    lookAt( point - center, up );
+  }
+
   Matrix4x4 Actor::getWorldMatrix ()
   {
     Actor *p = parent;
@@ -81,17 +99,6 @@ namespace GE
     Matrix4x4 m;
     m.fromAxisAngle( axis, angle );
     mulMatrixLeft( m );
-  }
-
-  void Actor::lookAt (const Vector3 &look, const Vector3 &up)
-  {
-    //Assume look is to be the zAxis in world space
-    Vector3 xAxis = Vector::Cross( up, look );
-    Vector3 yAxis = Vector::Cross( look, xAxis );
-    actor2world.setColumn( 0, xAxis.xyz(0.0f) );
-    actor2world.setColumn( 1, yAxis.xyz(0.0f) );
-    actor2world.setColumn( 2, look.xyz(0.0f) );
-    actor2world.affineNormalize();
   }
 
   void Actor::setMaterial(Material *mat)
