@@ -52,6 +52,11 @@
 //General definitions
 namespace GE
 {
+  //Sizeless integer type
+  typedef int                  Int;
+  typedef unsigned int         Uint;
+
+  //Sized integer types (TODO: make sure this is true)
   typedef char                 Int8;
   typedef unsigned char        Uint8;
   typedef unsigned char        Byte;
@@ -63,6 +68,7 @@ namespace GE
   typedef unsigned long long   Uint64;
   typedef std::size_t          UintSize;
   
+  //Float types
   typedef float      Float32;
   typedef double     Float64;
   typedef Float32    Float;

@@ -1,19 +1,6 @@
 
-#include <maya/MGlobal.h>
-#include <maya/MFnPlugin.h>
-#include <maya/MPxCommand.h>
-#include <maya/MItDag.h>
-#include <maya/MDagPath.h>
-#include <maya/MFnDagNode.h>
-#include <maya/MSelectionList.h>
-#include <maya/MItSelectionList.h>
-#include <maya/MFnMesh.h>
-#include <maya/MFnSkinCluster.h>
-#include <maya/MFloatPointArray.h>
-
-#include <util/geUtil.h>
-#include <engine/geEngine.h>
-using namespace GE;
+#include "geMaya.h"
+#include <maya/MFnPlugin.h> //Must only be included once!
 
 /*
 This MEL script links the C++ code and the GUI. */
@@ -30,7 +17,7 @@ global proc GCmdOpen() \
   window -title \"GExporter\" -widthHeight 199 500 GWndMain; \
   \
   scrollLayout -childResizable true -width 200; \
-  columnLayout -adjustableColumn true -cw 100 -cat \"both\" 5 -rs 10 GColMain; \
+  columnLayout -adjustableColumn true -cw 100 -cat \"both\" 0 -rs 0 GColMain; \
   \
   frameLayout -label \"Mesh\" -bv true -bs \"etchedIn\" -mh 10 -mw 10 -collapsable true; \
   columnLayout -columnAlign \"left\" -adjustableColumn true -rs 2; \
@@ -47,7 +34,7 @@ global proc GCmdOpen() \
   setParent GColMain; \
   frameLayout -label \"Output\" -bv true -bs \"etchedIn\" -mh 10 -mw 10 -collapsable true; \
   columnLayout -columnAlign \"left\" -adjustableColumn true -rs 2 GColSkin; \
-  checkBox -label \"Export skin\" -onCommand \"GCmdSkinOn\" -offCommand \"GCmdSkinOff\" GChkSkin; \
+  checkBox -label \"Export with skin\" -onCommand \"GCmdSkinOn\" -offCommand \"GCmdSkinOff\" GChkSkin; \
   separator -height 10 -style \"none\"; \
   text -label \"File name:\"; \
   \
@@ -87,14 +74,11 @@ global proc GCmdCreateMenu() \
 GCmdCreateMenu; \
 ";
 
-static MObject g_meshNode;
-static MObject g_jointNode;
-static bool g_gotMeshNode = false;
-static bool g_gotJointNode = false;
-static bool g_chkExportSkin = false;
-static CharString g_outFileName;
-static CharString g_statusText;
-PolyMesh* exportMesh( const MObject &meshNode );
+MObject g_meshNode;
+bool g_gotMeshNode = false;
+bool g_chkExportSkin = false;
+CharString g_outFileName;
+CharString g_statusText;
 
 /*
 ---------------------------------------
@@ -137,6 +121,12 @@ void setStatus (const CharString &msg)
   g_statusText += msg + "\\n";
   CharString cmd = CharString("text -edit -label \"") + g_statusText + "\" GTxtStatus";
   MGlobal::executeCommand( cmd.buffer() );
+}
+
+void clearStatus ()
+{
+  g_statusText = "";
+  MGlobal::executeCommand( "text -edit -label \"\" GTxtStatus" );
 }
 
 /*
@@ -186,12 +176,12 @@ public:
         MObject dagSubObj = dagSubIt.currentItem();
         MFnDagNode dagSubNode( dagSubObj );
 
-        //We don't want intermediate object or transform nodes
+        //Skip intermediate objects and transform nodes
         if (dagSubNode.isIntermediateObject()) continue;
         if (dagSubObj.apiType() == MFn::kTransform) continue;
 
         //Check for the requested api type
-        if (!dagSubObj.hasFn( nodeType )) continue;
+        if (!dagSubObj.hasFn( nodeType )) break;
         pickObj = dagSubIt.currentItem();
         pickFound = true;
         break;
@@ -237,28 +227,6 @@ class CmdPickMesh : public CmdPickToButton
 };
 
 /*
----------------------------------------
-Command for the PickJoint button
----------------------------------------*/
-
-class CmdPickJoint : public CmdPickToButton
-{ public:
-  CmdPickJoint() : CmdPickToButton("GBtnPickJoint", MFn::kJoint) {}
-  static void *creator() { return new CmdPickJoint; }
-  virtual MStatus doIt (const MArgList &args)
-  {
-    //Pick a node
-    if (CmdPickToButton::doIt( args ) == MStatus::kFailure)
-      return MStatus::kFailure;
-
-    //Store the picked node
-    g_jointNode = pickObj;
-    g_gotJointNode = true;
-    return MStatus::kSuccess;
-  }
-};
-
-/*
 ------------------------------------------
 Command for the "Export skin" checkbox
 ------------------------------------------*/
@@ -269,7 +237,7 @@ class CmdSkinOn : public MPxCommand
   virtual MStatus doIt (const MArgList &args)
   {
     g_chkExportSkin = true;
-    MGlobal::executeCommand( "frameLayout -edit -vis true GFrmSkin" );
+    //MGlobal::executeCommand( "frameLayout -edit -vis true GFrmSkin" );
     return MStatus::kSuccess;
   }
 };
@@ -280,7 +248,7 @@ class CmdSkinOff : public MPxCommand
   virtual MStatus doIt (const MArgList &args)
   {
     g_chkExportSkin = false;
-    MGlobal::executeCommand( "frameLayout -edit -vis false GFrmSkin" );
+    //MGlobal::executeCommand( "frameLayout -edit -vis false GFrmSkin" );
     return MStatus::kSuccess;
   }
 };
@@ -308,70 +276,6 @@ class CmdBrowseFile : public MPxCommand
 };
 
 /*
----------------------------------------
-Command for the Export button
----------------------------------------*/
-
-class CmdExport : public MPxCommand
-{
-public:
-  static void* creator () { return new CmdExport(); }
-  virtual MStatus doIt (const MArgList &args)
-  {
-    setStatus( "Exporting..." );
-    trace( "Export: starting..." );
-
-    //Make sure mesh node was picked
-    if (!g_gotMeshNode) {
-      setStatus( "Mesh node missing!\\nExport Aborted." );
-      trace( "Export: mesh node missing!" );
-      return MStatus::kFailure;
-    }
-
-    //Make sure an output file was picked
-    CharString outFileName = getTextFieldText( "GTxtFile" );
-    if (outFileName.length() == 0) {
-      setStatus( "Output file missing!\\nAborted." );
-      return MStatus::kFailure;
-    }
-
-    //Export mesh data
-    PolyMesh *outPolyMesh = exportMesh( g_meshNode );
-
-    //Triangulate
-    outPolyMesh->triangulate();
-    outPolyMesh->updateNormals( ShadingModel::Smooth );
-    TriMesh *outTriMesh = new TriMesh;
-    outTriMesh->fromPoly( outPolyMesh, NULL );
-
-    //Serialize
-    void *outData;
-    UintSize outSize;
-    SerializeManager sm;
-    sm.save( outTriMesh, &outData, &outSize );
-
-    //Write to file
-    //File outFile( "C:\\Projects\\Programming\\GameEngine\\test\\mayatest.pak" );
-    File outFile( outFileName );
-    if (outFile.open( "wb" )) {
-      outFile.write( outData, (int)outSize );
-      outFile.close();
-    }else {
-      setStatus( "Failed writing to file." );
-      trace( "Export: failed opening output file for writing!" );
-    }
-
-    //Cleanup
-    delete outPolyMesh;
-    delete outTriMesh;
-
-    setStatus( "Done." );
-    trace( "Export: done" );
-    return MStatus::kSuccess;
-  }
-};
-
-/*
 ------------------------------------------------------
 Command that sets the GUI up in the previous state
 after is has been reopened.
@@ -387,14 +291,9 @@ class CmdRestoreGui : public MPxCommand
       setButtonLabel( "GBtnPickMesh", node.name().asChar() );
     }
 
-    if (g_gotJointNode) {
-      MFnDagNode node( g_jointNode );
-      setButtonLabel( "GBtnPickJoint", node.name().asChar() );
-    }
-
     if (g_chkExportSkin) {
       MGlobal::executeCommand( "checkBox -edit -value true GChkSkin" );
-      MGlobal::executeCommand( "frameLayout -edit -vis true GFrmSkin" );
+      //MGlobal::executeCommand( "frameLayout -edit -vis true GFrmSkin" );
     }
 
     if (g_outFileName.length() > 0)
@@ -405,89 +304,73 @@ class CmdRestoreGui : public MPxCommand
 };
 
 /*
--------------------------------------------------------
-Functions for exporting of data
--------------------------------------------------------*/
+---------------------------------------
+Command for the Export button
+---------------------------------------*/
 
-Vector3 exportPoint( const MFloatPoint &p)
+class CmdExport : public MPxCommand
 {
-  return Vector3( p.x, p.y, -p.z );
-}
-
-PolyMesh* exportMesh( const MObject &meshNode )
-{
-  MStatus status;
-  MFloatPointArray meshPoints;
-  MIntArray meshNumCorners;
-  MIntArray meshIndices;
-  MIntArray meshFaceIndices;
-  Uint32 meshNumPoints;
-  Uint32 meshNumFaces;
-
-  ArrayList<PolyMesh::Vertex*> outFaceVerts;
-  ArrayList<PolyMesh::Vertex*> outVerts;
-  PolyMesh *outPolyMesh = new PolyMesh;
-  Uint32 nextVertIndex = 0;
-
-  //Get input mesh points and indices
-  MFnMesh mesh( meshNode, &status );
-  status = mesh.getPoints( meshPoints, MSpace::kPostTransform );
-  if (status == MStatus::kInvalidParameter)
-    mesh.getPoints( meshPoints, MSpace::kObject );
-
-  mesh.getVertices( meshNumCorners, meshIndices );
-  meshNumPoints = meshPoints.length();
-  meshNumFaces = mesh.numPolygons();
-
-  for (Uint32 p=0; p<meshNumPoints; ++p)
+public:
+  static void* creator () { return new CmdExport(); }
+  virtual MStatus doIt (const MArgList &args)
   {
-    //Add new vertex to the mesh
-    PolyMesh::Vertex *outVert = outPolyMesh->addVertex();
-    outVert->point = exportPoint( meshPoints[ p ] );
-    outVerts.pushBack( outVert );
-  }
+    clearStatus();
+    setStatus( "Exporting..." );
+    trace( "Export: starting..." );
 
-  for (Uint32 f=0; f<meshNumFaces; ++f)
-  {
-    //Get corner indices
-    meshFaceIndices.clear();
-    mesh.getPolygonVertices( f, meshFaceIndices);
-    Uint32 meshNumFaceIndices = meshFaceIndices.length();
+    void *outData = NULL;
+    UintSize outSize = 0;
 
-    //Init the corner vertex array
-    outFaceVerts.reserve( meshNumFaceIndices );
-    outFaceVerts.clear();
-
-    //Add vertices into the corner array
-    for (Uint32 c=0; c<meshNumFaceIndices; ++c)
-    {     
-      //Make sure we have the point available
-      int index = meshFaceIndices[ c ];
-      if ((UintSize)index >= outVerts.size()) {
-        trace( "ExportMesh: invalid vertex index encountered!" );
-        break;
-      }
-
-      //Add vertex to the array
-      outFaceVerts.pushBack( outVerts[ index ] );
-      nextVertIndex++;
+    /*
+    //Make sure an output file was picked
+    CharString outFileName = getTextFieldText( "GTxtFile" );
+    if (outFileName.length() == 0) {
+      setStatus( "Output file missing!\\nAborted." );
+      return MStatus::kFailure;
     }
-    
-    //Add new face to the mesh
-    PolyMesh::Face *face = outPolyMesh->addFace(
-      outFaceVerts.buffer(), (int)outFaceVerts.size() );
-    if (face == NULL) {
-      trace( "ExportMesh: invalid face topology encountered!" );
-      continue;
+    */
+
+    //Make sure mesh node was picked
+    if (!g_gotMeshNode) {
+      setStatus( "Mesh node missing!\\nAborted." );
+      trace( "Export: mesh node missing!" );
+      return MStatus::kFailure;
     }
 
-    //Assign face properties
-    face->smoothGroups = 1;
-  }
+    if (g_chkExportSkin)
+    {
+      //Export skin pose
+      exportWithSkin( &outData, &outSize );
+    }
+    else
+    {
+      //Export static mesh
+      exportNoSkin( &outData, &outSize );
+    }
 
-  trace( "ExportMesh: done" );
-  return outPolyMesh;
-}
+    //Make sure something was actually exported
+    if (outSize == 0) {
+      setStatus( "Zero data size!\\nAborted." );
+      trace( "Export: received zero data!" );
+      return MStatus::kFailure;
+    }
+
+    //Write to file
+    File outFile( "C:\\Projects\\Programming\\GameEngine\\test\\mayatest.pak" );
+    //File outFile( outFileName );
+    if (outFile.open( "wb" )) {
+      outFile.write( outData, (int)outSize );
+      outFile.close();
+    }else {
+      setStatus( "Failed writing to file." );
+      trace( "Export: failed opening output file for writing!" );
+    }
+
+    setStatus( "Done." );
+    trace( "Export: done" );
+    return MStatus::kSuccess;
+  }
+};
 
 /*
 --------------------------------------------------------------
@@ -500,13 +383,14 @@ MStatus initializePlugin ( MObject obj )
 
   //Reset global data
   g_gotMeshNode = false;
-  g_gotJointNode = false;
+  g_chkExportSkin = false;
+  g_outFileName = "";
+  g_statusText = "";
 
   //Init plugin
 	MFnPlugin plugin( obj, "RedPill Studios", "0.1", "Any");
   plugin.registerCommand( "GCmdExport", CmdExport::creator );
   plugin.registerCommand( "GCmdPickMesh", CmdPickMesh::creator );
-  plugin.registerCommand( "GCmdPickJoint", CmdPickJoint::creator );
   plugin.registerCommand( "GCmdRestoreGui", CmdRestoreGui::creator );
   plugin.registerCommand( "GCmdSkinOn", CmdSkinOn::creator );
   plugin.registerCommand( "GCmdSkinOff", CmdSkinOff::creator );
@@ -537,7 +421,6 @@ MStatus uninitializePlugin( MObject obj)
   MFnPlugin plugin( obj );
   plugin.deregisterCommand( "GCmdExport" );
   plugin.deregisterCommand( "GCmdPickMesh" );
-  plugin.deregisterCommand( "GCmdPickJoint" );
   plugin.deregisterCommand( "GCmdRestoreGui" );
   plugin.deregisterCommand( "GCmdSkinOn" );
   plugin.deregisterCommand( "GCmdSkinOff" );

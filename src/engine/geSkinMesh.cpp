@@ -93,7 +93,7 @@ namespace GE
 
     //NEW sub mesh if too many bones
     if (newBoneCount > maxBones)
-      subMeshCount;
+      return subMeshCount;
     
     //SAME sub mesh
     return subMeshCount-1;

@@ -1308,6 +1308,18 @@ namespace GE
       delete[] buf;
       return out;
     }
+
+    static BasicString<CharType> FHex (int value) {
+      return FromHex( value );
+    }
+
+    static BasicString<CharType> FInt (int value) {
+      return FromInteger( value );
+    }
+
+    static BasicString<CharType> FFloat (float value) {
+      return FromFloat( value );
+    }
     
     void format(char *format, ...)
     {

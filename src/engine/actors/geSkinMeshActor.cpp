@@ -85,7 +85,7 @@ namespace GE
   {
     for (UintSize b=0; b < character->pose->bones.size(); ++b) {
       boneRotations[ b ] = character->pose->bones[ b ].localR;
-      boneTranslations[ b ] = character->pose->bones[ b ].localT.xyz();
+      boneTranslations[ b ] = character->pose->bones[ b ].localT;
     }
   }
 
@@ -282,7 +282,7 @@ namespace GE
   {
     //Make sure there's something to render
     if (character == NULL) return;
-    SkinTriMesh::VertexFormat format;
+    VFormat *format = (character->mesh != NULL ? character->mesh->getVertexFormat() : NULL);
     Shader *shader = Kernel::GetInstance()->getRenderer()->getCurrentShader();
 
     //Walk sub meshes
@@ -316,18 +316,18 @@ namespace GE
         {
           GE_glBindBuffer( GL_ARRAY_BUFFER, mesh->dataVBO );
           GE_glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, mesh->indexVBO );
-          beginVertexData( shader, format, NULL );
+          beginVertexData( shader, *format, NULL );
           glDrawElements( GL_TRIANGLES, grp.count, GL_UNSIGNED_INT,
                           Util::PtrOff( 0, grp.start * sizeof(VertexID)) );
         }
         else
         {
-          beginVertexData( shader, format, mesh->data.buffer() );
+          beginVertexData( shader, *format, mesh->data.buffer() );
           glDrawElements( GL_TRIANGLES, grp.count, GL_UNSIGNED_INT,
                           mesh->indices.buffer() + grp.start);
         }
 
-        endVertexData( shader, format );
+        endVertexData( shader, *format );
 
         if (mesh->isOnGpu)
         {

@@ -314,14 +314,19 @@ void loadCharacter (String fileName)
   //Load character data
   SerializeManager sm;
   character = (MaxCharacter*) sm.load( (void*)data.buffer() );
+
+  void *data; UintSize size;
+  SerializeManager sm2;
+  sm2.save( character, &data, &size);
   
-  printf ("Imported %d verts, %d faces, %d animations\n",
+  printf ("Character: %d verts, %d faces, %d animations\n",
           character->mesh->getVertexCount(),
           character->mesh->getFaceCount(),
           character->anims.size());
   
-  printf ("Animation name: '%s'\n",
-          character->anims.first()->name.buffer());
+  for (UintSize a=0; a<character->anims.size(); ++a)
+    printf ("Animation name: '%s'\n",
+            character->anims[ a ]->name.buffer());
 
   //Split into 24-bone sub meshes
   SkinSuperToSubMesh splitter( character->mesh );
@@ -334,42 +339,6 @@ void loadCharacter (String fileName)
     character->meshes.pushBack( mesh );
     mesh->sendToGpu();
   }
-
-  /*
-  //Add vertices to the mesh
-  polyMesh = new SPolyMesh;
-  ArrayList <SPolyMesh::Vertex*> verts( inMesh->verts.size() );
-  for (UintSize v=0; v<inMesh->verts.size(); ++v)
-  {
-    SPolyMesh::Vertex *vert = (SPolyMesh::Vertex*) polyMesh->addVertex();
-    vert->point = inMesh->verts[v].point;
-    for (int b=0; b<4; ++b) {
-      vert->boneIndex[b] = inMesh->verts[v].boneIndex[b];
-      vert->boneWeight[b] = inMesh->verts[v].boneWeight[b]; }
-    verts.pushBack (vert);
-  }
-  
-  //Add indexed faces to the mesh
-  int nextIndex = 0;
-  for (UintSize f=0; f<inMesh->faces.size(); ++f)
-  {
-    int numCorners = inMesh->faces[f].numCorners;
-    HMesh::Vertex **corners = new HMesh::Vertex*[ numCorners ];
-    
-    for (int c=0; c<numCorners; ++c) {
-      Uint32 vertIndex = inMesh->indices[ nextIndex++ ];
-      if (vertIndex > inMesh->verts.size()) {
-        printf( "Invalid vertex: %d\n", vertIndex );
-        vertIndex = 0; }
-      corners[c] = verts[ vertIndex ];
-    }
-    
-    SPolyMesh::Face *face = (SPolyMesh::Face*) polyMesh->addFace( corners, numCorners );
-    if (face != NULL) face->smoothGroups = inMesh->faces[f].smoothGroups;
-    
-    delete[] corners;
-  }
-  */ 
 }
 
 void loadMesh (const CharString &fileName)
@@ -429,17 +398,24 @@ int main (int argc, char **argv)
   scene = new Scene;
 
   //Load model
-  loadMesh( "mayatest.pak" );
+  //loadMesh( "mayatest.pak" );
+  loadCharacter( "mayatest.pak" );
+  TriMesh *meshRender = NULL;
+  /*
+  character->mesh->sendToGpu();
+  triMeshActor = new TriMeshActor;
+  triMeshActor->setMesh( character->mesh );
+  triMeshActor->setMaterial( matWhite );
+  actorRender = triMeshActor;
+  meshRender = character->mesh;*/
   
   if (mesh != NULL)
   {
     triMeshActor = new TriMeshActor;
     triMeshActor->setMesh( mesh );
     triMeshActor->setMaterial( matWhite );
-    scene->addChild( triMeshActor );
-
     actorRender = triMeshActor;
-    findBounds( mesh, actorRender->getWorldMatrix() );
+    meshRender = mesh;
   }
 
   if (character != NULL)
@@ -447,27 +423,29 @@ int main (int argc, char **argv)
     skinMeshActor = new SkinMeshActor;
     skinMeshActor->setMesh( character );
     skinMeshActor->setMaterial( matWhiteSkin );
-    scene->addChild( skinMeshActor );
-
     actorRender = skinMeshActor;
-    findBounds( character->mesh, actorRender->getWorldMatrix() );
+    meshRender = character->mesh;
   }
 
+  //Add to scene and find bounding box
+  scene->addChild( actorRender );
+  findBounds( meshRender, actorRender->getWorldMatrix() );
+  
   //Scale to [100,100] range and center
   Vector3 size = boundsMax - boundsMin;
   Float sizemax = Util::Max( Util::Max( size.x, size.y), size.z );
   Float scale = 100.0f / sizemax;
   actorRender->translate( -center.x, -center.y, -center.z );
   actorRender->scale( scale );
-  findBounds( mesh, actorRender->getWorldMatrix() );
-
+  findBounds( meshRender, actorRender->getWorldMatrix() );
+  
   //Create floor cube
   TriMesh *cubeMesh = new CubeMesh;
   TriMeshActor *cube = new TriMeshActor;
   cube->setMaterial( matWhite );
   cube->setMesh( cubeMesh );
   cube->scale( 300, 10, 300 );
-  cube->translate( 0, -70, 0 );
+  cube->translate( 0, -100, 0 );
   scene->addChild( cube );
 
   //Create axes
@@ -492,7 +470,7 @@ int main (int argc, char **argv)
 
   cam3D = new Camera3D;
   cam3D->setCenter( center );
-  cam3D->translate( 0,0,-400 );
+  cam3D->translate( 0,0,-300 );
   cam3D->orbitV( Util::DegToRad( 20 ), true );
   cam3D->orbitH( Util::DegToRad( 30 ), true );
   cam3D->setNearClipPlane( 1.0f );

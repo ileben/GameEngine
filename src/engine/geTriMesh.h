@@ -121,6 +121,9 @@ namespace GE
 
     typedef TriMeshTraits::Vertex Vertex;
     typedef TriMeshTraits::VertexFormat VertexFormat;
+    virtual VFormat* getVertexFormat() {
+      static VertexFormat vertexFormat;
+      return &vertexFormat; }
     
     struct IndexGroup
     {
@@ -196,6 +199,9 @@ namespace GE
 
     typedef typename Derived::Vertex Vertex;
     typedef typename Derived::VertexFormat VertexFormat;
+    virtual VFormat* getVertexFormat() {
+      static VertexFormat vertexFormat;
+      return &vertexFormat; }
 
     TriMeshBase (SerializeManager *sm) : Base (sm)
     {}

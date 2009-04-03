@@ -1,10 +1,10 @@
-<?xml version="1.0" encoding="Windows-1252"?>
+<?xml version="1.0" encoding="windows-1250"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
 	Name="MayaExporter"
-	ProjectGUID="{E932DD27-A781-4306-928A-A508D0FFF31E}"
-	RootNamespace="MayaExporter"
+	ProjectGUID="{A018E77F-1BB2-4107-828E-21D50F6D58CB}"
+	RootNamespace="TestCollision"
 	Keyword="Win32Proj"
 	>
 	<Platforms>
@@ -17,11 +17,11 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="$(ConfigurationName)\bin"
-			IntermediateDirectory="$(ConfigurationName)\$(ProjectName)"
+			OutputDirectory="Debug\bin"
+			IntermediateDirectory="Debug\$(ProjectName)"
 			ConfigurationType="2"
-			UseOfMFC="0"
-			CharacterSet="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			CharacterSet="2"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -41,8 +41,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../../src; &quot;C:\Program Files\Autodesk\Maya2009\include&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;NT_APP;REQUIRE_IOSTREAM"
+				AdditionalIncludeDirectories="../../src;&quot;C:\Program Files\Autodesk\Maya2009\include&quot;"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;NT_PLUGIN"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -50,7 +50,6 @@
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="4"
-				CompileAs="0"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -64,12 +63,12 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/export:initializePlugin /export:uninitializePlugin "
-				AdditionalDependencies="Foundation.lib OpenMaya.lib OpenMayaAnim.lib GameUtil.lib GameIO.lib GameImage.lib GameEngine.lib jpeg.lib libpng.lib zlib.lib"
-				OutputFile="$(OutDir)\GExporter4Maya.mll"
+				AdditionalDependencies="Foundation.lib OpenMaya.lib OpenMayaAnim.lib GameEngine.lib GameUtil.lib GameIO.lib GameImage.lib jpeg.lib libpng.lib zlib.lib"
+				OutputFile="$(OutDir)/GameExporter4Maya.mll"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;C:\Program Files\Autodesk\Maya2009\lib&quot;"
-				IgnoreAllDefaultLibraries="false"
+				AdditionalLibraryDirectories="Debug/bin;&quot;C:\Program Files\Autodesk\Maya2009\lib&quot;"
 				GenerateDebugInformation="true"
+				ProgramDatabaseFile="$(IntDir)/$(ProjectName).pdb"
 				SubSystem="1"
 				TargetMachine="1"
 			/>
@@ -96,15 +95,16 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				CommandLine="copy $(TargetPath) $(SolutionDir)\..\..\test\$(TargetName)_DEBUG.exe"
 			/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="$(ConfigurationName)\bin"
-			IntermediateDirectory="$(ConfigurationName)\$(ProjectName)"
+			OutputDirectory="Release\bin"
+			IntermediateDirectory="Release\$(ProjectName)"
 			ConfigurationType="2"
-			CharacterSet="1"
-			WholeProgramOptimization="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			CharacterSet="2"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -123,8 +123,8 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="../../src; &quot;C:\Program Files\Autodesk\Maya2009\include&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;NT_APP;REQUIRE_IOSTREAM"
+				AdditionalIncludeDirectories="../../src;&quot;C:\Program Files\Autodesk\Maya2009\include&quot;"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;NT_PLUGIN"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -143,12 +143,13 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/export:initializePlugin /export:uninitializePlugin "
-				AdditionalDependencies="Foundation.lib OpenMaya.lib OpenMayaAnim.lib GameUtil.lib GameIO.lib GameImage.lib GameEngine.lib jpeg.lib libpng.lib zlib.lib"
-				OutputFile="$(OutDir)\GExporter4Maya.mll"
+				AdditionalDependencies="Foundation.lib OpenMaya.lib OpenMayaAnim.lib GameEngine.lib GameUtil.lib GameIO.lib GameImage.lib jpeg.lib libpng.lib zlib.lib"
+				OutputFile="$(OutDir)/GameExporter4Maya.mll"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;C:\Program Files\Autodesk\Maya2009\lib&quot;"
-				IgnoreAllDefaultLibraries="false"
+				AdditionalLibraryDirectories="Release/bin;&quot;C:\Program Files\Autodesk\Maya2009\lib&quot;"
+				IgnoreDefaultLibraryNames=""
 				GenerateDebugInformation="true"
+				ProgramDatabaseFile="$(IntDir)/$(ProjectName).pdb"
 				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
@@ -177,6 +178,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				CommandLine="copy $(TargetPath) $(SolutionDir)\..\..\test\$(TargetName)_RELEASE.exe"
 			/>
 		</Configuration>
 	</Configurations>
@@ -185,9 +187,17 @@
 	<Files>
 		<Filter
 			Name="Source Files"
-			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
+			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
+			<File
+				RelativePath="..\..\src\maya\geMaya.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\maya\geMayaExport.cpp"
+				>
+			</File>
 			<File
 				RelativePath="..\..\src\maya\geMayaPlugin.cpp"
 				>

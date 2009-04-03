@@ -64,6 +64,11 @@ namespace GE
       void store (void *ptr, UintSize size);
       void load (void *ptr, UintSize size);
       void reset (UintSize startOffset, bool realRun);
+
+      State()
+      {
+        int zzz = 0;
+      }
     };
 
     class StateSerial : public State

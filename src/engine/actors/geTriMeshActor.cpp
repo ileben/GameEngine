@@ -103,7 +103,7 @@ namespace GE
   {
     //Make sure there's something to render
     if (mesh == NULL) return;
-    TriMesh::VertexFormat format;
+    VFormat *format = (mesh != NULL ? mesh->getVertexFormat() : NULL);
     Shader *shader = Kernel::GetInstance()->getRenderer()->getCurrentShader();
 
     //Walk material index groups
@@ -121,18 +121,18 @@ namespace GE
       {
         GE_glBindBuffer( GL_ARRAY_BUFFER, mesh->dataVBO );
         GE_glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, mesh->indexVBO );
-        beginVertexData( shader, format, NULL );
+        beginVertexData( shader, *format, NULL );
         glDrawElements( GL_TRIANGLES, grp.count, GL_UNSIGNED_INT,
                         Util::PtrOff( 0, grp.start * sizeof(VertexID)) );
       }
       else
       {
-        beginVertexData( shader, format, mesh->data.buffer() );
+        beginVertexData( shader, *format, mesh->data.buffer() );
         glDrawElements( GL_TRIANGLES, grp.count, GL_UNSIGNED_INT,
                         mesh->indices.buffer() + grp.start);
       }
 
-      endVertexData( shader, format );
+      endVertexData( shader, *format );
 
       if (mesh->isOnGpu)
       {

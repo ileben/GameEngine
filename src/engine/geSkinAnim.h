@@ -129,8 +129,8 @@ namespace GE
   public:
     CharString name;
     Float duration;
-    ClassArrayList <Vec3AnimTrack> tracksT;
-    ClassArrayList <QuatAnimTrack> tracksR;
+    ObjectArrayList <Vec3AnimTrack> tracksT;
+    ObjectArrayList <QuatAnimTrack> tracksR;
     
     void serialize (void *sm)
     {

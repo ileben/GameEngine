@@ -334,6 +334,18 @@ namespace GE
     {
       return eltSize;
     }
+
+    void insertListAt( UintSize index, const GenericArrayList *list )
+    {
+      for (UintSize i=0; i<list->size(); ++i, ++index)
+        insertAt( index, list->at( i ) );
+    }
+
+    void pushListBack( const GenericArrayList *list )
+    {
+      for (UintSize i=0; i<list->size(); ++i)
+        pushBack( list->at( i ) );
+    }
   };
   
   /*
@@ -442,11 +454,11 @@ namespace GE
       return (indexOf( el ) != -1);
     }
     
-    UintSize indexOf( const T &el ) const
+    int indexOf( const T &el ) const
     {
       for( UintSize i=0; i<sz; i++ )
         if( ((T*)elements) [i] == el )
-          return i;
+          return (int) i;
       
       return -1;
     }
@@ -465,19 +477,19 @@ namespace GE
   ========================================================*/
   
   template <class T>
-    class ClassArrayList : public ArrayList <T*>
+    class ObjectArrayList : public ArrayList <T*>
   {
   public:
     
-    ClassArrayList (SerializeManager *sm)
+    ObjectArrayList (SerializeManager *sm)
       : ArrayList <T*> (sm)
      {}
 
-    ClassArrayList()
+    ObjectArrayList()
       : ArrayList <T*> ( sizeof(T*), Class(T) )
       {}
     
-    ClassArrayList( UintSize newCap )
+    ObjectArrayList( UintSize newCap )
       : ArrayList <T*> ( newCap, sizeof(T*), Class(T) )
       {}
   };

@@ -12,7 +12,7 @@ namespace GE
     Uint32     numChildren;
     Matrix4x4  worldInv;
     Quat       localR;
-    Vector4    localT;
+    Vector3    localT;
     Matrix4x4  localS;
   };
   
