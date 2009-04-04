@@ -26,17 +26,12 @@
 #include <engine/geEngine.h>
 using namespace GE;
 
-extern MObject g_meshNode;
-extern bool g_gotMeshNode;
-extern bool g_chkExportSkin;
-extern CharString g_outFileName;
-extern CharString g_statusText;
-
 CharString operator+ (const char *cstr, const CharString &str);
 void trace( const CharString &s);
 void setStatus (const CharString &msg);
 void clearStatus ();
 
+bool findNodeInSelection (MFn::Type type, MObject &pick);
 void exportNoSkin (void **outData, UintSize *outSize);
 void exportWithSkin (void **outData, UintSize *outSize);
 

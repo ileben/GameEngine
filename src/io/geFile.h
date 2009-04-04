@@ -24,7 +24,7 @@ namespace GE
     String getPath();
     String getPathName();
     FILE* getHandle();
-    int getSize();
+    UintSize getSize();
     bool isDirectory();
     bool isOpen();
     bool exists();
@@ -40,20 +40,20 @@ namespace GE
     bool open( const String &mode );
     void close();
     
-    int read( void *data, int size, int count );
-    int write( const void *data, int size, int count );
+    UintSize read( void *data, UintSize size, int count );
+    UintSize write( const void *data, UintSize size, int count );
     
-    int read( void *data, int size );
-    int write( const void *data, int size );
+    UintSize read( void *data, UintSize size );
+    UintSize write( const void *data, UintSize size );
     
-    ByteString read( int size );
-    int read( ByteString &str, int size );
-    int write( const ByteString &str );
+    ByteString read( UintSize size );
+    UintSize read( ByteString &str, UintSize size );
+    UintSize write( const ByteString &str );
     
-    int readLE( void *data, int size );
-    int readBE( void *data, int size );
-    int writeLE( const void *data, int size );
-    int writeBE( const void *data, int size );
+    UintSize readLE( void *data, UintSize size );
+    UintSize readBE( void *data, UintSize size );
+    UintSize writeLE( const void *data, UintSize size );
+    UintSize writeBE( const void *data, UintSize size );
     
     bool seek( int offset, int whence );
     int tell();

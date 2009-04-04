@@ -32,8 +32,8 @@ namespace GE
     inline static void PtrSet (void *pptr, UintSize address);
     inline static void PtrAdd (void *pptr, UintSize offset);
     inline static void PtrSub (void *pptr, UintSize offset);
-    inline static UintSize PtrDist (void *ptrFrom, void *ptrTo);   
-    inline static void* PtrOff (void *ptr, UintSize offset);
+    inline static UintSize PtrDist (const void *ptrFrom, const void *ptrTo);
+    inline static void* PtrOff (const void *ptr, UintSize offset);
 
     //Trigonometry
     inline static Float DegToRad (Float degrees);
@@ -80,16 +80,16 @@ namespace GE
     *((UintSize*)pptr) -= offset;
   }
 
-  UintSize Util::PtrDist (void *ptr1, void *ptr2)
+  UintSize Util::PtrDist (const void *ptr1, const void *ptr2)
   {
     return ((UintSize)ptr2) - ((UintSize)ptr1);
   }
 
-  void* Util::PtrOff (void *ptr, UintSize offset)
+  void* Util::PtrOff (const void *ptr, UintSize offset)
   {
-    void *ptrout = ptr;
+    const void *ptrout = ptr;
     PtrAdd (&ptrout, offset);
-    return ptrout;
+    return (void*) ptrout;
   }
 
   /*

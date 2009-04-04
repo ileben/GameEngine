@@ -42,7 +42,7 @@ namespace GE
     
     MaxCharacter (SM *sm) : anims (sm) {}
     MaxCharacter ();
-    ~MaxCharacter();
+    ~MaxCharacter ();
 
     SkinAnim* findAnimByName (const CharString &name);
   };

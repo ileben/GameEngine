@@ -549,6 +549,7 @@ order the components are listed within the selection list.
 --------------------------------------------------------------*/
 
 void exportSkinWeights (const MObject &skinNode,
+                        const MObject &meshNode,
                         SPolyMesh *outPolyMesh,
                         const ArrayList<Uint> &skinToTreeMap)
 {
@@ -583,8 +584,8 @@ void exportSkinWeights (const MObject &skinNode,
       MDagPath dagPath; MObject compObj;
       selections.getDagPath( s, dagPath, compObj );
 
-      //Only process components belonging to the given skin mesh
-      if (dagPath.node() != g_meshNode) continue;
+      //Only process components belonging to the given mesh
+      if (dagPath.node() != meshNode) continue;
       if (!compObj.hasFn( MFn::kSingleIndexedComponent )) continue;
       MFnSingleIndexedComponent component( compObj );
 
@@ -649,15 +650,25 @@ void exportWithSkin (void **outData, UintSize *outSize)
   ArrayList<MObject> jointTree;
   ArrayList<SkinBone> boneTree;
   ArrayList<Uint32> skinToTreeMap;
+  MObject meshNode;
   MObject skinNode;
   MObject skinMesh;
   MObject jointRoot;
   
-  if (!findSkinForMesh( g_meshNode, skinNode ))
+  if (!findNodeInSelection( MFn::kMesh, meshNode )) {
+    setStatus( "Please select a mesh node!" );
     return;
+  }
 
-  if (!findSkinJointRoot( skinNode, jointRoot ))
+  if (!findSkinForMesh( meshNode, skinNode )) {
+    setStatus( "Please select a mesh with skin!" );
     return;
+  }
+
+  if (!findSkinJointRoot( skinNode, jointRoot )) {
+    setStatus( "Skin doesn't have any influences!" );
+    return;
+  }
 
   if (!findSkinPoseMesh( skinNode, skinMesh ))
     return;
@@ -673,7 +684,7 @@ void exportWithSkin (void **outData, UintSize *outSize)
   exportMesh( skinMesh, outPolyMesh, outTexMesh );
 
   //Export skin weights
-  exportSkinWeights( skinNode, outPolyMesh, skinToTreeMap );
+  exportSkinWeights( skinNode, meshNode, outPolyMesh, skinToTreeMap );
 
   //Triangulate
   outPolyMesh->triangulate();
@@ -706,10 +717,16 @@ Export static mesh
 
 void exportNoSkin (void **outData, UintSize *outSize)
 {
+  MObject meshNode;
+  if (!findNodeInSelection( MFn::kMesh, meshNode )) {
+    setStatus( "Please select a mesh node!" );
+    return;
+  }
+
   //Export mesh data
   SPolyMesh *outPolyMesh = new SPolyMesh;
   TexMesh *outTexMesh = new TexMesh;
-  exportMesh( g_meshNode, outPolyMesh, outTexMesh );
+  exportMesh( meshNode, outPolyMesh, outTexMesh );
 
   //Triangulate
   outPolyMesh->triangulate();

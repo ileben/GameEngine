@@ -539,10 +539,11 @@ namespace GE
                   state->clsList.size() * sizeof(ClsHeader) );
   }
   
-  void* SerializeManager::deserialize( void *data )
+  void* SerializeManager::deserialize( const void *data, ClassPtr *outClass )
   {
     state = NULL;
     void *root = NULL;
+    ClassPtr rootCls;
     
     //Get the number of pointers
     UintSize *numPointers = (UintSize*) (data);
@@ -564,12 +565,17 @@ namespace GE
     //Get the list of class headers
     for (UintSize c=0; c<*numClasses; ++c)
     {
-      //Get the pointer to the resource
+      //Get the pointer to the resource and its class
       void *pres = Util::PtrOff (data, clsList[c].offset);
-      if (c == 0) root = pres;
-      
-      //Construct resource (array) in-place
       ClassPtr cls = ClassFromID (clsList[c].id);
+
+      //Store root
+      if (c == 0) {
+        root = pres;
+        rootCls = cls;
+      }
+
+      //Construct resource (array) in-place
       for (UintSize i=0; i<clsList[c].count; ++i)
       {
         cls->newSerialInPlace (pres, this);
@@ -577,6 +583,10 @@ namespace GE
       }
     }
     
+    //Output
+    if (outClass != NULL)
+      *outClass = rootCls;
+
     return root;
   }
 
@@ -613,7 +623,7 @@ namespace GE
   Loading start
   --------------------------------------------------*/
   
-  void* SerializeManager::load (void *data)
+  void* SerializeManager::load (const void *data, ClassPtr *outClass)
   {
     //Enter loading state
     state = &stateLoad;
@@ -625,15 +635,41 @@ namespace GE
     state->reset (0, true);
     state->load (&rootID, sizeof (ClassID));
     
-    //Create root resource
-    ClassPtr rootCls;    
+    //Get root class and check if valid
+    ClassPtr rootCls;
     rootCls = IClass::FromID (rootID);
+    if (rootCls == NULL) return NULL;
+
+    //Create root resource
     void *rootPtr = rootCls->newSerialInstance (this);
     
     //Run
     state->run (rootCls, rootPtr);
+
+    //Output
+    if (outClass != NULL)
+      *outClass = rootCls;
+
     return rootPtr;
   }
 
+  const void* SerializeManager::getSignature ()
+  {
+    static const ClassID sigID = CLSID_SIGNATURE;
+    return &sigID;
+  }
+
+  UintSize SerializeManager::getSignatureSize ()
+  {
+    //Signature is a ClassID
+    return sizeof( ClassID );
+  }
+
+  bool SerializeManager::checkSignature (const void *data)
+  {
+    //Compare data to signature
+    ClassID *sigID = (ClassID*) data;
+    return (*sigID == CLSID_SIGNATURE);
+  }
 
 }//namespace GE

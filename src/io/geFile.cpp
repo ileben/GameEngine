@@ -159,7 +159,7 @@ namespace GE
     return handle;
   }
   
-  int File::getSize()
+  UintSize File::getSize()
   {
     String pathname = getPathName();
     
@@ -450,75 +450,75 @@ namespace GE
     }
   }
   
-  int File::read(void *data, int size, int count)
+  UintSize File::read (void *data, UintSize size, int count)
   {
-    return (int)fread(data, size, count, handle);
+    return fread( data, size, count, handle );
   }
   
-  int File::write(const void *data, int size, int count)
+  UintSize File::write (const void *data, UintSize size, int count)
   {
-    return (int)fwrite(data, size, count, handle);
+    return fwrite( data, size, count, handle );
   }
   
-  int File::read(void *data, int count)
+  UintSize File::read (void *data, UintSize size)
   {
-    return (int)fread(data, 1, count, handle);
+    return fread( data, 1, size, handle );
   }
   
-  int File::write(const void *data, int count)
+  UintSize File::write (const void *data, UintSize size)
   {
-    return (int)fwrite(data, 1, count, handle);
+    return fwrite( data, 1, size, handle );
   }
   
-  ByteString File::read(int size)
+  ByteString File::read (UintSize size)
   {
-    ByteString out(size);
-    int r = (int)fread(out.buf, 1, size, handle);
-    out.size = r;
+    ByteString out( (int)size );
+    UintSize r = fread( out.buf, 1, size, handle );
+    out.size = (int) r;
     return out;
   }
   
-  int File::read(ByteString &str, int size)
+  UintSize File::read (ByteString &str, UintSize size)
   {
-    str.reserveAndCopy(str.length() + size);
-    int r = (int)fread(str.buf, 1, size, handle);
-    str.size += size;
+    str.reserveAndCopy( str.length() + (int)size );
+    UintSize r = fread( str.buf, 1, size, handle );
+    str.size += (int) size;
     return r;
   }
   
-  int File::write(const ByteString &str)
+  UintSize File::write (const ByteString &str)
   {
-    return (int)fwrite(str.buf, 1, str.size, handle);
+    return fwrite( str.buf, 1, str.size, handle );
   }
   
-  int File::readLE(void *data, int size)
+  UintSize File::readLE (void *data, UintSize size)
   {
-    int r = (int)fread(data, 1, size, handle);
-    if (!lilend) flipBytes(data, size);
+    UintSize r = fread( data, 1, size, handle );
+    if (!lilend) flipBytes( data, (int)size );
     return r;
   }
 
-  int File::readBE(void *data, int size)
+  UintSize File::readBE (void *data, UintSize size)
   {
-    int r = (int)fread(data, 1, size, handle);
-    if (lilend) flipBytes(data, size);
+    UintSize r = (UintSize) fread( data, 1, size, handle );
+    if (lilend) flipBytes( data, (int)size );
     return r;
   }
 
-  int File::writeLE(const void *data, int size)
+  UintSize File::writeLE (const void *data, UintSize size)
   {
     char *temp = new char[size];
     memcpy(temp, data, size);
-    if (!lilend) flipBytes(temp, size);
-    return (int)fwrite(temp, 1, size, handle);
+    if (!lilend) flipBytes( temp, (int)size );
+    return fwrite( temp, 1, size, handle );
   }
 
-  int File::writeBE(const void *data, int size)
+  UintSize File::writeBE (const void *data, UintSize size)
   {
     char *temp = new char[size];
     memcpy(temp, data, size);
-    if (lilend) flipBytes(temp, size);
-    return (int)fwrite(temp, 1, size, handle);
+    if (lilend) flipBytes( temp, (int)size );
+    return fwrite( temp, 1, size, handle );
   }
   
   bool File::seek(int offset, int whence)

@@ -148,8 +148,12 @@ namespace GE
     template <class TR> void save (TR *root, void **outData, UintSize *outSize)
       { save (Class(TR), root, outData, outSize); }
     
-    void* deserialize (void *data);
-    void* load (void *data);
+    void* deserialize (const void *data, ClassPtr *outCls=NULL);
+    void* load (const void *data, ClassPtr *outCls=NULL);
+
+    const void* getSignature ();
+    UintSize getSignatureSize ();
+    bool checkSignature (const void *data);
   };
   
   typedef SerializeManager SM;

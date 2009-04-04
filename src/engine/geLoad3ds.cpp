@@ -299,7 +299,7 @@ namespace GE
     //Try to open file
     File module = File::GetModule();
     file = module.getRelativeFile( filename );
-    fileSize = file.getSize();
+    fileSize = (int) file.getSize();
     if( !file.open( "rb" )) return false;
 
     //Read main chunk info

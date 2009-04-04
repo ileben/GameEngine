@@ -54,6 +54,9 @@ namespace GE
     
     ClassID (Uint32 dd1, Uint16 dd2, Uint16 dd3, Uint64 dd4)
       { d1=dd1; d2=dd2; d3=dd3; d4=dd4; }
+
+    bool operator == (const ClassID &c) const
+      { return (d1==c.d1 && d2==c.d2 && d3==c.d3 && d4==c.d4); }
     
     bool operator == (int zero) const
       { return (d1==0 && d2==0 && d3==0 && d4==0); }
@@ -388,6 +391,7 @@ namespace GE
   Known class IDs
   --------------------------------------------------------*/
 
+  #define CLSID_SIGNATURE            ClassID (0xbbfb896eu, 0x3c7e, 0x4a83, 0xb99d110bc4a7c6d0ull)
   #define CLSID_CHARSTRING           ClassID (0xd7f2841bu, 0xadbc, 0x4d81, 0xbc5889e771dd4496ull)
   #define CLSID_BYTESTRING           ClassID (0xf7bca47cu, 0x4089, 0x4d7f, 0xb22d9bab68d87c42ull)
   #define CLSID_UNICODESTRING        ClassID (0xf54b6286u, 0xaebb, 0x48fb, 0x84cf8ffaca844ed8ull)
