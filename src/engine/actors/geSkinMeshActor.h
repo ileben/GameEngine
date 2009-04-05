@@ -57,6 +57,7 @@ namespace GE
 
     virtual void render (MaterialID materialID);
 
+    void loadPose ();
     void playAnimation (const CharString &name, Float speed=1.0f);
     void loopAnimation (const CharString &name, Float speed=1.0f);
     void pauseAnimation ();

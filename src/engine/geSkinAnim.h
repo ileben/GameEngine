@@ -82,6 +82,13 @@ namespace GE
     Float frameCoeff = time / frameTime;
     int k1 = (int) FLOOR( frameCoeff );
     int k2 = (int) CEIL( frameCoeff );
+
+    //Robustness check (totalTime might be too long)
+    if ((UintSize) k1 >= keys.size() ||
+        (UintSize) k2 >= keys.size())
+      return keys.last().value;
+
+    //Exit soon if keys the same
     if (k1 == k2) return keys[ k1 ].value;
     
     //Calculate interpolation coeff

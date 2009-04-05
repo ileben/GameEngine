@@ -189,6 +189,15 @@ namespace GE
     }*/
   }
 
+  void SkinMeshActor::loadPose ()
+  {
+    if (character == NULL) return;
+
+    stopAnimation();
+    loadPoseRotations();
+    applySkin();
+  }
+
   void SkinMeshActor::playAnimation (const CharString &name, Float speed)
   {
     if (character == NULL) return;

@@ -21,6 +21,7 @@
 #include <maya/MMatrix.h>
 #include <maya/MQuaternion.h>
 #include <maya/MFnSingleIndexedComponent.h>
+#include <maya/MAnimControl.h>
 
 #include <util/geUtil.h>
 #include <engine/geEngine.h>
@@ -34,5 +35,6 @@ void clearStatus ();
 bool findNodeInSelection (MFn::Type type, MObject &pick);
 void exportNoSkin (void **outData, UintSize *outSize);
 void exportWithSkin (void **outData, UintSize *outSize);
+SkinAnim* exportAnimation (int start, int end, int fps);
 
 #endif//__GEMAYA_H

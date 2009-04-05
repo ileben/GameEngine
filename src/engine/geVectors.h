@@ -192,6 +192,9 @@ namespace GE
     static Quat Slerp (const Quat &q1, const Quat &q2, Float t);
     static Quat Nlerp (const Quat &q1, const Quat &q2, Float t);
     inline static Float Dot (const Quat &q1, const Quat &q2);
+
+    bool operator== (const Quat &q) const;
+    bool operator!= (const Quat &q) const;
   };
 
   Quat GE_API_ENTRY operator* (const Quat &q1, const Quat &q2);
@@ -534,6 +537,12 @@ namespace GE
   
   inline Float Quat::Dot (const Quat &q1, const Quat &q2)
     { return q1.x*q2.x + q1.y*q2.y + q1.z*q2.z + q1.w*q2.w; }
+
+  inline bool Quat::operator== (const Quat &q) const
+    { return x==q.x && y==q.y && z==q.z && w==q.w; }
+
+  inline bool Quat::operator!= (const Quat &q) const
+    { return x!=q.x || y!=q.y || z!=q.z || w!=q.w; }
   
 
 }//namespace GE

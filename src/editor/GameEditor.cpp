@@ -4,6 +4,7 @@ using namespace GE;
 
 #include <cstdlib>
 #include <cstdio>
+#include <iostream>
 
 namespace CameraMode
 {
@@ -14,6 +15,9 @@ namespace CameraMode
     Zoom
   };
 }
+
+CharString animName;
+Float animSpeed = 1.0f;
 
 FpsLabel *lblFps = NULL;
 
@@ -36,11 +40,9 @@ Renderer *renderer = NULL;
 
 bool down3D;
 Vector2 lastMouse3D;
-UintSize frame = 0;
-UintSize numFrames = 0;
 
-int resY = 512;
-int resX = 512;
+int resX = 800;
+int resY = 600;
 Vector3 center( 0,0,0 );
 Vector3 boundsMin( 0,0,0 );
 Vector3 boundsMax( 0,0,0 );
@@ -55,15 +57,7 @@ void INLINE postRedisplay()
 }
 
 void drag3D (int x, int y)
-{
-  //printf ("Eye1:"); printVector (cam3D.getEye());
-  //printf ("Look:"); printVector (cam3D.getLook());
-  //printf ("Side:"); printVector (cam3D.getSide());
-  //printf ("\n");
-  
-  //printf ("------------------------\n");
-  //printMatrix (cam3D.getMatrix());
-  
+{  
   Vector2 diff = Vector2( (Float)x,(Float)y ) - lastMouse3D;
   float eyeDist = ( camRender->getEye() - center ).norm();
   
@@ -71,7 +65,7 @@ void drag3D (int x, int y)
   Float angleV = diff.y * (2*PI) / 400;
   Float panH = -diff.x * ( eyeDist * 0.002f );
   Float panV =  diff.y * ( eyeDist * 0.002f );
-  Float zoom = -diff.y * ( eyeDist * 0.01f );
+  Float zoom =  diff.y * ( eyeDist * 0.01f );
   lastMouse3D.set( (Float)x, (Float)y );
   
   switch (cameraMode)
@@ -107,20 +101,21 @@ void click3D (int button, int state, int x, int y)
   }
 
   int mods = glutGetModifiers();
-  
-  if (mods & GLUT_ACTIVE_SHIFT)
+
+  if (mods & GLUT_ACTIVE_ALT)
   {
-    cameraMode = CameraMode::Orbit;
+    if (button == GLUT_LEFT_BUTTON)
+      cameraMode = CameraMode::Orbit;
+    else if (button == GLUT_RIGHT_BUTTON)
+      cameraMode = CameraMode::Zoom;
+    else if (button == GLUT_MIDDLE_BUTTON)
+      cameraMode = CameraMode::Pan;
   }
-  else if ((mods & GLUT_ACTIVE_CTRL) ||
-           button == GLUT_RIGHT_BUTTON)
-  {
-    cameraMode = CameraMode::Zoom;
-  }
-  else
+  else if (mods & GLUT_ACTIVE_CTRL)
   {
     cameraMode = CameraMode::Pan;
   }
+  else return;
   
   lastMouse3D.set( (Float)x, (Float)y );
   down3D = true;
@@ -139,26 +134,37 @@ void drag (int x, int y)
 
 void keyboard (unsigned char key, int x, int y)
 {
-  Float speed;
-
   switch (key)
   {
+  case 8://backspace
+    if (skinMeshActor == NULL) return;
+    skinMeshActor->loadPose();
+    break;
+
+  case 13://return
+    if (skinMeshActor == NULL) return;
+    skinMeshActor->playAnimation( animName, animSpeed );
+    break;
+
   case ' ':
+    if (skinMeshActor == NULL) return;
     if (!skinMeshActor->isAnimationPlaying())
-      skinMeshActor->loopAnimation( "MyAnimation" );
+      skinMeshActor->loopAnimation( animName, animSpeed );
     else skinMeshActor->pauseAnimation();
     break;
 
   case '+':
-    speed = skinMeshActor->getAnimationSpeed();
-    skinMeshActor->setAnimationSpeed( speed + 0.1f );
-    printf ("Animation speed: %f\n", skinMeshActor->getAnimationSpeed() );
+    if (skinMeshActor == NULL) return;
+    animSpeed += 0.1f;
+    skinMeshActor->setAnimationSpeed( animSpeed );
+    printf ("Animation speed: %f\n", animSpeed );
     break;
 
   case '-':
-    speed = skinMeshActor->getAnimationSpeed();
-    if (speed > 0.11f) skinMeshActor->setAnimationSpeed( speed - 0.1f );
-    printf ("Animation speed: %f\n", skinMeshActor->getAnimationSpeed() );
+    if (skinMeshActor == NULL) return;
+    if (animSpeed > 0.11f) animSpeed -= 0.1f;
+    skinMeshActor->setAnimationSpeed( animSpeed );
+    printf ("Animation speed: %f\n", animSpeed );
     break;
 
   case 27:
@@ -239,7 +245,7 @@ void initGlut (int argc, char **argv)
 
   glutInitWindowPosition( 100,100 );
   glutInitWindowSize( resX,resY );
-  glutCreateWindow( "Test Skin" );
+  glutCreateWindow( "Game Editor" );
   
   glutReshapeFunc( reshape );
   glutDisplayFunc( display );
@@ -249,14 +255,14 @@ void initGlut (int argc, char **argv)
   glutIdleFunc( animate );
   idleDraw = true;
 }
-
+/*
 class VertColorMaterial : public StandardMaterial { public:
   virtual void begin ()  {
     StandardMaterial::begin ();
     glEnable( GL_COLOR_MATERIAL );
   }
 };
-/*
+
 void SPolyActor::renderMesh (MaterialID matid)
 {
   glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
@@ -297,72 +303,93 @@ void SPolyActor::renderMesh (MaterialID matid)
   }
 }*/
 
-void loadCharacter (String fileName)
-{ 
-  //Read the file
-  File file( fileName );
-  if( !file.open( "rb" ))
-  {
-    printf( "Failed opening file '%s'!\n", fileName.toCSTR().buffer() );
-    getchar();
-    exit( 1 );
-  }
-  
-  data = file.read( file.getSize() );
-  file.close();
-  
-  //Load character data
-  SerializeManager sm;
-  character = (MaxCharacter*) sm.load( (void*)data.buffer() );
-
-  void *data; UintSize size;
-  SerializeManager sm2;
-  sm2.save( character, &data, &size);
-  
-  printf ("Character: %d verts, %d faces, %d animations\n",
-          character->mesh->getVertexCount(),
-          character->mesh->getFaceCount(),
-          character->anims.size());
-  
-  for (UintSize a=0; a<character->anims.size(); ++a)
-    printf ("Animation name: '%s'\n",
-            character->anims[ a ]->name.buffer());
-
-  //Split into 24-bone sub meshes
-  SkinSuperToSubMesh splitter( character->mesh );
-  splitter.splitByBoneLimit( 24 );
-
-  UintSize numMeshes = splitter.getSubMeshCount();
-  for (UintSize m=0; m<numMeshes; ++m)
-  {
-    SkinTriMesh *mesh = (SkinTriMesh*) splitter.getSubMesh(m);
-    character->meshes.pushBack( mesh );
-    mesh->sendToGpu();
-  }
-}
-
-void loadMesh (const CharString &fileName)
+bool loadPackage (const CharString &fileName)
 {
   //Read the file
   File file( fileName );
-  if( !file.open( "rb" ))
-  {
+  if( !file.open( "rb" )) {
     printf( "Failed opening file '%s'!\n", fileName.buffer() );
-    getchar();
-    exit( 1 );
+    return false;
+  }
+
+  //Read signature
+  SerializeManager sm;
+  ByteString sig = file.read( sm.getSignatureSize() );
+  if (sig.length() != sm.getSignatureSize()) {
+    printf( "Missing file signature!\n" );
+    file.close();
+    return false;
+  }
+
+  //Check signature
+  if ( ! sm.checkSignature( sig.buffer() )) {
+    printf( "Invalid file signature!\n" );
+    file.close();
+    return false;
   }
   
-  data = file.read( file.getSize() );
+  //Read the rest of the file
+  data = file.read( file.getSize() - sm.getSignatureSize() );
   file.close();
-  
-  //Load mesh data
-  SerializeManager sm;
-  mesh = (TriMesh*) sm.load( (void*)data.buffer() );
-  mesh->sendToGpu();
 
-  printf ("Mesh: %d verts, %d faces\n",
-          mesh->getVertexCount(),
-          mesh->getFaceCount());
+  //Deserialize
+  ClassPtr cls;
+  void *object = sm.load( (void*)data.buffer(), &cls );
+
+  //Check object class
+  if (cls == Class(TriMesh))
+  {
+    mesh = (TriMesh*) object;
+    mesh->sendToGpu();
+
+    //Report
+    printf ("Static mesh: %d verts, %d faces\n",
+            mesh->getVertexCount(),
+            mesh->getFaceCount());
+  }
+  else if (cls == Class(MaxCharacter))
+  {
+    character = (MaxCharacter*) object;
+    
+    //Mesh report
+    printf ("Character: %d verts, %d faces, %d animations\n",
+            character->mesh->getVertexCount(),
+            character->mesh->getFaceCount(),
+            character->anims.size());
+    
+    //Animations report
+    for (UintSize a=0; a<character->anims.size(); ++a)
+      printf ("Animation [%d]: '%s'\n", a,
+              character->anims[ a ]->name.buffer());
+
+    //Get animation name
+    if (character->anims.size() > 0) {
+      char buf[256]; int len=0; UintSize animIndex=0;
+      while (len==0 || animIndex >= character->anims.size())
+      {
+        std::cout << "Pick animation: ";
+        std::cin.width( 256 );
+        std::cin >> buf;
+        CharString str = buf;
+        animIndex = str.parseIntegerAt(0, &len);
+      }
+      animName = character->anims[ animIndex ]->name;
+    }
+    
+    //Split into 24-bone sub meshes
+    SkinSuperToSubMesh splitter( character->mesh );
+    splitter.splitByBoneLimit( 24 );
+
+    UintSize numMeshes = splitter.getSubMeshCount();
+    for (UintSize m=0; m<numMeshes; ++m)
+    {
+      SkinTriMesh *mesh = (SkinTriMesh*) splitter.getSubMesh(m);
+      character->meshes.pushBack( mesh );
+      mesh->sendToGpu();
+    }
+  }
+
+  return true;
 }
 
 int main (int argc, char **argv)
@@ -397,17 +424,18 @@ int main (int argc, char **argv)
   //Setup 3D scene
   scene = new Scene;
 
-  //Load model
-  //loadMesh( "mayatest.pak" );
-  loadCharacter( "mayatest.pak" );
+  //Get input filename and load it
+  CharString fileName;
+  do {
+    char buf[256];
+    std::cout << "Filename: ";
+    std::cin.width( 256 );
+    std::cin >> buf;
+    fileName = buf;
+  } while (!loadPackage( fileName ));
+  
+  //Create actor
   TriMesh *meshRender = NULL;
-  /*
-  character->mesh->sendToGpu();
-  triMeshActor = new TriMeshActor;
-  triMeshActor->setMesh( character->mesh );
-  triMeshActor->setMaterial( matWhite );
-  actorRender = triMeshActor;
-  meshRender = character->mesh;*/
   
   if (mesh != NULL)
   {

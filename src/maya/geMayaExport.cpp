@@ -629,15 +629,71 @@ void exportSkinWeights (const MObject &skinNode,
     + " vertices have too many weights!" );
 }
 
-void exportCurrentPose (const ArrayList<MObject> &jointTree,
-                        const ArrayList<SkinBone> &boneTree)
+
+void exportAnimKeys (const ArrayList<MObject> &jointTree,
+                     int start, int end, int fps,
+                     SkinAnim *outAnim)
 {
-  for (UintSize b=0; b<boneTree.size(); ++b)
+  //Constructs with current UI units by default
+  MTime time;
+  
+  //Find start time in milliseconds
+  time.setValue( start );
+  double startMsec = time.as( MTime::kMilliseconds );
+
+  //Find end time in milliseconds
+  time.setValue( end );
+  double endMsec = time.as( MTime::kMilliseconds );
+
+  //Find iteration step in milliseconds
+  double stepMsec = 1000 * (1.0 / fps);
+  double stepSec = (1.0 / fps);
+  double durationSec = (endMsec - startMsec) / 1000.0f;
+
+  trace( "exportAnimKeys: frame time "
+    + CharString::FFloat( (float) stepMsec ) + " milliseconds." );
+  trace( "exportAnimKeys: total time "
+    + CharString::FFloat( (float) durationSec) + " seconds." );
+
+  //Create animation tracks for every bone
+  outAnim->duration = (float) durationSec;
+  for (UintSize j=0; j<jointTree.size(); ++j)
   {
-    SkinBone *bone = &boneTree[ b ];
-    exportTransformJoint( jointTree[ b ],
-      bone->localR, bone->localT, bone->localS );
+    QuatAnimTrack *trackR = new QuatAnimTrack;
+    trackR->totalTime = (float) durationSec;
+    trackR->frameTime = (float) stepSec;
+    outAnim->tracksR.pushBack( trackR );
+
+    Vec3AnimTrack *trackT = new Vec3AnimTrack;
+    trackT->totalTime = (float) durationSec;
+    trackT->frameTime = (float) stepSec;
+    outAnim->tracksT.pushBack( trackT );
   }
+
+  //Walk the animation frames
+  int numKeys = 0;
+  for (double t=startMsec; t<=endMsec; t+=stepMsec, numKeys++)
+  {
+    //Set current time in milliseconds
+    MAnimControl animCtrl;
+    MTime now( t, MTime::kMilliseconds );
+    animCtrl.setCurrentTime( now );
+
+    //Walk the joint tree
+    for (UintSize j=0; j<jointTree.size(); ++j)
+    {
+      //Add keys to tracks
+      Matrix4x4 S;
+      QuatTrackTraits::Key keyR;
+      Vec3TrackTraits::Key keyT;
+      exportTransformJoint( jointTree[j], keyR.value, keyT.value, S );
+      outAnim->tracksR[ j ]->keys.pushBack( keyR );
+      outAnim->tracksT[ j ]->keys.pushBack( keyT );
+    }
+  }
+
+  trace( "exportAnimKeys: exported "
+    + CharString::FInt( numKeys ) + " keys." );
 }
 
 /*
@@ -742,4 +798,37 @@ void exportNoSkin (void **outData, UintSize *outSize)
   delete outPolyMesh;
   delete outTexMesh;
   delete outTriMesh;
+}
+
+SkinAnim* exportAnimation (int start, int end, int fps)
+{
+  ArrayList<MObject> jointTree;
+  ArrayList<SkinBone> boneTree;
+  MObject meshNode;
+  MObject skinNode;
+  MObject jointRoot;
+  
+  if (!findNodeInSelection( MFn::kMesh, meshNode )) {
+    setStatus( "Please select a mesh node!" );
+    return NULL;
+  }
+
+  if (!findSkinForMesh( meshNode, skinNode )) {
+    setStatus( "Please select a mesh with skin!" );
+    return NULL;
+  }
+
+  if (!findSkinJointRoot( skinNode, jointRoot )) {
+    setStatus( "Skin doesn't have any influences!" );
+    return NULL;
+  }
+
+  //Build bone tree
+  buildBoneTree( jointRoot, jointTree, boneTree );
+
+  //Export animation
+  SkinAnim *outAnim = new SkinAnim;
+  exportAnimKeys( jointTree, start, end, fps, outAnim );
+
+  return outAnim;
 }
