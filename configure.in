@@ -28,5 +28,6 @@ src/util/Makefile
 src/io/Makefile
 src/image/Makefile
 src/engine/Makefile
+src/editor/Makefile
 test/Makefile
 ])
