@@ -195,6 +195,11 @@ namespace GE
 
   template <class Derived, class Base> class PolyMeshBase : public MeshBase <Derived,Base>
   {
+  public:
+    typedef typename Derived::Vertex       Vertex;
+    typedef typename Derived::HalfEdge     HalfEdge;
+    typedef typename Derived::Edge         Edge;
+    typedef typename Derived::Face         Face;
     typedef typename Derived::VertexNormal VertexNormal;
     #include "gePolyMeshIters.h"
   };

@@ -2,4 +2,6 @@ SUBDIRS =\
 	util\
 	io\
 	image\
-	engine
+	engine\
+	editor
+

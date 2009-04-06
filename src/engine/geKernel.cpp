@@ -501,6 +501,20 @@ namespace GE
     glSwapInterval = (GE_PFGLSWAPINTERVAL)
       getProcAddress("wglSwapIntervalEXT");
     #endif
+    
+    /*
+    Report
+    *****************************************/
+    printf( "hasMultitexture: %s\n", (hasMultitexture ? "true" : "false" ));
+    printf( "hasShaderObjects: %s\n", (hasShaderObjects ? "true" : "false" ));
+    printf( "hasFramebufferObjects: %s\n", (hasFramebufferObjects ? "true" : "false" ));
+    printf( "hasVertexBufferObjects: %s\n", (hasVertexBufferObjects ? "true" : "false" ));
+    printf( "hasMultipleRenderTargets: %s\n", (hasMultipleRenderTargets ? "true" : "false" ));
+    printf( "hasDepthStencilFormat: %s\n", (hasDepthStencilFormat ? "true" : "false" ));
+    printf( "hasRangeElements: %s\n", (hasRangeElements ? "true" : "false" ));
+    printf( "maxRenderTargets: %d\n", maxRenderTargets );
+    printf( "maxElementsVertices: %d\n", maxElementsVertices );
+    printf( "maxElementsIndices: %d\n", maxElementsIndices );
   }
   
   /*
