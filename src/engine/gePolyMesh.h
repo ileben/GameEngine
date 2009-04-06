@@ -14,16 +14,18 @@ namespace GE
 
   /*
   ========================================================
-  Shading model determines whether face or per-vertex
-  normals will be calculated.
+  Smooth metric defines the criteria for averaging the
+  normals across adjacent faces.
   ======================================================*/
 
-  namespace ShadingModel
+  namespace SmoothMetric
   {
     enum Enum
     {
-      Flat     = 1,
-      Smooth   = 2
+      None  = 1,
+      All   = 2,
+      Face  = 3,
+      Edge  = 4
     };
   }
 
@@ -144,7 +146,6 @@ namespace GE
     #include "gePolyMeshIters.h"
 
   private:
-    bool useSmoothGroups;
     VertexNormal dummyVertexNormal;
     DynamicArrayList<VertexNormal> vertexNormals;
     virtual void insertHalfEdge (HMesh::HalfEdge *he);
@@ -168,16 +169,6 @@ namespace GE
   public:
 
     PolyMesh();
-    
-    //When true causes smoothing groups to be taken
-    //into account when calculating vertex normals
-    void setUseSmoothGroups (bool enabled) {
-      useSmoothGroups = enabled;
-    }
-
-    bool getUseSmoothGroups () {
-      return useSmoothGroups;
-    }
 
   private:
 
@@ -185,11 +176,12 @@ namespace GE
     void updateVertNormalFlat (Vertex *v);
     void updateVertNormalSmooth (Vertex *v);
     void updateVertNormalGroups (Vertex *v);
+    void updateVertNormalEdges (Vertex *v);
 
   public:
 
-    void triangulate ();
-    void updateNormals (ShadingModel::Enum shadingModel);
+    void triangulate (bool smoothEdges = false);
+    void updateNormals (SmoothMetric::Enum metric = SmoothMetric::None);
     void setMaterialID (Face *f, MaterialID id);
   };
 

@@ -123,6 +123,7 @@ void exportMesh (const MObject &meshNode,
   Uint meshNumPoints;
   Uint meshNumPointsUV;
   Uint meshNumFaces;
+  Uint meshNumEdges;
 
   ArrayList<SPolyMesh::Vertex*> outVerts;
   ArrayList<SPolyMesh::Vertex*> outFaceVerts;
@@ -133,6 +134,7 @@ void exportMesh (const MObject &meshNode,
   int invalidTexIndices = 0;
   int invalidFaces = 0;
   int invalidTexFaces = 0;
+  int invalidEdges = 0;
 
   //Get mesh points (in world space if possible)
   MFnMesh mesh( meshNode, &status );
@@ -148,6 +150,7 @@ void exportMesh (const MObject &meshNode,
   meshNumPoints = mesh.numVertices();
   meshNumPointsUV = mesh.numUVs();
   meshNumFaces = mesh.numPolygons();
+  meshNumEdges = mesh.numEdges();
 
   //Walk the mesh points
   for (Uint p=0; p<meshNumPoints; ++p)
@@ -228,6 +231,31 @@ void exportMesh (const MObject &meshNode,
         invalidTexFaces++;
         continue; }
     }
+  }
+
+  //Walk the mesh edges
+  for (Uint e=0; e<meshNumEdges; ++e)
+  {
+    //Get the edge endpoints
+    int2 vertIDs;
+    mesh.getEdgeVertices( e, vertIDs );
+    
+    //Make sure the vertex IDs are ok
+    if ((UintSize) vertIDs[0] >= outVerts.size() ||
+        (UintSize) vertIDs[1] >= outVerts.size()) {
+      invalidEdges++;
+      continue; }
+
+    //Find the edge connecting the vertices
+    SPolyMesh::Vertex *vert1 = outVerts[ vertIDs[0] ];
+    SPolyMesh::Vertex *vert2 = outVerts[ vertIDs[1] ];
+    SPolyMesh::HalfEdge *hedge = vert1->outHedgeTo( vert2 );
+    if (hedge == NULL) {
+      invalidEdges++;
+      continue; }
+    
+    //Assign the smoothness property
+    hedge->fullEdge()->isSmooth = mesh.isEdgeSmooth( e );
   }
 
   //Report
@@ -743,8 +771,8 @@ void exportWithSkin (void **outData, UintSize *outSize)
   exportSkinWeights( skinNode, meshNode, outPolyMesh, skinToTreeMap );
 
   //Triangulate
-  outPolyMesh->triangulate();
-  outPolyMesh->updateNormals( ShadingModel::Smooth );
+  outPolyMesh->triangulate( true );
+  outPolyMesh->updateNormals( SmoothMetric::Edge );
   SkinTriMesh *outTriMesh = new SkinTriMesh;
   outTriMesh->fromPoly( outPolyMesh, NULL );
 
@@ -785,8 +813,8 @@ void exportNoSkin (void **outData, UintSize *outSize)
   exportMesh( meshNode, outPolyMesh, outTexMesh );
 
   //Triangulate
-  outPolyMesh->triangulate();
-  outPolyMesh->updateNormals( ShadingModel::Smooth );
+  outPolyMesh->triangulate( true );
+  outPolyMesh->updateNormals( SmoothMetric::Edge );
   TriMesh *outTriMesh = new TriMesh;
   outTriMesh->fromPoly( outPolyMesh, NULL );
 

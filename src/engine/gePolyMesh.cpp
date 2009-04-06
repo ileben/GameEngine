@@ -13,11 +13,10 @@ namespace GE
   typedef PolyMesh::HalfEdge HalfEdge;
   typedef PolyMesh::Edge Edge;
   typedef PolyMesh::Face Face;
+  typedef PolyMesh::VertexNormal VertexNormal;
 
   PolyMesh::PolyMesh ()
   {
-    useSmoothGroups = true;
-    
     for (MaterialID m=0; m<GE_MAX_MATERIAL_ID; ++m)
       facesPerMaterial [m] = 0;
   }
@@ -156,11 +155,13 @@ namespace GE
     Vector3 normal;
     int faceCount;
     Face *zeroFace;
+    VertexNormal *vnormal;
 
     SmoothGroup () {
       mask = 0;
       faceCount = 0;
       zeroFace = NULL;
+      vnormal = NULL;
     }
 
     SmoothGroup (Face *f) {
@@ -168,6 +169,7 @@ namespace GE
       normal = f->normal;
       faceCount = 1;
       zeroFace = (mask==0) ? f : NULL;
+      vnormal = NULL;
     }
 
     SmoothGroup& operator+= (SmoothGroup &g) {
@@ -184,10 +186,11 @@ namespace GE
       return *this;
     }
 
+    /*
+    No two faces with 0 smoothing flags are considered to be in
+    the same group. However, zeroFace is stored so that a face with
+    0 flag matches it's own SmoothGroup if tested again after creation */
     bool operator== (Face *f) {
-      //No two faces with 0 smoothing flags are considered to be in
-      //the same group. However, zeroFace is stored so that a face with
-      //0 flag matches it's own SmoothGroup if tested again after creation
       return ((mask & f->smoothGroups) != 0) || (zeroFace == f);
     }
   };
@@ -207,7 +210,7 @@ namespace GE
     ArraySet<SmoothGroup> groups(8);
     int g = 0;
 
-    //Pass1: Walk the adjacent faces and merge smooth groups
+    //Walk the adjacent faces and merge smooth groups
     for (f.begin(vert); !f.end(); ++f)
     {
       //Walk the existing groups
@@ -237,17 +240,20 @@ namespace GE
       if (matchCount == 0)
         groups.add (SmoothGroup (*f));
 
+      if (groups.size() > 1)
+        int oooooo = 0;
+
     }//Walk faces
 
 
-    //MidPass: Average out the group normals
-    //and add to vertex normal list
-    int firstNormalId = vertexNormals.size();
+    //Average out the group normals and create
+    //a new vertex normal for each
     for (g=0; g<groups.size(); ++g)
     {
       groups[g].normal /= (Float)groups[g].faceCount;
       vertexNormals.pushBack (VertexNormal (groups[g].normal));
       vertexNormals.last().vert = vert;
+      groups[g].vnormal = &vertexNormals.last();
     }
     
     //Pass2: Apply unique normals to faces
@@ -256,46 +262,107 @@ namespace GE
       //Find the matching merged group
       for (g=0; g<groups.size(); ++g) {
         if (groups[g] == *f) {
-          f.hedgeToVertex()->vnormal =
-            &vertexNormals [firstNormalId + g];
+          f.hedgeToVertex()->vnormal = groups[g].vnormal;
           break;
         }}
     }
   }
 
+  class SmoothEdgeGroup
+  {
+  public:
+    Vector3 normal;
+    int faceCount;
+    VertexNormal *vnormal;
+
+    SmoothEdgeGroup() : faceCount(0), vnormal(NULL) {}
+
+    SmoothEdgeGroup& operator+= (Face* f) {
+      normal += f->normal;
+      faceCount += 1;
+      return *this;
+    }
+  };
+
+  void PolyMesh::updateVertNormalEdges (Vertex *vert)
+  {
+    UintSize g;
+    SmoothEdgeGroup *curGroup = NULL;
+    PolyMesh::VertFaceIter vf;
+    ArrayList<SmoothEdgeGroup> groups;
+
+    //Pass1: find first hard edge
+    for (vf.begin( vert ); !vf.end(); ++vf)
+      if ( ! vf.hedgeToVertex()->fullEdge()->isSmooth)
+        break;
+
+    //Pass2: sum normals into groups
+    for (vf.begin( vf ); !vf.end(); ++vf)
+    {
+      //Check if the edge hard (or its the first group and no hard edge)
+      if ( ! vf.hedgeToVertex()->fullEdge()->isSmooth || curGroup==NULL) {
+
+        //Create a new smooth group
+        groups.pushBack( SmoothEdgeGroup() );
+        curGroup = &groups.last();
+      }
+
+      //Add face to the current group
+      (*curGroup) += *vf;
+    }
+
+    //Average the group normals and create
+    //a new vertex normal for each
+    for (g=0; g<groups.size(); ++g)
+    {
+      groups[g].normal /= (Float)groups[g].faceCount;
+      vertexNormals.pushBack (VertexNormal (groups[g].normal));
+      vertexNormals.last().vert = vert;
+      groups[g].vnormal = &vertexNormals.last();
+    }
+
+    //Assign normals to faces
+    for (vf.begin( vf ), g=0; g < groups.size(); ++g)
+      for (int f=0; f < groups[g].faceCount; ++f, ++vf)
+        vf.hedgeToVertex()->vnormal = groups[g].vnormal;
+  }
 
   /*
   ----------------------------------------------------
   Updates face and vertex normals for the whole mesh
   ----------------------------------------------------*/
 
-  void PolyMesh::updateNormals (ShadingModel::Enum shadingModel)
+  void PolyMesh::updateNormals (SmoothMetric::Enum metric)
   {
     vertexNormals.clear();
     
     for (PolyMesh::FaceIter f(this); !f.end(); ++f)
       updateFaceNormal(*f);
     
-    switch (shadingModel)
+    switch (metric)
     {
-    case ShadingModel::Flat:
+    case SmoothMetric::None:
       
       for (PolyMesh::VertIter v(this); !v.end(); ++v)
         updateVertNormalFlat (*v);
-      
       break;
-    case ShadingModel::Smooth:
-      if (useSmoothGroups) {
-        
-        for (PolyMesh::VertIter v(this); !v.end(); ++v)
-          updateVertNormalGroups(*v);
-        
-      }else{
-        
-        for (PolyMesh::VertIter v(this); !v.end(); ++v)
-          updateVertNormalSmooth(*v);
-      }
+
+    case SmoothMetric::All:
       
+      for (PolyMesh::VertIter v(this); !v.end(); ++v)
+        updateVertNormalSmooth(*v);
+      break;
+
+    case SmoothMetric::Face:
+      
+      for (PolyMesh::VertIter v(this); !v.end(); ++v)
+        updateVertNormalGroups(*v);
+      break;
+      
+    case SmoothMetric::Edge:
+
+      for (PolyMesh::VertIter v(this); !v.end(); ++v)
+        updateVertNormalEdges(*v);
       break;
     }
   }
@@ -343,7 +410,7 @@ namespace GE
     return findNodeOrientation( *prev, *cur, *next, convex, convexInit );
   }
 
-  void PolyMesh::triangulate ()
+  void PolyMesh::triangulate (bool smoothEdges)
   {
     int vertcount = 0;
     int polycount = 0;
@@ -516,13 +583,23 @@ namespace GE
     //Create new edges
     for (UintSize e=0; e<trigEdges.size(); e++)
     {
+      //Connect the vertices
       TrigEdge &edge = trigEdges[e];
       if (!connectVertices( edge.vertex1, edge.vertex2 )) continue;
-      Face *face1 = edge.vertex1->outHedgeTo( edge.vertex2 )->parentFace();
-      Face *face2 = edge.vertex2->outHedgeTo( edge.vertex1 )->parentFace();
+
+      //Find two adjacent faces
+      HalfEdge *hedge1 = edge.vertex1->outHedgeTo( edge.vertex2 );
+      HalfEdge *hedge2 = edge.vertex2->outHedgeTo( edge.vertex1 );
+      Face *face1 = hedge1->parentFace();
+      Face *face2 = hedge2->parentFace();
+
+      //Copy groups and material IDs off the original face
       face1->smoothGroups = face2->smoothGroups = edge.face->smoothGroups;
       setMaterialID( face1, edge.face->materialID() );
       setMaterialID( face2, edge.face->materialID() );
+
+      //Make the edge smooth if requested
+      hedge1->fullEdge()->isSmooth = smoothEdges;
     }
   }
 
