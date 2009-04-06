@@ -51,11 +51,15 @@ namespace GE
 
     /*
     ----------------------------------------------------------
-    No special data per edge
+    Edge holds the information whether it is smooth or hard
+    for edge-based normal calculation.
     ----------------------------------------------------------*/
 
     class GE_API_ENTRY Edge : public EdgeBase <PolyMeshTraits,HMesh> {
       DECLARE_SUBCLASS (Edge, HMesh::Edge); DECLARE_END;
+    public:
+      bool isSmooth;
+      Edge() : isSmooth( false ) {}
     };
 
     /*
