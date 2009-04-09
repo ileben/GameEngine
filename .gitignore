@@ -29,3 +29,8 @@ libGameEngine.dll
 *.Ivan.user
 projects/visualc8/Debug
 projects/visualc8/Release
+projects/visualc8/Debug_2008
+projects/visualc8/Release_2008
+projects/visualc8/Debug_2009
+projects/visualc8/Release_2009
+*.embedded
