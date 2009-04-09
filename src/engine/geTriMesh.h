@@ -7,6 +7,7 @@
 #include "geMaterial.h"
 #include "gePolyMesh.h"
 #include "geTexMesh.h"
+#include "geShader.h"
 
 #pragma warning(push)
 #pragma warning(disable:4251)
@@ -19,53 +20,29 @@ namespace GE
   within the vertex structure
   --------------------------------------------------------*/
 
-  namespace VFType
-  {
-    enum Enum
-    {
-      Uint  = 0,
-      Int   = 1,
-      Float = 2
-    };
-  }
-
-  namespace VFTarget
-  {
-    enum Enum
-    {
-      Attribute     = 0,
-      Coord         = 1,
-      TexCoord      = 2,
-      Normal        = 3,
-      Tangent       = 4,
-      Bitangent     = 5,
-      BoneIndex     = 6,
-      BoneWeight    = 7
-    };
-  }
-
   struct VFMember
   {
-    VFTarget::Enum target;
-    VFType::Enum type;
-    Uint32 count;
+    ShaderData::Enum data;
+    DataUnit unit;
     UintSize offset;
-    Int32 attribID;
+    CharString attribName;
+    DataUnit attribUnit;
     bool attribNorm;
+    Int32 attribID;
 
     VFMember () {};
-    VFMember (VFTarget::Enum newTarget,
-              VFType::Enum newType,
-              Uint32 newCount,
+    VFMember (ShaderData::Enum newData,
+              DataUnit newUnit,
               UintSize newOffset,
-              Int32 newAttribID = 0,
+              CharString newAttribName = "",
+              DataUnit newAttribUnit = DataUnit(),
               bool newAttribNorm = false)
     {
-      target = newTarget;
-      type = newType;
-      count = newCount;
+      data = newData;
+      unit = newUnit;
       offset = newOffset;
-      attribID = newAttribID;
+      attribUnit = newAttribUnit;
+      attribName = newAttribName;
       attribNorm = newAttribNorm;
     }
   };
@@ -103,9 +80,9 @@ namespace GE
     class VertexFormat : public VFormat { public:
       VertexFormat() : VFormat(sizeof(Vertex))
       {
-        addMember( VFMember( VFTarget::TexCoord, VFType::Float, 2, 0 ) );
-        addMember( VFMember( VFTarget::Normal,   VFType::Float, 3, sizeof(Vector2) ) );
-        addMember( VFMember( VFTarget::Coord,    VFType::Float, 3, sizeof(Vector2)+sizeof(Vector3) ) );
+        addMember( VFMember( ShaderData::TexCoord, DataUnit::Vec2, 0 ) );
+        addMember( VFMember( ShaderData::Normal,   DataUnit::Vec3, sizeof(Vector2) ) );
+        addMember( VFMember( ShaderData::Coord,    DataUnit::Vec3, sizeof(Vector2)+sizeof(Vector3) ) );
       }
     };
   };

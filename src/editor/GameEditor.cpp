@@ -402,25 +402,6 @@ int main (int argc, char **argv)
   renderer = kernel.getRenderer();
   printf( "Kernel loaded\n" );
 
-  //Initialize materials
-  Shader *shader = new Shader;
-  shader->fromFile( "shadevert_geom_gbuf.c", "shadefrag_geom_gbuf.c" );
-
-  Shader *skinShader = new Shader;
-  skinShader->registerVertexAttrib( "boneIndex" );
-  skinShader->registerVertexAttrib( "boneWeight" );
-  skinShader->registerUniform( "skinMatrix", GE_UNIFORM_MATRIX, 1 );
-  skinShader->fromFile( "shadevert_geom_skin_gbuf.c", "shadefrag_geom_gbuf.c" );
-
-  StandardMaterial *matWhite = new StandardMaterial;
-  matWhite->setSpecularity( 0.5 );
-  matWhite->setAmbientColor( matWhite->getDiffuseColor() * .8f );
-  matWhite->setShader( shader );
-
-  StandardMaterial *matWhiteSkin = new StandardMaterial;
-  matWhiteSkin->setSpecularity( 0.5 );
-  matWhiteSkin->setShader( skinShader );
-
   //Setup 3D scene
   scene = new Scene;
 
@@ -441,7 +422,6 @@ int main (int argc, char **argv)
   {
     triMeshActor = new TriMeshActor;
     triMeshActor->setMesh( mesh );
-    triMeshActor->setMaterial( matWhite );
     actorRender = triMeshActor;
     meshRender = mesh;
   }
@@ -450,7 +430,6 @@ int main (int argc, char **argv)
   {
     skinMeshActor = new SkinMeshActor;
     skinMeshActor->setMesh( character );
-    skinMeshActor->setMaterial( matWhiteSkin );
     actorRender = skinMeshActor;
     meshRender = character->mesh;
   }
@@ -466,6 +445,12 @@ int main (int argc, char **argv)
   actorRender->translate( -center.x, -center.y, -center.z );
   actorRender->scale( scale );
   findBounds( meshRender, actorRender->getWorldMatrix() );
+
+  //Initialize materials
+  StandardMaterial *matWhite = new StandardMaterial;
+  matWhite->setSpecularity( 0.5 );
+  matWhite->setAmbientColor( matWhite->getDiffuseColor() * .8f );
+  actorRender->setMaterial( matWhite );
   
   //Create floor cube
   TriMesh *cubeMesh = new CubeMesh;

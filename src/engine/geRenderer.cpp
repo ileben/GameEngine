@@ -68,6 +68,52 @@ namespace GE
   Rendering interface
   --------------------------------------*/
 
+  Shader* Renderer::findShaderByKey (const ShaderKey &key)
+  {
+    for (UintSize s=0; s<shaders.size(); ++s)
+      if (shaders[s] == key)
+        return shaders[s].shader;
+
+    return NULL;
+  }
+
+  Shader* Renderer::composeShader (RenderTarget::Enum target,
+                                   Actor *geometry,
+                                   Material *material)
+  {
+    ShaderKey key;
+    key.target = target;
+    
+    if (geometry == NULL) key.geomClass = Class(Actor);
+    else key.geomClass = geometry->getShaderComposingClass();
+    
+    if (material == NULL) key.matClass = Class(Material);
+    else key.matClass = material->getShaderComposingClass();
+
+    Shader* shader = findShaderByKey( key );
+    if (shader != NULL) return shader;
+
+    shader = new Shader;
+    if (geometry != NULL) geometry->composeShader( shader );
+    if (material != NULL) material->composeShader( shader );
+
+    printf( "\n");
+    printf( "========================\n");
+    printf( "    Composing shader    \n" );
+    printf( "========================\n");
+    printf( "Target: %s\n", target == RenderTarget::GBuffer ? "GBuffer" : "ShadowMap" );
+    printf( "Geometry: %s\n", key.geomClass->getString() );
+    printf( "Material: %s\n", key.matClass->getString() );
+    printf( "\n" );
+
+    shader->compose( target );
+    
+    key.shader = shader;
+    shaders.pushBack( key );
+
+    return shader;
+  }
+
   Shader* Renderer::getCurrentShader() {
     return curShader;
   }
@@ -172,23 +218,14 @@ namespace GE
     //Load deferred light shader once
     if (!deferredInit)
     {
-      shaderGeomFbuf = new Shader;
-      shaderGeomFbuf->fromFile( "shadevert_geom_fbuf.c", "shadefrag_geom_fbuf.c");
-
-      shaderGeomSkinFbuf = new Shader;
-      shaderGeomSkinFbuf->registerVertexAttrib( "boneIndex" );
-      shaderGeomSkinFbuf->registerVertexAttrib( "boneWeight" );
-      shaderGeomSkinFbuf->registerUniform( "skinMatrix", GE_UNIFORM_MATRIX, 1 );
-      shaderGeomSkinFbuf->fromFile( "shadevert_geom_skin_fbuf.c", "shadefrag_geom_fbuf.c");
-
       shaderLightSpot = new Shader;
-      shaderLightSpot->registerUniform( "samplerVertex", GE_UNIFORM_TEXTURE, 1 );
-      shaderLightSpot->registerUniform( "samplerNormal", GE_UNIFORM_TEXTURE, 1 );
-      shaderLightSpot->registerUniform( "samplerColor", GE_UNIFORM_TEXTURE, 1 );
-      shaderLightSpot->registerUniform( "samplerSpec", GE_UNIFORM_TEXTURE, 1 );
-      shaderLightSpot->registerUniform( "samplerShadow", GE_UNIFORM_TEXTURE, 1 );
-      shaderLightSpot->registerUniform( "castShadow", GE_UNIFORM_INT, 1 );
-      shaderLightSpot->registerUniform( "winSize", GE_UNIFORM_FLOAT, 2 );
+      shaderLightSpot->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerVertex" );
+      shaderLightSpot->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerNormal" );
+      shaderLightSpot->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
+      shaderLightSpot->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerSpec" );
+      shaderLightSpot->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerShadow" );
+      shaderLightSpot->registerUniform( ShaderType::Fragment, DataUnit::Int, "castShadow" );
+      shaderLightSpot->registerUniform( ShaderType::Fragment, DataUnit::Vec2, "winSize" );
       shaderLightSpot->fromFile( "shadevert_light.c", "shadefrag_light.c" );
 
       deferredSampler[ Deferred::Vertex ] = shaderLightSpot->getUniformID( "samplerVertex" );
@@ -592,18 +629,9 @@ namespace GE
         if (!node.actor->isRenderable())
           continue;
 
-        if (ClassOf(node.actor) == Class(SkinMeshActor))
-        {
-          curMaterial = NULL;
-          curShader = shaderGeomSkinFbuf;
-          shaderGeomSkinFbuf->use();
-        }
-        else
-        {
-          curMaterial = NULL;
-          curShader = shaderGeomFbuf;
-          shaderGeomFbuf->use();
-        }
+        curMaterial = NULL;
+        curShader = composeShader( RenderTarget::ShadowMap, node.actor, curMaterial );
+        curShader->use();
 
         node.actor->render( GE_ANY_MATERIAL_ID );
 
@@ -636,10 +664,12 @@ namespace GE
         Material *mat = node.actor->getMaterial();
         if (mat == NULL) {
           
-          //Use default if none
+          //Compose shader
           curMaterial = NULL;
-          curShader = NULL;
+          curShader = composeShader( RenderTarget::GBuffer, node.actor, curMaterial );
+          curShader->use();
 
+          //Use default material if none
           Material::BeginDefault();
           node.actor->render( GE_ANY_MATERIAL_ID );
           
@@ -649,10 +679,12 @@ namespace GE
           MultiMaterial *mmat = (MultiMaterial*) mat;
           for (UintSize s=0; s<mmat->getNumSubMaterials(); ++s)
           {
-            //Render with each sub-material
+            //Compose shader
             curMaterial = mmat->getSubMaterial((MaterialID)s);
-            if (curMaterial != NULL) curShader = curMaterial->getShader();
+            curShader = composeShader( RenderTarget::GBuffer, node.actor, curMaterial );
+            curShader->use();
 
+            //Render with each sub-material
             mmat->selectSubMaterial( (MaterialID)s );
             mmat->begin();
             node.actor->render( (MaterialID)s );
@@ -660,11 +692,13 @@ namespace GE
           }
         
         }else{
-          
-          //Render with given material
-          curMaterial = mat;
-          curShader = curMaterial->getShader();
 
+          //Compose shader
+          curMaterial = mat;
+          curShader = composeShader( RenderTarget::GBuffer, node.actor, curMaterial );
+          curShader->use();
+
+          //Render with given material
           mat->begin();
           node.actor->render( GE_ANY_MATERIAL_ID );
           mat->end();

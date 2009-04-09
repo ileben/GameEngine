@@ -3,6 +3,8 @@
 
 #include "util/geUtil.h"
 #include "geResource.h"
+#include "geShaders.h"
+#include "geRenderer.h"
 
 #pragma warning(push)
 #pragma warning(disable:4251)
@@ -21,13 +23,69 @@ namespace GE
   Shader
   ------------------------------------*/
   
-  enum UniformType
+  namespace DataType {
+    enum Enum
+    {
+      Uint,
+      Int,
+      Float,
+      Matrix,
+      Sampler2D
+    };};
+
+  struct DataUnit
   {
-    GE_UNIFORM_INT,
-    GE_UNIFORM_FLOAT,
-    GE_UNIFORM_MATRIX,
-    GE_UNIFORM_TEXTURE
+    DataType::Enum type;
+    int count;
+
+    DataUnit ()
+      { type=DataType::Int; count=1; }
+    DataUnit (DataType::Enum t, int c)
+      { type=t; count=c; }
+    bool operator== (const DataUnit &u)
+      { return (type == u.type && count == u.count); }
+    CharString toString();
+
+    static DataUnit Float;
+    static DataUnit Vec2;
+    static DataUnit Vec3;
+    static DataUnit Vec4;
+
+    static DataUnit Int;
+    static DataUnit IVec2;
+    static DataUnit IVec3;
+    static DataUnit IVec4;
+
+    static DataUnit Uint;
+    static DataUnit UVec2;
+    static DataUnit UVec3;
+    static DataUnit UVec4;
+
+    static DataUnit Mat3;
+    static DataUnit Mat4;
+    static DataUnit Sampler2D;
   };
+
+  namespace SocketFlow {
+    enum Enum
+    {
+      In,
+      Out
+    };}
+
+  namespace ShaderData {
+    enum Enum
+    {
+      Coord,
+      TexCoord,
+      Normal,
+      Diffuse,
+      Specular,
+      SpecularExp,
+      Custom,
+      Attribute,
+      Uniform
+    };}
   
   class GE_API_ENTRY Shader : public Resource
   {
@@ -35,28 +93,76 @@ namespace GE
     friend class Material;
     
   private:
-    
-    struct Uniform
-    {
-      CharString  name;
-      UniformType type;
-      int count;
-      Int32 ID;
-      
-      Uniform () {};
-      Uniform (const CharString &newName, UniformType newType, int newCount)
-        { name = newName; type = newType; count = newCount; }
-    };
 
     struct VertexAttrib
     {
       CharString name;
+      DataUnit unit;
       Int32 ID;
 
-      VertexAttrib() {};
-      VertexAttrib(const CharString &newName)
-        { name = newName; }
+      VertexAttrib () {};
+      VertexAttrib (const DataUnit &u, const CharString &n )
+        { unit = u; name = n; }
     };
+
+    struct Uniform
+    {
+      ShaderType::Enum loc;
+      CharString name;
+      DataUnit unit;
+      Uint32 count;
+      Int32 ID;
+      
+      Uniform () {};
+      Uniform (ShaderType::Enum l, const DataUnit &u, const CharString &n, Uint32 c=1 )
+        { loc = l; unit = u; name = n; count = c; }
+    };
+
+    struct Socket
+    {
+      ShaderData::Enum data;
+      DataUnit unit;
+      CharString name;
+      int index;
+      bool access[2];
+
+      Socket()
+        : index( -1 ) {}
+      Socket( ShaderData::Enum d, int i=-1 )
+        { data = d; index = i; resolveBuiltIn(); }
+      Socket( ShaderData::Enum d, const DataUnit &u, const CharString &n, int i=-1 )
+        { data = d; unit = u; name = n; index = i; resolveBuiltIn(); }
+      bool operator== (const Socket &s) {
+        if (data != s.data) return false;
+        if (data != ShaderData::Custom) return (index == s.index);
+        else return (name == s.name && unit == s.unit && index == s.index); }
+      void resolveBuiltIn();
+      CharString getInitString();
+    };
+
+    struct Node
+    {
+      ShaderType::Enum location;
+      ArrayList< Socket > inSocks;
+      ArrayList< Socket > outSocks;
+      CharString code;
+    };
+
+    Node *newShaderNode;
+    LinkedList< Node* > vertShaderNodes;
+    LinkedList< Node* > fragShaderNodes;
+    
+    void findNodesForSockets (LinkedList<Socket> *requiredSocks,
+                              LinkedList<Node*> *availableNodes,
+                              LinkedList<Socket> *satisfiedSocks,
+                              LinkedList<Node*> *usedNodes);
+
+    CharString outputShader (LinkedList<Socket> *varying,
+                             LinkedList<Socket> *init,
+                             LinkedList<Socket> *done,
+                             LinkedList<Node*> *nodes,
+                             const CharString &code,
+                             ShaderType::Enum target);
     
     GLShader  *vertex;
     GLShader  *fragment;
@@ -71,18 +177,40 @@ namespace GE
     Shader ();
     virtual ~Shader ();
 
-    void registerVertexAttrib (const CharString &name);
-    
-    void registerUniform (const CharString &name,
-                          UniformType type,
-                          int count);
+    Int32 registerVertexAttrib (const DataUnit &unit,
+                                const CharString &name);
+
+    Int32 registerUniform (ShaderType::Enum location,
+                           const DataUnit &unit,
+                           const CharString &name,
+                           Uint32 count=1);
+
+    void composeNodeNew (ShaderType::Enum location);
+    void composeNodeCode (const CharString &code);
+    void composeNodeEnd ();
+
+    void composeNodeSocket (SocketFlow::Enum flow,
+                            ShaderData::Enum data,
+                            int index=-1);
+
+    void composeNodeSocket (SocketFlow::Enum flow,
+                            ShaderData::Enum data,
+                            const DataUnit &unit,
+                            const CharString &name,
+                            int index=-1 );
+
+    bool compose (RenderTarget::Enum target);
+
 
     Int32 getVertexAttribID (UintSize index);
     Int32 getVertexAttribID (const CharString &name);
     Int32 getUniformID (UintSize index);
     Int32 getUniformID (const CharString &name);
 
-    void fromFile (const String &fileVertex,
+    bool fromString (const CharString &strVertex,
+                     const CharString &strFragment);
+
+    bool fromFile (const String &fileVertex,
                    const String &fileFragment);
     
     UintSize getUniformCount ();

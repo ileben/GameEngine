@@ -15,12 +15,13 @@ namespace GE
    * Vertex or fragment shader
    *================================*/
 
-  enum ShaderType
-  {
-    GE_SHADER_INVALID,
-    GE_SHADER_VERTEX,
-    GE_SHADER_FRAGMENT
-  };
+  namespace ShaderType {
+    enum Enum
+    {
+      Vertex     =  0,
+      Fragment   =  1,
+      Invalid    =  2
+    };};
 
   class GE_API_ENTRY GLShader
   {
@@ -29,12 +30,12 @@ namespace GE
     
   protected:
     Uint32 handle;
-    ShaderType type;
+    ShaderType::Enum type;
     
   public:
     GLShader ();
     virtual ~GLShader ();
-    void create (ShaderType type);
+    void create (ShaderType::Enum type);
     void fromString (const char *code);
     bool fromFile (const String &file);
     bool compile ();
@@ -59,7 +60,7 @@ namespace GE
     virtual ~GLProgram ();
     void create ();
     void attach (GLShader *s);
-    void detach (ShaderType which);
+    void detach (ShaderType::Enum which);
     GLShader* getVertex ();
     GLShader* getFragment ();
     bool link ();

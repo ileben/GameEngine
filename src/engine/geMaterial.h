@@ -131,18 +131,19 @@ namespace GE
     
   private: //internal classes
     
-    Shader *shader;
     ArrayList <UniformProperty*> uniformProps;
     void freeUniformProps ();
     
   public: //user
+
+    virtual ClassPtr getShaderComposingClass() { return Class(Material); }
+    virtual void composeShader( Shader *shader ) {}
     
     Material ();
     virtual ~Material ();
     
-    void setShader (Shader *newShader);
-    void setProperty (const String &name, void *value);
-    Shader* getShader();
+    void setShader (Shader *newShader); //obsolete
+    void setProperty (const String &name, void *value); //obsolete
     
     virtual void begin ();
     virtual void end ();
@@ -263,6 +264,36 @@ namespace GE
     Texture *getSpecularityTexture ();
     
     virtual void begin ();
+  };
+
+  /*
+  ============================================
+  
+  Uses a texture for diffuse color
+  
+  ============================================*/
+
+  class DiffuseTexMaterial : public StandardMaterial
+  {
+    DECLARE_SUBCLASS (DiffuseTexMaterial, StandardMaterial);
+    DECLARE_END;
+
+  private:
+
+    Texture *texDiffuse;
+
+  public:
+
+    virtual ClassPtr getShaderComposingClass() { return Class(DiffuseTexMaterial); }
+    virtual void composeShader( Shader *shader );
+
+    DiffuseTexMaterial();
+
+    void setDiffuseTexture (Texture *tex);
+    Texture *getDiffuseTexture ();
+
+    virtual void begin();
+    virtual void end();
   };
   
   

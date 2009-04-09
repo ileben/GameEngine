@@ -30,11 +30,15 @@ namespace GE
 
   protected:
     TriMesh *mesh;
+    ArrayList<Int32> attribIDs;
     
-    void beginVertexData (Shader *shader, const VFormat &format, void *data);
-    void endVertexData (Shader *shader, const VFormat &format);
+    void beginVertexData (Shader *shader, VFormat *format, void *data);
+    void endVertexData (Shader *shader, VFormat *format);
     
   public:
+    virtual ClassPtr getShaderComposingClass() { return Class(TriMeshActor); }
+    virtual void composeShader( Shader *shader );
+
     TriMeshActor();
     virtual ~TriMeshActor();
 

@@ -56,26 +56,26 @@ namespace GE
 
   GLShader::GLShader ()
   {
-    this->type = GE_SHADER_INVALID;
+    this->type = ShaderType::Invalid;
     this->handle = 0;
   }
 
   GLShader::~GLShader ()
   {
-    glDeleteShader (handle);
+    glDeleteShader( handle );
   }
   
-  void GLShader::create (ShaderType type)
+  void GLShader::create (ShaderType::Enum type)
   {
     if (handle != 0) return;
     
     switch (type)
     {
-    case GE_SHADER_VERTEX:
-      handle = glCreateShader (GL_VERTEX_SHADER);
+    case ShaderType::Vertex:
+      handle = glCreateShader( GL_VERTEX_SHADER );
       break;
-    case GE_SHADER_FRAGMENT:
-      handle = glCreateShader (GL_FRAGMENT_SHADER);
+    case ShaderType::Fragment:
+      handle = glCreateShader( GL_FRAGMENT_SHADER );
       break;
     }
     
@@ -139,9 +139,9 @@ namespace GE
 
   GLProgram::~GLProgram ()
   {
-    detach (GE_SHADER_VERTEX);
-    detach (GE_SHADER_FRAGMENT);
-    glDeleteProgram (handle);
+    detach( ShaderType::Vertex );
+    detach( ShaderType::Fragment );
+    glDeleteProgram( handle );
   }
   
   void GLProgram::create ()
@@ -149,16 +149,16 @@ namespace GE
     handle = glCreateProgram ();
   }
 
-  void GLProgram::detach (ShaderType which)
+  void GLProgram::detach (ShaderType::Enum which)
   {
     switch (which)
     {
-    case GE_SHADER_VERTEX:
+    case ShaderType::Vertex:
       if (vertex != NULL)
         glDetachShader (handle, vertex->handle);
       break;
       
-    case GE_SHADER_FRAGMENT:
+    case ShaderType::Fragment:
       if (fragment != NULL)
         glDetachShader (handle, fragment->handle);
       break;
@@ -171,13 +171,13 @@ namespace GE
     
     switch (s->type)
     {
-    case GE_SHADER_VERTEX:
-      glAttachShader (handle, s->handle);
+    case ShaderType::Vertex:
+      glAttachShader( handle, s->handle );
       vertex = s;
       break;
 
-    case GE_SHADER_FRAGMENT:
-      glAttachShader (handle, s->handle);
+    case ShaderType::Fragment:
+      glAttachShader( handle, s->handle );
       fragment = s;
       break;
     }

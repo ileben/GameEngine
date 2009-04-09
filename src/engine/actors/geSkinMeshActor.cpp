@@ -287,66 +287,60 @@ namespace GE
     }
   }
 
+  void SkinMeshActor::composeShader( Shader *shader )
+  {
+    TriMeshActor::composeShader( shader );
+
+    //Register the uniform to pass matrix data in
+    skinMatUniform = shader->registerUniform( ShaderType::Vertex, DataUnit::Mat4, "skinMatrix", 24 );
+
+    //This node applies skin to the vertex coordinate
+    shader->composeNodeNew( ShaderType::Vertex );
+    shader->composeNodeSocket( SocketFlow::In, ShaderData::Coord );
+    shader->composeNodeSocket( SocketFlow::Out, ShaderData::Coord );
+    shader->composeNodeCode(
+      "outCoord = vec4( 0,0,0,0 );\n"
+      "for (int i=0; i<4; ++i)\n"
+      "  outCoord += boneWeight[i] * (skinMatrix[ int(boneIndex[i]) ] * inCoord);\n" );
+    shader->composeNodeEnd();
+
+    //This node applies skin to normal
+    shader->composeNodeNew( ShaderType::Vertex );
+    shader->composeNodeSocket( SocketFlow::In, ShaderData::Normal );
+    shader->composeNodeSocket( SocketFlow::Out, ShaderData::Normal );
+    shader->composeNodeCode(
+      "vec4 inNormal4 = vec4( inNormal, 0.0 );\n"
+      "outNormal = vec3( 0,0,0 );\n"
+      "for (int i=0; i<4; ++i)\n"
+      "  outNormal += boneWeight[i] * (skinMatrix[ int(boneIndex[i]) ] * inNormal4).xyz;\n" );
+    shader->composeNodeEnd();
+  }
+
   void SkinMeshActor::render (MaterialID materialID)
   {
     //Make sure there's something to render
     if (character == NULL) return;
-    VFormat *format = (character->mesh != NULL ? character->mesh->getVertexFormat() : NULL);
     Shader *shader = Kernel::GetInstance()->getRenderer()->getCurrentShader();
 
     //Walk sub meshes
     for (UintSize m=0; m<character->meshes.size(); ++m)
     {
-      SkinTriMesh *mesh = character->meshes[m];
+      SkinTriMesh *subMesh = character->meshes[m];
 
       //Construct a mesh-specific array of skin matrices
       Matrix4x4 meshMats[24];
-      for (UintSize b=0; b<mesh->mesh2skinSize; ++b)
-        meshMats[b] = skinMats[ mesh->mesh2skinMap[b] ];
+      for (UintSize b=0; b<subMesh->mesh2skinSize; ++b)
+        meshMats[b] = skinMats[ subMesh->mesh2skinMap[b] ];
 
       //Pass bone matrices to the shader
       if (shader != NULL) {
-        Int32 uniMatrix = shader->getUniformID( "skinMatrix" );
-        glUniformMatrix4fv( uniMatrix, mesh->mesh2skinSize, GL_FALSE, (GLfloat*)meshMats );
+        Int32 uniMatrix = shader->getUniformID( skinMatUniform );
+        glUniformMatrix4fv( uniMatrix, subMesh->mesh2skinSize, GL_FALSE, (GLfloat*)meshMats );
       }
-
-      //Walk material index groups
-      for (UintSize g=0; g<mesh->groups.size(); ++g)
-      {
-        //Check if the material id matches
-        TriMesh::IndexGroup &grp = mesh->groups[ g ];
-        if (materialID != grp.materialID &&
-            materialID != GE_ANY_MATERIAL_ID)
-          continue;
-        
-        //Pass the geometry to OpenGL
-
-        if (mesh->isOnGpu)
-        {
-          GE_glBindBuffer( GL_ARRAY_BUFFER, mesh->dataVBO );
-          GE_glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, mesh->indexVBO );
-          beginVertexData( shader, *format, NULL );
-          glDrawElements( GL_TRIANGLES, grp.count, GL_UNSIGNED_INT,
-                          Util::PtrOff( 0, grp.start * sizeof(VertexID)) );
-        }
-        else
-        {
-          beginVertexData( shader, *format, mesh->data.buffer() );
-          glDrawElements( GL_TRIANGLES, grp.count, GL_UNSIGNED_INT,
-                          mesh->indices.buffer() + grp.start);
-        }
-
-        endVertexData( shader, *format );
-
-        if (mesh->isOnGpu)
-        {
-          glBindBuffer( GL_ARRAY_BUFFER, 0 );
-          glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );
-        }
-
-        if (materialID != GE_ANY_MATERIAL_ID)
-          break;
-      }
+      
+      //Render this sub mesh
+      this->mesh = subMesh;
+      TriMeshActor::render( materialID );
     }
   }
 

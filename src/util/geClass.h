@@ -89,6 +89,7 @@ namespace GE
   typedef std::vector <Property*> PTable;
   typedef std::map <std::string, ClassPtr> CTable;
   typedef std::map <ClassID, ClassPtr> ITable;
+  #define INVALID_CLASS_PTR NULL
   
   /*
   --------------------------------------------------------

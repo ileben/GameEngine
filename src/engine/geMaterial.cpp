@@ -193,14 +193,10 @@ namespace GE
   
   Material::Material ()
   {
-    shader = NULL;
   }
   
   Material::~Material ()
   {
-    if (shader != NULL)
-      shader->dereference ();
-    
     freeUniformProps ();
   }
   
@@ -215,27 +211,17 @@ namespace GE
     uniformProps.clear ();
   }
   
-  void Material::setShader (Shader *newShader)
+  void Material::setShader (Shader *shader)
   {
-    //Unreference old shader and free shader-related props
-    if (shader != NULL)
-    {
-      shader->dereference ();
-      shader = NULL;
-      freeUniformProps ();
-    }
+    //Free shader-related props
+    freeUniformProps ();
     
     //Shader must exist and be loaded
-    if (newShader == NULL)
+    if (shader == NULL)
       return;
     
-    if (newShader->program == NULL)
+    if (shader->program == NULL)
       return;
-    
-    //Reference new shader
-    shader = newShader;
-    shader->reference ();
-    
     
     //Add uniform properties to material for each uniform found in shader
     int texUnit = 0;
@@ -243,27 +229,27 @@ namespace GE
     for (UintSize u=0; u < shader->getUniformCount(); ++u)
     {
       Shader::Uniform &uni = shader->getUniform (u);
-      switch (uni.type)
+      switch (uni.unit.type)
       {
-      case GE_UNIFORM_INT:
+      case DataType::Int:
         uniformProps.pushBack (new UniformVecProperty<Int32>
-                               (newShader->program,
-                                uni.name, uni.count));
+                               (shader->program,
+                                uni.name, uni.unit.count));
         break;
         
-      case GE_UNIFORM_FLOAT:
+      case DataType::Float:
         uniformProps.pushBack (new UniformVecProperty<Float>
-                               (newShader->program,
-                                uni.name, uni.count));
+                               (shader->program,
+                                uni.name, uni.unit.count));
         break;
         
-      case GE_UNIFORM_MATRIX:
+      case DataType::Matrix:
         //TODO
         break;
         
-      case GE_UNIFORM_TEXTURE:
+      case DataType::Sampler2D:
         uniformProps.pushBack (new UniformTexProperty
-                               (newShader->program,
+                               (shader->program,
                                 uni.name, texUnit++));
         break;
       }
@@ -282,20 +268,9 @@ namespace GE
       }
     }
   }
-
-  Shader* Material::getShader()
-  {
-    return shader;
-  }
   
   void Material::begin()
-  {
-    //Use custom shader if present
-    if( shader != NULL )
-      shader->use();
-    else
-      GLProgram::UseFixed();
-    
+  {    
     //Begin properties
     for( UintSize p=0; p<uniformProps.size(); ++p )
       uniformProps[ p ]->begin();
@@ -600,11 +575,11 @@ namespace GE
   {
     //Setup the shader object
     Shader *specShader = new Shader;
+    specShader->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "textures[0]" );
+    specShader->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "textures[1]" );
+    specShader->registerUniform( ShaderType::Fragment, DataUnit::Int, "useTextures[0]" );
+    specShader->registerUniform( ShaderType::Fragment, DataUnit::Int, "useTextures[1]" );
     specShader->fromFile( "specularity.vertex.c", "specularity.fragment.c" );
-    specShader->registerUniform( "textures[0]", GE_UNIFORM_TEXTURE, 1 );
-    specShader->registerUniform( "textures[1]", GE_UNIFORM_TEXTURE, 1 );
-    specShader->registerUniform( "useTextures[0]", GE_UNIFORM_INT, 1 );
-    specShader->registerUniform( "useTextures[1]", GE_UNIFORM_INT, 1 );
     
     //Assign shader
     setShader( specShader );
@@ -661,6 +636,24 @@ namespace GE
         glEnable (GL_BLEND);
         glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
       }}
+  }
+
+  /*
+  ============================================
+  
+  Uses texture for diffuse color
+  
+  ============================================*/
+
+  void DiffuseTexMaterial::composeShader (Shader *shader)
+  {
+    shader->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "diffSampler" );
+
+    shader->composeNodeNew( ShaderType::Fragment );
+    shader->composeNodeSocket( SocketFlow::In, ShaderData::TexCoord, 0 );
+    shader->composeNodeSocket( SocketFlow::Out, ShaderData::Diffuse );
+    shader->composeNodeCode( "outDiffuse = texture2D( diffSampler, inTexCoord0.xy );\n" );
+    shader->composeNodeEnd();
   }
   
 }/* namespace GE */

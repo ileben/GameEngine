@@ -1367,6 +1367,12 @@ namespace GE
       return str;
     }
   };
+
+  template <class CharType>
+  BasicString<CharType> operator+ (const char *cstr, const BasicString<CharType> &str)
+  {
+    return BasicString<CharType>( cstr ) + str;
+  }
   
   
   typedef BasicString<char> CharString;

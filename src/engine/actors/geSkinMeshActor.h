@@ -48,7 +48,14 @@ namespace GE
     bool animIsLooping;
     bool animIsPaused;
 
+    Int32 skinMatUniform;
+    Int32 boneIndexAttrib;
+    Int32 boneWeightAttrib;
+
   public:
+    virtual ClassPtr getShaderComposingClass() { return Class(SkinMeshActor); }
+    virtual void composeShader( Shader *shader );
+
     SkinMeshActor();
     virtual ~SkinMeshActor();
 

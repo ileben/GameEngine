@@ -3,6 +3,7 @@
 
 #include "util/geUtil.h"
 #include "geVectors.h"
+#include "geShaders.h"
 
 namespace GE
 {
@@ -19,13 +20,21 @@ namespace GE
   class Shader;
   class Material;
 
+
   /*
   -----------------------------------------
-  Performs scene traversal and rendering
+  Renderer-related enums
   -----------------------------------------*/
 
-  namespace Deferred
-  {
+  namespace RenderTarget {
+    enum Enum
+    {
+      GBuffer,
+      ShadowMap,
+      Lighting
+    };};
+
+  namespace Deferred {
     enum Enum
     {
       Vertex     = 0,
@@ -33,8 +42,24 @@ namespace GE
       Color      = 2,
       Specular   = 3,
       Shadow     = 4
-    };
-  }
+    };}
+
+  struct ShaderKey
+  {
+    RenderTarget::Enum target;
+    ClassPtr matClass;
+    ClassPtr geomClass;
+    Shader *shader;
+    
+    bool operator == (const ShaderKey &k) const {
+      return (target == k.target && matClass == k.matClass && geomClass == k.geomClass);
+    }
+  };
+
+  /*
+  -----------------------------------------
+  Performs scene traversal and rendering
+  -----------------------------------------*/
 
   class GE_API_ENTRY Renderer
   {
@@ -52,6 +77,7 @@ namespace GE
     Camera *camera;
     Shader *curShader;
     Material *curMaterial;
+    ArrayList< ShaderKey > shaders;
     
     bool shadowInit;
     Uint32 shadowMap;
@@ -68,14 +94,16 @@ namespace GE
     Int32 deferredSampler[5];
     Int32 deferredCastShadow;
     Int32 deferredWinSize;
-    Shader *shaderGeomFbuf;
-    Shader *shaderGeomSkinFbuf;
     Shader *shaderLightSpot;
     
     void updateBuffers ();
     void traverseSceneNoMats (Scene *scene);
     void traverseSceneWithMats (Scene *scene);
     void renderShadowMap (Light *light, Scene *scene);
+    Shader* findShaderByKey (const ShaderKey &key);
+    Shader* composeShader (RenderTarget::Enum target,
+                           Actor *geometry,
+                           Material *material);
 
   public:
     
@@ -86,7 +114,6 @@ namespace GE
     void setViewport (int x, int y, int width, int height);
     void setCamera (Camera *camera);
     Camera* getCamera();
-    
     
     void renderShadowQuad ();
     Shader* getCurrentShader();

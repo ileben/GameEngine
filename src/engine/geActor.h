@@ -80,6 +80,10 @@ namespace GE
     Scene* getScene();
     void setIsRenderable (bool renderable);
     bool isRenderable ();
+
+    //Shader composing
+    virtual ClassPtr getShaderComposingClass() { return Class(Actor); }
+    virtual void composeShader( Shader *shader ) {}
     
     //Rendering steps (as invoked by Renderer):
     virtual void prepare () {}

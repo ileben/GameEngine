@@ -475,7 +475,7 @@ int main (int argc, char **argv)
   Shader *skinShader = new Shader;
   skinShader->registerVertexAttrib( "boneIndex" );
   skinShader->registerVertexAttrib( "boneWeight" );
-  skinShader->registerUniform( "skinMatrix", GE_UNIFORM_MATRIX, 1 );
+  skinShader->registerUniform( "skinMatrix", UniformType::Matrix, 1 );
   skinShader->fromFile( "shadevert_geom_skin_gbuf.c", "shadefrag_geom_gbuf.c" );
 
   StandardMaterial matRedLogo;

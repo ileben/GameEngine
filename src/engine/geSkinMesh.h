@@ -67,20 +67,22 @@ namespace GE
     class VertexFormat : public VFormat { public:
       VertexFormat() : VFormat(sizeof(Vertex))
       {
-        addMember( VFMember( VFTarget::TexCoord, VFType::Float, 2,
+        addMember( VFMember( ShaderData::TexCoord, DataUnit::Vec2,
                              0 ));
 
-        addMember( VFMember( VFTarget::Normal, VFType::Float, 3,
+        addMember( VFMember( ShaderData::Normal, DataUnit::Vec3,
                              sizeof(Vector2) ));
 
-        addMember( VFMember( VFTarget::Coord, VFType::Float, 3,
+        addMember( VFMember( ShaderData::Coord, DataUnit::Vec3,
                              sizeof(Vector2)+sizeof(Vector3) ));
 
-        addMember( VFMember( VFTarget::Attribute, VFType::Uint, 4,
-                             sizeof(Vector2)+sizeof(Vector3)*2, 0 ));
+        addMember( VFMember( ShaderData::Attribute, DataUnit::UVec4,
+                             sizeof(Vector2)+sizeof(Vector3)*2,
+                             "boneIndex", DataUnit::Vec4 ));
 
-        addMember( VFMember( VFTarget::Attribute, VFType::Float, 4,
-                             sizeof(Vector2)+sizeof(Vector3)*2+sizeof(Uint32)*4, 1 ));
+        addMember( VFMember( ShaderData::Attribute, DataUnit::Vec4,
+                             sizeof(Vector2)+sizeof(Vector3)*2+sizeof(Uint32)*4,
+                             "boneWeight", DataUnit::Vec4 ));
       }
     };
   };

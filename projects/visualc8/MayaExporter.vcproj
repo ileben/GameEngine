@@ -16,9 +16,9 @@
 	</ToolFiles>
 	<Configurations>
 		<Configuration
-			Name="Debug|Win32"
-			OutputDirectory="Debug\bin"
-			IntermediateDirectory="Debug\$(ProjectName)"
+			Name="Debug_2009|Win32"
+			OutputDirectory="$(ConfigurationName)\bin"
+			IntermediateDirectory="$(ConfigurationName)\$(ProjectName)"
 			ConfigurationType="2"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			CharacterSet="2"
@@ -64,7 +64,7 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/export:initializePlugin /export:uninitializePlugin "
 				AdditionalDependencies="Foundation.lib OpenMaya.lib OpenMayaAnim.lib GameEngine.lib GameUtil.lib GameIO.lib GameImage.lib jpeg.lib libpng.lib zlib.lib"
-				OutputFile="$(OutDir)/GameExporter4Maya.mll"
+				OutputFile="$(OutDir)/GameExporter4Maya09.mll"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="Debug/bin;&quot;C:\Program Files\Autodesk\Maya2009\lib&quot;"
 				GenerateDebugInformation="true"
@@ -99,9 +99,9 @@
 			/>
 		</Configuration>
 		<Configuration
-			Name="Release|Win32"
-			OutputDirectory="Release\bin"
-			IntermediateDirectory="Release\$(ProjectName)"
+			Name="Release_2009|Win32"
+			OutputDirectory="$(ConfigurationName)\bin"
+			IntermediateDirectory="$(ConfigurationName)\$(ProjectName)"
 			ConfigurationType="2"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			CharacterSet="2"
@@ -144,7 +144,7 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/export:initializePlugin /export:uninitializePlugin "
 				AdditionalDependencies="Foundation.lib OpenMaya.lib OpenMayaAnim.lib GameEngine.lib GameUtil.lib GameIO.lib GameImage.lib jpeg.lib libpng.lib zlib.lib"
-				OutputFile="$(OutDir)/GameExporter4Maya.mll"
+				OutputFile="$(OutDir)/GameExporter4Maya09.mll"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="Release/bin;&quot;C:\Program Files\Autodesk\Maya2009\lib&quot;"
 				IgnoreDefaultLibraryNames=""
@@ -179,6 +179,172 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				CommandLine="copy $(TargetPath) &quot;C:\Program Files\Autodesk\Maya2009\bin\plug-ins\$(TargetName)_RELEASE.mll&quot;"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release_2008|Win32"
+			OutputDirectory="$(ConfigurationName)\bin"
+			IntermediateDirectory="$(ConfigurationName)\$(ProjectName)"
+			ConfigurationType="2"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				AdditionalIncludeDirectories="../../src;&quot;C:\Program Files\Autodesk\Maya2008\include&quot;"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;NT_PLUGIN"
+				RuntimeLibrary="2"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="3"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalOptions="/export:initializePlugin /export:uninitializePlugin "
+				AdditionalDependencies="Foundation.lib OpenMaya.lib OpenMayaAnim.lib GameEngine.lib GameUtil.lib GameIO.lib GameImage.lib jpeg.lib libpng.lib zlib.lib"
+				OutputFile="$(OutDir)/GameExporter4Maya08.mll"
+				LinkIncremental="1"
+				AdditionalLibraryDirectories="Release/bin;&quot;C:\Program Files\Autodesk\Maya2008\lib&quot;"
+				IgnoreDefaultLibraryNames=""
+				GenerateDebugInformation="true"
+				ProgramDatabaseFile="$(IntDir)/$(ProjectName).pdb"
+				SubSystem="1"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				CommandLine="copy $(TargetPath) &quot;C:\Program Files\Autodesk\Maya2008\bin\plug-ins\$(TargetName)_RELEASE.mll&quot;"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Debug_2008|Win32"
+			OutputDirectory="$(ConfigurationName)\bin"
+			IntermediateDirectory="$(ConfigurationName)\$(ProjectName)"
+			ConfigurationType="2"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="../../src;&quot;C:\Program Files\Autodesk\Maya2008\include&quot;"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;NT_PLUGIN"
+				MinimalRebuild="true"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="3"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="4"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalOptions="/export:initializePlugin /export:uninitializePlugin "
+				AdditionalDependencies="Foundation.lib OpenMaya.lib OpenMayaAnim.lib GameEngine.lib GameUtil.lib GameIO.lib GameImage.lib jpeg.lib libpng.lib zlib.lib"
+				OutputFile="$(OutDir)/GameExporter4Maya08.mll"
+				LinkIncremental="2"
+				AdditionalLibraryDirectories="Debug/bin;&quot;C:\Program Files\Autodesk\Maya2008\lib&quot;"
+				GenerateDebugInformation="true"
+				ProgramDatabaseFile="$(IntDir)/$(ProjectName).pdb"
+				SubSystem="1"
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				CommandLine="copy $(TargetPath) &quot;C:\Program Files\Autodesk\Maya2008\bin\plug-ins\$(TargetName)_DEBUG.mll&quot;"
 			/>
 		</Configuration>
 	</Configurations>
