@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<VisualStudioToolFile
+	Name="Embedit Files"
+	Version="8.00"
+	>
+	<Rules>
+		<CustomBuildRule
+			Name="Embedit"
+			DisplayName="Embedit"
+			CommandLine="$(SolutionDir)\Release\bin\embedit.exe $(InputPath) $(InputDir)\$(InputName).embedded"
+			Outputs="$(InputDir)\$(InputName).embedded"
+			FileExtensions="*.embedit"
+			ExecutionDescription="Embedding $(InputFileName) ..."
+			>
+			<Properties>
+			</Properties>
+		</CustomBuildRule>
+	</Rules>
+</VisualStudioToolFile>
