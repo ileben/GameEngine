@@ -2,6 +2,7 @@
 #include "geShaders.h"
 #include "geGLHeaders.h"
 #include "io/geFile.h"
+#include "engine/embedit/shadenode.Shader.embedded"
 
 namespace GE
 {
@@ -567,22 +568,12 @@ namespace GE
       fragSocks.pushBack( Socket( ShaderData::Diffuse ));
       fragSocks.pushBack( Socket( ShaderData::Specular ));
       fragSocks.pushBack( Socket( ShaderData::SpecularExp ));
-
-      //Final fragment code writes to GBuffer textures
-      fragCode =
-        "gl_FragData[0] = Coord;\n"
-        "gl_FragData[1] = vec4( normalize( Normal ), 0.0 );\n"
-        "gl_FragData[2] = Diffuse;\n"
-        "gl_FragData[3] = vec4( Specular.xyz, SpecularExp );\n";
+      fragCode = fragEndCodeGBuffer;
 
       break;
     case RenderTarget::ShadowMap:
       vertSocks.pushBack( Socket( ShaderData::Coord ));
-
-      //Final fragment code just writes a pixel
-      fragCode =
-        "gl_FragColor = vec4(1,1,1,1);\n";
-
+      fragCode = fragEndCodeShadowMap;
       break;
     };
 

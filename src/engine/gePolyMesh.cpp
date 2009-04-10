@@ -240,9 +240,6 @@ namespace GE
       if (matchCount == 0)
         groups.add (SmoothGroup (*f));
 
-      if (groups.size() > 1)
-        int oooooo = 0;
-
     }//Walk faces
 
 

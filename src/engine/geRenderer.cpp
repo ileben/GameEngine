@@ -8,8 +8,8 @@
 #include "engine/geGLHeaders.h"
 #include "engine/actors/geSkinMeshActor.h"
 
-#include "engine/embedit/shadevert_light.embedded"
-#include "engine/embedit/shadefrag_light.embedded"
+#include "engine/embedit/shadevert.SpotLight.embedded"
+#include "engine/embedit/shadefrag.SpotLight.embedded"
 
 namespace GE
 {
@@ -229,7 +229,7 @@ namespace GE
       shaderLightSpot->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerShadow" );
       shaderLightSpot->registerUniform( ShaderType::Fragment, DataUnit::Int, "castShadow" );
       shaderLightSpot->registerUniform( ShaderType::Fragment, DataUnit::Vec2, "winSize" );
-      shaderLightSpot->fromString( shadevert_light_embedded, shadefrag_light_embedded );
+      shaderLightSpot->fromString( shadevert_SpotLight_embedded, shadefrag_SpotLight_embedded );
 
       deferredSampler[ Deferred::Vertex ] = shaderLightSpot->getUniformID( "samplerVertex" );
       deferredSampler[ Deferred::Normal ] = shaderLightSpot->getUniformID( "samplerNormal" );

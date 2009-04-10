@@ -8,6 +8,7 @@
 #include "engine/geShader.h"
 #include "engine/geShaders.h"
 #include "engine/geRenderer.h"
+#include "engine/embedit/shadenode.SkinMeshActor.embedded"
 
 namespace GE
 {
@@ -298,21 +299,14 @@ namespace GE
     shader->composeNodeNew( ShaderType::Vertex );
     shader->composeNodeSocket( SocketFlow::In, ShaderData::Coord );
     shader->composeNodeSocket( SocketFlow::Out, ShaderData::Coord );
-    shader->composeNodeCode(
-      "outCoord = vec4( 0,0,0,0 );\n"
-      "for (int i=0; i<4; ++i)\n"
-      "  outCoord += boneWeight[i] * (skinMatrix[ int(boneIndex[i]) ] * inCoord);\n" );
+    shader->composeNodeCode( skinCoordNode );
     shader->composeNodeEnd();
 
     //This node applies skin to normal
     shader->composeNodeNew( ShaderType::Vertex );
     shader->composeNodeSocket( SocketFlow::In, ShaderData::Normal );
     shader->composeNodeSocket( SocketFlow::Out, ShaderData::Normal );
-    shader->composeNodeCode(
-      "vec4 inNormal4 = vec4( inNormal, 0.0 );\n"
-      "outNormal = vec3( 0,0,0 );\n"
-      "for (int i=0; i<4; ++i)\n"
-      "  outNormal += boneWeight[i] * (skinMatrix[ int(boneIndex[i]) ] * inNormal4).xyz;\n" );
+    shader->composeNodeCode( skinNormalNode );
     shader->composeNodeEnd();
   }
 

@@ -7,12 +7,19 @@
 		<CustomBuildRule
 			Name="Embedit"
 			DisplayName="Embedit"
-			CommandLine="$(SolutionDir)\Release\bin\embedit.exe $(InputPath) $(InputDir)\$(InputName).embedded"
-			Outputs="$(InputDir)\$(InputName).embedded"
+			CommandLine="$(SolutionDir)Release\bin\embedit.exe $(InputPath) $(InputDir)$(InputName).embedded [Preprocess]"
+			Outputs="$(InputDir)$(InputName).embedded"
 			FileExtensions="*.embedit"
 			ExecutionDescription="Embedding $(InputFileName) ..."
 			>
 			<Properties>
+				<BooleanProperty
+					Name="Preprocess"
+					DisplayName="Preprocess"
+					PropertyPageName="Preprocessing"
+					Description="The data blocks between &apos;#begin [arrayName]&apos; and &apos;#end&apos; markers are preprocessed into multiple arrays "
+					Switch="--preprocess"
+				/>
 			</Properties>
 		</CustomBuildRule>
 	</Rules>

@@ -13,6 +13,9 @@
 		/>
 	</Platforms>
 	<ToolFiles>
+		<ToolFile
+			RelativePath=".\embedit.rules"
+		/>
 	</ToolFiles>
 	<Configurations>
 		<Configuration
@@ -28,6 +31,9 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="Embedit"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -113,6 +119,9 @@
 				Name="VCCustomBuildTool"
 			/>
 			<Tool
+				Name="Embedit"
+			/>
+			<Tool
 				Name="VCXMLDataGeneratorTool"
 			/>
 			<Tool
@@ -196,6 +205,9 @@
 				Name="VCCustomBuildTool"
 			/>
 			<Tool
+				Name="Embedit"
+			/>
+			<Tool
 				Name="VCXMLDataGeneratorTool"
 			/>
 			<Tool
@@ -277,6 +289,9 @@
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="Embedit"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -367,6 +382,28 @@
 			<File
 				RelativePath="..\..\src\maya\geMayaPlugin.cpp"
 				>
+			</File>
+		</Filter>
+		<Filter
+			Name="embedit"
+			>
+			<File
+				RelativePath="..\..\src\maya\mel.c"
+				>
+				<FileConfiguration
+					Name="Release_2008|Win32"
+					>
+					<Tool
+						Name="Embedit"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug_2008|Win32"
+					>
+					<Tool
+						Name="Embedit"
+					/>
+				</FileConfiguration>
 			</File>
 		</Filter>
 	</Files>
