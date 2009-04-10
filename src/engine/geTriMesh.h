@@ -130,7 +130,8 @@ namespace GE
                                  PolyMesh::HalfEdge *polyHedge,
                                  TexMesh::Vertex *texVert);
     
-    virtual void faceFromPoly (PolyMesh::Face *polyFace);
+    virtual void faceFromPoly (PolyMesh *polyMesh,
+                               PolyMesh::Face *polyFace);
     
   public:
     

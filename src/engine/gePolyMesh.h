@@ -91,14 +91,28 @@ namespace GE
     class GE_API_ENTRY Face : public FaceBase <PolyMeshTraits,HMesh> {
       DECLARE_SUBCLASS (Face, HMesh::Face); DECLARE_END;
       friend class PolyMesh;
+
     private:
-      Uint8 matId;
+      MaterialID matId;
+      UintSize firstTri;
+      UintSize numTris;
+
     public:
       Vector3 center;
       Vector3 normal;
       Uint32 smoothGroups;
-      Face() { smoothGroups = 0; matId = 0; }
-      Uint8 materialID() { return matId; }
+      Face() { smoothGroups = 0; matId = 0; firstTri = 0; numTris = 0; }
+      MaterialID materialID() { return matId; }
+      UintSize firstTriangle() { return firstTri; }
+      UintSize numTriangles() { return numTris; }
+    };
+
+    class Triangle {
+      DECLARE_CLASS( Triangle ); DECLARE_END;
+    public:
+      HalfEdge* hedges[3];
+      Vertex* vertex (int index) { return hedges[index]->dstVertex(); }
+      HalfEdge* hedgeToVertex (int index) { return hedges[index]; }
     };
 
     /*
@@ -142,10 +156,13 @@ namespace GE
     
   public:
 
+    typedef PolyMeshTraits::Triangle Triangle;
     typedef PolyMeshTraits::VertexNormal VertexNormal;
     #include "gePolyMeshIters.h"
 
   private:
+
+    ArrayList<Triangle> triangles;
     VertexNormal dummyVertexNormal;
     DynamicArrayList<VertexNormal> vertexNormals;
     virtual void insertHalfEdge (HMesh::HalfEdge *he);
@@ -188,11 +205,12 @@ namespace GE
   template <class Derived, class Base> class PolyMeshBase : public MeshBase <Derived,Base>
   {
   public:
-    typedef typename Derived::Vertex       Vertex;
-    typedef typename Derived::HalfEdge     HalfEdge;
-    typedef typename Derived::Edge         Edge;
-    typedef typename Derived::Face         Face;
-    typedef typename Derived::VertexNormal VertexNormal;
+    typedef typename Derived::Vertex        Vertex;
+    typedef typename Derived::HalfEdge      HalfEdge;
+    typedef typename Derived::Edge          Edge;
+    typedef typename Derived::Face          Face;
+    typedef typename Derived::Triangle      Triangle;
+    typedef typename Derived::VertexNormal  VertexNormal;
     #include "gePolyMeshIters.h"
   };
 

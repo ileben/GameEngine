@@ -98,13 +98,6 @@ namespace GE
     TexMesh::FaceHedgeIter ufh;
     ArrayList<UniqueVertex> uniqVerts;
     VertexID nextVertexID = 0;
-    
-    /*
-    if (Kernel::Instance->hasRangeElements) {
-      printf( "Max verts: %d\n", Kernel::Instance->maxElementsVertices );
-      printf( "Max indices: %d\n", Kernel::Instance->maxElementsIndices );
-    }
-    */
 
     data.clear();
     indices.clear();
@@ -168,7 +161,7 @@ namespace GE
       
       //Walk faces of current material and invoke the exporter
       for (PolyMesh::MaterialFaceIter mf( m, *mid ); !mf.end(); ++mf)
-        faceFromPoly( *mf );
+        faceFromPoly( m, *mf );
     }
 
     //Deallocate vert-per-face unique data
@@ -226,24 +219,18 @@ namespace GE
   ear-cut algorithm and stores the resulting indices.
   ----------------------------------------------------*/
   
-  void TriMesh::faceFromPoly (PolyMesh::Face *polyFace)
+  void TriMesh::faceFromPoly (PolyMesh *polyMesh,
+                              PolyMesh::Face *polyFace)
   {
-    PolyMesh::HalfEdge *cur = polyFace->firstHedge();
-    PolyMesh::HalfEdge *prev = cur->prevHedge();
-    PolyMesh::HalfEdge *next = cur->nextHedge();
-    
-    do {
-      
+    //Walk the triangles of the face
+    for (PolyMesh::FaceTriIter ft( polyMesh, polyFace ); !ft.end(); ++ft)
+    {
       addFace(
-        ((UniqueData*)prev->tag.ptr)->vertexID,
-        ((UniqueData*)cur->tag.ptr)->vertexID,
-        ((UniqueData*)next->tag.ptr)->vertexID
+        ((UniqueData*)ft->hedgeToVertex(0)->tag.ptr)->vertexID,
+        ((UniqueData*)ft->hedgeToVertex(1)->tag.ptr)->vertexID,
+        ((UniqueData*)ft->hedgeToVertex(2)->tag.ptr)->vertexID
       );
-      
-      cur = cur->nextHedge();
-      next = next->nextHedge();
-      
-    } while (next != prev);
+    }
   }
 
   /*

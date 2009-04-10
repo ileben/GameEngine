@@ -122,3 +122,55 @@ public:
     return (Face*)(*cur);
   }
 };
+
+
+class FaceTriIter
+{
+private:
+  PolyMesh *mesh;
+  Face *face;
+  UintSize cur;
+
+public:
+  FaceTriIter () {
+    this->mesh = NULL;
+    this->face = NULL;
+    this->cur = 0;
+  }
+
+  FaceTriIter (PolyMesh *mesh, Face *face) {
+    begin( mesh, face );
+  }
+
+  void begin (PolyMesh *mesh, Face *face) {
+    this->mesh = mesh;
+    this->face = face;
+    cur = 0;
+  }
+
+  FaceTriIter& operator++() {
+    if (face != NULL)
+      if (cur < face->numTriangles())
+        ++cur;
+    return *this;
+  }
+
+  bool end() const
+  {
+    if (mesh == NULL || face == NULL) return true;
+    if (face->firstTriangle() + cur >= mesh->triangles.size()) return true;
+    return (cur >= face->numTriangles());
+  }
+
+  Triangle* operator*() const
+  {
+    if (mesh == NULL || face == NULL) return NULL;
+    if (face->firstTriangle() + cur >= mesh->triangles.size()) return NULL;
+    return &mesh->triangles[ face->firstTriangle() + cur ];
+  }
+
+  Triangle* operator->() const
+  {
+    return &mesh->triangles[ face->firstTriangle() + cur ];
+  }
+};

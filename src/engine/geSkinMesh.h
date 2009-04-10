@@ -39,6 +39,7 @@ namespace GE
     };
 
     typedef PolyMesh::VertexNormal VertexNormal;
+    typedef PolyMesh::Triangle Triangle;
   };
 
   class SPolyMesh : public PolyMeshBase <SPolyMeshTraits,PolyMesh>

@@ -8,6 +8,7 @@ namespace GE
   DEFINE_CLASS (PolyMesh::HalfEdge);
   DEFINE_CLASS (PolyMesh::Edge);
   DEFINE_CLASS (PolyMesh::Face);
+  DEFINE_CLASS (PolyMesh::Triangle);
 
   typedef PolyMesh::Vertex Vertex;
   typedef PolyMesh::HalfEdge HalfEdge;
@@ -409,22 +410,16 @@ namespace GE
 
   void PolyMesh::triangulate (bool smoothEdges)
   {
-    int vertcount = 0;
-    int polycount = 0;
-
-    ArrayList< TrigEdge > trigEdges;
-
-    for (PolyMesh::VertIter v(this); !v.end(); ++v)
-    {
-      vertcount++;
-      v->tag.id = vertcount;
-    }
+    //int polycount = 0;
+    triangles.clear();
 
     for (PolyMesh::FaceIter f(this); !f.end(); ++f)
     {
-      polycount++;
-      if (polycount == 10163)
-        int oooo = 1;
+      f->firstTri = triangles.size();
+      f->numTris = 0;
+      //polycount++;
+      //if (polycount == 10163)
+        //int oooo = 1;
 
       PolyMesh::FaceVertIter fv;
       UintSize numavg[3] = {0,0,0};
@@ -455,41 +450,6 @@ namespace GE
       Vector3 trigN = Vector::Cross( s2, s1 ).normalize();
       Vector3 trigY = Vector::Cross( trigN, s1 );
       Vector3 trigX = s1;
-
-      /*
-      //Find the most convex corner
-      Float trigNorm = 0.0f;
-      Vector3 s1, s2, trigN, trigX, trigY;
-      PolyMesh::FaceVertIter fvPrev( *f );
-      PolyMesh::FaceVertIter fvCur( *f );
-      PolyMesh::FaceVertIter fvNext( *f );
-      ++fvCur; ++fvNext; ++fvNext;
-      bool firstN = true;
-
-      for ( ; !fvPrev.end(); ++fvPrev, ++fvCur, ++fvNext)
-      {
-        Vector3 s1 = fvPrev->point - fvCur->point;
-        Vector3 s2 = fvNext->point - fvCur->point;
-        Vector3 N = Vector::Cross( s2, s1 );
-        Float norm = N.norm();
-        
-        if (firstN || norm > trigNorm)
-        {
-          trigNorm = norm;
-          trigN = N;
-          trigX = s1;
-          firstN = false;
-        }
-      }
-
-      //Calculate triangulation space if good enough
-      if (trigNorm < -0.001f || trigNorm > +0.001f)
-      {
-        trigN *= (1.0f / trigNorm);
-        trigX = trigX.normalize();
-        trigY = Vector::Cross( trigN, trigX );
-      }
-      else continue;*/
 
       //Construct world-to-trig matrix
       Matrix4x4 trigM;
@@ -536,11 +496,12 @@ namespace GE
         if (!convexInit) { convex = cur->orientation; convexInit = true; }
       }
 
-      //Cut ears until triangle or no ears found
+      //Rest corner iterators
       prev.begin( trigNodes ); --prev;
       cur.begin( trigNodes );
       next.begin( trigNodes ); ++next;
 
+      //Cut ears until triangle or no ears found
       while (trigNodes.size() > 3 && !cur.end())
       {
         //Find next convex node
@@ -558,11 +519,12 @@ namespace GE
           //Cut an ear
           if (isEar)
           {
-            TrigEdge e;
-            e.face = *f;
-            e.vertex1 = prev->vertex;
-            e.vertex2 = next->vertex;
-            trigEdges.pushBack( e );
+            Triangle tri;
+            tri.hedges[0] = f->hedgeTo( prev->vertex );
+            tri.hedges[1] = f->hedgeTo( cur->vertex );
+            tri.hedges[2] = f->hedgeTo( next->vertex );
+            triangles.pushBack( tri );
+            f->numTris += 1;
 
             trigNodes.removeAt( cur );
             findNodeOrientation( prev, convex, convexInit );
@@ -575,29 +537,20 @@ namespace GE
         //Next corner
         ++prev; ++cur; ++next;
       }
-    }
 
-    //Create new edges
-    for (UintSize e=0; e<trigEdges.size(); e++)
-    {
-      //Connect the vertices
-      TrigEdge &edge = trigEdges[e];
-      if (!connectVertices( edge.vertex1, edge.vertex2 )) continue;
+      //Cut the remaining corners
+      while (next != prev)
+      {
+        Triangle tri;
+        tri.hedges[0] = f->hedgeTo( prev->vertex );
+        tri.hedges[1] = f->hedgeTo( cur->vertex );
+        tri.hedges[2] = f->hedgeTo( next->vertex );
+        triangles.pushBack( tri );
+        f->numTris += 1;
+        ++cur; ++next;
+      }
 
-      //Find two adjacent faces
-      HalfEdge *hedge1 = edge.vertex1->outHedgeTo( edge.vertex2 );
-      HalfEdge *hedge2 = edge.vertex2->outHedgeTo( edge.vertex1 );
-      Face *face1 = hedge1->parentFace();
-      Face *face2 = hedge2->parentFace();
-
-      //Copy groups and material IDs off the original face
-      face1->smoothGroups = face2->smoothGroups = edge.face->smoothGroups;
-      setMaterialID( face1, edge.face->materialID() );
-      setMaterialID( face2, edge.face->materialID() );
-
-      //Make the edge smooth if requested
-      hedge1->fullEdge()->isSmooth = smoothEdges;
-    }
+    }//Walk faces
   }
 
 }//namespace GE
