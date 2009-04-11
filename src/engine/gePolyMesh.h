@@ -38,7 +38,8 @@ namespace GE
   {
   public:
 
-    class Vertex; class Edge; class HalfEdge; class Face; class VertexNormal;
+    class Vertex; class Edge; class HalfEdge; class Face;
+    class Triangle; class VertexNormal;
 
     /*
     -----------------------------------------------------------
@@ -94,25 +95,26 @@ namespace GE
 
     private:
       MaterialID matId;
-      UintSize firstTri;
-      UintSize numTris;
+      Triangle *triangle;
 
     public:
       Vector3 center;
       Vector3 normal;
       Uint32 smoothGroups;
-      Face() { smoothGroups = 0; matId = 0; firstTri = 0; numTris = 0; }
       MaterialID materialID() { return matId; }
-      UintSize firstTriangle() { return firstTri; }
-      UintSize numTriangles() { return numTris; }
+      Triangle* firstTriangle() { return triangle; }
+      Face() { smoothGroups = 0; matId = 0; triangle = NULL; }
     };
 
     class Triangle {
       DECLARE_CLASS( Triangle ); DECLARE_END;
     public:
+      Triangle* next;
       HalfEdge* hedges[3];
       Vertex* vertex (int index) { return hedges[index]->dstVertex(); }
       HalfEdge* hedgeToVertex (int index) { return hedges[index]; }
+      Triangle* nextTriangle() { return next; }
+      Triangle() { next = NULL; }
     };
 
     /*
@@ -162,7 +164,8 @@ namespace GE
 
   private:
 
-    ArrayList<Triangle> triangles;
+    DynamicArrayList<Triangle> triangles;
+
     VertexNormal dummyVertexNormal;
     DynamicArrayList<VertexNormal> vertexNormals;
     virtual void insertHalfEdge (HMesh::HalfEdge *he);
@@ -175,17 +178,13 @@ namespace GE
     ----------------------------------------------*/
     
   private:
+    
     int facesPerMaterial [GE_MAX_MATERIAL_ID];
     LinkedList<MaterialID> materialsUsed;
     void addMaterialID (MaterialID m);
     void subMaterialID (MaterialID m);
     virtual void insertFace (HMesh::Face *f);
     virtual ListHandle deleteFace (HMesh::Face *f);
-
-
-  public:
-
-    PolyMesh();
 
   private:
 
@@ -197,9 +196,14 @@ namespace GE
 
   public:
 
-    void triangulate (bool smoothEdges = false);
+    PolyMesh();
+
     void updateNormals (SmoothMetric::Enum metric = SmoothMetric::None);
     void setMaterialID (Face *f, MaterialID id);
+
+    void triangulate ();
+    void clearTriangles();
+    void addTriangle (Face *f, HalfEdge *h1, HalfEdge *h2, HalfEdge *h3);
   };
 
   template <class Derived, class Base> class PolyMeshBase : public MeshBase <Derived,Base>

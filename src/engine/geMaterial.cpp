@@ -1,3 +1,4 @@
+#include "geKernel.h"
 #include "geMaterial.h"
 #include "geTexture.h"
 #include "geShaders.h"
@@ -10,6 +11,7 @@ namespace GE
   DEFINE_CLASS (StandardMaterial);
   DEFINE_CLASS (MultiMaterial);
   DEFINE_CLASS (PhongMaterial);
+  DEFINE_CLASS (DiffuseTexMat);
   
   /*
   ============================================
@@ -645,7 +647,21 @@ namespace GE
   
   ============================================*/
 
-  void DiffuseTexMaterial::composeShader (Shader *shader)
+
+  DiffuseTexMat::DiffuseTexMat()
+  {
+    texDiffuse = NULL;
+  }
+
+  void DiffuseTexMat::setDiffuseTexture (Texture *tex) {
+    texDiffuse = tex;
+  }
+
+  Texture* DiffuseTexMat::getDiffuseTexture () {
+    return texDiffuse;
+  }
+
+  void DiffuseTexMat::composeShader (Shader *shader)
   {
     shader->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "diffSampler" );
 
@@ -654,6 +670,27 @@ namespace GE
     shader->composeNodeSocket( SocketFlow::Out, ShaderData::Diffuse );
     shader->composeNodeCode( "outDiffuse = texture2D( diffSampler, inTexCoord0.xy );\n" );
     shader->composeNodeEnd();
+  }
+
+  void DiffuseTexMat::begin()
+  {
+    StandardMaterial::begin();
+
+    Shader *shader = Kernel::GetInstance()->getRenderer()->getCurrentShader();
+    Int32 samplerID = shader->getUniformID( "diffSampler" );
+    glUniform1i( samplerID, 0 );
+
+    glActiveTexture( GL_TEXTURE0 );
+    glBindTexture( GL_TEXTURE_2D, texDiffuse->getHandle() );
+    glEnable( GL_TEXTURE_2D );
+  }
+
+  void DiffuseTexMat::end()
+  {
+    StandardMaterial::end();
+
+    glActiveTexture( GL_TEXTURE0 );
+    glDisable( GL_TEXTURE_2D );
   }
   
 }/* namespace GE */

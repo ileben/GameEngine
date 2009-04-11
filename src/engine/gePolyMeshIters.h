@@ -127,50 +127,45 @@ public:
 class FaceTriIter
 {
 private:
-  PolyMesh *mesh;
-  Face *face;
-  UintSize cur;
+  
+  Triangle *cur;
 
 public:
-  FaceTriIter () {
-    this->mesh = NULL;
-    this->face = NULL;
-    this->cur = 0;
+
+  FaceTriIter ()
+  {
+    cur = NULL;
   }
 
-  FaceTriIter (PolyMesh *mesh, Face *face) {
-    begin( mesh, face );
+  FaceTriIter (Face *face)
+  {
+    begin( face );
   }
 
-  void begin (PolyMesh *mesh, Face *face) {
-    this->mesh = mesh;
-    this->face = face;
-    cur = 0;
+  void begin (Face *face)
+  {
+    cur = face->firstTriangle();
   }
 
-  FaceTriIter& operator++() {
-    if (face != NULL)
-      if (cur < face->numTriangles())
-        ++cur;
+  FaceTriIter& operator++()
+  {
+    if (cur != NULL)
+      cur = cur->nextTriangle();
     return *this;
   }
 
   bool end() const
   {
-    if (mesh == NULL || face == NULL) return true;
-    if (face->firstTriangle() + cur >= mesh->triangles.size()) return true;
-    return (cur >= face->numTriangles());
+    return (cur == NULL);
   }
 
   Triangle* operator*() const
   {
-    if (mesh == NULL || face == NULL) return NULL;
-    if (face->firstTriangle() + cur >= mesh->triangles.size()) return NULL;
-    return &mesh->triangles[ face->firstTriangle() + cur ];
+    return cur;
   }
 
   Triangle* operator->() const
   {
-    return &mesh->triangles[ face->firstTriangle() + cur ];
+    return cur;
   }
 };

@@ -434,23 +434,54 @@ int main (int argc, char **argv)
     meshRender = character->mesh;
   }
 
-  //Add to scene and find bounding box
-  scene->addChild( actorRender );
+  //Center in the scene
   findBounds( meshRender, actorRender->getWorldMatrix() );
-  
-  //Scale to [100,100] range and center
+  Vector3 trans = center * -1;
+  actorRender->translate( trans.x, trans.y, trans.z );
+
+  //Scale to [100,100,100] range
   Vector3 size = boundsMax - boundsMin;
   Float sizemax = Util::Max( Util::Max( size.x, size.y), size.z );
   Float scale = 100.0f / sizemax;
-  actorRender->translate( -center.x, -center.y, -center.z );
   actorRender->scale( scale );
   findBounds( meshRender, actorRender->getWorldMatrix() );
 
-  //Initialize materials
+  //Assign material
   StandardMaterial *matWhite = new StandardMaterial;
   matWhite->setSpecularity( 0.5 );
   matWhite->setAmbientColor( matWhite->getDiffuseColor() * .8f );
   actorRender->setMaterial( matWhite );
+
+  //Add to scene
+  //scene->addChild( actorRender );
+
+  Image *img = new Image;
+  img->readFile( "oblekica7.jpg", "jpeg" );
+
+  Texture *tex = new Texture;
+  tex->fromImage( img );
+
+  DiffuseTexMat *matTex = new DiffuseTexMat;
+  matTex->setSpecularity( 0.5 );
+  matTex->setDiffuseTexture( tex );
+  //actorRender->setMaterial( matTex );
+
+  for (int x=0; x<4; ++x)
+  {
+    for (int z=0; z<4; ++z)
+    {
+      //SkinMeshActor *a = new SkinMeshActor;
+      //a->setMesh( character );
+      TriMeshActor *a = new TriMeshActor;
+      a->setMesh( mesh );
+      a->translate( trans.x, trans.y, trans.z );
+      a->scale( scale );
+      a->translate( -200 + x * 100, 0, -200 + z * 100 );
+      a->setMaterial( matWhite );
+      //a->setMaterial( matTex );
+      scene->addChild( a );
+    }
+  }
   
   //Create floor cube
   TriMesh *cubeMesh = new CubeMesh;

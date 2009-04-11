@@ -40,7 +40,7 @@ void embed (fstream &infile, fstream &outfile, const string &arrayName, bool pre
 
     //Comma if not first
     if (numChars > 0)
-      outfile << ", ";
+      outfile << ",";
 
     //Break line each 8 bytes
     if (numChars == 8) {

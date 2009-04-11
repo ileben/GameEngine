@@ -531,6 +531,10 @@ public:
   Vertex* operator->() const {
     return (Vertex*)cur->vert;
   }
+
+  HalfEdge* hedgeToVertex() const {
+    return (HalfEdge*)cur;
+  }
 };
 
 /*================================================

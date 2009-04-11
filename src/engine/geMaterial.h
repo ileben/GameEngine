@@ -273,9 +273,9 @@ namespace GE
   
   ============================================*/
 
-  class DiffuseTexMaterial : public StandardMaterial
+  class DiffuseTexMat : public StandardMaterial
   {
-    DECLARE_SUBCLASS (DiffuseTexMaterial, StandardMaterial);
+    DECLARE_SUBCLASS (DiffuseTexMat, StandardMaterial);
     DECLARE_END;
 
   private:
@@ -284,10 +284,10 @@ namespace GE
 
   public:
 
-    virtual ClassPtr getShaderComposingClass() { return Class(DiffuseTexMaterial); }
+    virtual ClassPtr getShaderComposingClass() { return Class(DiffuseTexMat); }
     virtual void composeShader( Shader *shader );
 
-    DiffuseTexMaterial();
+    DiffuseTexMat();
 
     void setDiffuseTexture (Texture *tex);
     Texture *getDiffuseTexture ();

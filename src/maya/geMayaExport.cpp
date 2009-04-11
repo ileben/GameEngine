@@ -120,6 +120,8 @@ void exportMesh (const MObject &meshNode,
   MIntArray meshIndices;
   MIntArray meshFaceIndices;
   MIntArray meshFaceUVIndices;
+  MIntArray meshTriCounts;
+  MIntArray meshTriIndices;
   Uint meshNumPoints;
   Uint meshNumPointsUV;
   Uint meshNumFaces;
@@ -134,6 +136,7 @@ void exportMesh (const MObject &meshNode,
   int invalidTexIndices = 0;
   int invalidFaces = 0;
   int invalidTexFaces = 0;
+  int invalidTriangles = 0;
   int invalidEdges = 0;
 
   //Get mesh points (in world space if possible)
@@ -147,6 +150,11 @@ void exportMesh (const MObject &meshNode,
 
   //Get mesh UV points
   mesh.getUVs( meshPointsU, meshPointsV );
+
+  //Get triangulation
+  mesh.getTriangles( meshTriCounts, meshTriIndices );
+
+  //Numbers
   meshNumPoints = mesh.numVertices();
   meshNumPointsUV = mesh.numUVs();
   meshNumFaces = mesh.numPolygons();
@@ -165,7 +173,7 @@ void exportMesh (const MObject &meshNode,
   for (Uint uv=0; uv<meshNumPointsUV; ++uv)
   {
     TexMesh::Vertex *outTexVert = outTexMesh->addVertex();
-    outTexVert->point.set( meshPointsU[ uv ], meshPointsV[ uv ] );
+    outTexVert->point.set( meshPointsU[ uv ], 1.0f - meshPointsV[ uv ] );
     outTexVerts.pushBack( outTexVert );
   }
 
@@ -217,9 +225,39 @@ void exportMesh (const MObject &meshNode,
     if (face == NULL) {
       invalidFaces++;
       continue; }
-    
-    //Assign face properties
-    face->smoothGroups = 1;
+
+    //Walk the polygon triangles
+    for (Int t=0; t<meshTriCounts[f]; ++t)
+    {
+      SPolyMesh::HalfEdge *hedges[3];
+      int indices[3];
+      bool valid = true;
+
+      //Get triangle corner indices
+      mesh.getPolygonTriangleVertices( f, t, indices );
+
+      //Walk the triangle vertices
+      for (Uint c=0; c<3; ++c)
+      {
+        //Make sure we have the vertex available
+        int index = indices[ c ];
+        if ((UintSize)index >= outVerts.size()) {
+          invalidTriangles++;
+          valid = false;
+          break; }
+
+        //Find the half edge to that vertex in the face
+        hedges[ c ] = face->hedgeTo( outVerts[ index ] );
+        if (hedges[ c ] == NULL) {
+          invalidTriangles++;
+          valid = false;
+          break; }
+      }
+
+      //Add new triangle to the face
+      if (valid)
+        outPolyMesh->addTriangle( face, hedges[0], hedges[1], hedges[2] );
+    }
     
     //Check if a full UV face exists for this polygon
     if (outTexFaceVerts.size() == outFaceVerts.size())
@@ -272,6 +310,12 @@ void exportMesh (const MObject &meshNode,
   if (invalidTexFaces > 0) {
     trace( "exportMesh: " + CharString::FInt( invalidTexFaces )
            + " invalid UV faces encountered!" ); }
+  if (invalidTriangles > 0) {
+    trace( "exportMesh: " + CharString::FInt( invalidTriangles )
+           + " invalid triangles encountered!" ); }
+  if (invalidEdges > 0) {
+    trace( "exportMesh: " + CharString::FInt( invalidEdges )
+           + " invalid edges encountered!" ); }
 
   trace( "exportMesh: exported "
          + CharString::FInt( outPolyMesh->vertexCount() ) + " vertices." );
@@ -771,10 +815,10 @@ void exportWithSkin (void **outData, UintSize *outSize)
   exportSkinWeights( skinNode, meshNode, outPolyMesh, skinToTreeMap );
 
   //Triangulate
-  outPolyMesh->triangulate( true );
+  //outPolyMesh->triangulate();
   outPolyMesh->updateNormals( SmoothMetric::Edge );
   SkinTriMesh *outTriMesh = new SkinTriMesh;
-  outTriMesh->fromPoly( outPolyMesh, NULL );
+  outTriMesh->fromPoly( outPolyMesh, outTexMesh );
 
   //Construct character
   SkinPose *outPose = new SkinPose;
@@ -813,10 +857,10 @@ void exportNoSkin (void **outData, UintSize *outSize)
   exportMesh( meshNode, outPolyMesh, outTexMesh );
 
   //Triangulate
-  outPolyMesh->triangulate( true );
+  //outPolyMesh->triangulate();
   outPolyMesh->updateNormals( SmoothMetric::Edge );
   TriMesh *outTriMesh = new TriMesh;
-  outTriMesh->fromPoly( outPolyMesh, NULL );
+  outTriMesh->fromPoly( outPolyMesh, outTexMesh );
 
   //Serialize
   SerializeManager sm;

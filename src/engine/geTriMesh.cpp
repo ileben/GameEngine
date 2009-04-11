@@ -93,10 +93,9 @@ namespace GE
   void TriMesh::fromPoly (PolyMesh *m, TexMesh *um)
   {
     PolyMesh::FaceIter f;
-    PolyMesh::FaceHedgeIter fh;
+    PolyMesh::FaceVertIter fv;
     TexMesh::FaceIter uf;
-    TexMesh::FaceHedgeIter ufh;
-    ArrayList<UniqueVertex> uniqVerts;
+    TexMesh::FaceVertIter ufv;
     VertexID nextVertexID = 0;
 
     data.clear();
@@ -105,49 +104,39 @@ namespace GE
     //Allocate structures for vert-per-face unique data
     //and store texture vertex pointers
     for (f.begin(m), uf.begin(um); !f.end(); ++f, ++uf) {
-      for (fh.begin(*f), ufh.begin(*uf); !fh.end(); ++fh, ++ufh) {
-        UniqueData *data = new UniqueData;
-        if (!ufh.end()) data->texVertex = ufh->dstVertex();
-        else data->texVertex = NULL;
-        fh->tag.ptr = data;
+      for (fv.begin(*f), ufv.begin(*uf); !fv.end(); ++fv, ++ufv) {
+        UniqueData *fvd = new UniqueData;
+        fvd->texVertex = *ufv;
+        fv.hedgeToVertex()->tag.ptr = fvd;
       }}
 
     //Walk all the vertices of the mesh
     for (PolyMesh::VertIter v(m); !v.end(); ++v)
     {
-      //An array for unique vertices
-      uniqVerts.clear();
-      
       //Walk adjacent faces and output unique vertex variants
       for (PolyMesh::VertFaceIter vf(*v); !vf.end(); ++vf) {
         PolyMesh::HalfEdge *vfh = vf.hedgeToVertex();
+        UniqueData *vfd = (UniqueData*) vfh->tag.ptr;
         
         //Walk existing vertex variants
         bool existingFound = false;
         for (PolyMesh::VertFaceIter vf2(*v); vf2 != vf; ++vf2) {
           PolyMesh::HalfEdge *vfh2 = vf2.hedgeToVertex();
+          UniqueData *vfd2 = (UniqueData*) vfh2->tag.ptr;
 
-          //Check for match
-          if (isPolyVertexEqual( *v, vfh, vfh2))
-          {
-            //Assign existing vertex ID
-            ((UniqueData*)vfh->tag.ptr)->vertexID =
-              ((UniqueData*)vfh2->tag.ptr)->vertexID;
+          //Check for match and assign existing vertex ID
+          if (isPolyVertexEqual( *v, vfh, vfh2)) {
+            vfd->vertexID = vfd2->vertexID;
             existingFound = true;
             break;
           }
         }
         
-        //Output a new vertex variant
-        if (!existingFound)
-        {
-          //Invoke the vertex exporter
-          vertexFromPoly (*v, vfh, ((UniqueData*)vfh->tag.ptr)->texVertex);
-          
-          //Assign new vertex ID
-          ((UniqueData*)vfh->tag.ptr)->vertexID = nextVertexID++;
+        //Invoke the vertex exporter and assign new ID
+        if (!existingFound) {
+          vertexFromPoly (*v, vfh, vfd->texVertex);
+          vfd->vertexID = nextVertexID++;
         }
-        
       }//Walk adjacent faces
     }//Walk all vertices
 
@@ -161,13 +150,13 @@ namespace GE
       
       //Walk faces of current material and invoke the exporter
       for (PolyMesh::MaterialFaceIter mf( m, *mid ); !mf.end(); ++mf)
-        faceFromPoly( m, *mf );
+        faceFromPoly( *mf );
     }
 
     //Deallocate vert-per-face unique data
     for (f.begin(m); !f.end(); ++f)
-      for (fh.begin(*f); !fh.end(); ++fh)
-        delete fh->tag.ptr;
+      for (fv.begin(*f); !fv.end(); ++fv)
+        delete fv.hedgeToVertex()->tag.ptr;
   }
 
   bool TriMesh::isPolyVertexEqual (PolyMesh::Vertex *polyVert,
@@ -219,11 +208,10 @@ namespace GE
   ear-cut algorithm and stores the resulting indices.
   ----------------------------------------------------*/
   
-  void TriMesh::faceFromPoly (PolyMesh *polyMesh,
-                              PolyMesh::Face *polyFace)
+  void TriMesh::faceFromPoly (PolyMesh::Face *polyFace)
   {
     //Walk the triangles of the face
-    for (PolyMesh::FaceTriIter ft( polyMesh, polyFace ); !ft.end(); ++ft)
+    for (PolyMesh::FaceTriIter ft( polyFace ); !ft.end(); ++ft)
     {
       addFace(
         ((UniqueData*)ft->hedgeToVertex(0)->tag.ptr)->vertexID,

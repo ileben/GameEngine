@@ -373,6 +373,7 @@ namespace GE
   struct TrigNode
   {
     Vertex *vertex;
+    HalfEdge *hedge;
     Vector2 point;
     bool orientation;
   };
@@ -408,15 +409,13 @@ namespace GE
     return findNodeOrientation( *prev, *cur, *next, convex, convexInit );
   }
 
-  void PolyMesh::triangulate (bool smoothEdges)
+  void PolyMesh::triangulate ()
   {
+    clearTriangles();
     //int polycount = 0;
-    triangles.clear();
 
     for (PolyMesh::FaceIter f(this); !f.end(); ++f)
     {
-      f->firstTri = triangles.size();
-      f->numTris = 0;
       //polycount++;
       //if (polycount == 10163)
         //int oooo = 1;
@@ -430,9 +429,15 @@ namespace GE
       for (fv.begin(*f); !fv.end(); ++fv, ++avgi)
         numavg[ avgi % 3 ] += 1;
 
-      //Skip if triangle
+      //Exit early if triangle
       if (avgi == 3)
+      {
+        addTriangle( *f,
+          f->firstHedge()->prevHedge(),
+          f->firstHedge(),
+          f->firstHedge()->nextHedge());
         continue;
+      }
 
       //Average vertices in each group
       fv.begin(*f);
@@ -468,6 +473,7 @@ namespace GE
         
         TrigNode node;
         node.vertex = *fv;
+        node.hedge = fv.hedgeToVertex();
         node.point = ( trigM * fv->point ).xy();
         TrigIter newI = trigNodes.pushBack( node );
         
@@ -519,13 +525,7 @@ namespace GE
           //Cut an ear
           if (isEar)
           {
-            Triangle tri;
-            tri.hedges[0] = f->hedgeTo( prev->vertex );
-            tri.hedges[1] = f->hedgeTo( cur->vertex );
-            tri.hedges[2] = f->hedgeTo( next->vertex );
-            triangles.pushBack( tri );
-            f->numTris += 1;
-
+            addTriangle( *f, prev->hedge, cur->hedge, next->hedge );
             trigNodes.removeAt( cur );
             findNodeOrientation( prev, convex, convexInit );
             findNodeOrientation( next, convex, convexInit );
@@ -541,16 +541,45 @@ namespace GE
       //Cut the remaining corners
       while (next != prev)
       {
-        Triangle tri;
-        tri.hedges[0] = f->hedgeTo( prev->vertex );
-        tri.hedges[1] = f->hedgeTo( cur->vertex );
-        tri.hedges[2] = f->hedgeTo( next->vertex );
-        triangles.pushBack( tri );
-        f->numTris += 1;
+        addTriangle( *f, prev->hedge, cur->hedge, next->hedge );
         ++cur; ++next;
       }
 
     }//Walk faces
+  }
+
+  void PolyMesh::addTriangle (Face *f, HalfEdge *h1, HalfEdge *h2, HalfEdge *h3)
+  {
+    //Create new triangle
+    Triangle tri;
+    tri.hedges[0] = h1;
+    tri.hedges[1] = h2;
+    tri.hedges[2] = h3;
+    tri.next = NULL;
+    triangles.pushBack(tri);
+    Triangle *newTri = &triangles.last();
+
+    //Check if first for this face
+    if (f->triangle == NULL) {
+      f->triangle = newTri;
+      return;
+    }
+
+    //Find last triangle on face
+    Triangle *t = f->triangle;    
+    while (t->next != NULL)
+      t = t->next;
+
+    //Append new one
+    t->next = newTri;
+  }
+
+  void PolyMesh::clearTriangles()
+  {
+    for (PolyMesh::FaceIter f(this); !f.end(); ++f)
+      f->triangle = NULL;
+
+    triangles.clear();
   }
 
 }//namespace GE

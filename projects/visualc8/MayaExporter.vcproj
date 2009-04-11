@@ -391,6 +391,20 @@
 				RelativePath="..\..\src\maya\mel.c"
 				>
 				<FileConfiguration
+					Name="Debug_2009|Win32"
+					>
+					<Tool
+						Name="Embedit"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release_2009|Win32"
+					>
+					<Tool
+						Name="Embedit"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
 					Name="Release_2008|Win32"
 					>
 					<Tool
