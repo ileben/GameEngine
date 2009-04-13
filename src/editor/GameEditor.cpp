@@ -453,8 +453,8 @@ int main (int argc, char **argv)
   actorRender->setMaterial( matWhite );
 
   //Add to scene
-  //scene->addChild( actorRender );
-
+  scene->addChild( actorRender );
+  /*
   Image *img = new Image;
   img->readFile( "oblekica7.jpg", "jpeg" );
 
@@ -482,6 +482,7 @@ int main (int argc, char **argv)
       scene->addChild( a );
     }
   }
+  */
   
   //Create floor cube
   TriMesh *cubeMesh = new CubeMesh;

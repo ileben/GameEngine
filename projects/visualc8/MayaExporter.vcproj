@@ -70,7 +70,7 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/export:initializePlugin /export:uninitializePlugin "
 				AdditionalDependencies="Foundation.lib OpenMaya.lib OpenMayaAnim.lib GameEngine.lib GameUtil.lib GameIO.lib GameImage.lib jpeg.lib libpng.lib zlib.lib"
-				OutputFile="$(OutDir)/GameExporter4Maya09.mll"
+				OutputFile="$(OutDir)/GameExporter4Maya09D.mll"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="Debug/bin;&quot;C:\Program Files\Autodesk\Maya2009\lib&quot;"
 				GenerateDebugInformation="true"
@@ -101,7 +101,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy $(TargetPath) &quot;C:\Program Files\Autodesk\Maya2009\bin\plug-ins\$(TargetName)_DEBUG.mll&quot;"
+				CommandLine="copy $(TargetPath) &quot;C:\Program Files\Autodesk\Maya2009\bin\plug-ins\$(TargetName).mll&quot;"
 			/>
 		</Configuration>
 		<Configuration
@@ -187,7 +187,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy $(TargetPath) &quot;C:\Program Files\Autodesk\Maya2009\bin\plug-ins\$(TargetName)_RELEASE.mll&quot;"
+				CommandLine="copy $(TargetPath) &quot;C:\Program Files\Autodesk\Maya2009\bin\plug-ins\$(TargetName).mll&quot;"
 			/>
 		</Configuration>
 		<Configuration
@@ -273,7 +273,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy $(TargetPath) &quot;C:\Program Files\Autodesk\Maya2008\bin\plug-ins\$(TargetName)_RELEASE.mll&quot;"
+				CommandLine="copy $(TargetPath) &quot;C:\Program Files\Autodesk\Maya2008\bin\plug-ins\$(TargetName).mll&quot;"
 			/>
 		</Configuration>
 		<Configuration
@@ -328,7 +328,7 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/export:initializePlugin /export:uninitializePlugin "
 				AdditionalDependencies="Foundation.lib OpenMaya.lib OpenMayaAnim.lib GameEngine.lib GameUtil.lib GameIO.lib GameImage.lib jpeg.lib libpng.lib zlib.lib"
-				OutputFile="$(OutDir)/GameExporter4Maya08.mll"
+				OutputFile="$(OutDir)/GameExporter4Maya08D.mll"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="Debug/bin;&quot;C:\Program Files\Autodesk\Maya2008\lib&quot;"
 				GenerateDebugInformation="true"
@@ -359,7 +359,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy $(TargetPath) &quot;C:\Program Files\Autodesk\Maya2008\bin\plug-ins\$(TargetName)_DEBUG.mll&quot;"
+				CommandLine="copy $(TargetPath) &quot;C:\Program Files\Autodesk\Maya2008\bin\plug-ins\$(TargetName).mll&quot;"
 			/>
 		</Configuration>
 	</Configurations>

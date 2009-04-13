@@ -63,7 +63,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="GameEngine.lib GameUtil.lib GameIO.lib GameImage.lib jpeg.lib libpng.lib zlib.lib opengl32.lib glu32.lib glut32.lib"
-				OutputFile="Debug/bin/TexPainter.exe"
+				OutputFile="$(OutDir)/$(ProjectName)_DEBUG.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="Debug/bin"
 				GenerateDebugInformation="true"
@@ -94,7 +94,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy $(TargetPath) $(SolutionDir)\..\..\test\$(TargetName)_DEBUG.exe"
+				CommandLine="copy $(TargetPath) $(SolutionDir)\..\..\test\$(TargetName).exe"
 			/>
 		</Configuration>
 		<Configuration
@@ -142,7 +142,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="GameEngine.lib GameUtil.lib GameIO.lib GameImage.lib jpeg.lib libpng.lib zlib.lib opengl32.lib glu32.lib glut32.lib"
-				OutputFile="$(OutDir)/TexPainter.exe"
+				OutputFile="$(OutDir)/$(ProjectName).exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="Release/bin"
 				GenerateDebugInformation="true"
@@ -175,7 +175,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy $(TargetPath) $(SolutionDir)\..\..\test\$(TargetName)_RELEASE.exe"
+				CommandLine="copy $(TargetPath) $(SolutionDir)\..\..\test\$(TargetName).exe"
 			/>
 		</Configuration>
 	</Configurations>

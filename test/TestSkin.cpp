@@ -467,51 +467,34 @@ int main (int argc, char **argv)
   kernel.enableVerticalSync( false );
   renderer = kernel.getRenderer();
   printf( "Kernel loaded\n" );
-  
-  Shader *shader = new Shader;
-  //shader->fromFile( "pixelphong.vert.c", "pixelphong.frag.c" );
-  shader->fromFile( "shadevert_geom_gbuf.c", "shadefrag_geom_gbuf.c" );
-
-  Shader *skinShader = new Shader;
-  skinShader->registerVertexAttrib( "boneIndex" );
-  skinShader->registerVertexAttrib( "boneWeight" );
-  skinShader->registerUniform( "skinMatrix", UniformType::Matrix, 1 );
-  skinShader->fromFile( "shadevert_geom_skin_gbuf.c", "shadefrag_geom_gbuf.c" );
 
   StandardMaterial matRedLogo;
   matRedLogo.setSpecularity( 0.5 );
   matRedLogo.setDiffuseColor( Vector3(1,0,0) );
   matRedLogo.setAmbientColor( matRedLogo.getDiffuseColor() * .8f );
-  matRedLogo.setShader( shader );
 
   StandardMaterial matWhiteLogo;
   matWhiteLogo.setSpecularity( 0.5 );
   matWhiteLogo.setAmbientColor( matWhiteLogo.getDiffuseColor() * .8f );
-  matWhiteLogo.setShader( shader );
 
   StandardMaterial matWhite;
   matWhite.setSpecularity( 0.5 );
-  matWhite.setShader( skinShader );
 
   StandardMaterial matBlue;
   matBlue.setSpecularity( 0.5 );
   matBlue.setDiffuseColor( Vector3(0,0.5,1) );
-  matBlue.setShader( skinShader );
 
   StandardMaterial matGreen;
   matGreen.setSpecularity( 0.5 );
   matGreen.setDiffuseColor( Vector3(0,0.6,0) );
-  matGreen.setShader( skinShader );
 
   StandardMaterial matYellow;
   matYellow.setSpecularity( 0.5 );
   matYellow.setDiffuseColor( Vector3(1,1,0.7) );
-  matYellow.setShader( skinShader );
 
   StandardMaterial matBlack;
   matBlack.setSpecularity( 0.5 );
   matBlack.setDiffuseColor( Vector3(0.2,0.2,0.2) );
-  matBlack.setShader( skinShader );
 
   MultiMaterial mm;
   mm.setNumSubMaterials( 5 );
