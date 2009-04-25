@@ -5,10 +5,14 @@
 #include "engine/geKernel.h"
 #include "engine/geRenderer.h"
 #include "engine/geShader.h"
+#define CLSID_TANTRIMESH ClassID (0xffff2786u, 0x54f2, 0x4814, 0x84566d0fbb185381ull)
 
 namespace GE
 {
   DEFINE_CLASS (TriMeshActor);
+  DEFINE_CLASS (TanTriMeshActor);
+  DEFINE_SERIAL_CLASS( TanTriMesh, CLSID_TANTRIMESH );
+
   
   TriMeshActor::TriMeshActor()
   {

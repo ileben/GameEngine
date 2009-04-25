@@ -67,8 +67,10 @@ void main (void)
       if (cosInner - cosOuter > 0.0 && LdotS < cosInner)
         spotCoeff = (LdotS - cosOuter) / (cosInner - cosOuter);
       
-      //Diffuse color term
-	    Color += diffuse * NdotL * spotCoeff;
+      //Diffuse color term (avoid going over the ambient term)
+      float diffuseCoeff = NdotL * spotCoeff - colorTexel.a;
+      if (diffuseCoeff > 0.0) Color += diffuse * diffuseCoeff;
+      //Color += diffuse * NdotL * spotCoeff;
       
 		  //Phong specular coefficient
 		  vec3 E = - normalize( point );

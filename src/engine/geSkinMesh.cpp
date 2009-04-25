@@ -9,7 +9,8 @@ namespace GE
   DEFINE_CLASS( SPolyMesh::Face );
   
   DEFINE_SERIAL_CLASS( SkinTriMesh, CLSID_SKINTRIMESH );
-  DEFINE_SERIAL_CLASS( SkinMesh, CLSID_SKINMESH );
+  //DEFINE_SERIAL_CLASS( SkinMesh, CLSID_SKINMESH );
+
 
   void SkinTriMesh::vertexFromPoly (PolyMesh::Vertex *polyVert,
                                     PolyMesh::HalfEdge *polyHedge,
@@ -104,17 +105,17 @@ namespace GE
     SkinSubMeshInfo *sub = &subs[ subMeshID ];
     SkinTriMesh *super = (SkinTriMesh*) getSuperMesh();
     SkinTriMesh::Vertex *superVert = super->getVertex( superID );
-    SkinTriMesh::Vertex subVert;
+    SkinTriMesh::Vertex *subVert = sub->mesh->addVertex( superVert );
 
     //Walk the bone indices of the vertex
     for (int b=0; b<4; ++b)
     {
       //Copy bone weight
-      subVert.boneWeight[b] = superVert->boneWeight[b];
+      subVert->boneWeight[b] = superVert->boneWeight[b];
 
       //Skip non-weighted bones
       if (superVert->boneWeight[b] == 0.0f) {
-        subVert.boneIndex[b] = 0;
+        subVert->boneIndex[b] = 0;
         continue;
       }
 
@@ -123,7 +124,7 @@ namespace GE
       if (subBoneID.first == false)
       {
         //Map mesh to skin index and increase number of bones
-        subVert.boneIndex[b] = sub->nextBoneID;
+        subVert->boneIndex[b] = sub->nextBoneID;
         sub->mesh->mesh2skinMap[ sub->nextBoneID ] = superVert->boneIndex[b];
         sub->skin2meshMap[ superVert->boneIndex[b] ] = sub->nextBoneID;
         sub->mesh->mesh2skinSize++;
@@ -132,14 +133,9 @@ namespace GE
       else
       {
         //Remap bone index from skin to group
-        subVert.boneIndex[b] = subBoneID.second;
+        subVert->boneIndex[b] = subBoneID.second;
       }
     }
-
-    subVert.point = superVert->point;
-    subVert.normal = superVert->normal;
-    subVert.texcoord = superVert->texcoord;
-    sub->mesh->addVertex( &subVert );
   }
 
 }//namespace GE

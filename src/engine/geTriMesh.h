@@ -24,6 +24,7 @@ namespace GE
   {
     ShaderData::Enum data;
     DataUnit unit;
+    UintSize size;
     UintSize offset;
     CharString attribName;
     DataUnit attribUnit;
@@ -33,14 +34,14 @@ namespace GE
     VFMember () {};
     VFMember (ShaderData::Enum newData,
               DataUnit newUnit,
-              UintSize newOffset,
+              UintSize newSize,
               CharString newAttribName = "",
               DataUnit newAttribUnit = DataUnit(),
               bool newAttribNorm = false)
     {
       data = newData;
       unit = newUnit;
-      offset = newOffset;
+      size = newSize;
       attribUnit = newAttribUnit;
       attribName = newAttribName;
       attribNorm = newAttribNorm;
@@ -51,8 +52,13 @@ namespace GE
   { public:
     UintSize size;
     ArrayList<VFMember> members;
-    void addMember (const VFMember &m) { members.pushBack( m ); }
     VFormat( UintSize newSize ) { size = newSize; }
+    void addMember (VFMember &m)
+    {
+      m.offset = members.empty() ? 0 :
+        members.last().offset + members.last().size;
+      members.pushBack( m );
+    }
   };
 
 
@@ -80,9 +86,9 @@ namespace GE
     class VertexFormat : public VFormat { public:
       VertexFormat() : VFormat(sizeof(Vertex))
       {
-        addMember( VFMember( ShaderData::TexCoord, DataUnit::Vec2, 0 ) );
-        addMember( VFMember( ShaderData::Normal,   DataUnit::Vec3, sizeof(Vector2) ) );
-        addMember( VFMember( ShaderData::Coord,    DataUnit::Vec3, sizeof(Vector2)+sizeof(Vector3) ) );
+        addMember( VFMember( ShaderData::TexCoord, DataUnit::Vec2, sizeof(Vector2) ) );
+        addMember( VFMember( ShaderData::Normal,   DataUnit::Vec3, sizeof(Vector3) ) );
+        addMember( VFMember( ShaderData::Coord,    DataUnit::Vec3, sizeof(Vector3) ) );
       }
     };
   };
@@ -150,7 +156,7 @@ namespace GE
     TriMesh () : data (sizeof(Vertex), NULL)
     { isOnGpu = false; }
     
-    void addVertex (void *data);
+    void* addVertex (void *data);
     void addFaceGroup (MaterialID matID);
     void addFace (VertexID v1, VertexID v2, VertexID v3);
     void fromPoly (PolyMesh *m, TexMesh *uv);
@@ -186,8 +192,8 @@ namespace GE
     TriMeshBase () : Base (sizeof(typename Derived::Vertex))
     {}
 
-    INLINE void addVertex (typename Derived::Vertex *data) {
-      Base::addVertex( (void*) data );
+    INLINE typename Derived::Vertex* addVertex (typename Derived::Vertex *data) {
+      return (typename Derived::Vertex*) Base::addVertex( data );
     }
 
     INLINE typename Derived::Vertex* getVertex (UintSize index) {

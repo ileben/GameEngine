@@ -5,12 +5,18 @@
 #include "geVectors.h"
 #include "geHmesh.h"
 #include "geMaterial.h"
+#include "geTexMesh.h"
 
 #pragma warning(push)
 #pragma warning(disable:4251)
 
 namespace GE
 {
+
+  /*
+  ======================================================
+  Forward declarations
+  ======================================================*/
 
   /*
   ========================================================
@@ -39,7 +45,7 @@ namespace GE
   public:
 
     class Vertex; class Edge; class HalfEdge; class Face;
-    class Triangle; class VertexNormal;
+    class Triangle; class VertexNormal; class VertexTangent;
 
     /*
     -----------------------------------------------------------
@@ -78,8 +84,10 @@ namespace GE
       DECLARE_SUBCLASS (HalfEdge, HMesh::HalfEdge); DECLARE_END;
     public:
       VertexNormal *vnormal;
-      HalfEdge() {vnormal = NULL;}
+      VertexTangent *vtangent;
+      HalfEdge() {vnormal = NULL; vtangent = NULL; }
       INLINE VertexNormal* vertexNormal() { return vnormal; }
+      INLINE VertexTangent* vertexTangent() { return vtangent; }
     };
     
     /*
@@ -100,6 +108,7 @@ namespace GE
     public:
       Vector3 center;
       Vector3 normal;
+      Vector3 tangent;
       Uint32 smoothGroups;
       MaterialID materialID() { return matId; }
       Triangle* firstTriangle() { return triangle; }
@@ -138,6 +147,16 @@ namespace GE
       VertexNormal () {};
       VertexNormal (const Vector3 &c) {coord = c;}
     };
+
+    class VertexTangent
+    {
+    public:
+      Vector3 coord;
+      Vector3 bicoord;
+      VertexTangent () {};
+      VertexTangent (const Vector3 &c) {coord = c;}
+      VertexTangent (const Vector3 &c, const Vector3 &b) {coord = c; bicoord = b;}
+    };
   };
   
   /*
@@ -160,6 +179,7 @@ namespace GE
 
     typedef PolyMeshTraits::Triangle Triangle;
     typedef PolyMeshTraits::VertexNormal VertexNormal;
+    typedef PolyMeshTraits::VertexTangent VertexTangent;
     #include "gePolyMeshIters.h"
 
   private:
@@ -167,7 +187,9 @@ namespace GE
     DynamicArrayList<Triangle> triangles;
 
     VertexNormal dummyVertexNormal;
+    VertexTangent dummyVertexTangent;
     DynamicArrayList<VertexNormal> vertexNormals;
+    DynamicArrayList<VertexTangent> vertexTangents;
     virtual void insertHalfEdge (HMesh::HalfEdge *he);
     
     /*
@@ -189,17 +211,21 @@ namespace GE
   private:
 
     void updateFaceNormal (Face *f);
+    void updateFaceTangent (Face *f, TexMesh::Face *tf);
+
     void updateVertNormalFlat (Vertex *v);
     void updateVertNormalSmooth (Vertex *v);
     void updateVertNormalGroups (Vertex *v);
     void updateVertNormalEdges (Vertex *v);
+    void updateVertTangent (Vertex *v, TexMesh::Vertex *tv);
 
   public:
 
     PolyMesh();
 
-    void updateNormals (SmoothMetric::Enum metric = SmoothMetric::None);
     void setMaterialID (Face *f, MaterialID id);
+    void updateNormals (SmoothMetric::Enum metric = SmoothMetric::None);
+    void updateTangents (TexMesh *texMesh);
 
     void triangulate ();
     void clearTriangles();

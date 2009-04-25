@@ -62,6 +62,7 @@ namespace GE
     
     //Transform helpers
     void translate (Float x, Float y, Float z);
+    void translate (const Vector3 &t);
     void scale (Float x, Float y, Float z);
     void scale (Float k);
     void rotate (const Vector3 &axis, Float angle);

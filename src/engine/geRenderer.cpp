@@ -8,6 +8,7 @@
 #include "engine/geGLHeaders.h"
 #include "engine/actors/geSkinMeshActor.h"
 
+#include "engine/embedit/Ambient.embedded."
 #include "engine/embedit/shadevert.SpotLight.embedded"
 #include "engine/embedit/shadefrag.SpotLight.embedded"
 
@@ -26,6 +27,9 @@ namespace GE
     viewH = 0;
     shadowInit = false;
     deferredInit = false;
+
+    shaderAmbient = NULL;
+    shaderLightSpot = NULL;
   }
 
   void Renderer::setBackColor (const Vector3 &color)
@@ -221,6 +225,11 @@ namespace GE
     //Load deferred light shader once
     if (!deferredInit)
     {
+      shaderAmbient = new Shader;
+      shaderAmbient->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
+      shaderAmbient->fromString( Ambient_VertexSource, Ambient_FragmentSource );
+      ambientColorSampler = shaderAmbient->getUniformID( "samplerColor" );
+
       shaderLightSpot = new Shader;
       shaderLightSpot->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerVertex" );
       shaderLightSpot->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerNormal" );
@@ -247,7 +256,7 @@ namespace GE
 
   void Renderer::renderShadowMap (Light *light, Scene *scene)
   {
-    const Uint32 S = 1024;
+    const Uint32 S = 2048;
 
     if (!shadowInit)
     {
@@ -338,6 +347,14 @@ namespace GE
     delete[] pixels;*/
   }
 
+  void Renderer::beginDeferred()
+  {
+    //Clear the lighting accumulation texture
+    glBindFramebuffer( GL_FRAMEBUFFER, deferredFB );
+    glDrawBuffer( GL_COLOR_ATTACHMENT0 );
+    glClear( GL_COLOR_BUFFER_BIT );
+  }
+
   void Renderer::renderSceneDeferred (Scene *scene)
   {
     //Update scene
@@ -365,9 +382,32 @@ namespace GE
 
     traverseSceneWithMats( scene );
 
-    //Clear the lighting accumulation texture
+    //Ambient light pass
+    shaderAmbient->use();
     glDrawBuffer( GL_COLOR_ATTACHMENT0 );
-    glClear( GL_COLOR_BUFFER_BIT );
+
+    glActiveTexture( GL_TEXTURE0 );
+    glBindTexture( GL_TEXTURE_2D, deferredMaps[ Deferred::Color ] );
+    glEnable( GL_TEXTURE_2D );
+
+    glDisable( GL_BLEND );
+    glDisable( GL_LIGHTING );
+    glDisable( GL_CULL_FACE );
+
+    glEnable( GL_DEPTH_TEST );
+    glDepthFunc( GL_GREATER );
+    glDepthMask( GL_FALSE );
+
+    glBegin( GL_QUADS );
+    glTexCoord2f( 0, 0 ); glVertex3f( -1, -1, 1 );
+    glTexCoord2f( 1, 0 ); glVertex3f( +1, -1, 1 );
+    glTexCoord2f( 1, 1 ); glVertex3f( +1, +1, 1 );
+    glTexCoord2f( 0, 1 ); glVertex3f( -1, +1, 1 );
+    glEnd();
+
+    glDepthMask( GL_TRUE );
+    glDepthFunc( GL_LESS );
+    glDisable( GL_TEXTURE_2D );
 
     //Perform shading for each light
     for (UintSize l=0; l<scene->getLights()->size(); ++l)
@@ -518,7 +558,10 @@ namespace GE
       glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
       */
     }
+  }
 
+  void Renderer::endDeferred()
+  {
     //Transfer the image into the window buffer
     glUseProgram( 0 );
     glBindFramebuffer( GL_FRAMEBUFFER, 0 );

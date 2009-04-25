@@ -9,6 +9,7 @@ namespace GE
 {
   DEFINE_CLASS (Material);
   DEFINE_CLASS (StandardMaterial);
+  DEFINE_CLASS (DeferredMaterial);
   DEFINE_CLASS (MultiMaterial);
   DEFINE_CLASS (PhongMaterial);
   DEFINE_CLASS (DiffuseTexMat);
@@ -322,6 +323,7 @@ namespace GE
     specularity = 0.0f;
     glossiness = 0.5f;
     opacity = 1.0f;
+    luminosity = 0.0f;
     lighting = true;
     culling = true;
   }
@@ -374,6 +376,14 @@ namespace GE
     return glossiness;
   }
 
+  void StandardMaterial::setLuminosity (Float l) {
+    luminosity = l;
+  }
+
+  Float StandardMaterial::getLuminosity () {
+    return luminosity;
+  }
+
   void StandardMaterial::setUseLighting(bool enable) {
     lighting = enable;
   }
@@ -392,56 +402,52 @@ namespace GE
   
   void StandardMaterial::begin ()
   {
-    //Named Properties to shader
     Material::begin ();
     
     //Lighting
     if (lighting)
-    {
       glEnable (GL_LIGHTING);
+    else
+      glDisable (GL_LIGHTING);
+
+    //We will set material color manually (not via glColor)
+    glDisable (GL_COLOR_MATERIAL);
+
+    //Luminosity
+    Vector4 emission( 0,0,0, luminosity );
+    glMaterialfv( GL_FRONT_AND_BACK, GL_EMISSION, (Float*) &emission);
+    
+    //Ambient color
+    Vector4 ambient = ambientColor.xyz (1.0f);
+    glMaterialfv (GL_FRONT_AND_BACK, GL_AMBIENT, (Float*) &ambient);
+    
+    //Diffuse color
+    Vector4 diffuse = diffuseColor.xyz (opacity);
+    glMaterialfv (GL_FRONT_AND_BACK, GL_DIFFUSE, (Float*) &diffuse);
+
+      //We want specularity to be aplied to texture colors too
+      GLint param = GL_SEPARATE_SPECULAR_COLOR;
+      glLightModeliv (GL_LIGHT_MODEL_COLOR_CONTROL, &param);
+
+    //Specularity
+    //if (specularity > 0.0f) {
       
-      //We will set material color manually (not via glColor)
-      glDisable (GL_COLOR_MATERIAL);
+
       
-      //Ambient color
-      Vector4 ambient = ambientColor.xyz (1.0f);
-      glMaterialfv (GL_FRONT_AND_BACK, GL_AMBIENT, (Float*) &ambient);
+      //Specular color
+      Vector4 spec = (specularColor * specularity).xyz(1);
+      glMaterialfv (GL_FRONT_AND_BACK, GL_SPECULAR, (Float*) &spec);
       
-      //Diffuse color
-      Vector4 diffuse = diffuseColor.xyz (opacity);
-      glMaterialfv (GL_FRONT_AND_BACK, GL_DIFFUSE, (Float*) &diffuse);
-      
-      //Specularity
-      if (specularity > 0.0f) {
-        
-        //We want specularity to be aplied to texture colors too
-        GLint param = GL_SEPARATE_SPECULAR_COLOR;
-        glLightModeliv (GL_LIGHT_MODEL_COLOR_CONTROL, &param);
-        
-        //Specular color
-        Vector4 spec = (specularColor * specularity).xyz(1);
-        glMaterialfv (GL_FRONT_AND_BACK, GL_SPECULAR, (Float*) &spec);
-        
-        //GL uses an integer value for maximum glossiness
-        int shininess = (int)(glossiness * _GL_MAX_SHININESS);
-        glMateriali (GL_FRONT_AND_BACK, GL_SHININESS, shininess);
-        
-      }else{
-        
-        //Just make specular color invisible
-        Vector4 specular (0,0,0,0);
-        glMaterialfv (GL_FRONT_AND_BACK, GL_SPECULAR, (Float*)&specular);
-      }
-      
+      //GL uses an integer value for maximum glossiness
+      int shininess = (int)(glossiness * _GL_MAX_SHININESS);
+      glMateriali (GL_FRONT_AND_BACK, GL_SHININESS, shininess);
+      /*
     }else{
       
-      glDisable (GL_LIGHTING);
-      glDisable (GL_COLOR_MATERIAL);
-      
-      //Diffuse color
-      Vector4 diffuse = diffuseColor.xyz (opacity);
-      glColor4fv ((Float*) &diffuse);
-    }
+      //Just make specular color invisible
+      Vector4 specular (0,0,0,0);
+      glMaterialfv (GL_FRONT_AND_BACK, GL_SPECULAR, (Float*)&specular);
+    }*/
     
     //Blending
     bool blend = false;
@@ -467,6 +473,16 @@ namespace GE
     glEnable( GL_NORMALIZE );
   }
   
+  /*
+  ===============================================
+  
+  DeferredMaterial - used with deferred renderer
+  
+  ===============================================*/
+
+  void DeferredMaterial::begin()
+  {
+  }
   
   
   /*

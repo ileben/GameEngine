@@ -32,7 +32,9 @@ namespace GE
   void PolyMesh::insertHalfEdge (HMesh::HalfEdge *he)
   {
     HMesh::insertHalfEdge(he);
-    ((PolyMesh::HalfEdge*)he)->vnormal = &dummyVertexNormal;
+    PolyMesh::HalfEdge *phe = (PolyMesh::HalfEdge*)he;
+    phe->vnormal = &dummyVertexNormal;
+    phe->vtangent = &dummyVertexTangent;
   }
   
   /*
@@ -335,34 +337,70 @@ namespace GE
     vertexNormals.clear();
     
     for (PolyMesh::FaceIter f(this); !f.end(); ++f)
-      updateFaceNormal(*f);
+      updateFaceNormal( *f );
     
     switch (metric)
     {
     case SmoothMetric::None:
       
       for (PolyMesh::VertIter v(this); !v.end(); ++v)
-        updateVertNormalFlat (*v);
+        updateVertNormalFlat( *v );
       break;
 
     case SmoothMetric::All:
       
       for (PolyMesh::VertIter v(this); !v.end(); ++v)
-        updateVertNormalSmooth(*v);
+        updateVertNormalSmooth( *v );
       break;
 
     case SmoothMetric::Face:
       
       for (PolyMesh::VertIter v(this); !v.end(); ++v)
-        updateVertNormalGroups(*v);
+        updateVertNormalGroups( *v );
       break;
       
     case SmoothMetric::Edge:
 
       for (PolyMesh::VertIter v(this); !v.end(); ++v)
-        updateVertNormalEdges(*v);
+        updateVertNormalEdges( *v );
       break;
     }
+  }
+
+  /*
+  -------------------------------------------------------
+  Tangents for normal mapping
+  -------------------------------------------------------*/
+
+  void PolyMesh::updateFaceTangent (Face *f, TexMesh::Face *tf)
+  {
+  }
+
+  void PolyMesh::updateVertTangent (Vertex *v, TexMesh::Vertex *tv)
+  {
+
+  }
+
+  void PolyMesh::updateTangents (TexMesh *texMesh)
+  {
+    PolyMesh::VertIter v;
+    PolyMesh::FaceIter f;
+    PolyMesh::FaceVertIter fv;
+    TexMesh::FaceIter tf;
+    TexMesh::FaceVertIter tfv;
+
+    //Store tex vertex pointers into poly vertices
+    for (f.begin(this), tf.begin(texMesh); !f.end(); ++f, ++tf)
+      for (fv.begin(*f), tfv.begin(*tf); !fv.end(); ++fv, ++tfv)
+        fv->tag.ptr = *tfv;
+
+    vertexTangents.clear();
+
+    for (f.begin(this); !f.end() && !tf.end(); ++f, ++tf)
+      updateFaceNormal( *f );
+
+    for (v.begin(this); !v.end(); ++v)
+      updateVertTangent( *v, (TexMesh::Vertex*) v->tag.ptr );
   }
 
   /*

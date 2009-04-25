@@ -8,7 +8,6 @@
 
 namespace GE
 {
-
   /*
   ==========================================================
   SkinPolyMesh - PolyMesh with per-vertex skin data
@@ -47,10 +46,9 @@ namespace GE
     DECLARE_SUBCLASS( SPolyMesh, PolyMesh ); DECLARE_END;
   };
 
-
   /*
   ==========================================================
-  SkinTriMesh - triangular mesh export from 3DSMax
+  Tri mesh with skin data
   ==========================================================*/
 
   class SkinTriMeshTraits
@@ -68,21 +66,12 @@ namespace GE
     class VertexFormat : public VFormat { public:
       VertexFormat() : VFormat(sizeof(Vertex))
       {
-        addMember( VFMember( ShaderData::TexCoord, DataUnit::Vec2,
-                             0 ));
-
-        addMember( VFMember( ShaderData::Normal, DataUnit::Vec3,
-                             sizeof(Vector2) ));
-
-        addMember( VFMember( ShaderData::Coord, DataUnit::Vec3,
-                             sizeof(Vector2)+sizeof(Vector3) ));
-
-        addMember( VFMember( ShaderData::Attribute, DataUnit::UVec4,
-                             sizeof(Vector2)+sizeof(Vector3)*2,
+        addMember( VFMember( ShaderData::TexCoord, DataUnit::Vec2, sizeof(Vector2) ));
+        addMember( VFMember( ShaderData::Normal, DataUnit::Vec3, sizeof(Vector3) ));
+        addMember( VFMember( ShaderData::Coord, DataUnit::Vec3, sizeof(Vector3) ));
+        addMember( VFMember( ShaderData::Attribute, DataUnit::UVec4, sizeof(Uint32)*4,
                              "boneIndex", DataUnit::Vec4 ));
-
-        addMember( VFMember( ShaderData::Attribute, DataUnit::Vec4,
-                             sizeof(Vector2)+sizeof(Vector3)*2+sizeof(Uint32)*4,
+        addMember( VFMember( ShaderData::Attribute, DataUnit::Vec4, sizeof(Float32)*4,
                              "boneWeight", DataUnit::Vec4 ));
       }
     };
@@ -152,13 +141,65 @@ namespace GE
     void splitByBoneLimit (UintSize maxBonesPerMesh);
   };
 
+  /*
+  ===============================================
+  Tri mesh with skin and tangent data
+  ===============================================*/
+/*
+  class SkinTanTriMeshTraits
+  {
+  public:
+    struct Vertex
+    {
+      Vector2 texcoord;
+      Vector3 normal;
+      Vector3 point;
+      Uint32 boneIndex[4];
+      Float32 boneWeight[4];
+      Vector3 tangent;
+      Vector3 bitangent;
+    };
+
+    class VertexFormat : public VFormat { public:
+      VertexFormat() : VFormat(sizeof(Vertex))
+      {
+        addMember( VFMember( ShaderData::TexCoord, DataUnit::Vec2, sizeof(Vector2) ) );
+        addMember( VFMember( ShaderData::Normal,   DataUnit::Vec3, sizeof(Vector3) ) );
+        addMember( VFMember( ShaderData::Coord,    DataUnit::Vec3, sizeof(Vector3) ) );
+        addMember( VFMember( ShaderData::Attribute, DataUnit::UVec4, sizeof(Uint32)*4,
+                             "boneIndex", DataUnit::Vec4 ));
+        addMember( VFMember( ShaderData::Attribute, DataUnit::Vec4, sizeof(Float32)*4,
+                             "boneWeight", DataUnit::Vec4 ));
+        addMember( VFMember( ShaderData::Custom,   DataUnit::Vec3, sizeof(Vector3),
+                             "Tangent", DataUnit::Vec3 ));
+        addMember( VFMember( ShaderData::Custom,   DataUnit::Vec3, sizeof(Vector3),
+                             "Bitangent", DataUnit::Vec3 ));
+      }
+    };
+  };
+
+  class SkinTanTriMesh : public TriMeshBase <SkinTanTriMeshTraits, SkinTriMesh>
+  {
+    DECLARE_SERIAL_SUBCLASS( SkinTanTriMesh, SkinTriMesh );
+    DECLARE_END;
+
+  public:
+    SkinTanTriMesh (SerializeManager *sm) : TriMeshBase <SkinTanTriMeshTraits, SkinTriMesh> (sm) {}
+    SkinTanTriMesh () {}
+  };*/
+
+
 
   /*
   ==========================================================
-  SkinMesh - generic mesh export that allows even PolyMesh
-  to be reconstructed *after* exporting from 3DSMax
-  ==========================================================*/
+  /// Obsolete ///
 
+  SkinMesh - generic mesh export that allows even PolyMesh
+  to be reconstructed after loading from a file
+
+  /// Obsolete ///
+  ==========================================================*/
+/*
   struct SkinVertex
   {
     Vector3 point;
@@ -198,7 +239,7 @@ namespace GE
     SkinMesh ()
     {}
   };
-
+*/
 
 }//namespace GE
 #endif//__GESKINPOLYMESH_H

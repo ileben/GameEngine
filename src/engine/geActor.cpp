@@ -80,6 +80,10 @@ namespace GE
     mulMatrixLeft( m );
   }
 
+  void Actor::translate (const Vector3 &t) {
+    translate( t.x, t.y, t.z );
+  }
+
   void Actor::scale (Float x, Float y, Float z)
   {
     Matrix4x4 m;

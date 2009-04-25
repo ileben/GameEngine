@@ -53,5 +53,16 @@ namespace GE
       for (int c=(int)a->getChildren()->size()-1; c >= 0; --c)
         stack.pushBack( TravNode( a->getChildren()->at(c), TravEvent::Begin ));
     }
+
+    //Un-mark changed
+    changed = false;
+  }
+
+  void Scene::setAmbientColor (const Vector3 &color) {
+    ambientColor = color;
+  }
+
+  const Vector3& Scene::getAmbientColor () {
+    return ambientColor;
   }
 }

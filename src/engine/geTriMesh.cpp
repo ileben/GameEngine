@@ -10,9 +10,10 @@ namespace GE
   Adds vertex data to the buffer
   ---------------------------------------------------*/
   
-  void TriMesh::addVertex( void *vertData )
+  void* TriMesh::addVertex( void *vertData )
   {
     data.pushBack( vertData );
+    return data.last();
   }
   
   /*
@@ -106,6 +107,7 @@ namespace GE
     for (f.begin(m), uf.begin(um); !f.end(); ++f, ++uf) {
       for (fv.begin(*f), ufv.begin(*uf); !fv.end(); ++fv, ++ufv) {
         UniqueData *fvd = new UniqueData;
+        fvd->vertexID = 0;
         fvd->texVertex = *ufv;
         fv.hedgeToVertex()->tag.ptr = fvd;
       }}
@@ -299,13 +301,7 @@ namespace GE
   void SuperToSubMesh::newSubVertex (UintSize subMeshID, VertexID superID)
   {
     TriMesh::Vertex *superVert = super->getVertex( superID );
-    
-    TriMesh::Vertex subVert;
-    subVert.normal = superVert->normal;
-    subVert.texcoord = superVert->texcoord;
-    subVert.point = superVert->point;
-    
-    subs[ subMeshID ].mesh->addVertex( &subVert );
+    subs[ subMeshID ].mesh->addVertex( superVert );
   }
 
   std::pair<bool,VertexID> SuperToSubMesh::getSubVertexID (UintSize subMeshID, VertexID superID)

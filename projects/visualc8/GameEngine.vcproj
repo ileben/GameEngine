@@ -481,6 +481,26 @@
 				Name="Embedit"
 				>
 				<File
+					RelativePath="..\..\src\engine\embedit\Ambient.c"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="Embedit"
+							Preprocess="true"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="Embedit"
+							Preprocess="true"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
 					RelativePath="..\..\src\engine\embedit\shadefrag.SpotLight.c"
 					>
 					<FileConfiguration

@@ -28,6 +28,8 @@ TriMeshActor *triMeshActor = NULL;
 SkinMeshActor *skinMeshActor = NULL;
 Actor *actorRender = NULL;
 
+Light *light = NULL;
+
 Scene *scene = NULL;
 Scene *sceneRender = NULL;
 
@@ -136,6 +138,10 @@ void keyboard (unsigned char key, int x, int y)
 {
   switch (key)
   {
+  case 9://tab
+    light->setCastShadows( !light->getCastShadows() );
+    break;
+
   case 8://backspace
     if (skinMeshActor == NULL) return;
     skinMeshActor->loadPose();
@@ -177,12 +183,13 @@ void display ()
 {
   //switch camera
   renderer->setViewport( 0,0,resX, resY );
-  renderer->setCamera( camRender );
   renderer->beginFrame();
   
   //draw model
-  //renderer->renderScene( sceneRender );
+  renderer->beginDeferred();
+  renderer->setCamera( camRender );
   renderer->renderSceneDeferred( sceneRender );
+  renderer->endDeferred();
   
   //Frames per second
   renderer->setViewport( 0,0,resX, resY );
@@ -363,7 +370,7 @@ bool loadPackage (const CharString &fileName)
               character->anims[ a ]->name.buffer());
 
     //Get animation name
-    if (character->anims.size() > 0) {
+    if (character->anims.size() > 0 && animName == "") {
       char buf[256]; int len=0; UintSize animIndex=0;
       while (len==0 || animIndex >= character->anims.size())
       {
@@ -392,29 +399,15 @@ bool loadPackage (const CharString &fileName)
   return true;
 }
 
-int main (int argc, char **argv)
+Actor* loadActor (const CharString &meshFileName, const CharString &texFileName="")
 {
-  //Initialize GLUT
-  initGlut( argc, argv );
-  
-  Kernel kernel;
-  kernel.enableVerticalSync( false );
-  renderer = kernel.getRenderer();
-  printf( "Kernel loaded\n" );
+  mesh = NULL;
+  character = NULL;
+  actorRender = NULL;
 
-  //Setup 3D scene
-  scene = new Scene;
+  if (!loadPackage( meshFileName ))
+    return NULL;
 
-  //Get input filename and load it
-  CharString fileName;
-  do {
-    char buf[256];
-    std::cout << "Filename: ";
-    std::cin.width( 256 );
-    std::cin >> buf;
-    fileName = buf;
-  } while (!loadPackage( fileName ));
-  
   //Create actor
   TriMesh *meshRender = NULL;
   
@@ -422,16 +415,16 @@ int main (int argc, char **argv)
   {
     triMeshActor = new TriMeshActor;
     triMeshActor->setMesh( mesh );
-    actorRender = triMeshActor;
     meshRender = mesh;
+    actorRender = triMeshActor;
   }
 
   if (character != NULL)
   {
     skinMeshActor = new SkinMeshActor;
     skinMeshActor->setMesh( character );
-    actorRender = skinMeshActor;
     meshRender = character->mesh;
+    actorRender = skinMeshActor;
   }
 
   //Center in the scene
@@ -446,45 +439,88 @@ int main (int argc, char **argv)
   actorRender->scale( scale );
   findBounds( meshRender, actorRender->getWorldMatrix() );
 
-  //Assign material
-  StandardMaterial *matWhite = new StandardMaterial;
-  matWhite->setSpecularity( 0.5 );
-  matWhite->setAmbientColor( matWhite->getDiffuseColor() * .8f );
-  actorRender->setMaterial( matWhite );
-
-  //Add to scene
-  scene->addChild( actorRender );
-  /*
-  Image *img = new Image;
-  img->readFile( "oblekica7.jpg", "jpeg" );
-
-  Texture *tex = new Texture;
-  tex->fromImage( img );
-
-  DiffuseTexMat *matTex = new DiffuseTexMat;
-  matTex->setSpecularity( 0.5 );
-  matTex->setDiffuseTexture( tex );
-  //actorRender->setMaterial( matTex );
-
-  for (int x=0; x<4; ++x)
+  if (texFileName == "")
   {
-    for (int z=0; z<4; ++z)
-    {
-      //SkinMeshActor *a = new SkinMeshActor;
-      //a->setMesh( character );
-      TriMeshActor *a = new TriMeshActor;
-      a->setMesh( mesh );
-      a->translate( trans.x, trans.y, trans.z );
-      a->scale( scale );
-      a->translate( -200 + x * 100, 0, -200 + z * 100 );
-      a->setMaterial( matWhite );
-      //a->setMaterial( matTex );
-      scene->addChild( a );
+    //Assign solid color material
+    StandardMaterial *matWhite = new StandardMaterial;
+    //matWhite->setSpecularity( 0.5 );
+    actorRender->setMaterial( matWhite );
+  }
+  else
+  {
+    //Assing diffuse-texture material
+    Image *img = new Image;
+    img->readFile( texFileName, "jpeg" );
+
+    Texture *tex = new Texture;
+    tex->fromImage( img );
+
+    DiffuseTexMat *matTex = new DiffuseTexMat;
+    //matTex->setSpecularity( 0.5 );
+    matTex->setDiffuseTexture( tex );
+    actorRender->setMaterial( matTex );
+  }
+
+  return actorRender;
+}
+
+int main (int argc, char **argv)
+{
+  //Initialize GLUT
+  initGlut( argc, argv );
+  
+  Kernel kernel;
+  kernel.enableVerticalSync( false );
+  renderer = kernel.getRenderer();
+  printf( "Kernel loaded\n" );
+
+  //Setup 3D scene
+  scene = new Scene;
+
+  if (argc < 4)
+  {
+    //Get input filename and load it
+    CharString fileName;
+    do {
+      char buf[256];
+      std::cout << "Filename: ";
+      std::cin.width( 256 );
+      std::cin >> buf;
+      fileName = buf;
+      loadActor( fileName );
+    }
+    while (actorRender == NULL);
+  }
+  else
+  {
+    //Take filename from argument
+    CharString fileName = argv[1];
+
+    CharString texFileName = argv[2];
+    if (texFileName == "notex")
+      texFileName = "";
+
+    animName = argv[3];
+    if (animName == "noanim")
+      animName = "";
+
+    loadActor( fileName, texFileName );
+    if (actorRender == NULL) {
+      printf( "Failed loading '%s'\n", argv[1] );
+      getchar();
+      return 1;
     }
   }
-  */
-  
+
+  scene->addChild( actorRender );
+  ((StandardMaterial*)actorRender->getMaterial())->setCullBack(false);
+  ((StandardMaterial*)actorRender->getMaterial())->setLuminosity(0.2f);
+  ((StandardMaterial*)actorRender->getMaterial())->setDiffuseColor(Vector3(.7,.7,.7));
+
   //Create floor cube
+  StandardMaterial *matWhite = new StandardMaterial;
+  matWhite->setSpecularity( 0.5 );
+
   TriMesh *cubeMesh = new CubeMesh;
   TriMeshActor *cube = new TriMeshActor;
   cube->setMaterial( matWhite );
@@ -502,22 +538,27 @@ int main (int argc, char **argv)
   //scene->addChild( axes );
 
   //Create lights
-  Light *light = new SpotLight( Vector3(-200,300,-200), Vector3(1,-1,1), 60, 0 );
+  light = new SpotLight( Vector3(-200,300,-200), Vector3(), 60, 0 );
   light->setCastShadows( true );
   light->lookInto( center );
-  light->setDiffuseColor( Vector3(1,.8,.2) );
+  //light->setDiffuseColor( Vector3(1,.8,.2) );
   scene->addChild( light );
 
-  Light *light2 = new SpotLight( Vector3(200,300,200), Vector3(-1,-1,-1), 60, 0 );
+  Light *light2 = new SpotLight( Vector3(300,300,50), Vector3(), 60, 0 );
+  //light2->setCastShadows( true );
   light2->lookInto( center );
   light2->setDiffuseColor( Vector3(.5,.5,1) );
   scene->addChild( light2);
 
+  Light *light3 = new SpotLight( Vector3(-200,150,200), Vector3(), 60, 0 );
+  light3->lookInto( center );
+  light3->setDiffuseColor( Vector3(.5,.5,.5) );
+  scene->addChild( light3);
+
   cam3D = new Camera3D;
   cam3D->setCenter( center );
-  cam3D->translate( 0,0,-300 );
-  cam3D->orbitV( Util::DegToRad( 20 ), true );
-  cam3D->orbitH( Util::DegToRad( 30 ), true );
+  cam3D->translate( 0, 0, -300 );
+  cam3D->orbitV( Util::DegToRad( 25 ) );
   cam3D->setNearClipPlane( 1.0f );
   cam3D->setFarClipPlane( 3000.0f );
 

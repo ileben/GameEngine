@@ -94,6 +94,9 @@ namespace GE
     Int32 deferredSampler[5];
     Int32 deferredCastShadow;
     Int32 deferredWinSize;
+    Int32 ambientColorSampler;
+
+    Shader *shaderAmbient;
     Shader *shaderLightSpot;
     
     void updateBuffers ();
@@ -121,9 +124,12 @@ namespace GE
 
     void beginFrame ();
     void renderScene (Scene *scene);
-    void renderSceneDeferred (Scene *scene);
     void renderWidget (Widget *w);
     void endFrame ();
+
+    void beginDeferred();
+    void renderSceneDeferred (Scene *scene);
+    void endDeferred();
   };
 }
 

@@ -309,6 +309,11 @@ namespace GE
     {
       return elements + index * eltSize;
     }
+
+    void* last() const
+    {
+      return elements + (sz-1) * eltSize;
+    }
     
     UintSize capacity() const
     {
@@ -465,8 +470,8 @@ namespace GE
     
     void remove( const T &el )
     {
-      UintSize i = indexOf( el );
-      if( i > -1 ) removeAt( i );
+      int i = indexOf( el );
+      if( i > -1 ) removeAt( (UintSize) i );
     }
   };
 

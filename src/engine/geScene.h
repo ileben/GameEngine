@@ -47,21 +47,26 @@ namespace GE
 
   private:
     bool changed;
+    
     Camera *cam;
     ArrayList< Light* > lights;
     ArrayList< TravNode > traversal;
+    
+    Vector3 ambientColor;
 
   protected:
     bool hasChanged();
     void updateChanges();
 
   public:
-
     Scene();
     void markChanged();
     void bindCamera( Camera *cam );
     inline const ArrayList< TravNode >* getTraversal();
     inline const ArrayList< Light* >* getLights();
+
+    void setAmbientColor (const Vector3 &color);
+    const Vector3& getAmbientColor ();
   };
 
   const ArrayList< TravNode >* Scene::getTraversal() {

@@ -165,7 +165,7 @@ namespace GE
     DECLARE_SUBCLASS (StandardMaterial, Material); DECLARE_END;
     friend class Renderer;
     
-  private:
+  protected:
     
     Vector3 diffuseColor;
     Vector3 ambientColor;
@@ -173,6 +173,7 @@ namespace GE
     Float specularity;
     Float glossiness;
     Float opacity;
+    Float luminosity;
     bool lighting;
     bool culling;
 
@@ -198,12 +199,31 @@ namespace GE
     void setGlossiness (Float gloss);
     Float getGlossiness ();
 
+    void setLuminosity (Float luminosity);
+    Float getLuminosity ();
+
     void setUseLighting (bool enable);
     bool getUseLighting ();
 
     void setCullBack (bool enable);
     bool getCullBack ();
     
+    virtual void begin();
+  };
+
+  /*
+  =======================================================
+  
+  DeferredMaterial should be used with deferred renderer
+  //Hmm... or not
+  
+  =======================================================*/
+
+  class DeferredMaterial : public StandardMaterial
+  {
+    DECLARE_SUBCLASS (DeferredMaterial, StandardMaterial); DECLARE_END;
+
+  public:
     virtual void begin();
   };
   

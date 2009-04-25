@@ -454,7 +454,11 @@ void buildBoneTree (const MObject &jointNode,
   {
     //Pop a node from the queue
     MObject dagObj = dagQueue.first();
+    MFnDagNode dagNode( dagObj );
     dagQueue.popFront();
+
+    CharString name = dagNode.name().asChar();
+    trace("buildBoneTree: - " + name);
 
     //Add the node and a bone to the tree
     jointTree.pushBack( dagObj );
@@ -465,7 +469,6 @@ void buildBoneTree (const MObject &jointNode,
     bone->numChildren = 0;
 
     //Walk node children
-    MFnDagNode dagNode( dagObj );
     for (Uint c=0; c<dagNode.childCount(); ++c)
     {
       //Check if it's a kJoint type
@@ -861,6 +864,14 @@ void exportNoSkin (void **outData, UintSize *outSize)
   outPolyMesh->updateNormals( SmoothMetric::Edge );
   TriMesh *outTriMesh = new TriMesh;
   outTriMesh->fromPoly( outPolyMesh, outTexMesh );
+
+  for (int f=0; f<outTriMesh->getGroupFaceCount(0); ++f) {
+    for (int c=0; c<3; ++c) {
+      VertexID v = outTriMesh->getCornerIndex(0, f, c);
+      if (v > outTriMesh->data.size())
+        int ooooooooo = 0;
+    }
+  }
 
   //Serialize
   SerializeManager sm;
