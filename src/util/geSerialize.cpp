@@ -11,22 +11,33 @@ namespace GE
   data to be copied in.
   
   The byte offset to the serialized conterpart of the
-  pointers are calculated from the serialized offset
-  of the currently processed resource and the offset of the
+  pointers are calculated from the serialized offset of
+  the currently processed resource and the offset of the
   pointer member variable within its structure.
 
-  There are some exceptions which cannot be serialized
-  though:
+  The serialized version of the pointer is adjusted to
+  point to the serialized version of the object within the
+  serialized data. At deserialization the pointer is again
+  adjusted to point within the loaded memory block.
 
-  - Pointer to an array of resources. This is a problem
-    only when save-ing / load-ing, because the array
-    version of the new operator always invokes the default
-    constructor. When serializing however, we could use
-    multiple in-place constructions to work around it.
-    To avoid the differences in usage though, this
-    variant is not supported in any state. An array of
-    pointers to resources is much more common anyway.
+  As opposed to serialize/deserialize, the save/load
+  process never copies entire structures or any pointers
+  into the serialized data block. Instead the object's
+  serialization callback is called both at save and load
+  time to define the classes to be constructed and data
+  to be copied.
+
+  One exception which cannot be directly serialized is
+  a pointer to an array of resources. This is a problem
+  only when save-ing / load-ing, because the array
+  version of the new operator always invokes the default
+  constructor so it's not possible to call new[] with
+  a SerializeManager* argument on every member of the array.
   
+  A workaround is to use multiple in-place constructions,
+  that's why the objectArray() serialize instruction is
+  only valid on arrays where members are to be constructed
+  in-place. ObjArrayList class is an example of such usage.
   ---------------------------------------------------------*/
   
   bool SerializeManager::isSerializing () {
@@ -45,28 +56,27 @@ namespace GE
     return state == &stateLoad;
   }
   
-  void SerializeManager::dataVar (void *ptr, UintSize size)
-  {
+  void SerializeManager::dataVar (void *ptr, UintSize size) {
     state->dataVar( ptr, size );
   }
 
-  void SerializeManager::objectVar (ClassPtr cls, void *ptr)
-  {
+  void SerializeManager::objectVar (ClassPtr cls, void *ptr) {
     state->objectVar( cls, ptr );
   }
 
-  void SerializeManager::objectPtr (ClassPtr cls, void **pptr)
-  {
+  void SerializeManager::objectArray (ClassPtr cls, void **pptr, UintSize count) {
+    state->objectArray( cls, pptr, count );
+  }
+
+  void SerializeManager::objectPtr (ClassPtr cls, void **pptr) {
     state->objectPtr( cls, pptr );
   }
 
-  void SerializeManager::objectArray (ClassPtr cls, void ***pptr, UintSize count)
-  {
-    state->objectArray( cls, pptr, count );
+  void SerializeManager::objectPtrArray (ClassPtr cls, void ***pptr, UintSize count) {
+    state->objectPtrArray( cls, pptr, count );
   }
   
-  void SerializeManager::dataPtr (void **pptr, UintSize size)
-  {
+  void SerializeManager::dataPtr (void **pptr, UintSize size) {
     state->dataPtr( pptr, size );
   }
 
@@ -90,7 +100,7 @@ namespace GE
     if (!simulate)
     {
       //Copy [size] bytes of data to buffer at copy offset
-      std::memcpy (data + offset, ptr, size);
+      std::memcpy( data + offset, ptr, size );
     }
     
     //Advance copy offset
@@ -102,7 +112,7 @@ namespace GE
     if (!simulate)
     {
       //Copy [size] bytes of data from buffer at copy offset
-      std::memcpy (ptr, data + offset, size);
+      std::memcpy( ptr, data + offset, size );
     }
 
     //Advance copy offset
@@ -110,33 +120,35 @@ namespace GE
   }
 
   void SerializeManager::State::rootPtr
-    (ClassPtr cls, void *ptr)
+    (ClassPtr cls, void **pptr)
   {
     ResPtrInfo riroot;
     riroot.cls = cls;
-    riroot.ptr = ptr;
+    riroot.ptr = pptr;
     riroot.count = 1;
     riroot.offset = 0;
     riroot.isptr = true;
     riroot.isarray = false;
-    riroot.detached = true;
+    riroot.isptrarray = false;
+    riroot.isroot = true;
     riroot.ptroffset = 0;
-    resQueue.push_back (riroot);
+    resQueue.push_back( riroot );
   }
 
-  void SerializeManager::State::arrayPtr
-    (ClassPtr cls, void *ptr, UintSize ptroffset)
+  void SerializeManager::State::arrayMemberPtr
+    (ClassPtr cls, void **pptr, UintSize ptroffset)
   {
     ResPtrInfo ri;
     ri.cls = cls;
-    ri.ptr = ptr;
+    ri.ptr = pptr;
     ri.count = 1;
     ri.offset = 0;
     ri.isptr = true;
     ri.isarray = false;
-    ri.detached = false;
+    ri.isptrarray = false;
+    ri.isroot = false;
     ri.ptroffset = ptroffset;
-    resQueue.push_back (ri);
+    resQueue.push_back( ri );
   }
 
   /*
@@ -147,7 +159,17 @@ namespace GE
   void SerializeManager::StateSerial::dataVar
     (void *ptr, UintSize size)
   {
-    //No-op
+    //The data will be copied along with the whole object
+  }
+
+  void SerializeManager::StateSerial::dataPtr
+    (void **pptr, UintSize size)
+  {
+    DynPtrInfo di;
+    di.ptr = pptr;
+    di.size = size;
+    di.ptroffset = current->offset + Util::PtrDist( current->ptr, pptr );
+    dynQueue.push_back( di );
   }
 
   void SerializeManager::StateSerial::objectVar
@@ -155,14 +177,15 @@ namespace GE
   {
     ResPtrInfo ri;
     ri.count = 1;
-    ri.offset = current->offset + Util::PtrDist (current->ptr, ptr);
+    ri.offset = current->offset + Util::PtrDist( current->ptr, ptr );
     ri.cls = cls;
     ri.ptr = ptr;
     ri.isptr = false;
     ri.isarray = false;
-    ri.detached = false;
+    ri.isptrarray = false;
+    ri.isroot = false;
     ri.ptroffset = 0;
-    resQueue.push_back (ri);
+    resQueue.push_back( ri );
   }
 
   void SerializeManager::StateSerial::objectPtr
@@ -172,37 +195,45 @@ namespace GE
     ri.count = 1;
     ri.offset = 0;
     ri.cls = cls;
-    ri.ptr = *pptr;
+    ri.ptr = pptr;
     ri.isptr = true;
     ri.isarray = false;
-    ri.detached = false;
-    ri.ptroffset = current->offset + Util::PtrDist (current->ptr, pptr);
-    resQueue.push_back (ri);
+    ri.isptrarray = false;
+    ri.isroot = false;
+    ri.ptroffset = current->offset + Util::PtrDist( current->ptr, pptr );
+    resQueue.push_back( ri );
   }
 
   void SerializeManager::StateSerial::objectArray
-    (ClassPtr cls, void ***pptr, UintSize count)
+    (ClassPtr cls, void **pptr, UintSize count)
   {
     ResPtrInfo ri;
     ri.count = count;
     ri.offset = 0;
     ri.cls = cls;
-    ri.ptr = *pptr;
+    ri.ptr = pptr;
     ri.isptr = true;
     ri.isarray = true;
-    ri.detached = false;
-    ri.ptroffset = current->offset + Util::PtrDist (current->ptr, pptr);
-    resQueue.push_back (ri);
+    ri.isptrarray = false;
+    ri.isroot = false;
+    ri.ptroffset = current->offset + Util::PtrDist( current->ptr, pptr );
+    resQueue.push_back( ri );
   }
-  
-  void SerializeManager::StateSerial::dataPtr
-    (void **pptr, UintSize size)
+
+  void SerializeManager::StateSerial::objectPtrArray
+    (ClassPtr cls, void ***ppptr, UintSize count)
   {
-    DynPtrInfo di;
-    di.ptr = *(pptr);
-    di.size = size;
-    di.ptroffset = current->offset + Util::PtrDist (current->ptr, pptr);
-    dynQueue.push_back (di);
+    ResPtrInfo ri;
+    ri.count = count;
+    ri.offset = 0;
+    ri.cls = cls;
+    ri.ptr = ppptr;
+    ri.isptr = true;
+    ri.isarray = true;
+    ri.isptrarray = true;
+    ri.isroot = false;
+    ri.ptroffset = current->offset + Util::PtrDist( current->ptr, ppptr );
+    resQueue.push_back( ri );
   }
 
  
@@ -218,34 +249,6 @@ namespace GE
     store( ptr, size );
   }
 
-  void SerializeManager::StateSave::objectVar
-    (ClassPtr cls, void *ptr)
-  {
-    //Push the resource info on the queue
-    StateSerial::objectVar( cls, ptr );
-  }
-  
-  void SerializeManager::StateSave::objectPtr
-    (ClassPtr cls, void **pptr)
-  {
-    //Push the resource info on the queue
-    StateSerial::objectPtr( cls, pptr );
-  }
-
-  void SerializeManager::StateSave::objectArray
-    (ClassPtr cls, void ***pptr, UintSize count)
-  {
-    //Push the resource info on the queue
-    StateSerial::objectArray( cls, pptr, count );
-  }
-  
-  void SerializeManager::StateSave::dataPtr
-    (void **pptr, UintSize size)
-  {
-    //Push the data info on the queue
-    StateSerial::dataPtr( pptr, size );
-  }
-
   /*
   -----------------------------------------------------
   Loading state
@@ -254,48 +257,8 @@ namespace GE
   void SerializeManager::StateLoad::dataVar
     (void *ptr, UintSize size)
   {
-    //Copy data from buffer to resource
+    //Copy data from buffer to object
     load( ptr, size );
-  }
-
-  void SerializeManager::StateLoad::objectVar
-    (ClassPtr cls, void *ptr)
-  {
-    //Push the resource info on the queue
-    StateSerial::objectVar( cls, ptr );
-  }
-  
-  void SerializeManager::StateLoad::objectPtr
-    (ClassPtr cls, void **pptr)
-  {
-    //Create a new resource instance and adjust the pointer
-    void *pres = cls->newSerialInstance( sm );
-    *pptr = (void*) pres;
-    
-    //Push the resource info on the queue
-    StateSerial::objectPtr( cls, pptr );
-  }
-  
-  void SerializeManager::StateLoad::objectArray
-    (ClassPtr cls, void ***pptr, UintSize count)
-  {
-    //Allocate array of pointers and adjust the pointer to it
-    void *pdata = std::malloc( count * sizeof(void*) );
-    *pptr = (void**) pdata;
-    
-    //Push the resource info on the queue
-    StateSerial::objectArray( cls, pptr, count );
-  }
-  
-  void SerializeManager::StateLoad::dataPtr
-    (void **pptr, UintSize size)
-  {
-    //Allocate data on the heap and adjust the pointer to it
-    void *pdata = std::malloc( size );
-    *pptr = (void*) pdata;
-    
-    //Push the data info on the queue
-    StateSerial::dataPtr( pptr, size );
   }
   
   /*
@@ -319,10 +282,10 @@ namespace GE
   }
   
   void SerializeManager::StateSerial::run
-    (ClassPtr rcls, void *rptr)
+    (ClassPtr rcls, void **rptr)
   {
     //Push root info to queue
-    rootPtr (rcls, rptr);
+    rootPtr( rcls, rptr );
     while (!resQueue.empty())
     {
       //Pop first resource info off the stack
@@ -330,47 +293,65 @@ namespace GE
       resQueue.pop_front();
       current = &ri;
 
-      if (!ri.isptr)
+      if (ri.isptrarray)
       {
-        //Get new pointers from the resource
-        ri.cls->invokeCallback( ClassEvent::Serialize, ri.ptr, sm );
-      }
-      else if (ri.isarray)
-      {
-        //Adjust the in-data pointer to the array
-        if (!ri.detached) adjust( ri.ptroffset );
+        //An array of pointers to objects
+        void **pptr = *((void***)ri.ptr);
+
+        //Adjust the serialized pointer to the array
+        if (!ri.isroot) adjust( ri.ptroffset );
         
-        //Walk the array of pointers to resources
-        void **pptr = (void**)ri.ptr;
-        for (UintSize p=0; p<ri.count; ++p)
+        //Walk the array of pointers to objects
+        for (UintSize c=0; c<ri.count; ++c)
         {
-          //Enqueue each pointer to resource
-          arrayPtr( ri.cls, pptr[p], offset );
+          //Enqueue each pointer to object
+          arrayMemberPtr( ri.cls, pptr, offset );
           
-          //Leave space for in-data pointer
-          offset += sizeof (void*);
+          //Leave space for serialized pointer to object
+          offset += sizeof( void* );
+
+          //Next pointer in the array
+          Util::PtrAdd( &pptr, sizeof(void*) );
         }
       }
-      else//Its a pointer to a single resource
+      else if (ri.isptr)
       {
-        //Add to list of classes
+        //A pointer to an object (array)
+        void *ptr = *((void**)ri.ptr);
+
+        //Adjust the serialized pointer to object (array)
+        if (!ri.isroot) adjust( ri.ptroffset );
+
+        //Add to list of classes to deserialize
         ClsHeader ch;
         ch.id = ri.cls->getID();
         ch.count = ri.count;
         ch.offset = offset;
         clsList.push_back (ch);
-        
-        //Set the resource offset
-        ri.offset = offset;
-        
-        //Adjust the serialized pointer to resource
-        if (!ri.detached) adjust( ri.ptroffset );
-        
-        //Copy resource data
-        store( ri.ptr, ri.cls->getSize() );
-        
-        //Get new pointers from the resource
-        ri.cls->invokeCallback( ClassEvent::Serialize, ri.ptr, sm );
+
+        //Walk the array of objects
+        for (UintSize c=0; c<ri.count; ++c)
+        {
+          //Update serialized offset
+          ri.offset = offset;
+          
+          //Copy object data (this will increase current offset)
+          store( ptr, ri.cls->getSize() );
+          
+          //Get new members to serialize from the object
+          ri.cls->invokeCallback( ClassEvent::Serialize, ptr, sm );
+
+          //Next object in the array
+          Util::PtrAdd( &ptr, ri.cls->getSize() );
+        }
+      }
+      else
+      {
+        //An automatic object variable
+        void *ptr = ri.ptr;
+
+        //Get new members to serialize from the object
+        ri.cls->invokeCallback( ClassEvent::Serialize, ptr, sm );
       }
       
       while (!dynQueue.empty())
@@ -378,12 +359,15 @@ namespace GE
         //Pop first dynamic info off the stack
         DynPtrInfo di = dynQueue.front();
         dynQueue.pop_front();
-        
-        //Adjust the in-data pointer to dynamic data
+
+        //A pointer to dynamically allocated memory
+        void *ptr = *((void**)di.ptr);
+
+        //Adjust the serialized pointer to dynamic data
         adjust( di.ptroffset );
         
         //Copy dynamic data
-        store( di.ptr, di.size );
+        store( ptr, di.size );
       }
     }
   }
@@ -393,7 +377,7 @@ namespace GE
   Saving state
   --------------------------------------------------*/
 
-  void SerializeManager::StateSave::run( ClassPtr rcls, void *rptr )
+  void SerializeManager::StateSave::run( ClassPtr rcls, void **rptr )
   {
     //Push root info to queue
     rootPtr( rcls, rptr );
@@ -404,25 +388,43 @@ namespace GE
       resQueue.pop_front();
       current = &ri;
       
-      if (!ri.ptr)
+      if (ri.isptrarray)
       {
-        //Copy data and get new pointers from the resource
-        ri.cls->invokeCallback( ClassEvent::Serialize, ri.ptr, sm );
-      }
-      else if (ri.isarray)
-      {
+        //An array of pointers to objects
+        void **pptr = *((void***)ri.ptr);
+
         //Walk the array of pointers to resources
-        void **pptr = (void**) ri.ptr;
-        for( UintSize p=0; p<ri.count; ++p )
+        for (UintSize c=0; c<ri.count; ++c)
         {
-          //Enqueue each pointer to resource
-          arrayPtr( ri.cls, pptr[p], 0 );
+          //Enqueue each pointer to object
+          arrayMemberPtr( ri.cls, pptr, 0 );
+
+          //Next pointer in the array
+          Util::PtrAdd( &pptr, sizeof(void*) );
         }
       }
-      else//Its a pointer to a single resource
+      else if (ri.isptr)
       {
-        //Copy data and get new pointers from the resource
-        ri.cls->invokeCallback( ClassEvent::Serialize, ri.ptr, sm );
+        //A pointer to an object (array)
+        void *ptr = *((void**)ri.ptr);
+
+        //Walk the array of objects
+        for (UintSize c=0; c<ri.count; ++c)
+        {
+          //Get new members to serialize from the object
+          ri.cls->invokeCallback( ClassEvent::Serialize, ptr, sm );
+
+          //Next object in the array
+          Util::PtrAdd( &ptr, ri.cls->getSize() );
+        }
+      }
+      else
+      {
+        //An automatic object variable
+        void *ptr = ri.ptr;
+
+        //Get new members to serialize from the object
+        ri.cls->invokeCallback( ClassEvent::Serialize, ptr, sm );
       }
       
       while (!dynQueue.empty())
@@ -430,9 +432,12 @@ namespace GE
         //Pop first dynamic info off the stack
         DynPtrInfo di = dynQueue.front();
         dynQueue.pop_front();
+
+        //A pointer to dynamically allocated memory
+        void *ptr = *((void**)di.ptr);
         
         //Copy dynamic data
-        store( di.ptr, di.size );
+        store( ptr, di.size );
       }
     }
   }
@@ -442,7 +447,7 @@ namespace GE
   Loading state
   --------------------------------------------------*/
   
-  void SerializeManager::StateLoad::run( ClassPtr rcls, void *rptr )
+  void SerializeManager::StateLoad::run( ClassPtr rcls, void **rptr )
   {
     //Push root info to queue
     rootPtr( rcls, rptr );
@@ -453,29 +458,63 @@ namespace GE
       resQueue.pop_front();
       current = &ri;
 
-      if (!ri.ptr)
+      if (ri.isptrarray)
       {
-        //Copy data and get new pointers from the resource
-        ri.cls->invokeCallback( ClassEvent::Serialize, ri.ptr, sm );
-      }
-      else if( ri.isarray )
-      {
+        //Allocate memory for the array of pointers
+        void **pptr = (void**) std::malloc( ri.count * sizeof(void*) );
+
+        //Adjust the pointer to the array
+        *((void***)ri.ptr) = pptr;
+
         //Walk the array of pointers to resources
-        void **pptr = (void**) ri.ptr;
         for( UintSize p=0; p<ri.count; ++p )
         {
-          //Create a new resource instance and adjust pointer
-          void *pres = ri.cls->newSerialInstance( sm );
-          pptr[p] = pres;
-          
           //Enqueue the pointer to resource
-          arrayPtr( ri.cls, pptr[p], 0 );
+          arrayMemberPtr( ri.cls, pptr, 0 );
+
+          //Next pointer in the array
+          Util::PtrAdd( &pptr, sizeof(void*) );
         }
       }
-      else//Its a pointer to a single resource
+      else if (ri.isptr && ri.isarray)
       {
-        //Copy data and get new pointers from the resource
-        ri.cls->invokeCallback( ClassEvent::Serialize, ri.ptr, sm );
+        //Allocate memory for the array of object
+        void *ptr = std::malloc( ri.count * ri.cls->getSize() );
+
+        //Adjust the pointer to the array
+        *((void**)ri.ptr) = ptr;
+
+        //Walk the array of objects
+        for (UintSize c=0; c<ri.count; ++c)
+        {
+          //Initialize the object in-place
+          ri.cls->newSerialInPlace( ptr, sm );
+
+          //Get new members to serialize from the object
+          ri.cls->invokeCallback( ClassEvent::Serialize, ptr, sm );
+
+          //Next object in the array
+          Util::PtrAdd( &ptr, ri.cls->getSize() );
+        }
+      }
+      else if (ri.isptr)
+      {
+        //Allocate a new object instance
+        void *ptr = ri.cls->newSerialInstance( sm );
+
+        //Adjust the pointer to object
+        *((void**)ri.ptr) = ptr;
+
+        //Get new members to serialize from the object
+        ri.cls->invokeCallback( ClassEvent::Serialize, ptr, sm );
+      }
+      else
+      {
+        //An automatic object variable
+        void *ptr = ri.ptr;
+
+        //Get new members to serialize from the object
+        ri.cls->invokeCallback( ClassEvent::Serialize, ptr, sm );
       }
       
       while( !dynQueue.empty() )
@@ -483,9 +522,15 @@ namespace GE
         //Pop first dynamic info off the stack
         DynPtrInfo di = dynQueue.front();
         dynQueue.pop_front();
+
+        //Allocate memory buffer dynamically
+        void *ptr = std::malloc( di.size );
+
+        //Adjust the pointer to buffer
+        *((void**)di.ptr) = ptr;
         
         //Copy dynamic data
-        load( di.ptr, di.size );
+        load( ptr, di.size );
       }
     }
   }
@@ -504,7 +549,7 @@ namespace GE
     
     //Simulation run
     state->reset( 0, false );
-    state->run( cls, root );
+    state->run( cls, &root );
     
     //Calculate the size of pointer and class table
     UintSize introSize =
@@ -521,7 +566,7 @@ namespace GE
     
     //Real run
     state->reset( introSize, true );
-    state->run( cls, root );
+    state->run( cls, &root );
     
     //Back to start of data
     state->offset = 0;
@@ -565,7 +610,7 @@ namespace GE
     //Get the list of class headers
     for (UintSize c=0; c<*numClasses; ++c)
     {
-      //Get the pointer to the resource and its class
+      //Get the pointer to the object and its class
       void *pres = Util::PtrOff (data, clsList[c].offset);
       ClassPtr cls = ClassFromID (clsList[c].id);
 
@@ -575,7 +620,7 @@ namespace GE
         rootCls = cls;
       }
 
-      //Construct resource (array) in-place
+      //Construct object (array) in-place
       for (UintSize i=0; i<clsList[c].count; ++i)
       {
         cls->newSerialInPlace (pres, this);
@@ -602,20 +647,20 @@ namespace GE
     state->sm = this;
     
     //Simulation run
-    state->reset (0, false);
-    state->run (cls, root);
+    state->reset( 0, false );
+    state->run( cls, &root );
     
     //Allocate data
     UintSize dataSize = sizeof (ClassID) + state->offset;
-    state->data = (Uint8*) std::malloc (dataSize);
+    state->data = (Uint8*) std::malloc( dataSize );
     *outData = state->data;
     *outSize = dataSize;
     
     //Real run
     ClassID rootID = cls->getID();
-    state->reset (0, true);
-    state->store (&rootID, sizeof (ClassID));
-    state->run (cls, root);
+    state->reset( 0, true );
+    state->store( &rootID, sizeof(ClassID) );
+    state->run( cls, &root );
   }
 
   /*
@@ -632,19 +677,17 @@ namespace GE
 
     //Load root class ID
     ClassID rootID;
-    state->reset (0, true);
-    state->load (&rootID, sizeof (ClassID));
+    state->reset( 0, true );
+    state->load( &rootID, sizeof(ClassID) );
     
     //Get root class and check if valid
     ClassPtr rootCls;
-    rootCls = IClass::FromID (rootID);
+    rootCls = IClass::FromID( rootID );
     if (rootCls == NULL) return NULL;
-
-    //Create root resource
-    void *rootPtr = rootCls->newSerialInstance (this);
     
     //Run
-    state->run (rootCls, rootPtr);
+    void *rootPtr = NULL;
+    state->run( rootCls, &rootPtr );
 
     //Output
     if (outClass != NULL)

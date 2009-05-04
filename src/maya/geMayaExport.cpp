@@ -1,4 +1,5 @@
 #include "geMaya.h"
+#include <maya/MFloatVectorArray.h>
 
 /*
 ----------------------------------------------------------
@@ -64,6 +65,11 @@ Vector3 exportVector (const MVector &v)
   return Vector3( (Float) v.x, (Float) v.y, (Float) -v.z );
 }
 
+Vector2 exportUV (double u, double v)
+{
+  return Vector2( (Float) u, (Float) (1.0 - v) );
+}
+
 Quat exportQuat (const MQuaternion &q)
 {
   return Quat( (Float) q.x, (Float) q.y, (Float) -q.z, (Float) -q.w );
@@ -83,24 +89,48 @@ to be multiplied in different order.
 void exportTransformMatrix (const MMatrix &m, Quat &R, Vector3 &T, Matrix4x4 &S)
 {
   MTransformationMatrix tm( m );
+
   MQuaternion jointO = tm.rotationOrientation();
   MQuaternion jointR = tm.rotation();
   MVector jointT = tm.translation( MSpace::kTransform );
+  
   R = exportQuat( jointO * jointR );
   T = exportVector( jointT );
   S.setIdentity();
+
+  /*
+  double scale[3] = {0.0,0.0,0.0};
+  tm.getScale( scale, MSpace::kTransform );
+  if (fabs( scale[0] - 1.0 ) > 0.0001 ||
+      fabs( scale[1] - 1.0 ) > 0.0001 ||
+      fabs( scale[2] - 1.0 ) > 0.0001)
+    int zomg = 0;
+    */
 }
 
 void exportTransformJoint (const MObject &o, Quat &R, Vector3 &T, Matrix4x4 &S)
 {
   MFnIkJoint joint( o );
-  MQuaternion jointR, jointO;
+  MQuaternion jointSO, jointR, jointO;
+  MVector jointT;
+
+  joint.getScaleOrientation( jointSO );
   joint.getRotation( jointR );
   joint.getOrientation( jointO );
-  MVector jointT = joint.getTranslation( MSpace::kTransform );
-  R = exportQuat( jointR * jointO );
+  jointT = joint.getTranslation( MSpace::kTransform );
+
+  R = exportQuat( jointSO * jointR * jointO );
   T = exportVector( jointT );
   S.setIdentity();
+
+  /*
+  double scale[3] = {0.0,0.0,0.0};
+  joint.getScale( scale );
+  if (fabs( scale[0] - 1.0 ) > 0.0001 ||
+      fabs( scale[1] - 1.0 ) > 0.0001 ||
+      fabs( scale[2] - 1.0 ) > 0.0001)
+    int zomg = 0;
+  */
 }
 
 /*
@@ -108,45 +138,80 @@ void exportTransformJoint (const MObject &o, Quat &R, Vector3 &T, Matrix4x4 &S)
 Exports the mesh geometry and UV data.
 -----------------------------------------------*/
 
-void exportMesh (const MObject &meshNode,
-                 SPolyMesh *outPolyMesh,
-                 TexMesh *outTexMesh)
+class MeshExporter
 {
-  MStatus status;
+private:
   MFloatPointArray meshPoints;
+  MFloatVectorArray meshNormals;
+  MFloatVectorArray meshTangents;
   MFloatArray meshPointsU;
   MFloatArray meshPointsV;
+
+protected:
+  MFloatPoint getPoint (int vertId) {return meshPoints[ vertId ]; }
+  MVector getNormal (int normalId) { return meshNormals[ normalId ]; }
+  MVector getTangent (int tangentId) { return meshTangents[ tangentId ]; }
+  double getU (int uvId) { return meshPointsU[ uvId ]; }
+  double getV (int uvId) { return meshPointsV[ uvId ]; }
+
+  virtual void visitNumbers (int numPoints, int numNormals, int numTangents, int numUVs, int numFaces) {}
+  virtual void visitPoint (const MFloatPoint &point) {}
+  virtual void visitNormal (const MVector &normal) {}
+  virtual void visitTangent (const MVector &tangent) {}
+  virtual void visitUV (double u, double v) {}
+  virtual void visitPolygonStart (int faceId, int numCorners) {}
+  virtual void visitPolygonCorner (int faceId, int corner, int vertId, int normalId, int tangentId, int uvId) {}
+  virtual bool visitPolygonEnd (int faceId) { return true; }
+  virtual bool visitTriangle (int faceId, int vertIds[3]) { return true; }
+  virtual bool visitEdge (int vertIds[2], bool isSmooth) { return true; }
+  virtual void visitReport () {}
+
+public:
+  void exportMesh (const MObject &meshNode);
+};
+
+void MeshExporter::exportMesh (const MObject &meshNode)
+{
+  MStatus status;
+  MSpace::Space meshPointSpace;
   MIntArray meshNumCorners;
-  MIntArray meshIndices;
-  MIntArray meshFaceIndices;
-  MIntArray meshFaceUVIndices;
+  MIntArray meshFaceVertIds;
+  MIntArray meshFaceNormalIds;
   MIntArray meshTriCounts;
   MIntArray meshTriIndices;
   Uint meshNumPoints;
+  Uint meshNumNormals;
+  Uint meshNumTangents;
   Uint meshNumPointsUV;
   Uint meshNumFaces;
   Uint meshNumEdges;
 
-  ArrayList<SPolyMesh::Vertex*> outVerts;
-  ArrayList<SPolyMesh::Vertex*> outFaceVerts;
-  ArrayList<TexMesh::Vertex*> outTexVerts;
-  ArrayList<TexMesh::Vertex*> outTexFaceVerts;
-
-  int invalidIndices = 0;
-  int invalidTexIndices = 0;
-  int invalidFaces = 0;
-  int invalidTexFaces = 0;
+  int invalidVertIds = 0;
+  int invalidNormalIds = 0;
+  int invalidTangentIds = 0;
+  int invalidUVIds = 0;
   int invalidTriangles = 0;
   int invalidEdges = 0;
+  int invalidFaces = 0;
 
   //Get mesh points (in world space if possible)
   MFnMesh mesh( meshNode, &status );
-  status = mesh.getPoints( meshPoints, MSpace::kWorld );
-  if (status == MStatus::kInvalidParameter) {
-    status = mesh.getPoints( meshPoints, MSpace::kPostTransform );
-    if (status == MStatus::kInvalidParameter) {
-      status = mesh.getPoints( meshPoints, MSpace::kObject );
+
+  meshPointSpace = MSpace::kWorld;
+  status = mesh.getPoints( meshPoints, meshPointSpace );
+  if (status == MStatus::kInvalidParameter)
+  {
+    meshPointSpace = MSpace::kPostTransform;
+    status = mesh.getPoints( meshPoints, meshPointSpace );
+    if (status == MStatus::kInvalidParameter)
+    {
+      meshPointSpace = MSpace::kObject;
+      status = mesh.getPoints( meshPoints, meshPointSpace );
     }}
+
+  //Get mesh normals and tangents
+  mesh.getNormals( meshNormals, meshPointSpace );
+  mesh.getTangents( meshTangents, meshPointSpace );
 
   //Get mesh UV points
   mesh.getUVs( meshPointsU, meshPointsV );
@@ -155,119 +220,128 @@ void exportMesh (const MObject &meshNode,
   mesh.getTriangles( meshTriCounts, meshTriIndices );
 
   //Numbers
-  meshNumPoints = mesh.numVertices();
-  meshNumPointsUV = mesh.numUVs();
+  meshNumPoints = meshPoints.length();
+  meshNumNormals = meshNormals.length();
+  meshNumTangents = meshTangents.length();
+  meshNumPointsUV = meshPointsU.length();
   meshNumFaces = mesh.numPolygons();
   meshNumEdges = mesh.numEdges();
 
+  //VISIT
+  visitNumbers(
+    (int) meshNumPoints,
+    (int) meshNumNormals,
+    (int) meshNumTangents,
+    (int) meshNumPointsUV,
+    (int) meshNumFaces );
+
   //Walk the mesh points
   for (Uint p=0; p<meshNumPoints; ++p)
-  {
-    //Add new vertex to the mesh
-    SPolyMesh::Vertex *outVert = outPolyMesh->addVertex();
-    outVert->point = exportPoint( meshPoints[ p ] );
-    outVerts.pushBack( outVert );
-  }
+    visitPoint( meshPoints[ p ] );
+
+  //Walk the mesh normals
+  for (Uint n=0; n<meshNumNormals; ++n)
+    visitNormal( meshNormals[ n ] );
+
+  //Walk the mesh tangents
+  for (Uint t=0; t<meshNumTangents; ++t)
+    visitTangent( meshTangents[ t ] );
 
   //Walk the mesh UV points
   for (Uint uv=0; uv<meshNumPointsUV; ++uv)
-  {
-    TexMesh::Vertex *outTexVert = outTexMesh->addVertex();
-    outTexVert->point.set( meshPointsU[ uv ], 1.0f - meshPointsV[ uv ] );
-    outTexVerts.pushBack( outTexVert );
-  }
+    visitUV( meshPointsU[ uv ], meshPointsV[ uv ] );
 
   //Walk the mesh polygons
   for (Uint f=0; f<meshNumFaces; ++f)
   {
     //Get polygon corner indices
-    meshFaceIndices.clear();
-    mesh.getPolygonVertices( f, meshFaceIndices);
-    Uint meshNumFaceIndices = meshFaceIndices.length();
+    meshFaceVertIds.clear();
+    mesh.getPolygonVertices( f, meshFaceVertIds);
+    Uint meshNumFaceVerts = meshFaceVertIds.length();
 
-    //Init the face vertex array
-    outFaceVerts.reserve( meshNumFaceIndices );
-    outFaceVerts.clear();
+    //Get polygon normal indices
+    meshFaceNormalIds.clear();
+    mesh.getFaceNormalIds( f, meshFaceNormalIds );
+    Uint meshNumFaceNormals = meshFaceNormalIds.length();
 
-    //Init the UV face vertex array
-    outTexFaceVerts.reserve( meshNumFaceIndices );
-    outTexFaceVerts.clear();
+    //VISIT
+    visitPolygonStart( f, meshNumFaceVerts );
 
-    //Walk the polygon vertices
-    for (Uint c=0; c<meshNumFaceIndices; ++c)
+    //Walk the face vertices
+    for (Uint c=0; c<meshNumFaceVerts; ++c)
     {
       //Make sure we have the point available
-      int index = meshFaceIndices[ c ];
-      if ((UintSize)index >= outVerts.size()) {
-        invalidIndices++;
+      int vertId = meshFaceVertIds[ c ];
+      if ((Uint) vertId >= meshPoints.length()) {
+        invalidVertIds++;
         continue; }
 
-      //Add vertex to the array
-      outFaceVerts.pushBack( outVerts[ index ] );
+      //Make sure we have the normal available
+      if (c > meshNumFaceNormals) {
+        invalidNormalIds++;
+        continue; }
 
-      //Check if a UV index exists for this vertex
-      int indexUV = -1; status = mesh.getPolygonUVid( f, c, indexUV );
-      if (status == MStatus::kSuccess)
-      {
-        //Make sure we have the UV point available
-        if ((UintSize)indexUV >= outTexVerts.size()) {
-          invalidTexIndices++;
-          continue; }
+      int normalId = meshFaceNormalIds[ c ];
+      if ((Uint) normalId >= meshNormals.length()) {
+        invalidNormalIds++;
+        continue; }
 
-        //Add UV vertex to the array
-        outTexFaceVerts.pushBack( outTexVerts[ indexUV ] );
-      }
+      //Make sure we have the tangent available
+      int tangentId = mesh.getTangentId( f, vertId, &status );
+      if (status != MStatus::kSuccess ) {
+        invalidTangentIds++;
+        continue; }
+
+      if ((Uint) tangentId >= meshTangents.length()) {
+        invalidTangentIds++;
+        continue; }
+
+      //Make sure we have the UV point available
+      int uvId = -1; status = mesh.getPolygonUVid( f, c, uvId );
+      if (status != MStatus::kSuccess) {
+        invalidUVIds++;
+        continue; }
+
+      if ((Uint) uvId >= meshPointsU.length()) {
+        invalidUVIds++;
+        continue; }
+
+      //VISIT
+      visitPolygonCorner( f, c, vertId, normalId, tangentId, uvId );
     }
-    
-    //Add new face to the mesh
-    SPolyMesh::Face *face = outPolyMesh->addFace(
-      outFaceVerts.buffer(), (int)outFaceVerts.size() );
-    if (face == NULL) {
+
+    //VISIT
+    if (!visitPolygonEnd( f )) {
       invalidFaces++;
-      continue; }
+      continue;
+    }
 
     //Walk the polygon triangles
-    for (Int t=0; t<meshTriCounts[f]; ++t)
+    for (int t=0; t<meshTriCounts[f]; ++t)
     {
-      SPolyMesh::HalfEdge *hedges[3];
-      int indices[3];
+      int meshTriVertIds[3];
       bool valid = true;
 
       //Get triangle corner indices
-      mesh.getPolygonTriangleVertices( f, t, indices );
+      mesh.getPolygonTriangleVertices( f, t, meshTriVertIds );
 
       //Walk the triangle vertices
       for (Uint c=0; c<3; ++c)
       {
         //Make sure we have the vertex available
-        int index = indices[ c ];
-        if ((UintSize)index >= outVerts.size()) {
-          invalidTriangles++;
-          valid = false;
-          break; }
-
-        //Find the half edge to that vertex in the face
-        hedges[ c ] = face->hedgeTo( outVerts[ index ] );
-        if (hedges[ c ] == NULL) {
+        int vertId = meshTriVertIds[ c ];
+        if ((Uint)vertId >= meshPoints.length()) {
           invalidTriangles++;
           valid = false;
           break; }
       }
 
-      //Add new triangle to the face
-      if (valid)
-        outPolyMesh->addTriangle( face, hedges[0], hedges[1], hedges[2] );
-    }
-    
-    //Check if a full UV face exists for this polygon
-    if (outTexFaceVerts.size() == outFaceVerts.size())
-    {
-      //Add new UV face to the mesh
-      TexMesh::Face *texFace = outTexMesh->addFace(
-        outTexFaceVerts.buffer(), (int)outTexFaceVerts.size() );
-      if (texFace == NULL) {
-        invalidTexFaces++;
-        continue; }
+      //Must be valid
+      if (!valid) continue;
+
+      //VISIT
+      if (!visitTriangle( f, meshTriVertIds ))
+        invalidTriangles++;
     }
   }
 
@@ -275,41 +349,38 @@ void exportMesh (const MObject &meshNode,
   for (Uint e=0; e<meshNumEdges; ++e)
   {
     //Get the edge endpoints
-    int2 vertIDs;
-    mesh.getEdgeVertices( e, vertIDs );
-    
-    //Make sure the vertex IDs are ok
-    if ((UintSize) vertIDs[0] >= outVerts.size() ||
-        (UintSize) vertIDs[1] >= outVerts.size()) {
+    int2 edgeVertIds;
+    mesh.getEdgeVertices( e, edgeVertIds );
+
+    //Make sure we have the vertices available
+    if ((Uint) edgeVertIds[0] >= meshPoints.length() ||
+        (Uint) edgeVertIds[1] >= meshPoints.length()) {
       invalidEdges++;
       continue; }
 
-    //Find the edge connecting the vertices
-    SPolyMesh::Vertex *vert1 = outVerts[ vertIDs[0] ];
-    SPolyMesh::Vertex *vert2 = outVerts[ vertIDs[1] ];
-    SPolyMesh::HalfEdge *hedge = vert1->outHedgeTo( vert2 );
-    if (hedge == NULL) {
+    //VISIT
+    if (!visitEdge( edgeVertIds, mesh.isEdgeSmooth( e ) ))
       invalidEdges++;
-      continue; }
-    
-    //Assign the smoothness property
-    hedge->fullEdge()->isSmooth = mesh.isEdgeSmooth( e );
   }
 
   //Report
+  //----------------------------------------------------
 
-  if (invalidIndices > 0) {
-    trace( "exportMesh: " + CharString::FInt( invalidIndices )
+  if (invalidVertIds > 0) {
+    trace( "exportMesh: " + CharString::FInt( invalidVertIds )
            + " invalid vertex indices encountered!" ); }
-  if (invalidTexIndices > 0 ) {
-    trace( "exportMesh: " + CharString::FInt( invalidTexIndices )
+  if (invalidNormalIds > 0) {
+    trace( "exportMesh: " + CharString::FInt( invalidNormalIds )
+           + " invalid normal indices encountered!" ); }
+  if (invalidTangentIds > 0) {
+    trace( "exportMesh: " + CharString::FInt( invalidTangentIds )
+           + " invalid tangent indices encountered!" ); }
+  if (invalidUVIds > 0 ) {
+    trace( "exportMesh: " + CharString::FInt( invalidUVIds )
            + " invalid UV vertex indices encountered!" ); }
-  if (invalidFaces > 0 ) {
+  if (invalidFaces > 0) {
     trace( "exportMesh: " + CharString::FInt( invalidFaces )
            + " invalid faces encountered!" ); }
-  if (invalidTexFaces > 0) {
-    trace( "exportMesh: " + CharString::FInt( invalidTexFaces )
-           + " invalid UV faces encountered!" ); }
   if (invalidTriangles > 0) {
     trace( "exportMesh: " + CharString::FInt( invalidTriangles )
            + " invalid triangles encountered!" ); }
@@ -317,15 +388,355 @@ void exportMesh (const MObject &meshNode,
     trace( "exportMesh: " + CharString::FInt( invalidEdges )
            + " invalid edges encountered!" ); }
 
-  trace( "exportMesh: exported "
-         + CharString::FInt( outPolyMesh->vertexCount() ) + " vertices." );
-  trace( "exportMesh: exported "
-         + CharString::FInt( outPolyMesh->faceCount() ) + " faces." );
-  trace( "exportMesh: exported "
-         + CharString::FInt( outTexMesh->vertexCount() ) + " UV vertices." );
-  trace( "exportMesh: exported "
-         + CharString::FInt( outTexMesh->faceCount() ) + " UV faces." );
+  //VISIT
+  visitReport();
 }
+
+/*
+-----------------------------------------------------------
+Mesh exporter for TriMesh
+-----------------------------------------------------------*/
+
+struct Variant
+{
+  VertexID id;
+  Uint normalId;
+  Uint tangentId;
+  Uint uvId;
+};
+
+typedef LinkedList<Variant>::Iterator VariantIter;
+
+class VertToVariantMap
+{
+private:
+
+  LinkedList<Variant> variants;
+  ArrayList<VariantIter> firstVariants;
+
+public:
+
+  void clear ()
+  {
+    variants.clear();
+    firstVariants.clear();
+  }
+
+  void init (UintSize numVerts)
+  {
+    clear();
+
+    for (UintSize v=0; v<numVerts; ++v)
+    {
+      Variant var;
+      var.id = -1;
+      VariantIter iter = variants.pushBack( var );
+      firstVariants.pushBack( iter );
+    }
+  }
+
+  UintSize size()
+  {
+    return firstVariants.size();
+  }
+
+  int findVariantId (Uint vertId, Uint normalId, Uint tangentId, Uint uvId)
+  {
+    if (vertId >= firstVariants.size())
+      return -1;
+
+    VariantIter var = firstVariants[ vertId ];
+    for (; var->id != -1; ++var)
+    {
+      if (var->normalId != normalId) continue;
+      if (var->tangentId != tangentId) continue;
+      if (var->uvId != uvId) continue;
+      return (int) var->id;
+    }
+
+    return -1;
+  }
+
+  void addVariant (VertexID variantId, Uint vertId, Uint normalId, Uint tangentId, Uint uvId)
+  {
+    if (vertId >= firstVariants.size())
+      return;
+
+    Variant newVar;
+    newVar.id = variantId;
+    newVar.normalId = normalId;
+    newVar.tangentId = tangentId;
+    newVar.uvId = uvId;
+
+    VariantIter varIt = firstVariants[ vertId ];
+    VariantIter newVarIt = variants.insertAt( varIt, newVar );
+    firstVariants[ vertId ] = newVarIt;
+  }
+
+  VariantIter getFirstVariant (Uint vertId)
+  {
+    return firstVariants[ vertId ];
+  }
+};
+
+class TriMeshExporter : public MeshExporter
+{
+protected:
+
+  TriMesh *outTriMesh;
+  VertToVariantMap *vertToVariantMap;
+  ArrayList<int> faceVertVariantIds;
+  int faceMaxCorners;
+  int faceNumCorners;
+
+  virtual void newVertex (
+    const Vector3 &point,
+    const Vector3 &normal,
+    const Vector3 &tangent,
+    const Vector2 &uv )
+  {
+    TriMesh::Vertex newVert;
+    newVert.point = point;
+    newVert.normal = normal;
+    //newVert.tangent = tangent;
+    newVert.texcoord = uv;
+    outTriMesh->addVertex( &newVert );
+  }
+
+public:
+
+  TriMeshExporter::TriMeshExporter
+    (TriMesh *mesh,
+     VertToVariantMap &variants)
+  {
+    outTriMesh = mesh;
+    outTriMesh->addFaceGroup( 0 );
+    vertToVariantMap = &variants;
+  }
+
+  void visitNumbers (int numPoints, int numNormals, int numTangents, int numUVs, int numFaces)
+  {
+    vertToVariantMap->init( numPoints );
+    for (int p=0; p<numPoints; ++p)
+      faceVertVariantIds.pushBack( -1 );
+  }
+
+  void visitPolygonStart (int faceId, int numCorners)
+  {
+    //Store the required number of corners
+    faceMaxCorners = numCorners;
+    faceNumCorners = 0;
+  }
+
+  void visitPolygonCorner (int faceId, int corner, int vertId, int normalId, int tangentId, int uvId)
+  {
+    //Increase the number of valid corners
+    faceNumCorners += 1;
+
+    //Find existing vertex variant for these indices
+    int variantId = vertToVariantMap->findVariantId(
+      vertId, normalId, tangentId, uvId );
+
+    //Use existing variant ID if found
+    if (variantId != -1) {
+      faceVertVariantIds[ vertId ] = variantId;
+      return;
+    }
+
+    //Add new vertex to mesh
+    newVertex(
+      exportPoint( getPoint( vertId ) ),
+      exportVector( getNormal( normalId ) ),
+      exportVector( getTangent( tangentId ) ),
+      exportUV( getU( uvId ), getV( uvId ) ));
+
+    //Use new variant ID
+    variantId = (int) outTriMesh->getVertexCount()-1;
+    faceVertVariantIds[ vertId ] = variantId;
+
+    //Add new variant ID to map
+    vertToVariantMap->addVariant( (VertexID) variantId,
+      vertId, normalId, tangentId, uvId);
+  }
+
+  bool visitTriangle (int faceId, int vertIds[3])
+  {
+    //Make sure we have all the vertex variants available
+    if (faceNumCorners != faceMaxCorners)
+      return false;
+
+    //Add new triangle to mesh
+    outTriMesh->addFace(
+      faceVertVariantIds[ vertIds[0] ],
+      faceVertVariantIds[ vertIds[1] ],
+      faceVertVariantIds[ vertIds[2] ]
+    );
+
+    return true;
+  }
+
+  void visitReport ()
+  {
+    trace( "exportMesh: exported "
+           + CharString::FInt( (int)outTriMesh->getVertexCount() ) + " vertices." );
+    trace( "exportMesh: exported "
+           + CharString::FInt( (int)outTriMesh->getFaceCount() ) + " faces." );
+  }
+};
+
+class SkinTriMeshExporter : public TriMeshExporter
+{
+protected:
+
+  virtual void newVertex (
+    const Vector3 &point,
+    const Vector3 &normal,
+    const Vector3 &tangent,
+    const Vector2 &uv )
+  {
+    SkinTriMesh::Vertex newVert;
+    newVert.point = point;
+    newVert.normal = normal;
+    //newVert.tangent = tangent;
+    newVert.texcoord = uv;
+    ((SkinTriMesh*)outTriMesh)->addVertex( &newVert );
+  }
+
+public:
+  SkinTriMeshExporter::SkinTriMeshExporter
+    (SkinTriMesh *mesh,
+     VertToVariantMap &variants)
+     : TriMeshExporter (mesh, variants) {}
+};
+
+/*
+-----------------------------------------------------------
+Mesh exporter for PolyMesh
+-----------------------------------------------------------*/
+
+class PolyMeshExporter : public MeshExporter
+{
+  SPolyMesh *outPolyMesh;
+  TexMesh *outTexMesh;
+  ArrayList<SPolyMesh::Vertex*> outVerts;
+  ArrayList<SPolyMesh::Vertex*> outFaceVerts;
+  ArrayList<TexMesh::Vertex*> outTexVerts;
+  ArrayList<TexMesh::Vertex*> outTexFaceVerts;
+  SPolyMesh::Face *lastPolyFace;
+  TexMesh::Face *lastTexFace;
+
+public:
+
+  PolyMeshExporter( SPolyMesh *polyMesh, TexMesh *texMesh ) {
+    outPolyMesh = polyMesh;
+    outTexMesh = texMesh;
+  }
+
+  void visitNumbers (int numPoints, int numNormals, int numTangents, int numUVs, int numFaces)
+  {
+    outVerts.reserve( numPoints );
+    outTexVerts.reserve( numUVs );
+  }
+
+  void visitPoint (const MFloatPoint &point)
+  {
+    //Add new vertex to the mesh
+    SPolyMesh::Vertex *outVert = outPolyMesh->addVertex();
+    outVert->point = exportPoint( point );
+    outVerts.pushBack( outVert );
+  }
+
+  void visitUV (double u, double v)
+  {
+    //Add new vertex to the texture mesh
+    TexMesh::Vertex *outTexVert = outTexMesh->addVertex();
+    outTexVert->point = exportUV( u, v );
+    outTexVerts.pushBack( outTexVert );
+  }
+
+  void visitPolygonStart (int faceId, int numCorners)
+  {
+    //Init the face vertex array
+    outFaceVerts.reserve( numCorners );
+    outFaceVerts.clear();
+
+    //Init the UV face vertex array
+    outTexFaceVerts.reserve( numCorners );
+    outTexFaceVerts.clear();
+  }
+
+  void visitPolygonCorner (int faceId, int corner, int vertId, int normalId, int tangentId, int uvId)
+  {
+    //Add vertex to the face array
+    outFaceVerts.pushBack( outVerts[ vertId ] );
+    outTexFaceVerts.pushBack( outTexVerts[ uvId ] );
+  }
+
+  bool visitPolygonEnd (int faceId)
+  {
+    //Add new face to the mesh
+    SPolyMesh::Face *face = outPolyMesh->addFace(
+      outFaceVerts.buffer(), (int)outFaceVerts.size() );
+    if (face == NULL) return false;
+    lastPolyFace = face;
+
+    //Add new face to the UV mesh
+    TexMesh::Face *texFace = outTexMesh->addFace(
+      outTexFaceVerts.buffer(), (int)outTexFaceVerts.size() );
+    if (texFace == NULL) return false;
+    lastTexFace = texFace;
+
+    return true;
+  }
+
+  bool visitTriangle (int faceId, int vertIds[3])
+  {
+    SPolyMesh::HalfEdge *triHedges[3];
+
+    //Walk the triangle vertices
+    for (Uint c=0; c<3; ++c)
+    {
+      //Find the half edge to that vertex in the face
+      SPolyMesh::Vertex *vert = outVerts[ vertIds[ c ] ];
+      triHedges[ c ] = lastPolyFace->hedgeTo( vert );
+      if (triHedges[ c ] == NULL) return false;
+    }
+
+    //Add new triangle to the face
+    outPolyMesh->addTriangle(
+      lastPolyFace,
+      triHedges[0],
+      triHedges[1],
+      triHedges[2] );
+
+    return true;
+  }
+
+  bool visitEdge (int vertIds[2], bool isSmooth)
+  {
+    //Find the edge connecting the vertices
+    SPolyMesh::Vertex *vert1 = outVerts[ vertIds[0] ];
+    SPolyMesh::Vertex *vert2 = outVerts[ vertIds[1] ];
+    SPolyMesh::HalfEdge *hedge = vert1->outHedgeTo( vert2 );
+    if (hedge == NULL) return false;
+    
+    //Assign the smoothness property
+    hedge->fullEdge()->isSmooth = isSmooth;
+    return true;
+  }
+
+  void visitReport ()
+  {
+    trace( "exportMesh: exported "
+           + CharString::FInt( outPolyMesh->vertexCount() ) + " vertices." );
+    trace( "exportMesh: exported "
+           + CharString::FInt( outPolyMesh->faceCount() ) + " faces." );
+    trace( "exportMesh: exported "
+           + CharString::FInt( outTexMesh->vertexCount() ) + " UV vertices." );
+    trace( "exportMesh: exported "
+           + CharString::FInt( outTexMesh->faceCount() ) + " UV faces." );
+  }
+};
 
 /*
 ------------------------------------------------------------------
@@ -440,16 +851,16 @@ bool findSkinPoseMesh (const MObject &skinNode, MObject &poseMesh)
 
 /*
 -----------------------------------------------------------------
-Builds the joint/bone hierarchy tree.
+Builds the joint hierarchy tree.
 -----------------------------------------------------------------*/
 
-void buildBoneTree (const MObject &jointNode,
-                    ArrayList<MObject> &jointTree,
-                    ArrayList<SkinBone> &boneTree)
+void buildJointTree (const MObject &nodeRoot,
+                     ArrayList<MObject> &nodeTree,
+                     ArrayList<SkinJoint> &jointTree)
 {
   //Push root joint onto the queue
   LinkedList< MObject > dagQueue;
-  dagQueue.pushBack( jointNode );
+  dagQueue.pushBack( nodeRoot );
   while (!dagQueue.empty())
   {
     //Pop a node from the queue
@@ -457,16 +868,18 @@ void buildBoneTree (const MObject &jointNode,
     MFnDagNode dagNode( dagObj );
     dagQueue.popFront();
 
+    //Get the name of the node
     CharString name = dagNode.name().asChar();
-    trace("buildBoneTree: - " + name);
+    trace("buildJointTree: - " + name);
 
-    //Add the node and a bone to the tree
-    jointTree.pushBack( dagObj );
-    boneTree.pushBack( SkinBone() );
+    //Add the node and a joint to the tree
+    nodeTree.pushBack( dagObj );
+    jointTree.pushBack( SkinJoint() );
 
-    //Init bone children
-    SkinBone *bone = &boneTree.last();
-    bone->numChildren = 0;
+    //Init bone info
+    SkinJoint *outJoint = &jointTree.last();
+    outJoint->name = name;
+    outJoint->numChildren = 0;
 
     //Walk node children
     for (Uint c=0; c<dagNode.childCount(); ++c)
@@ -475,27 +888,27 @@ void buildBoneTree (const MObject &jointNode,
       MObject child = dagNode.child( c );
       if (child.hasFn( MFn::kJoint ))
       {
-        //Push onto the queue and add to bone
+        //Push onto the queue and add to joint
         dagQueue.pushBack( child );
-        bone->numChildren++;
+        outJoint->numChildren++;
       }
     }
   }
 
   //Report
   trace(
-    "buildBoneTree: exported " +
-    CharString::FInt( (int) boneTree.size() ) + " bones." );
+    "buildJointTree: exported " +
+    CharString::FInt( (int) jointTree.size() ) + " joints." );
 }
 
 /*
 ----------------------------------------------------------
 Builds an array mapping the skin influence indices to the
-indices of their respective bone nodes in the joint tree.
+indices of their respective joint nodes in the node tree.
 ----------------------------------------------------------*/
 
 void buildSkinToTreeMap (const MObject &skinNode,
-                         const ArrayList<MObject> &jointTree,
+                         const ArrayList<MObject> &nodeTree,
                          ArrayList<Uint> &skinToTreeMap)
 {
   //Get the bones influencing the skin
@@ -507,7 +920,7 @@ void buildSkinToTreeMap (const MObject &skinNode,
   for (Uint i=0; i<skinInfluencePaths.length(); ++i)
   {
     //Find the influence in the joint tree
-    int treeIndex = jointTree.indexOf( skinInfluencePaths[i].node() );
+    int treeIndex = nodeTree.indexOf( skinInfluencePaths[i].node() );
     if (treeIndex >= 0)
     {
       //Map skin influence index to joint tree index
@@ -528,24 +941,24 @@ void buildSkinToTreeMap (const MObject &skinNode,
 -----------------------------------------------------------------
 Maya stores the pose inverse matrices in an array plug of the
 skin node called "bindPreMatrix". This plug is not connected but
-the data is stored into it for every bone influence added to the
+the data is stored into it for every influence added to the
 skin at the time of binding.
 
 The bindPreMatrix array plug elements are never removed even if
-the bone influences are removed from the skin. This means the
-index of a bone influence in the current influence array might
+the joint influences are removed from the skin. This means the
+index of a joint influence in the current influence array might
 not be the same as the index of its matrix in the bindPreMatrix
 plug in case any influences were removed in the middle of the
 array. The index that relates the two is called "logical index"
 and those indices just keep increasing when new bones are added.
 ------------------------------------------------------------------*/
 
-void exportBonePose (const MObject &skinNode,
-                     const ArrayList<SkinBone> &boneTree,
+void exportSkinPose (const MObject &skinNode,
+                     const ArrayList<SkinJoint> &jointTree,
                      const ArrayList<Uint> &skinToTreeMap)
 {
   MStatus status;
-  MMatrix *invMatrices = new MMatrix[ boneTree.size() ];
+  MMatrix *invMatrices = new MMatrix[ jointTree.size() ];
 
   //Get the array plug holding bone world-inverse matrices
   MFnSkinCluster skin( skinNode );
@@ -576,30 +989,30 @@ void exportBonePose (const MObject &skinNode,
     MFnMatrixData invMatrixFn( plugValue );
     MMatrix invMatrix = invMatrixFn.matrix();
 
-    //Assign the inverse pose matrix to the bone
-    SkinBone *bone = &boneTree[ skinToTreeMap[i] ];
-    bone->worldInv = exportMatrix( invMatrix );
+    //Assign the inverse pose matrix to the joint
+    SkinJoint *joint = &jointTree[ skinToTreeMap[i] ];
+    joint->worldInv = exportMatrix( invMatrix );
     invMatrices[ skinToTreeMap[i] ] = invMatrix;
   }
 
   //Export root pose
-  SkinBone *root = &boneTree[ 0 ];
+  SkinJoint *root = &jointTree[ 0 ];
   MMatrix rootLocalMatrix = invMatrices[ 0 ].inverse();
   exportTransformMatrix( rootLocalMatrix,
     root->localR, root->localT, root->localS );
 
-  //Walk the bone tree
-  for (UintSize p=0, c=1; p<boneTree.size(); ++p)
+  //Walk the joint tree
+  for (UintSize p=0, c=1; p<jointTree.size(); ++p)
   {
-    //Walk all the children of this bone
-    for (Uint32 pc=0; pc<boneTree[p].numChildren; ++pc)
+    //Walk all the children of this joint
+    for (Uint32 pc=0; pc<jointTree[p].numChildren; ++pc)
     {
       //Get the local transformation matrix
       MMatrix worldMatrix = invMatrices[ c ].inverse();
       MMatrix localMatrix = worldMatrix * invMatrices[ p ];
 
       //Export child pose
-      SkinBone *child = &boneTree[ c ];
+      SkinJoint *child = &jointTree[ c ];
       exportTransformMatrix( localMatrix,
         child->localR, child->localT, child->localS );
 
@@ -623,21 +1036,31 @@ for the current influence is returned in an array in the same
 order the components are listed within the selection list.
 --------------------------------------------------------------*/
 
-void exportSkinWeights (const MObject &skinNode,
-                        const MObject &meshNode,
-                        SPolyMesh *outPolyMesh,
-                        const ArrayList<Uint> &skinToTreeMap)
+class WeightExporter
 {
-  ArrayList<SPolyMesh::Vertex*> outVerts;
+public:
+  virtual int getNumVertices () = 0;
+  virtual void setWeight (int vertId, int weightId, int jointId, Float weight) = 0;
+  void exportSkinWeights (const MObject &skinNode,
+                          const MObject &meshNode,
+                          const ArrayList<Uint> &skinToTreeMap);
+};
 
-  //Store the vertices into an array
-  //(tag will hold the number of weights assigned)
-  for (SPolyMesh::VertIter v( outPolyMesh ); !v.end(); ++v) {
-    v->tag.id = 0;
-    for (int i=0; i<4; ++i) {
-      v->boneIndex[ i ] = 0;
-      v->boneWeight[ i ] = 0.0f; }
-    outVerts.pushBack( *v );
+void WeightExporter::exportSkinWeights (const MObject &skinNode,
+                                        const MObject &meshNode,
+                                        const ArrayList<Uint> &skinToTreeMap)
+{
+  //Get number of vertices
+  int *numWeights = NULL;
+  int numVerts = getNumVertices();
+  if (numVerts <= 0) return;
+  numWeights = new int [numVerts];
+
+  //Initialize weights to 0
+  for (int v=0; v<numVerts; ++v) {
+    numWeights[v] = 0;
+    for (int w=0; w<4; ++w)
+      setWeight( v, w, 0, 0.0f );
   }
 
   //Get the bones influencing the skin
@@ -668,31 +1091,34 @@ void exportSkinWeights (const MObject &skinNode,
       for (Int c=0; c<component.elementCount(); ++c)
       {
         //Get vertex index from the component list
-        int vertexID = component.element( c );
-        if ((UintSize) vertexID > outVerts.size()) continue;
-        SPolyMesh::Vertex *outVert = outVerts[ vertexID ];
+        int vertId = component.element( c );
+        if (vertId >= numVerts) continue;
 
         //Check if number of weights reached 4
-        int numWeights = outVerts[ vertexID ]->tag.id;
-        if (numWeights >= 4) {
-          outVerts[ vertexID ]->tag.id++;
+        if (numWeights[ vertId ] >= 4) {
+          numWeights[ vertId ]++;
           continue; }
 
         //Add weight to the vertex
-        outVert->boneIndex[ numWeights ] = skinToTreeMap[ i ];
-        outVert->boneWeight[ numWeights ] = (Float) weights[ c ];
-        outVert->tag.id++;
+        setWeight( vertId,
+          numWeights[ vertId ],
+          skinToTreeMap[ i ],
+          (Float) weights[ c ] );
+
+        numWeights[ vertId ]++;
       }
     }
   }
 
   //Re-check vertices for errors
-  Int zero = 0;
-  Int many = 0;
-  for (SPolyMesh::VertIter v( outPolyMesh ); !v.end(); ++v) {
-    if (v->tag.id == 0) zero++;
-    if (v->tag.id > 4) many++;
+  Int zero = 0, many = 0;
+  for (int v=0; v<numVerts; ++v) {
+    if (numWeights[v] == 0) zero++;
+    if (numWeights[v] > 4) many++;
   }
+
+  //Cleanup
+  delete[] numWeights;
 
   //Report
   if (zero > 0)
@@ -704,8 +1130,73 @@ void exportSkinWeights (const MObject &skinNode,
     + " vertices have too many weights!" );
 }
 
+/*
+---------------------------------------------------------
+Weight exporter for PolyMesh
+---------------------------------------------------------*/
 
-void exportAnimKeys (const ArrayList<MObject> &jointTree,
+class PolyWeightExporter : public WeightExporter
+{
+  ArrayList<SPolyMesh::Vertex*> outVerts;
+
+public:
+
+  PolyWeightExporter (SPolyMesh *mesh) {
+    for (SPolyMesh::VertIter v( mesh ); !v.end(); ++v)
+      outVerts.pushBack( *v );
+  }
+
+  int getNumVertices () {
+    return (int) outVerts.size();
+  }
+
+  void setWeight (int vertId, int weightId, int jointId, Float weight) {
+    SPolyMesh::Vertex *outVert = outVerts[ vertId ];
+    outVert->boneIndex[ weightId ] = jointId;
+    outVert->boneWeight[ weightId ] = weight;
+  }
+};
+
+/*
+---------------------------------------------------------
+Weight exporter for TriMesh
+---------------------------------------------------------*/
+
+class TriWeightExporter : public WeightExporter
+{
+  SkinTriMesh *outTriMesh;
+  VertToVariantMap *vertToVariantMap;
+
+public:
+
+  TriWeightExporter (SkinTriMesh *mesh, VertToVariantMap &variants) {
+    outTriMesh = mesh;
+    vertToVariantMap = &variants;
+  }
+
+  int getNumVertices () {
+    return (int) vertToVariantMap->size();
+  }
+
+  void setWeight (int vertId, int weightId, int jointId, Float weight)
+  {
+    VariantIter var = vertToVariantMap->getFirstVariant( vertId );
+    for (; var->id != -1; ++var)
+    {
+      SkinTriMesh::Vertex *outVert = outTriMesh->getVertex( var->id );
+      outVert->boneIndex[ weightId ] = jointId;
+      outVert->boneWeight[ weightId ] = weight;
+    }
+  }
+};
+
+/*
+-----------------------------------------------------------
+Exports keys for an animation between given start and end
+frames on the frame scroller bar
+----------------------------------------------------------*/
+
+void exportAnimKeys (const ArrayList<MObject> &nodeTree,
                      int start, int end, int fps,
                      SkinAnim *outAnim)
 {
@@ -732,7 +1223,7 @@ void exportAnimKeys (const ArrayList<MObject> &jointTree,
 
   //Create animation tracks for every bone
   outAnim->duration = (float) durationSec;
-  for (UintSize j=0; j<jointTree.size(); ++j)
+  for (UintSize n=0; n<nodeTree.size(); ++n)
   {
     QuatAnimTrack *trackR = new QuatAnimTrack;
     trackR->totalTime = (float) durationSec;
@@ -754,16 +1245,16 @@ void exportAnimKeys (const ArrayList<MObject> &jointTree,
     MTime now( t, MTime::kMilliseconds );
     animCtrl.setCurrentTime( now );
 
-    //Walk the joint tree
-    for (UintSize j=0; j<jointTree.size(); ++j)
+    //Walk the joint node tree
+    for (UintSize n=0; n<nodeTree.size(); ++n)
     {
       //Add keys to tracks
       Matrix4x4 S;
       QuatTrackTraits::Key keyR;
       Vec3TrackTraits::Key keyT;
-      exportTransformJoint( jointTree[j], keyR.value, keyT.value, S );
-      outAnim->tracksR[ j ]->keys.pushBack( keyR );
-      outAnim->tracksT[ j ]->keys.pushBack( keyT );
+      exportTransformJoint( nodeTree[n], keyR.value, keyT.value, S );
+      outAnim->tracksR[ n ]->keys.pushBack( keyR );
+      outAnim->tracksT[ n ]->keys.pushBack( keyT );
     }
   }
 
@@ -778,8 +1269,8 @@ Export mesh with skin
 
 void exportWithSkin (void **outData, UintSize *outSize)
 {
-  ArrayList<MObject> jointTree;
-  ArrayList<SkinBone> boneTree;
+  ArrayList<MObject> nodeTree;
+  ArrayList<SkinJoint> jointTree;
   ArrayList<Uint32> skinToTreeMap;
   MObject meshNode;
   MObject skinNode;
@@ -804,28 +1295,44 @@ void exportWithSkin (void **outData, UintSize *outSize)
   if (!findSkinPoseMesh( skinNode, skinMesh ))
     return;
 
-  //Export pose bone tree
-  buildBoneTree( jointRoot, jointTree, boneTree );
-  buildSkinToTreeMap( skinNode, jointTree, skinToTreeMap );
-  exportBonePose( skinNode, boneTree, skinToTreeMap );
-  
+  //Export joint tree and pose rotations
+  buildJointTree( jointRoot, nodeTree, jointTree );
+  buildSkinToTreeMap( skinNode, nodeTree, skinToTreeMap );
+  exportSkinPose( skinNode, jointTree, skinToTreeMap );
+
+/*
   //Export pose mesh
   SPolyMesh *outPolyMesh = new SPolyMesh;
   TexMesh *outTexMesh = new TexMesh;
-  exportMesh( skinMesh, outPolyMesh, outTexMesh );
+  PolyMeshExporter meshExporter( outPolyMesh, outTexMesh );
+  meshExporter.exportMesh( skinMesh );
+  outPolyMesh->updateNormals( SmoothMetric::Edge );
 
   //Export skin weights
-  exportSkinWeights( skinNode, meshNode, outPolyMesh, skinToTreeMap );
+  PolyWeightExporter weightExporter( outPolyMesh );
+  weightExporter.exportSkinWeights( skinNode, meshNode, skinToTreeMap );
 
-  //Triangulate
-  //outPolyMesh->triangulate();
-  outPolyMesh->updateNormals( SmoothMetric::Edge );
+  //Convert polygons to triangles
   SkinTriMesh *outTriMesh = new SkinTriMesh;
   outTriMesh->fromPoly( outPolyMesh, outTexMesh );
 
+  delete outPolyMesh;
+  delete outTexMesh;
+*/
+
+  //Export pose mesh
+  VertToVariantMap vertToVariantMap;
+  SkinTriMesh *outTriMesh = new SkinTriMesh;
+  SkinTriMeshExporter meshExporter( outTriMesh, vertToVariantMap );
+  meshExporter.exportMesh( skinMesh );
+
+  //Export skin weights
+  TriWeightExporter weightExporter( outTriMesh, vertToVariantMap );
+  weightExporter.exportSkinWeights( skinNode, meshNode, skinToTreeMap );
+  
   //Construct character
   SkinPose *outPose = new SkinPose;
-  outPose->bones.pushListBack( &boneTree );
+  outPose->joints.pushListBack( &jointTree );
 
   MaxCharacter *character = new MaxCharacter;
   character->pose = outPose;
@@ -836,8 +1343,6 @@ void exportWithSkin (void **outData, UintSize *outSize)
   sm.save( character, outData, outSize );
  
   //Cleanup
-  delete outPolyMesh;
-  delete outTexMesh;
   delete character;
 }
 
@@ -854,39 +1359,40 @@ void exportNoSkin (void **outData, UintSize *outSize)
     return;
   }
 
+  /*
   //Export mesh data
   SPolyMesh *outPolyMesh = new SPolyMesh;
   TexMesh *outTexMesh = new TexMesh;
-  exportMesh( meshNode, outPolyMesh, outTexMesh );
-
-  //Triangulate
-  //outPolyMesh->triangulate();
+  PolyMeshExporter meshExporter( outPolyMesh, outTexMesh );
+  meshExporter.exportMesh( meshNode );
   outPolyMesh->updateNormals( SmoothMetric::Edge );
+
+  //Convert polygons to triangles
   TriMesh *outTriMesh = new TriMesh;
   outTriMesh->fromPoly( outPolyMesh, outTexMesh );
 
-  for (int f=0; f<outTriMesh->getGroupFaceCount(0); ++f) {
-    for (int c=0; c<3; ++c) {
-      VertexID v = outTriMesh->getCornerIndex(0, f, c);
-      if (v > outTriMesh->data.size())
-        int ooooooooo = 0;
-    }
-  }
+  delete outPolyMesh;
+  delete outTexMesh;
+  */
+
+  //Export mesh data
+  VertToVariantMap vertToVariantMap;
+  TriMesh *outTriMesh = new TriMesh;
+  TriMeshExporter meshExporter( outTriMesh, vertToVariantMap );
+  meshExporter.exportMesh( meshNode );
 
   //Serialize
   SerializeManager sm;
   sm.save( outTriMesh, outData, outSize );
 
   //Cleanup
-  delete outPolyMesh;
-  delete outTexMesh;
   delete outTriMesh;
 }
 
 SkinAnim* exportAnimation (int start, int end, int fps)
 {
-  ArrayList<MObject> jointTree;
-  ArrayList<SkinBone> boneTree;
+  ArrayList<MObject> nodeTree;
+  ArrayList<SkinJoint> jointTree;
   MObject meshNode;
   MObject skinNode;
   MObject jointRoot;
@@ -907,11 +1413,11 @@ SkinAnim* exportAnimation (int start, int end, int fps)
   }
 
   //Build bone tree
-  buildBoneTree( jointRoot, jointTree, boneTree );
+  buildJointTree( jointRoot, nodeTree, jointTree );
 
   //Export animation
   SkinAnim *outAnim = new SkinAnim;
-  exportAnimKeys( jointTree, start, end, fps, outAnim );
+  exportAnimKeys( nodeTree, start, end, fps, outAnim );
 
   return outAnim;
 }

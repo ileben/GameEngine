@@ -7,13 +7,34 @@
 
 namespace GE
 {
-  struct GE_API_ENTRY SkinBone
+  class SkinJoint
   {
+    DECLARE_SERIAL_CLASS( SkinJoint );
+    DECLARE_CALLBACK( ClassEvent::Serialize, serialize );
+    DECLARE_END;
+
+  public:
+
+    CharString name;
     Uint32     numChildren;
     Matrix4x4  worldInv;
     Quat       localR;
     Vector3    localT;
     Matrix4x4  localS;
+
+    SkinJoint (SM *sm) : name(sm) {}
+    SkinJoint () {}
+    
+    void serialize (void *param)
+    {
+      SerializeManager *sm = (SM*)param;
+      sm->objectVar( &name );
+      sm->dataVar( &numChildren );
+      sm->dataVar( &worldInv );
+      sm->dataVar( &localR );
+      sm->dataVar( &localT );
+      sm->dataVar( &localS );
+    }
   };
   
   class GE_API_ENTRY SkinPose
@@ -23,11 +44,15 @@ namespace GE
     DECLARE_END;
     
   public:
-    ArrayList <SkinBone> bones;
+
+    ObjArrayList <SkinJoint> joints;
     
-    void serialize (void *sm) { ((SM*)sm)->objectVar( &bones ); }
-    SkinPose (SM *sm) : bones (sm) {}
+    SkinPose (SM *sm) : joints (sm) {}
     SkinPose () {}
+
+    void serialize (void *sm) {
+      ((SM*)sm)->objectVar( &joints);
+    }
   };
   
 }//namespace GE

@@ -150,10 +150,10 @@ namespace GE
     TriMesh (SerializeManager *sm) : data(sm), indices(sm), groups(sm)
     { isOnGpu = false; }
     
-    TriMesh (Uint32 vertexSize) : data (vertexSize, NULL)
+    TriMesh (Uint32 vertexSize) : data (vertexSize, NULL, false)
     { isOnGpu = false; }
     
-    TriMesh () : data (sizeof(Vertex), NULL)
+    TriMesh () : data (sizeof(Vertex), NULL, false)
     { isOnGpu = false; }
     
     void* addVertex (void *data);

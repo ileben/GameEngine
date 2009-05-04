@@ -22,6 +22,7 @@ namespace GE
     Uint32 eltSize;
     ClassID eltClsID;
     ClassPtr eltCls;
+    bool eltIsPtr;
     Uint8 *elements;
     
   public:
@@ -44,6 +45,7 @@ namespace GE
       sm->dataVar( &sz );
       sm->dataVar( &eltSize );
       sm->dataVar( &eltClsID );
+      sm->dataVar( &eltIsPtr );
       
       //Make sure it is modifiable after loading
       //(deserialized is non-modifiable so cap and class don't matter)
@@ -52,12 +54,14 @@ namespace GE
         cap = sz;
       }
       
-      //Assume if class given the elements are pointers
-      //(otherwise the array is not serializable anyway)
-      if (sz > 0) {
-        if (eltCls != NULL)
-          sm->objectArray( eltCls, (void***)&elements, sz );
-        else sm->dataPtr( &elements, sz * eltSize );
+      //Serialize data if any
+      if (sz > 0)
+      {
+        //If object class given it's an array of objects or pointers to objects
+        if (eltCls != NULL) {
+          if (eltIsPtr) sm->objectPtrArray( eltCls, (void***)&elements, sz );
+          else sm->objectArray( eltCls, (void**)&elements, sz );
+        } else sm->dataPtr( &elements, sz * eltSize );
       }
       
       //Make sure it is modifiable after loading
@@ -104,11 +108,12 @@ namespace GE
     We shouldn't allow this really.
     ---------------------------------------------*/
     
-    GenericArrayList()
+    GenericArrayList ()
     {
       this->eltSize = sizeof( Uint8 );
       this->eltClsID = ClassID();
       this->eltCls = NULL;
+      this->eltIsPtr = false;
       
       sz = 0;
       cap = 1;
@@ -121,11 +126,12 @@ namespace GE
     array with storage for 1 element
     --------------------------------------*/
     
-    GenericArrayList( UintSize eltSize, ClassPtr eltCls )
+    GenericArrayList (UintSize eltSize, ClassPtr eltCls, bool eltIsPtr)
     {
       this->eltSize = (Uint32) eltSize;
       this->eltClsID = ( eltCls ? eltCls->getID() : ClassID() );
       this->eltCls = eltCls;
+      this->eltIsPtr = eltIsPtr;
       
       sz = 0;
       cap = 1;
@@ -138,11 +144,12 @@ namespace GE
     array with given capacity.
     -----------------------------------*/
     
-    GenericArrayList( UintSize newCap, UintSize eltSize, ClassPtr eltCls )
+    GenericArrayList (UintSize newCap, UintSize eltSize, ClassPtr eltCls, bool eltIsPtr)
     {
       this->eltSize = (Uint32) eltSize;
       this->eltClsID = ( eltCls ? eltCls->getID() : ClassID() );
       this->eltCls = eltCls;
+      this->eltIsPtr = eltIsPtr;
       
       sz = 0;
       cap = (Uint32) (newCap > 0 ? newCap : 1);
@@ -154,7 +161,7 @@ namespace GE
     Dtor
     -------------------------------------*/
 		
-    virtual ~GenericArrayList()
+    virtual ~GenericArrayList ()
     {
       //Can't call virtuals in destructor!
       //Implemented in ArrayList<T>.
@@ -168,7 +175,7 @@ namespace GE
     array size to 0.
     ---------------------------------------*/
     
-    void clear()
+    void clear ()
     {
       destruct( elements, sz );
       sz = 0;
@@ -181,7 +188,7 @@ namespace GE
     invalid and size of the array is reset to 0.
     ---------------------------------------------*/
 
-    void reserve( UintSize n )
+    void reserve (UintSize n)
     {
       //Clear existing elements
       destruct( elements, sz );
@@ -204,7 +211,7 @@ namespace GE
     is always preserved.
     ------------------------------------------*/
 
-    void reserveAndCopy( UintSize n )
+    void reserveAndCopy (UintSize n)
     {
       //No-op if enough capacity
       if( n <= cap ) return;
@@ -232,7 +239,7 @@ namespace GE
     
     void insertAt( UintSize index, const void *newElt )
     {
-      void *copyElt = (void*) newElt;      
+      void *copyElt = (void*) newElt;     
       bool cloned = false;
       
       //Clamp insertion point to size
@@ -367,19 +374,19 @@ namespace GE
       {}
     
     ArrayList()
-      : GenericArrayList( sizeof(T), NULL )
+      : GenericArrayList( sizeof(T), NULL, false )
       {}
     
     ArrayList( UintSize newCap )
-      : GenericArrayList( newCap, sizeof(T), NULL )
+      : GenericArrayList( newCap, sizeof(T), NULL, false )
       {}
     
-    ArrayList( UintSize eltSize, ClassPtr eltCls )
-      : GenericArrayList( eltSize, eltCls )
+    ArrayList( UintSize eltSize, ClassPtr eltCls, bool eltIsPtr )
+      : GenericArrayList( eltSize, eltCls, eltIsPtr  )
       {}
     
-    ArrayList( UintSize newCap, UintSize eltSize, ClassPtr eltCls )
-      : GenericArrayList( newCap, eltSize, eltCls )
+    ArrayList( UintSize newCap, UintSize eltSize, ClassPtr eltCls, bool eltIsPtr )
+      : GenericArrayList( newCap, eltSize, eltCls, eltIsPtr )
       {}
     
     ~ArrayList()
@@ -475,6 +482,29 @@ namespace GE
     }
   };
 
+  /*
+  ========================================================
+  A serializable list of serializable classes
+  ========================================================*/
+  
+  template <class T>
+    class ObjArrayList : public ArrayList <T>
+  {
+  public:
+    
+    ObjArrayList (SerializeManager *sm)
+      : ArrayList <T> (sm)
+     {}
+
+    ObjArrayList()
+      : ArrayList <T> ( sizeof(T), Class(T), false )
+      {}
+    
+    ObjArrayList( UintSize newCap )
+      : ArrayList <T> ( newCap, sizeof(T), Class(T), false )
+      {}
+  };
+
   
   /*
   ========================================================
@@ -482,20 +512,20 @@ namespace GE
   ========================================================*/
   
   template <class T>
-    class ObjectArrayList : public ArrayList <T*>
+    class ObjPtrArrayList : public ArrayList <T*>
   {
   public:
     
-    ObjectArrayList (SerializeManager *sm)
+    ObjPtrArrayList (SerializeManager *sm)
       : ArrayList <T*> (sm)
      {}
 
-    ObjectArrayList()
-      : ArrayList <T*> ( sizeof(T*), Class(T) )
+    ObjPtrArrayList()
+      : ArrayList <T*> ( sizeof(T*), Class(T), true )
       {}
     
-    ObjectArrayList( UintSize newCap )
-      : ArrayList <T*> ( newCap, sizeof(T*), Class(T) )
+    ObjPtrArrayList( UintSize newCap )
+      : ArrayList <T*> ( newCap, sizeof(T*), Class(T), true )
       {}
   };
   

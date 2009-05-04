@@ -84,13 +84,24 @@ namespace GE
 
   void PolyMesh::updateFaceNormal (Face *f)
   {
-    Vector3 &p1 = f->firstHedge()->dstVertex()->point;
-    Vector3 &p2 = f->firstHedge()->nextHedge()->dstVertex()->point;
-    Vector3 &p3 = f->firstHedge()->nextHedge()->nextHedge()->dstVertex()->point;
-    Vector3 s1 = p2 - p1;
-    Vector3 s2 = p3 - p1;
-    f->normal = Vector::Cross( s2, s1 ).normalize();
-    f->center = (p1 + p2 + p3) / 3;
+    int tricount = 0;
+    f->normal.set( 0,0,0 );
+
+    for (FaceTriIter ft(f); !ft.end(); ++ft)
+    {
+      Vector3 &p1 = ft->hedges[0]->dstVertex()->point;
+      Vector3 &p2 = ft->hedges[1]->dstVertex()->point;
+      Vector3 &p3 = ft->hedges[2]->dstVertex()->point;
+
+      Vector3 s1 = p2 - p1;
+      Vector3 s2 = p3 - p1;
+
+      f->normal += Vector::Cross( s2, s1 ).normalize();
+      tricount += 1;
+    }
+
+    if (tricount > 0)
+      f->normal /= (Float) tricount;
   }
   
   /*
@@ -275,7 +286,10 @@ namespace GE
     int faceCount;
     VertexNormal *vnormal;
 
-    SmoothEdgeGroup() : faceCount(0), vnormal(NULL) {}
+    SmoothEdgeGroup() {
+      faceCount = 0;
+      vnormal = NULL;
+    }
 
     SmoothEdgeGroup& operator+= (Face* f) {
       normal += f->normal;
@@ -372,8 +386,77 @@ namespace GE
   Tangents for normal mapping
   -------------------------------------------------------*/
 
+  /*
+  Calculating tangent space:
+  We have a triangle whose vertex positions are P1, P2, and P3,
+  and the texture coordinates are U1, U2, and U3.
+  Let:
+
+    Q1 = P2 - P1
+    Q2 = P3 - P1
+    R1 = U2 - U1
+    R2 = U3 - U1
+
+  If T (tangent) and B (bitangent) represent unit vectors of the
+  texture coordinate space within the object's 3D space then the
+  following two equations hold:
+
+    Q1 = R1x * T + R1y * B
+    Q2 = R2x * T + R2y * B
+
+  By writing this in matrix form we get
+
+    |Q1x Q1y Q1z| = |R1x R1y| * |Tx Ty Tz|
+    |Q2x Q2y Q2z|   |R2x R2y|   |Bx By Bz|
+
+  Multiplying both sides by the inverse of the R matrix, we get
+
+    |Tx Ty Tz| =       1 /        * | R2y -R1y| * |Q1x Q1y Q1z|
+    |Bx By Bz|   R1xR2y - R2xR1y    |-R2x  R1x|   |Q2x Q2y Q2z|
+
+  */
+
+
   void PolyMesh::updateFaceTangent (Face *f, TexMesh::Face *tf)
   {
+    int tricount = 0;
+    f->tangent.set( 0,0,0 );
+    f->bitangent.set( 0,0,0 );
+    
+    for (FaceTriIter ft(f); !ft.end(); ++ft)
+    {
+      PolyMesh::Vertex *P1 = ft->hedges[0]->dstVertex();
+      PolyMesh::Vertex *P2 = ft->hedges[1]->dstVertex();
+      PolyMesh::Vertex *P3 = ft->hedges[2]->dstVertex();
+
+      TexMesh::Vertex *U1 = (TexMesh::Vertex*) P1->tag.ptr;
+      TexMesh::Vertex *U2 = (TexMesh::Vertex*) P2->tag.ptr;
+      TexMesh::Vertex *U3 = (TexMesh::Vertex*) P3->tag.ptr;
+
+      Vector3 Q1 = P2->point - P1->point;
+      Vector3 Q2 = P3->point - P1->point;
+      Vector2 R1 = U2->point - U1->point;
+      Vector2 R2 = U3->point - U1->point;
+
+      Float D = 1.0f / (R1.x * R2.y - R2.x * R1.y);
+      
+      Vector3 T,B;
+      T.x = ( R2.y * Q1.x - R1.y * Q2.x) * D;
+      T.y = ( R2.y * Q1.y - R1.y * Q2.y) * D;
+      T.z = ( R2.y * Q1.z - R1.y * Q2.z) * D;
+      B.x = (-R2.x * Q1.x + R1.x * Q2.x) * D;
+      B.x = (-R2.x * Q1.y + R1.x * Q2.y) * D;
+      B.x = (-R2.x * Q1.z + R1.x * Q2.z) * D;
+
+      f->tangent += T;
+      f->tangent += B;
+    }
+    
+    if (tricount > 0)
+    {
+      f->tangent /= (Float) tricount;
+      f->bitangent /= (Float) tricount;
+    }
   }
 
   void PolyMesh::updateVertTangent (Vertex *v, TexMesh::Vertex *tv)
@@ -389,11 +472,12 @@ namespace GE
     TexMesh::FaceIter tf;
     TexMesh::FaceVertIter tfv;
 
-    //Store tex vertex pointers into poly vertices
+    //Store tex vertex pointers into poly vertex tags
     for (f.begin(this), tf.begin(texMesh); !f.end(); ++f, ++tf)
       for (fv.begin(*f), tfv.begin(*tf); !fv.end(); ++fv, ++tfv)
         fv->tag.ptr = *tfv;
 
+    //Calculate tangents
     vertexTangents.clear();
 
     for (f.begin(this); !f.end() && !tf.end(); ++f, ++tf)

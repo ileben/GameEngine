@@ -66,8 +66,8 @@ namespace GE
 
     skinVertices = new Vector3[ mesh->data.size() ];
     skinNormals = new Vector3[ mesh->data.size() ];
-    boneRotations = new Quat[ character->pose->bones.size() ];
-    boneTranslations = new Vector3[ character->pose->bones.size() ];
+    boneRotations = new Quat[ character->pose->joints.size() ];
+    boneTranslations = new Vector3[ character->pose->joints.size() ];
 
     for (UintSize v=0; v < mesh->data.size(); ++v)
     {
@@ -84,9 +84,9 @@ namespace GE
 
   void SkinMeshActor::loadPoseRotations()
   {
-    for (UintSize b=0; b < character->pose->bones.size(); ++b) {
-      boneRotations[ b ] = character->pose->bones[ b ].localR;
-      boneTranslations[ b ] = character->pose->bones[ b ].localT;
+    for (UintSize b=0; b < character->pose->joints.size(); ++b) {
+      boneRotations[ b ] = character->pose->joints[ b ].localR;
+      boneTranslations[ b ] = character->pose->joints[ b ].localT;
     }
   }
 
@@ -101,7 +101,6 @@ namespace GE
 
   void SkinMeshActor::applySkin ()
   {
-    //SkinTriMesh *mesh = character->mesh;
     SkinPose *pose = character->pose;
     SkinAnim *anim = character->anims.first();
     ArrayList <Matrix4x4> fkMats;
@@ -112,33 +111,34 @@ namespace GE
     Matrix4x4 rootWorld;
     rootWorld.fromQuat( boneRotations[0] );
     rootWorld.setColumn( 3, boneTranslations[0].xyz(1.0f) );
-    rootWorld *= pose->bones.first().localS;
+    rootWorld *= pose->joints.first().localS;
     fkMats.pushBack( rootWorld );
     
-    //Walk all the bones
-    for (UintSize b=0; b<pose->bones.size(); ++b)
+    //Walk all the joints
+    for (UintSize p=0; p<pose->joints.size(); ++p)
     {
       //Final skin matrix = FK matrix * world matrix inverse
-      SkinBone *parent = &pose->bones[b];
-      skinMats.pushBack( fkMats[b] * parent->worldInv );
+      SkinJoint *parent = &pose->joints[p];
+      skinMats.pushBack( fkMats[p] * parent->worldInv );
       
       //Walk the children
       for (Uint32 c=0; c<parent->numChildren; ++c)
       {
         //Child FK matrix = parent FK matrix * local matrix
-        SkinBone *child = &pose->bones[ cindex ];
-        
+        SkinJoint *child = &pose->joints[ cindex ];
+
         Matrix4x4 childLocal;
         childLocal.fromQuat( boneRotations[ cindex ]);
         childLocal.setColumn( 3, boneTranslations[ cindex ].xyz(1.0f) );
         childLocal *= child->localS;
-        fkMats.pushBack( fkMats[b] * childLocal );
+        fkMats.pushBack( fkMats[p] * childLocal );
         cindex++;
       }
     }
 
     //Apply rotations to vertices
     /*
+    SkinTriMesh *mesh = character->mesh;
     int vindex = 0; int nindex = 0;
     
     for (UintSize index=0; index<mesh->data.size(); ++index)

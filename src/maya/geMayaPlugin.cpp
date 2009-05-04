@@ -479,10 +479,10 @@ class CmdAddAnim : public MPxCommand
       return MStatus::kFailure;
     }
 
-    //Check if the number of bones match
+    //Check if the number of joints match
     if (g_animation->tracksR.size() !=
-        g_character->pose->bones.size()) {
-      setStatus( "Bones don't match!" );
+        g_character->pose->joints.size()) {
+      setStatus( "Joints don't match!" );
       return MStatus::kFailure;
     }
 
