@@ -101,7 +101,7 @@ namespace GE
 
     //Query attribute locations
     for (UintSize a=0; a<attribs.size(); ++a)
-      attribs[a].ID = program->getAttribute( attribs[a].name.buffer());
+      attribs[a].ID = program->getAttribute( attribs[a].name.buffer() );
 
     //Query uniform locations
     for (UintSize u=0; u<uniforms.size(); ++u)
@@ -188,49 +188,55 @@ namespace GE
     return "invalidtype";
   }
 
-  void Shader::Socket::resolveBuiltIn()
+  void Shader::Socket::resolveKnownData()
   {
+    builtInAccess[ ShaderType::Vertex ] = false;
+    builtInAccess[ ShaderType::Fragment ] = false;
+
     switch (data)
     {
     case ShaderData::Coord:
       name = "Coord";
       unit = DataUnit::Vec4;
-      access[ ShaderType::Vertex ] = true;
-      access[ ShaderType::Fragment ] = false;
+      builtInAccess[ ShaderType::Vertex ] = true;
       break;
     case ShaderData::TexCoord:
       name = "TexCoord" + CharString::FInt(index);
       unit = DataUnit::Vec4;
-      access[ ShaderType::Vertex ] = true;
-      access[ ShaderType::Fragment ] = false;
+      builtInAccess[ ShaderType::Vertex ] = true;
       break;
     case ShaderData::Normal:
       name = "Normal";
       unit = DataUnit::Vec3;
-      access[ ShaderType::Vertex ] = true;
-      access[ ShaderType::Fragment ] = false;
+      builtInAccess[ ShaderType::Vertex ] = true;
       break;
     case ShaderData::Diffuse:
       name = "Diffuse";
       unit = DataUnit::Vec4;
-      access[ ShaderType::Vertex ] = true;
-      access[ ShaderType::Fragment ] = true;
+      builtInAccess[ ShaderType::Vertex ] = true;
+      builtInAccess[ ShaderType::Fragment ] = true;
       break;
     case ShaderData::Specular:
       name = "Specular";
       unit = DataUnit::Vec4;
-      access[ ShaderType::Vertex ] = true;
-      access[ ShaderType::Fragment ] = true;
+      builtInAccess[ ShaderType::Vertex ] = true;
+      builtInAccess[ ShaderType::Fragment ] = true;
       break;
     case ShaderData::SpecularExp:
       name = "SpecularExp";
       unit = DataUnit::Float;
-      access[ ShaderType::Vertex ] = true;
-      access[ ShaderType::Fragment ] = true;
+      builtInAccess[ ShaderType::Vertex ] = true;
+      builtInAccess[ ShaderType::Fragment ] = true;
+      break;
+    case ShaderData::Tangent:
+      name = "Tangent";
+      unit = DataUnit::Vec3;
+      break;
+    case ShaderData::Bitangent:
+      name = "Bitangent";
+      unit = DataUnit::Vec3;
       break;
     default:
-      access[ ShaderType::Vertex ] = false;
-      access[ ShaderType::Fragment ] = false;
       break;
     }
   }
@@ -274,6 +280,7 @@ namespace GE
 
   void Shader::composeNodeSocket (SocketFlow::Enum flow,
                                   ShaderData::Enum data,
+                                  DataSource::Enum source,
                                   const DataUnit &unit,
                                   const CharString &name,
                                   int index)
@@ -283,16 +290,17 @@ namespace GE
     switch (flow)
     {
     case SocketFlow::In:
-      newShaderNode->inSocks.pushBack( Socket( data, unit, name, index ) );
+      newShaderNode->inSocks.pushBack( Socket( data, source, unit, name, index ) );
       break;
     case SocketFlow::Out:
-      newShaderNode->outSocks.pushBack( Socket( data, unit, name, index ) );
+      newShaderNode->outSocks.pushBack( Socket( data, source, unit, name, index ) );
       break;
     }
   }
 
   void Shader::composeNodeSocket (SocketFlow::Enum flow,
                                   ShaderData::Enum data,
+                                  DataSource::Enum source,
                                   int index)
   {
     if (newShaderNode == NULL) return;
@@ -300,10 +308,10 @@ namespace GE
     switch (flow)
     {
     case SocketFlow::In:
-      newShaderNode->inSocks.pushBack( Socket( data, index ) );
+      newShaderNode->inSocks.pushBack( Socket( data, source, index ) );
       break;
     case SocketFlow::Out:
-      newShaderNode->outSocks.pushBack( Socket( data, index ) );
+      newShaderNode->outSocks.pushBack( Socket( data, source, index ) );
       break;
     }
   }
@@ -421,18 +429,20 @@ namespace GE
     output( shaderStr, indent, "void main()\n{\n" );
     indent += 1;
 
-    //Init variables with builtin or varying data
-    if (init != NULL) {
-      for (SocketIter i=init->begin(); i!=init->end(); ++i) {
-        if (i->access[ target ])
-          output( shaderStr, indent, i->unit.toString() + " " + i->name + " " + i->getInitString() + ";\n" );
-        else
-          output( shaderStr, indent, i->unit.toString() + " " + i->name + " = v" + i->name  + ";\n");
-      }}
-
     //Ouput a simple declaration for satisfied sockets
     for (SocketIter d=done->begin(); d!=done->end(); ++d)
-      output( shaderStr, indent, d->unit.toString() + " " + d->name + ";\n");
+      output( shaderStr, indent, d->unit.toString() + " t" + d->name + ";\n");
+
+    //Init unsatisfied socket variables with builtin, attribute or varying data
+    if (init != NULL) {
+      for (SocketIter i=init->begin(); i!=init->end(); ++i) {
+        if (i->source == DataSource::BuiltIn && i->builtInAccess[ target ])
+          output( shaderStr, indent, i->unit.toString() + " t" + i->name + " " + i->getInitString() + ";\n" );
+        else if (i->source == DataSource::Attribute && target==ShaderType::Vertex)
+          output( shaderStr, indent, i->unit.toString() + " t" + i->name + " = " + i->name + ";\n");
+        else
+          output( shaderStr, indent, i->unit.toString() + " t" + i->name + " = v" + i->name  + ";\n");
+      }}
 
     shaderStr+= "\n";
     nID = 0;
@@ -446,12 +456,12 @@ namespace GE
       for (UintSize i=0; i<node->inSocks.size(); ++i, ++arg)
       {
         if (arg>0) shaderStr += ", ";
-        shaderStr += node->inSocks[i].name;
+        shaderStr += "t" + node->inSocks[i].name;
       }
       for (UintSize o=0; o<node->outSocks.size(); ++o, ++arg)
       {
         if (arg>0) shaderStr += ", ";
-        shaderStr += node->outSocks[o].name;
+        shaderStr += "t" + node->outSocks[o].name;
       }
       shaderStr += " );\n";
     }
@@ -464,7 +474,7 @@ namespace GE
     if (target != ShaderType::Fragment) {
       if (varying != NULL) {
         for (SocketIter v=varying->begin(); v!=varying->end(); ++v)
-          output( shaderStr, indent, "v" + v->name + " = " + v->name + ";\n");
+          output( shaderStr, indent, "v" + v->name + " = t" + v->name + ";\n");
       }}
 
     //End main
@@ -534,11 +544,11 @@ namespace GE
     LinkedList<Socket> varying;
 
     LinkedList<Socket> fragSocks;
-    LinkedList<Node*> fragNodes;
+    LinkedList<Node*> fragUsedNodes;
     LinkedList<Socket> fragDoneSocks;
 
     LinkedList<Socket> vertSocks;
-    LinkedList<Node*> vertNodes;
+    LinkedList<Node*> vertUsedNodes;
     LinkedList<Socket> vertDoneSocks;
 
     //A default node that transforms normals with the normal matrix
@@ -556,7 +566,7 @@ namespace GE
     composeNodeEnd();
 
     //Final vertex code applies projection matrix to vertices
-    CharString vertCode = "gl_Position  = gl_ProjectionMatrix * Coord;\n";
+    CharString vertCode = "gl_Position  = gl_ProjectionMatrix * tCoord;\n";
     CharString fragCode;
 
     //Define the final data required by the renderer
@@ -578,11 +588,11 @@ namespace GE
     };
 
     //Find the fragment nodes that produce data for sockets
-    findNodesForSockets( &fragSocks, &fragShaderNodes, &fragDoneSocks, &fragNodes );
+    findNodesForSockets( &fragSocks, &fragShaderNodes, &fragDoneSocks, &fragUsedNodes );
 
     //Pass required sockets to vertex if not accessible from fragment shader
     for (SocketIter fs=fragSocks.begin(); fs!=fragSocks.end(); ++fs) {
-      if (!fs->access[ ShaderType::Fragment ]) {
+      if (!fs->builtInAccess[ ShaderType::Fragment ]) {
         if (!vertSocks.contains( *fs ))
           vertSocks.pushBack( *fs );
         if (!varying.contains( *fs))
@@ -590,21 +600,23 @@ namespace GE
       }}
 
     //Find the vertex nodes that produce data for sockets
-    findNodesForSockets( &vertSocks, &vertShaderNodes, &fragDoneSocks, &vertNodes );
+    findNodesForSockets( &vertSocks, &vertShaderNodes, &fragDoneSocks, &vertUsedNodes );
 
     CharString vertShaderStr = outputShader
-      ( &varying, &vertSocks, &fragDoneSocks, &vertNodes, vertCode, ShaderType::Vertex );
+      ( &varying, &vertSocks, &fragDoneSocks, &vertUsedNodes, vertCode, ShaderType::Vertex );
     CharString fragShaderStr = outputShader
-      ( &varying, &fragSocks, &fragDoneSocks, &fragNodes, fragCode, ShaderType::Fragment );
+      ( &varying, &fragSocks, &fragDoneSocks, &fragUsedNodes, fragCode, ShaderType::Fragment );
 
     vertShaderNodes.clear();
     fragShaderNodes.clear();
+    
     /*
     printf( "-----------------------\nVertexShader:\n-----------------------\n");
     printf( "%s\n", vertShaderStr.buffer() );
     printf( "-----------------------\nFragmentShader:\n-----------------------\n");
     printf( "%s\n", fragShaderStr.buffer() );
     */
+
     return fromString( vertShaderStr, fragShaderStr );
   }
 

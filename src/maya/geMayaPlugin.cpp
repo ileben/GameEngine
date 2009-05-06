@@ -6,6 +6,7 @@
 #include "mel.embedded"
 
 bool g_chkExportSkin = false;
+bool g_chkExportTangents = false;
 CharString g_outFileName;
 CharString g_skinFileName;
 CharString g_statusText;
@@ -198,6 +199,32 @@ class CmdSkinOff : public MPxCommand
   }
 };
 
+
+/*
+------------------------------------------
+Command for the "Export tangets" checkbox
+------------------------------------------*/
+
+class CmdTangentsOn : public MPxCommand
+{ public:
+  static void *creator() { return new CmdTangentsOn; }
+  virtual MStatus doIt (const MArgList &args)
+  {
+    g_chkExportTangents = true;
+    return MStatus::kSuccess;
+  }
+};
+
+class CmdTangentsOff : public MPxCommand
+{ public:
+  static void *creator() { return new CmdTangentsOff; }
+  virtual MStatus doIt (const MArgList &args)
+  {
+    g_chkExportTangents = false;
+    return MStatus::kSuccess;
+  }
+};
+
 /*
 --------------------------------------------
 Command for browsing the output file
@@ -247,8 +274,8 @@ public:
     
     //Export skin pose or static mesh
     if (g_chkExportSkin)
-      exportWithSkin( &outData, &outSize );
-    else exportNoSkin( &outData, &outSize );
+      exportWithSkin( &outData, &outSize, g_chkExportTangents );
+    else exportNoSkin( &outData, &outSize, g_chkExportTangents );
 
     //Make sure something was actually exported
     if (outSize == 0) {
@@ -258,7 +285,6 @@ public:
     }
 
     //Open output file for writing
-    //File outFile( "C:\\Projects\\Programming\\GameEngine\\test\\mayaexport.pak" );
     File outFile( outFileName );
     if (!outFile.open( "wb" )) {
       setStatus( "Failed writing to file." );
@@ -596,6 +622,9 @@ class CmdRestoreGui : public MPxCommand
     if (g_chkExportSkin)
       MGlobal::executeCommand( "checkBox -edit -value true GChkSkin" );
 
+    if (g_chkExportTangents)
+      MGlobal::executeCommand( "checkBox -edit -value true GChkTangents" );
+
     if (g_outFileName.length() > 0)
       setTextFieldText( "GTxtFile", g_outFileName );
 
@@ -643,6 +672,8 @@ MStatus initializePlugin ( MObject obj )
   plugin.registerCommand( "GCmdRestoreGui", CmdRestoreGui::creator );
   plugin.registerCommand( "GCmdSkinOn", CmdSkinOn::creator );
   plugin.registerCommand( "GCmdSkinOff", CmdSkinOff::creator );
+  plugin.registerCommand( "GCmdTangentsOn", CmdTangentsOn::creator );
+  plugin.registerCommand( "GCmdTangentsOff", CmdTangentsOff::creator );
   plugin.registerCommand( "GCmdBrowseFile", CmdBrowseFile::creator );
   plugin.registerCommand( "GCmdBrowseSkinFile", CmdBrowseSkinFile::creator );
   plugin.registerCommand( "GCmdProcessAnim", CmdProcessAnim::creator );
@@ -686,6 +717,8 @@ MStatus uninitializePlugin( MObject obj)
   plugin.deregisterCommand( "GCmdRestoreGui" );
   plugin.deregisterCommand( "GCmdSkinOn" );
   plugin.deregisterCommand( "GCmdSkinOff" );
+  plugin.deregisterCommand( "GCmdTangentsOn" );
+  plugin.deregisterCommand( "GCmdTangentsOff" );
   plugin.deregisterCommand( "GCmdBrowseFile" );
   plugin.deregisterCommand( "GCmdBrowseSkinFile" );
   plugin.deregisterCommand( "GCmdProcessAnim" );

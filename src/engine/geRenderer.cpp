@@ -168,16 +168,26 @@ namespace GE
     glDisable( GL_TEXTURE_2D );
   }
 
+  void Renderer::initBuffer (Uint *texID, Uint format, Uint attachment, bool gen)
+  {
+    if (gen) glGenTextures( 1, texID );
+    glBindTexture( GL_TEXTURE_2D, *texID );
+    glTexImage2D( GL_TEXTURE_2D, 0, format, winW, winH, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+    glFramebufferTexture2D( GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, *texID, 0 );
+  }
+
   void Renderer::updateBuffers ()
   {
     //Destroy old deferred buffers if present
     if (deferredInit)
     {
       glDeleteFramebuffers( 1, &deferredFB );
-      glDeleteRenderbuffers( 1, &deferredStencil );
+      //glDeleteRenderbuffers( 1, &deferredStencil );
       glDeleteRenderbuffers( 1, &deferredDepth );
       glDeleteTextures( 1, &deferredAccum );
-      glDeleteTextures( 4, deferredMaps );
+      glDeleteTextures( GE_NUM_GBUFFERS, deferredMaps );
     };
 
     //Generate deferred framebuffer
@@ -198,23 +208,17 @@ namespace GE
     glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, deferredDepth );
 
     //Generate deferred lighting accumulation buffer
-    glGenTextures( 1, &deferredAccum );
-    glBindTexture( GL_TEXTURE_2D, deferredAccum );
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, winW, winH, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-    glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, deferredAccum, 0 );
+    initBuffer( &deferredAccum, GL_RGBA16F, GL_COLOR_ATTACHMENT0, true );
 
     //Generate deferred geometry buffers
-    glGenTextures( 4, deferredMaps );
-    for (Uint32 d=Deferred::Vertex; d<=Deferred::Specular; ++d)
-    {
-      glBindTexture( GL_TEXTURE_2D, deferredMaps[ d ] );
-      glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA16F, winW, winH, 0, GL_RGBA, GL_FLOAT, NULL );
-      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-      glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1 + d, GL_TEXTURE_2D, deferredMaps[d], 0 );
-    }
+    glGenTextures( GE_NUM_GBUFFERS, deferredMaps );
+    initBuffer( &deferredMaps[ Deferred::Normal ], GL_RGBA16F, GL_COLOR_ATTACHMENT1 );
+    initBuffer( &deferredMaps[ Deferred::Color ], GL_RGBA8, GL_COLOR_ATTACHMENT2 );
+    initBuffer( &deferredMaps[ Deferred::Specular ], GL_RGBA8, GL_COLOR_ATTACHMENT3 );
+    initBuffer( &deferredMaps[ Deferred::Params ], GL_RGBA8, GL_COLOR_ATTACHMENT4 );
+
+    //Generate deferred effects buffer
+    //initBuffer( &deferredEffects1, GL_RGBA16F, GL_COLOR_ATTACHMENT5, true );
 
     //Check framebuffer status
     GLenum status = glCheckFramebufferStatus( GL_FRAMEBUFFER );
@@ -231,19 +235,19 @@ namespace GE
       ambientColorSampler = shaderAmbient->getUniformID( "samplerColor" );
 
       shaderLightSpot = new Shader;
-      shaderLightSpot->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerVertex" );
       shaderLightSpot->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerNormal" );
       shaderLightSpot->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
       shaderLightSpot->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerSpec" );
+      shaderLightSpot->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerParams" );
       shaderLightSpot->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerShadow" );
       shaderLightSpot->registerUniform( ShaderType::Fragment, DataUnit::Int, "castShadow" );
       shaderLightSpot->registerUniform( ShaderType::Fragment, DataUnit::Vec2, "winSize" );
       shaderLightSpot->fromString( shadevert_SpotLight_embedded, shadefrag_SpotLight_embedded );
 
-      deferredSampler[ Deferred::Vertex ] = shaderLightSpot->getUniformID( "samplerVertex" );
       deferredSampler[ Deferred::Normal ] = shaderLightSpot->getUniformID( "samplerNormal" );
       deferredSampler[ Deferred::Color ] = shaderLightSpot->getUniformID( "samplerColor" );
       deferredSampler[ Deferred::Specular ] = shaderLightSpot->getUniformID( "samplerSpec" );
+      deferredSampler[ Deferred::Params ] = shaderLightSpot->getUniformID( "samplerParams" );
       deferredSampler[ Deferred::Shadow ] = shaderLightSpot->getUniformID( "samplerShadow" );
       deferredCastShadow = shaderLightSpot->getUniformID( "castShadow" );
       deferredWinSize = shaderLightSpot->getUniformID( "winSize" );
@@ -325,7 +329,6 @@ namespace GE
     glBindTexture( GL_TEXTURE_2D, shadowMap );
     glGetTexImage( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, GL_FLOAT, pixels );
 
-    
     float lastp = -1.0f;
     for (int y=0; y<S; ++y)
     {
@@ -507,7 +510,7 @@ namespace GE
       else glUniform1i( deferredCastShadow, 0);
 
       //Bind geometry textures
-      for (int d=Deferred::Vertex; d<=Deferred::Specular; ++d)
+      for (int d=0; d<GE_NUM_GBUFFERS; ++d)
       {
         glUniform1i( deferredSampler[d], d );
         glActiveTexture( GL_TEXTURE0 + d );
@@ -529,7 +532,7 @@ namespace GE
       light->renderVolume();
       
       //Restore texture state
-      for (int d=Deferred::Specular; d>=Deferred::Vertex; --d)
+      for (int d=GE_NUM_GBUFFERS-1; d>=0; --d)
       {
         glActiveTexture( GL_TEXTURE0 + d );
         glDisable( GL_TEXTURE_2D );

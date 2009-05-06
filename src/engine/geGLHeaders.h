@@ -295,6 +295,11 @@ GL_EXT_framebuffer_object
 #define GL_COLOR_ATTACHMENT2              0x8CE2
 #define GL_COLOR_ATTACHMENT3              0x8CE3
 #define GL_COLOR_ATTACHMENT4              0x8CE4
+#define GL_COLOR_ATTACHMENT5              0x8CE5
+#define GL_COLOR_ATTACHMENT6              0x8CE6
+#define GL_COLOR_ATTACHMENT7              0x8CE7
+#define GL_COLOR_ATTACHMENT8              0x8CE8
+#define GL_COLOR_ATTACHMENT9              0x8CE9
 #define GL_DEPTH_ATTACHMENT               0x8D00
 #define GL_STENCIL_ATTACHMENT             0x8D20
 #define GL_STENCIL_INDEX1                 0x8D46

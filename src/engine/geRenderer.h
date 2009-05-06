@@ -37,10 +37,10 @@ namespace GE
   namespace Deferred {
     enum Enum
     {
-      Vertex     = 0,
-      Normal     = 1,
-      Color      = 2,
-      Specular   = 3,
+      Normal     = 0,
+      Color      = 1,
+      Specular   = 2,
+      Params     = 3,
       Shadow     = 4
     };}
 
@@ -55,6 +55,10 @@ namespace GE
       return (target == k.target && matClass == k.matClass && geomClass == k.geomClass);
     }
   };
+
+  #define GE_NUM_GBUFFERS 4
+  #define GE_NUM_SAMPLERS 5
+
 
   /*
   -----------------------------------------
@@ -88,6 +92,7 @@ namespace GE
     Uint32 deferredStencil;
     Uint32 deferredDepth;
     Uint32 deferredAccum;
+    Uint32 deferredEffects1;
     Uint32 deferredMaps[4];
     Uint32 deferredFB;
     Uint32 deferredPB;
@@ -100,6 +105,7 @@ namespace GE
     Shader *shaderLightSpot;
     
     void updateBuffers ();
+    void initBuffer (Uint *texID, Uint format, Uint attachment, bool gen=false);
     void traverseSceneNoMats (Scene *scene);
     void traverseSceneWithMats (Scene *scene);
     void renderShadowMap (Light *light, Scene *scene);

@@ -344,7 +344,7 @@ bool loadPackage (const CharString &fileName)
   void *object = sm.load( (void*)data.buffer(), &cls );
 
   //Check object class
-  if (cls == Class(TriMesh))
+  if (cls == Class(TriMesh) || cls == Class(TanTriMesh))
   {
     mesh = (TriMesh*) object;
     mesh->sendToGpu();
@@ -399,7 +399,9 @@ bool loadPackage (const CharString &fileName)
   return true;
 }
 
-Actor* loadActor (const CharString &meshFileName, const CharString &texFileName="")
+Actor* loadActor (const CharString &meshFileName,
+                  const CharString &texFileName="",
+                  const CharString &normTexFileName="")
 {
   mesh = NULL;
   character = NULL;
@@ -413,10 +415,20 @@ Actor* loadActor (const CharString &meshFileName, const CharString &texFileName=
   
   if (mesh != NULL)
   {
-    triMeshActor = new TriMeshActor;
-    triMeshActor->setMesh( mesh );
-    meshRender = mesh;
-    actorRender = triMeshActor;
+    if (ClassOf(mesh) == Class(TriMesh))
+    {
+      triMeshActor = new TriMeshActor;
+      triMeshActor->setMesh( mesh );
+      meshRender = mesh;
+      actorRender = triMeshActor;
+    }
+    else if (ClassOf(mesh) == Class(TanTriMesh))
+    {
+      triMeshActor = new TanTriMeshActor;
+      triMeshActor->setMesh( mesh );
+      meshRender = mesh;
+      actorRender = triMeshActor;
+    }
   }
 
   if (character != NULL)
@@ -439,14 +451,28 @@ Actor* loadActor (const CharString &meshFileName, const CharString &texFileName=
   actorRender->scale( scale );
   findBounds( meshRender, actorRender->getWorldMatrix() );
 
-  if (texFileName == "")
+  if (normTexFileName != "")
   {
-    //Assign solid color material
-    StandardMaterial *matWhite = new StandardMaterial;
-    //matWhite->setSpecularity( 0.5 );
-    actorRender->setMaterial( matWhite );
+    //Assing normal-texture material
+    Image *imgDiff = new Image;
+    imgDiff->readFile( texFileName, "jpeg" );
+
+    Image *imgNorm = new Image;
+    imgNorm->readFile( normTexFileName, "jpeg" );
+
+    Texture *texDiff = new Texture;
+    texDiff->fromImage( imgDiff );
+
+    Texture *texNorm = new Texture;
+    texNorm->fromImage( imgNorm );
+
+    NormalTexMat *matTex = new NormalTexMat;
+    matTex->setSpecularity( 0.5 );
+    matTex->setDiffuseTexture( texDiff );
+    matTex->setNormalTexture( texNorm );
+    actorRender->setMaterial( matTex );
   }
-  else
+  else if (texFileName != "")
   {
     //Assing diffuse-texture material
     Image *img = new Image;
@@ -459,6 +485,13 @@ Actor* loadActor (const CharString &meshFileName, const CharString &texFileName=
     //matTex->setSpecularity( 0.5 );
     matTex->setDiffuseTexture( tex );
     actorRender->setMaterial( matTex );
+  }
+  else
+  {
+    //Assign solid color material
+    StandardMaterial *matWhite = new StandardMaterial;
+    //matWhite->setSpecularity( 0.5 );
+    actorRender->setMaterial( matWhite );
   }
 
   return actorRender;
@@ -516,7 +549,21 @@ int main (int argc, char **argv)
   ((StandardMaterial*)actorRender->getMaterial())->setCullBack(false);
   ((StandardMaterial*)actorRender->getMaterial())->setLuminosity(0.2f);
   ((StandardMaterial*)actorRender->getMaterial())->setDiffuseColor(Vector3(.7,.7,.7));
-
+  ((StandardMaterial*)actorRender->getMaterial())->setSpecularity(0.9f);
+  ((StandardMaterial*)actorRender->getMaterial())->setGlossiness(0.05f);
+  ((StandardMaterial*)actorRender->getMaterial())->setCellShaded( true );
+  
+/*
+  loadActor( "trex.pak", "rex.jpg", "rex_normal.jpg" );
+  //((StandardMaterial*)actorRender->getMaterial())->setCullBack(false);
+  ((StandardMaterial*)actorRender->getMaterial())->setDiffuseColor(Vector3(0,.5,0));
+  ((StandardMaterial*)actorRender->getMaterial())->setSpecularity(0.9f);
+  ((StandardMaterial*)actorRender->getMaterial())->setGlossiness(0.05f);
+  ((StandardMaterial*)actorRender->getMaterial())->setCellShaded( true );
+  actorRender->scale(1,-1,-1);
+  actorRender->translate(0,-50,0);
+  scene->addChild( actorRender );
+*/
   //Create floor cube
   StandardMaterial *matWhite = new StandardMaterial;
   matWhite->setSpecularity( 0.5 );

@@ -33,8 +33,8 @@ void setStatus (const CharString &msg);
 void clearStatus ();
 
 bool findNodeInSelection (MFn::Type type, MObject &pick);
-void exportNoSkin (void **outData, UintSize *outSize);
-void exportWithSkin (void **outData, UintSize *outSize);
+void exportNoSkin (void **outData, UintSize *outSize, bool tangents);
+void exportWithSkin (void **outData, UintSize *outSize, bool tangents);
 SkinAnim* exportAnimation (int start, int end, int fps);
 
 #endif//__GEMAYA_H

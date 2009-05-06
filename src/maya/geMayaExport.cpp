@@ -144,6 +144,7 @@ private:
   MFloatPointArray meshPoints;
   MFloatVectorArray meshNormals;
   MFloatVectorArray meshTangents;
+  MFloatVectorArray meshBitangents;
   MFloatArray meshPointsU;
   MFloatArray meshPointsV;
 
@@ -151,13 +152,14 @@ protected:
   MFloatPoint getPoint (int vertId) {return meshPoints[ vertId ]; }
   MVector getNormal (int normalId) { return meshNormals[ normalId ]; }
   MVector getTangent (int tangentId) { return meshTangents[ tangentId ]; }
+  MVector getBitangent (int tangentId) { return meshBitangents[ tangentId ]; }
   double getU (int uvId) { return meshPointsU[ uvId ]; }
   double getV (int uvId) { return meshPointsV[ uvId ]; }
 
   virtual void visitNumbers (int numPoints, int numNormals, int numTangents, int numUVs, int numFaces) {}
   virtual void visitPoint (const MFloatPoint &point) {}
   virtual void visitNormal (const MVector &normal) {}
-  virtual void visitTangent (const MVector &tangent) {}
+  virtual void visitTangent (const MVector &tangent, const MVector &bitangent) {}
   virtual void visitUV (double u, double v) {}
   virtual void visitPolygonStart (int faceId, int numCorners) {}
   virtual void visitPolygonCorner (int faceId, int corner, int vertId, int normalId, int tangentId, int uvId) {}
@@ -182,6 +184,7 @@ void MeshExporter::exportMesh (const MObject &meshNode)
   Uint meshNumPoints;
   Uint meshNumNormals;
   Uint meshNumTangents;
+  Uint meshNumBitangents;
   Uint meshNumPointsUV;
   Uint meshNumFaces;
   Uint meshNumEdges;
@@ -212,6 +215,7 @@ void MeshExporter::exportMesh (const MObject &meshNode)
   //Get mesh normals and tangents
   mesh.getNormals( meshNormals, meshPointSpace );
   mesh.getTangents( meshTangents, meshPointSpace );
+  mesh.getBinormals( meshBitangents, meshPointSpace );
 
   //Get mesh UV points
   mesh.getUVs( meshPointsU, meshPointsV );
@@ -223,6 +227,7 @@ void MeshExporter::exportMesh (const MObject &meshNode)
   meshNumPoints = meshPoints.length();
   meshNumNormals = meshNormals.length();
   meshNumTangents = meshTangents.length();
+  meshNumBitangents = meshBitangents.length();
   meshNumPointsUV = meshPointsU.length();
   meshNumFaces = mesh.numPolygons();
   meshNumEdges = mesh.numEdges();
@@ -245,7 +250,7 @@ void MeshExporter::exportMesh (const MObject &meshNode)
 
   //Walk the mesh tangents
   for (Uint t=0; t<meshNumTangents; ++t)
-    visitTangent( meshTangents[ t ] );
+    visitTangent( meshTangents[ t ], meshBitangents[ t ] );
 
   //Walk the mesh UV points
   for (Uint uv=0; uv<meshNumPointsUV; ++uv)
@@ -493,12 +498,12 @@ protected:
     const Vector3 &point,
     const Vector3 &normal,
     const Vector3 &tangent,
+    const Vector3 &bitangent,
     const Vector2 &uv )
   {
     TriMesh::Vertex newVert;
     newVert.point = point;
     newVert.normal = normal;
-    //newVert.tangent = tangent;
     newVert.texcoord = uv;
     outTriMesh->addVertex( &newVert );
   }
@@ -548,6 +553,7 @@ public:
       exportPoint( getPoint( vertId ) ),
       exportVector( getNormal( normalId ) ),
       exportVector( getTangent( tangentId ) ),
+      exportVector( getBitangent( tangentId ) ),
       exportUV( getU( uvId ), getV( uvId ) ));
 
     //Use new variant ID
@@ -584,29 +590,50 @@ public:
   }
 };
 
-class SkinTriMeshExporter : public TriMeshExporter
+class TanTriMeshExporter : public TriMeshExporter
 {
 protected:
-
   virtual void newVertex (
     const Vector3 &point,
     const Vector3 &normal,
     const Vector3 &tangent,
+    const Vector3 &bitangent,
+    const Vector2 &uv )
+  {
+    TanTriMesh::Vertex newVert;
+    newVert.point = point;
+    newVert.normal = normal;
+    newVert.texcoord = uv;
+    newVert.tangent = tangent;
+    newVert.bitangent = bitangent;
+    ((TanTriMesh*)outTriMesh)->addVertex( &newVert );
+  }
+
+public:
+  TanTriMeshExporter (TriMesh *mesh, VertToVariantMap &variants)
+    : TriMeshExporter (mesh, variants) {}
+};
+
+class SkinTriMeshExporter : public TriMeshExporter
+{
+protected:
+  virtual void newVertex (
+    const Vector3 &point,
+    const Vector3 &normal,
+    const Vector3 &tangent,
+    const Vector3 &bitangent,
     const Vector2 &uv )
   {
     SkinTriMesh::Vertex newVert;
     newVert.point = point;
     newVert.normal = normal;
-    //newVert.tangent = tangent;
     newVert.texcoord = uv;
     ((SkinTriMesh*)outTriMesh)->addVertex( &newVert );
   }
 
 public:
-  SkinTriMeshExporter::SkinTriMeshExporter
-    (SkinTriMesh *mesh,
-     VertToVariantMap &variants)
-     : TriMeshExporter (mesh, variants) {}
+  SkinTriMeshExporter (TriMesh *mesh, VertToVariantMap &variants)
+    : TriMeshExporter (mesh, variants) {}
 };
 
 /*
@@ -1267,7 +1294,7 @@ void exportAnimKeys (const ArrayList<MObject> &nodeTree,
 Export mesh with skin
 --------------------------------------------------------*/
 
-void exportWithSkin (void **outData, UintSize *outSize)
+void exportWithSkin (void **outData, UintSize *outSize, bool tangents)
 {
   ArrayList<MObject> nodeTree;
   ArrayList<SkinJoint> jointTree;
@@ -1351,7 +1378,7 @@ void exportWithSkin (void **outData, UintSize *outSize)
 Export static mesh
 --------------------------------------------------------*/
 
-void exportNoSkin (void **outData, UintSize *outSize)
+void exportNoSkin (void **outData, UintSize *outSize, bool tangents)
 {
   MObject meshNode;
   if (!findNodeInSelection( MFn::kMesh, meshNode )) {
@@ -1376,14 +1403,25 @@ void exportNoSkin (void **outData, UintSize *outSize)
   */
 
   //Export mesh data
+  TriMesh *outTriMesh;
   VertToVariantMap vertToVariantMap;
-  TriMesh *outTriMesh = new TriMesh;
-  TriMeshExporter meshExporter( outTriMesh, vertToVariantMap );
-  meshExporter.exportMesh( meshNode );
+
+  if (tangents)
+  {
+    outTriMesh = new TanTriMesh;
+    TanTriMeshExporter meshExporter( outTriMesh, vertToVariantMap );
+    meshExporter.exportMesh( meshNode );
+  }
+  else
+  {
+    outTriMesh = new TriMesh;
+    TriMeshExporter meshExporter( outTriMesh, vertToVariantMap );
+    meshExporter.exportMesh( meshNode );
+  }
 
   //Serialize
   SerializeManager sm;
-  sm.save( outTriMesh, outData, outSize );
+  sm.save( ClassOf(outTriMesh), outTriMesh, outData, outSize );
 
   //Cleanup
   delete outTriMesh;

@@ -1,7 +1,7 @@
-uniform sampler2D samplerVertex;
 uniform sampler2D samplerNormal;
 uniform sampler2D samplerColor;
 uniform sampler2D samplerSpec;
+uniform sampler2D samplerParams;
 uniform sampler2D samplerShadow;
 
 uniform int castShadow;
@@ -10,18 +10,24 @@ uniform vec2 winSize;
 void main (void)
 {
   //Input data
-  //vec2 texCoord = gl_TexCoord[0].xy;
   vec2 texCoord = vec2( gl_FragCoord.x / winSize.x, gl_FragCoord.y / winSize.y );
-  vec4 vertexTexel = texture2D( samplerVertex, texCoord );
   vec4 normalTexel = texture2D( samplerNormal, texCoord );
   vec4 colorTexel = texture2D( samplerColor, texCoord );
   vec4 specTexel = texture2D( samplerSpec, texCoord );
+  vec4 paramTexel = texture2D( samplerParams, texCoord );
 
-  vec3 point = vertexTexel.xyz;
+  //Calculate eye-space point from eye-z coord
+  Float eyeZ =  normalTexel.w;
+  vec4 clipPoint = vec4(
+    eyeZ * ((gl_FragCoord.x / winSize.x) * 2.0 - 1.0),
+    eyeZ * ((gl_FragCoord.y / winSize.y) * 2.0 - 1.0), 1.0,1.0 );
+  vec3 point = (gl_ProjectionMatrixInverse * clipPoint).xyz;
+  point.z = eyeZ;
+
   vec3 normal = normalTexel.xyz;
   vec3 diffuse = colorTexel.rgb * gl_LightSource[0].diffuse.rgb;
   vec3 specular = specTexel.rgb * gl_LightSource[0].specular.rgb;
-  float shininess = specTexel.a;
+  float shininess = specTexel.a * 128.0;
 
   vec3 light = gl_LightSource[0].position.xyz - point;
   
@@ -53,6 +59,11 @@ void main (void)
   
 	//Basic shading
 	float NdotL = max( dot(N,L), 0.0 );
+
+  //Cell shading
+  if (paramTexel.x > 0.5)
+    NdotL = floor( NdotL * 2.0 + 0.5 ) / 2.0;
+
   if (NdotL > 0.0)
   {
     //Spotlight check
@@ -68,8 +79,8 @@ void main (void)
         spotCoeff = (LdotS - cosOuter) / (cosInner - cosOuter);
       
       //Diffuse color term (avoid going over the ambient term)
-      float diffuseCoeff = NdotL * spotCoeff - colorTexel.a;
-      if (diffuseCoeff > 0.0) Color += diffuse * diffuseCoeff;
+      float diffuseCoeff = NdotL * spotCoeff * (1.0 - colorTexel.a);
+      Color += diffuse * diffuseCoeff;
       //Color += diffuse * NdotL * spotCoeff;
       
 		  //Phong specular coefficient
@@ -77,6 +88,11 @@ void main (void)
 		  vec3 R = normalize( 2.0 * dot(L,N) * N  - L );
 		  float specCoeff = max( dot (R,E), 0.0 );
 		  specCoeff = pow( specCoeff, shininess );
+
+      //Cell shading
+      if (paramTexel.x > 0.5)
+        specCoeff = floor( specCoeff + 0.5 ) * 0.5;
+
 		  Color += specular * specCoeff * spotCoeff;
 	  }
   }

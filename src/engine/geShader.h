@@ -66,6 +66,14 @@ namespace GE
     static DataUnit Sampler2D;
   };
 
+  namespace DataSource {
+    enum Enum
+    {
+      None,
+      BuiltIn,
+      Attribute
+    };}
+
   namespace SocketFlow {
     enum Enum
     {
@@ -76,15 +84,16 @@ namespace GE
   namespace ShaderData {
     enum Enum
     {
+      Custom,
       Coord,
       TexCoord,
       Normal,
       Diffuse,
       Specular,
       SpecularExp,
-      Custom,
-      Attribute,
-      Uniform
+      Tangent,
+      Bitangent,
+      Attribute
     };}
   
   class GE_API_ENTRY Shader : public Resource
@@ -121,22 +130,28 @@ namespace GE
     struct Socket
     {
       ShaderData::Enum data;
+      DataSource::Enum source;
       DataUnit unit;
       CharString name;
       int index;
-      bool access[2];
+      bool builtInAccess[2];
 
       Socket()
         : index( -1 ) {}
-      Socket( ShaderData::Enum d, int i=-1 )
-        { data = d; index = i; resolveBuiltIn(); }
-      Socket( ShaderData::Enum d, const DataUnit &u, const CharString &n, int i=-1 )
-        { data = d; unit = u; name = n; index = i; resolveBuiltIn(); }
-      bool operator== (const Socket &s) {
-        if (data != s.data) return false;
-        if (data != ShaderData::Custom) return (index == s.index);
-        else return (name == s.name && unit == s.unit && index == s.index); }
-      void resolveBuiltIn();
+      Socket( ShaderData::Enum d, DataSource::Enum s = DataSource::BuiltIn, int i=-1 )
+        { data = d; source = s; index = i; resolveKnownData(); }
+      Socket( ShaderData::Enum d, DataSource::Enum s, const DataUnit &u, const CharString &n, int i=-1 )
+        { data = d; source = s; unit = u; name = n; index = i; resolveKnownData(); }
+      bool operator== (const Socket &s)
+      {
+        if (data != s.data)
+          return false;
+        if (source == DataSource::BuiltIn && s.source == DataSource::BuiltIn)
+          return (index == s.index);
+        else
+          return (name == s.name && unit == s.unit && index == s.index);
+      }
+      void resolveKnownData();
       CharString getInitString();
     };
 
@@ -191,10 +206,12 @@ namespace GE
 
     void composeNodeSocket (SocketFlow::Enum flow,
                             ShaderData::Enum data,
+                            DataSource::Enum source = DataSource::BuiltIn,
                             int index=-1);
 
     void composeNodeSocket (SocketFlow::Enum flow,
                             ShaderData::Enum data,
+                            DataSource::Enum source,
                             const DataUnit &unit,
                             const CharString &name,
                             int index=-1 );

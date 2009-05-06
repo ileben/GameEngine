@@ -68,13 +68,13 @@ namespace GE
     class VertexFormat : public VFormat { public:
       VertexFormat() : VFormat(sizeof(Vertex))
       {
-        addMember( VFMember( ShaderData::TexCoord, DataUnit::Vec2, sizeof(Vector2) ) );
-        addMember( VFMember( ShaderData::Normal,   DataUnit::Vec3, sizeof(Vector3) ) );
-        addMember( VFMember( ShaderData::Coord,    DataUnit::Vec3, sizeof(Vector3) ) );
-        addMember( VFMember( ShaderData::Custom,   DataUnit::Vec3, sizeof(Vector3),
-                             "tangent", DataUnit::Vec3 ));
-        addMember( VFMember( ShaderData::Custom,   DataUnit::Vec3, sizeof(Vector3),
-                             "bitangent", DataUnit::Vec3 ));
+        addMember( VFMember( ShaderData::TexCoord,  DataUnit::Vec2, sizeof(Vector2) ) );
+        addMember( VFMember( ShaderData::Normal,    DataUnit::Vec3, sizeof(Vector3) ) );
+        addMember( VFMember( ShaderData::Coord,     DataUnit::Vec3, sizeof(Vector3) ) );
+        addMember( VFMember( ShaderData::Attribute, DataUnit::Vec3, sizeof(Vector3),
+                             "Tangent", DataUnit::Vec3 ));
+        addMember( VFMember( ShaderData::Attribute, DataUnit::Vec3, sizeof(Vector3),
+                             "Bitangent", DataUnit::Vec3 ));
       }
     };
   };
@@ -95,7 +95,7 @@ namespace GE
     DECLARE_END;
 
   public:
-    virtual ClassPtr getShaderComposingClass() { return Class(TriMeshActor); }
+    virtual ClassPtr getShaderComposingClass() { return Class(TanTriMeshActor); }
     virtual void composeShader( Shader *shader ) { TriMeshActor::composeShader( shader ); }
   };
 

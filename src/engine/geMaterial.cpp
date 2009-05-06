@@ -13,6 +13,7 @@ namespace GE
   DEFINE_CLASS (MultiMaterial);
   DEFINE_CLASS (PhongMaterial);
   DEFINE_CLASS (DiffuseTexMat);
+  DEFINE_CLASS (NormalTexMat);
   
   /*
   ============================================
@@ -326,6 +327,7 @@ namespace GE
     luminosity = 0.0f;
     lighting = true;
     culling = true;
+    cell = false;
   }
 
   void StandardMaterial::setDiffuseColor(const Vector3 &color) {
@@ -399,6 +401,19 @@ namespace GE
   bool StandardMaterial::getCullBack() {
     return culling;
   }
+
+  void StandardMaterial::setCellShaded (bool enable) {
+    cell = enable;
+  }
+
+  bool StandardMaterial::getCellShaded () {
+    return cell;
+  }
+
+  void StandardMaterial::composeShader( Shader *shader )
+  {
+    shader->registerUniform( ShaderType::Fragment, DataUnit::Float, "uCellShading" );
+  }
   
   void StandardMaterial::begin ()
   {
@@ -419,15 +434,15 @@ namespace GE
     
     //Ambient color
     Vector4 ambient = ambientColor.xyz (1.0f);
-    glMaterialfv (GL_FRONT_AND_BACK, GL_AMBIENT, (Float*) &ambient);
+    glMaterialfv( GL_FRONT_AND_BACK, GL_AMBIENT, (Float*) &ambient );
     
     //Diffuse color
     Vector4 diffuse = diffuseColor.xyz (opacity);
-    glMaterialfv (GL_FRONT_AND_BACK, GL_DIFFUSE, (Float*) &diffuse);
+    glMaterialfv( GL_FRONT_AND_BACK, GL_DIFFUSE, (Float*) &diffuse );
 
-      //We want specularity to be aplied to texture colors too
-      GLint param = GL_SEPARATE_SPECULAR_COLOR;
-      glLightModeliv (GL_LIGHT_MODEL_COLOR_CONTROL, &param);
+    //We want specularity to be aplied to texture colors too
+    GLint param = GL_SEPARATE_SPECULAR_COLOR;
+    glLightModeliv( GL_LIGHT_MODEL_COLOR_CONTROL, &param );
 
     //Specularity
     //if (specularity > 0.0f) {
@@ -436,11 +451,11 @@ namespace GE
       
       //Specular color
       Vector4 spec = (specularColor * specularity).xyz(1);
-      glMaterialfv (GL_FRONT_AND_BACK, GL_SPECULAR, (Float*) &spec);
+      glMaterialfv( GL_FRONT_AND_BACK, GL_SPECULAR, (Float*) &spec );
       
       //GL uses an integer value for maximum glossiness
       int shininess = (int)(glossiness * _GL_MAX_SHININESS);
-      glMateriali (GL_FRONT_AND_BACK, GL_SHININESS, shininess);
+      glMateriali( GL_FRONT_AND_BACK, GL_SHININESS, shininess );
       /*
     }else{
       
@@ -449,6 +464,7 @@ namespace GE
       glMaterialfv (GL_FRONT_AND_BACK, GL_SPECULAR, (Float*)&specular);
     }*/
     
+    /*
     //Blending
     bool blend = false;
     
@@ -459,7 +475,8 @@ namespace GE
       glEnable (GL_BLEND);
       glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     }else glDisable (GL_BLEND);
-    
+    */
+
     //Back-face culling
     if(culling) {
       glEnable (GL_CULL_FACE);
@@ -470,9 +487,15 @@ namespace GE
     
     //Normalize all normals so
     //we can freely scale actors
-    glEnable( GL_NORMALIZE );
+    glEnable( GL_NORMALIZE ); 
+
+    //Lighting model
+    Shader *shader = Kernel::GetInstance()->getRenderer()->getCurrentShader();
+    Int32 uniCell = shader->getUniformID( "uCellShading" );
+    glUniform1f( uniCell, cell ? 1.0f : 0.0f );
   }
   
+
   /*
   ===============================================
   
@@ -679,10 +702,12 @@ namespace GE
 
   void DiffuseTexMat::composeShader (Shader *shader)
   {
+    StandardMaterial::composeShader( shader );
+
     shader->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "diffSampler" );
 
     shader->composeNodeNew( ShaderType::Fragment );
-    shader->composeNodeSocket( SocketFlow::In, ShaderData::TexCoord, 0 );
+    shader->composeNodeSocket( SocketFlow::In, ShaderData::TexCoord, DataSource::BuiltIn, 0 );
     shader->composeNodeSocket( SocketFlow::Out, ShaderData::Diffuse );
     shader->composeNodeCode( "outDiffuse = texture2D( diffSampler, inTexCoord0.xy );\n" );
     shader->composeNodeEnd();
@@ -696,17 +721,108 @@ namespace GE
     Int32 samplerID = shader->getUniformID( "diffSampler" );
     glUniform1i( samplerID, 0 );
 
-    glActiveTexture( GL_TEXTURE0 );
-    glBindTexture( GL_TEXTURE_2D, texDiffuse->getHandle() );
-    glEnable( GL_TEXTURE_2D );
+    if (texDiffuse != NULL)
+    {
+      glActiveTexture( GL_TEXTURE0 );
+      glBindTexture( GL_TEXTURE_2D, texDiffuse->getHandle() );
+      glEnable( GL_TEXTURE_2D );
+    }
   }
 
   void DiffuseTexMat::end()
   {
     StandardMaterial::end();
 
-    glActiveTexture( GL_TEXTURE0 );
-    glDisable( GL_TEXTURE_2D );
+    if (texDiffuse != NULL)
+    {
+      glActiveTexture( GL_TEXTURE0 );
+      glDisable( GL_TEXTURE_2D );
+    }
   }
+
+  /*
+  ============================================
+  
+  Uses texture for normal mapping
+  
+  ============================================*/
+
+
+  NormalTexMat::NormalTexMat()
+  {
+    texNormal = NULL;
+  }
+
+  void NormalTexMat::setNormalTexture (Texture *tex) {
+    texNormal = tex;
+  }
+
+  Texture* NormalTexMat::getNormalTexture () {
+    return texNormal;
+  }
+
+  void NormalTexMat::composeShader (Shader *shader)
+  {
+    StandardMaterial::composeShader( shader );
+    //DiffuseTexMaterial::composeShader( shader );
+
+    shader->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "normSampler" );
+
+    shader->composeNodeNew( ShaderType::Vertex );
+    shader->composeNodeSocket( SocketFlow::In, ShaderData::Tangent, DataSource::Attribute );
+    shader->composeNodeSocket( SocketFlow::Out, ShaderData::Tangent, DataSource::Attribute );
+    shader->composeNodeCode( "outTangent = normalize( gl_NormalMatrix * inTangent );\n" );
+    shader->composeNodeEnd();
+
+    shader->composeNodeNew( ShaderType::Vertex );
+    shader->composeNodeSocket( SocketFlow::In, ShaderData::Bitangent, DataSource::Attribute );
+    shader->composeNodeSocket( SocketFlow::Out, ShaderData::Bitangent, DataSource::Attribute );
+    shader->composeNodeCode( "outBitangent = normalize( gl_NormalMatrix * inBitangent );\n" );
+    shader->composeNodeEnd();
+
+    shader->composeNodeNew( ShaderType::Fragment );
+    shader->composeNodeSocket( SocketFlow::In, ShaderData::TexCoord, DataSource::BuiltIn, 0 );
+    shader->composeNodeSocket( SocketFlow::In, ShaderData::Tangent, DataSource::Attribute );
+    shader->composeNodeSocket( SocketFlow::In, ShaderData::Bitangent, DataSource::Attribute );
+    shader->composeNodeSocket( SocketFlow::In, ShaderData::Normal );
+    shader->composeNodeSocket( SocketFlow::Out, ShaderData::Normal );
+    shader->composeNodeCode(
+      "mat3 normMatrix = mat3( inTangent, inBitangent, inNormal);\n"
+      //"mat3 normMatrix = mat3( inBitangent, inTangent, inNormal);\n"
+      "vec3 normTexel = texture2D( normSampler, inTexCoord0.xy ).xyz;\n"
+      //"normTexel.y = -normTexel.y;\n"
+      //"normTexel.x = -normTexel.x;\n"
+      //"normTexel.z = -normTexel.z;\n"
+      "outNormal = normMatrix * ((normTexel * 2.0) - vec3(1.0,1.0,1.0));\n" );
+    shader->composeNodeEnd();
+  }
+
+  void NormalTexMat::begin()
+  {
+    DiffuseTexMat::begin();
+
+    Shader *shader = Kernel::GetInstance()->getRenderer()->getCurrentShader();
+    Int32 samplerID = shader->getUniformID( "normSampler" );
+    glUniform1i( samplerID, 1 );
+
+    if (texNormal != NULL)
+    {
+      glActiveTexture( GL_TEXTURE1 );
+      glBindTexture( GL_TEXTURE_2D, texNormal->getHandle() );
+      glEnable( GL_TEXTURE_2D );
+    }
+  }
+
+  void NormalTexMat::end()
+  {
+    DiffuseTexMat::end();
+
+    if (texNormal != NULL)
+    {
+      glActiveTexture( GL_TEXTURE1 );
+      glDisable( GL_TEXTURE_2D );
+    }
+  }
+
   
 }/* namespace GE */

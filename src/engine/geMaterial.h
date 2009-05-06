@@ -176,8 +176,12 @@ namespace GE
     Float luminosity;
     bool lighting;
     bool culling;
+    bool cell;
 
   public:
+
+    virtual ClassPtr getShaderComposingClass() { return Class(StandardMaterial); }
+    virtual void composeShader( Shader *shader );
     
     StandardMaterial();
     
@@ -207,6 +211,9 @@ namespace GE
 
     void setCullBack (bool enable);
     bool getCullBack ();
+
+    void setCellShaded (bool enable);
+    bool getCellShaded ();
     
     virtual void begin();
   };
@@ -311,6 +318,29 @@ namespace GE
 
     void setDiffuseTexture (Texture *tex);
     Texture *getDiffuseTexture ();
+
+    virtual void begin();
+    virtual void end();
+  };
+
+  class NormalTexMat : public DiffuseTexMat
+  {
+    DECLARE_SUBCLASS (NormalTexMat, StandardMaterial);
+    DECLARE_END;
+
+  private:
+
+    Texture *texNormal;
+
+  public:
+
+    virtual ClassPtr getShaderComposingClass() { return Class(NormalTexMat); }
+    virtual void composeShader( Shader *shader );
+
+    NormalTexMat();
+
+    void setNormalTexture (Texture *tex);
+    Texture *getNormalTexture ();
 
     virtual void begin();
     virtual void end();

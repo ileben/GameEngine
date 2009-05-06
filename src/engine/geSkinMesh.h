@@ -70,9 +70,9 @@ namespace GE
         addMember( VFMember( ShaderData::Normal, DataUnit::Vec3, sizeof(Vector3) ));
         addMember( VFMember( ShaderData::Coord, DataUnit::Vec3, sizeof(Vector3) ));
         addMember( VFMember( ShaderData::Attribute, DataUnit::UVec4, sizeof(Uint32)*4,
-                             "boneIndex", DataUnit::Vec4 ));
+                             "jointIndex", DataUnit::Vec4 ));
         addMember( VFMember( ShaderData::Attribute, DataUnit::Vec4, sizeof(Float32)*4,
-                             "boneWeight", DataUnit::Vec4 ));
+                             "jointWeight", DataUnit::Vec4 ));
       }
     };
   };
@@ -170,9 +170,9 @@ namespace GE
                              "boneIndex", DataUnit::Vec4 ));
         addMember( VFMember( ShaderData::Attribute, DataUnit::Vec4, sizeof(Float32)*4,
                              "boneWeight", DataUnit::Vec4 ));
-        addMember( VFMember( ShaderData::Custom,   DataUnit::Vec3, sizeof(Vector3),
+        addMember( VFMember( ShaderData::Attribute, DataUnit::Vec3, sizeof(Vector3),
                              "Tangent", DataUnit::Vec3 ));
-        addMember( VFMember( ShaderData::Custom,   DataUnit::Vec3, sizeof(Vector3),
+        addMember( VFMember( ShaderData::Attribute, DataUnit::Vec3, sizeof(Vector3),
                              "Bitangent", DataUnit::Vec3 ));
       }
     };

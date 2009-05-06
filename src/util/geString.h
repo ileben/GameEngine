@@ -1374,11 +1374,9 @@ namespace GE
     return BasicString<CharType>( cstr ) + str;
   }
   
-  
   typedef BasicString<char> CharString;
   typedef BasicString<Byte> ByteString;
   typedef BasicString<Unicode> String;
-
 
 }//namespace GE
 #endif//__GESTRING_H

@@ -25,6 +25,7 @@ global proc GCmdOpen()
   setParent GColMain; 
   frameLayout -label "Static Mesh \\ Skin Pose" -bv true -bs "etchedIn" -mh 10 -mw 10 -collapsable true; 
   columnLayout -columnAlign "left" -adjustableColumn true -rs 2 GColPose; 
+    checkBox -label "Export tangents" -onCommand "GCmdTangentsOn" -offCommand "GCmdTangentsOff" GChkTangents;
     checkBox -label "Export with skin" -onCommand "GCmdSkinOn" -offCommand "GCmdSkinOff" GChkSkin; 
     separator -height 10 -style "none"; 
     text -label "File name:"; 
