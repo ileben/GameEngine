@@ -99,10 +99,13 @@ namespace GE
     Int32 deferredSampler[5];
     Int32 deferredCastShadow;
     Int32 deferredWinSize;
-    Int32 ambientColorSampler;
+    Shader *shaderLightSpot;
 
     Shader *shaderAmbient;
-    Shader *shaderLightSpot;
+    Int32 ambientColorSampler;
+
+    Shader *shaderCell;
+    Int32 cellColorSampler;
     
     void updateBuffers ();
     void initBuffer (Uint *texID, Uint format, Uint attachment, bool gen=false);

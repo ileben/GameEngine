@@ -8,7 +8,8 @@
 #include "engine/geGLHeaders.h"
 #include "engine/actors/geSkinMeshActor.h"
 
-#include "engine/embedit/Ambient.embedded."
+#include "engine/embedit/Ambient.embedded"
+#include "engine/embedit/Cell.embedded"
 #include "engine/embedit/shadevert.SpotLight.embedded"
 #include "engine/embedit/shadefrag.SpotLight.embedded"
 
@@ -218,7 +219,7 @@ namespace GE
     initBuffer( &deferredMaps[ Deferred::Params ], GL_RGBA8, GL_COLOR_ATTACHMENT4 );
 
     //Generate deferred effects buffer
-    //initBuffer( &deferredEffects1, GL_RGBA16F, GL_COLOR_ATTACHMENT5, true );
+    initBuffer( &deferredEffects1, GL_RGBA16F, GL_COLOR_ATTACHMENT5, true );
 
     //Check framebuffer status
     GLenum status = glCheckFramebufferStatus( GL_FRAMEBUFFER );
@@ -233,6 +234,11 @@ namespace GE
       shaderAmbient->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
       shaderAmbient->fromString( Ambient_VertexSource, Ambient_FragmentSource );
       ambientColorSampler = shaderAmbient->getUniformID( "samplerColor" );
+
+      shaderCell = new Shader;
+      shaderCell->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
+      shaderCell->fromString( Cell_VertexSource, Cell_FragmentSource );
+      cellColorSampler = shaderCell->getUniformID( "samplerColor" );
 
       shaderLightSpot = new Shader;
       shaderLightSpot->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerNormal" );
@@ -354,7 +360,12 @@ namespace GE
   {
     //Clear the lighting accumulation texture
     glBindFramebuffer( GL_FRAMEBUFFER, deferredFB );
-    glDrawBuffer( GL_COLOR_ATTACHMENT0 );
+    glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
+    GLenum drawBuffers[] = {
+      GL_COLOR_ATTACHMENT0,
+      GL_COLOR_ATTACHMENT5 };
+    glDrawBuffers( 2, drawBuffers );
+    //glDrawBuffer( GL_COLOR_ATTACHMENT0 );
     glClear( GL_COLOR_BUFFER_BIT );
   }
 
@@ -560,6 +571,36 @@ namespace GE
 
       glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
       */
+
+      //Cell shading pass
+      shaderCell->use();
+      glDrawBuffer( GL_COLOR_ATTACHMENT5 );
+
+      glUniform1i( cellColorSampler, 0 );
+      glActiveTexture( GL_TEXTURE0 );
+      glBindTexture( GL_TEXTURE_2D, deferredAccum );
+      glEnable( GL_TEXTURE_2D );
+
+      glDisable( GL_BLEND );
+      glDisable( GL_LIGHTING );
+      glDisable( GL_CULL_FACE );
+
+      glEnable( GL_DEPTH_TEST );
+      glDepthFunc( GL_GREATER );
+      glDepthMask( GL_FALSE );
+
+      glBegin( GL_QUADS );
+      glTexCoord2f( 0, 0 ); glVertex3f( -1, -1, 1 );
+      glTexCoord2f( 1, 0 ); glVertex3f( +1, -1, 1 );
+      glTexCoord2f( 1, 1 ); glVertex3f( +1, +1, 1 );
+      glTexCoord2f( 0, 1 ); glVertex3f( -1, +1, 1 );
+      glEnd();
+
+      glDepthMask( GL_TRUE );
+      glDepthFunc( GL_LESS );
+
+      glActiveTexture( GL_TEXTURE0);
+      glDisable( GL_TEXTURE_2D );
     }
   }
 
@@ -575,7 +616,8 @@ namespace GE
     glColor3f( 1,1,1 );
 
     glActiveTexture( GL_TEXTURE0 );
-    glBindTexture( GL_TEXTURE_2D, deferredAccum );
+    glBindTexture( GL_TEXTURE_2D, deferredEffects1 );
+    //glBindTexture( GL_TEXTURE_2D, deferredAccum );
     glEnable( GL_TEXTURE_2D );
 
     glMatrixMode( GL_TEXTURE );

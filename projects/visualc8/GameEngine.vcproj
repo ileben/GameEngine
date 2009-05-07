@@ -501,6 +501,18 @@
 					</FileConfiguration>
 				</File>
 				<File
+					RelativePath="..\..\src\engine\embedit\Cell.c"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="Embedit"
+							Preprocess="true"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
 					RelativePath="..\..\src\engine\embedit\shadefrag.SpotLight.c"
 					>
 					<FileConfiguration

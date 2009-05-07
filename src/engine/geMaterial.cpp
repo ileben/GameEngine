@@ -412,12 +412,14 @@ namespace GE
 
   void StandardMaterial::composeShader( Shader *shader )
   {
-    shader->registerUniform( ShaderType::Fragment, DataUnit::Float, "uCellShading" );
+    uCellShading = shader->registerUniform( ShaderType::Fragment, DataUnit::Float, "uCellShading" );
+    uSpecularity = shader->registerUniform( ShaderType::Fragment, DataUnit::Float, "uSpecularity" );
   }
   
   void StandardMaterial::begin ()
   {
     Material::begin ();
+    Shader *shader = Kernel::GetInstance()->getRenderer()->getCurrentShader();
     
     //Lighting
     if (lighting)
@@ -448,9 +450,10 @@ namespace GE
     //if (specularity > 0.0f) {
       
 
+      glUniform1f( shader->getUniformID( uSpecularity ), specularity );
       
       //Specular color
-      Vector4 spec = (specularColor * specularity).xyz(1);
+      Vector4 spec = (specularColor).xyz(1);
       glMaterialfv( GL_FRONT_AND_BACK, GL_SPECULAR, (Float*) &spec );
       
       //GL uses an integer value for maximum glossiness
@@ -490,9 +493,7 @@ namespace GE
     glEnable( GL_NORMALIZE ); 
 
     //Lighting model
-    Shader *shader = Kernel::GetInstance()->getRenderer()->getCurrentShader();
-    Int32 uniCell = shader->getUniformID( "uCellShading" );
-    glUniform1f( uniCell, cell ? 1.0f : 0.0f );
+    glUniform1f( shader->getUniformID( uCellShading ), cell ? 1.0f : 0.0f );
   }
   
 

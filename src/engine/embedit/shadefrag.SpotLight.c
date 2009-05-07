@@ -35,6 +35,7 @@ void main (void)
 	vec3 Color = vec3( 0.0, 0.0, 0.0 );
 
   //Check if light is casting shadows
+  float shadowCoeff = 1.0;
   if (castShadow == 1)
   {
     //Transform point into light clip space
@@ -50,7 +51,7 @@ void main (void)
     if (shadowCoord.x >= 0.0 && shadowCoord.x <= 1.0 &&
         shadowCoord.y >= 0.0 && shadowCoord.y <= 1.0)
       if (shadowCoord.z > shadowValue.r)
-        { diffuse *= 0.0; specular *= 0.0; }
+        { shadowCoeff = 0.0; }
   }
 
   //Input vectors
@@ -61,9 +62,11 @@ void main (void)
 	float NdotL = max( dot(N,L), 0.0 );
 
   //Cell shading
-  if (paramTexel.x > 0.5)
-    NdotL = floor( NdotL * 2.0 + 0.5 ) / 2.0;
+  //if (paramTexel.x > 0.5)
+    //NdotL = floor( NdotL * 2.0 + 0.5 ) / 2.0;
 
+  float diffuseCoeff = 0.0;
+  float specCoeff = 0.0;
   if (NdotL > 0.0)
   {
     //Spotlight check
@@ -79,23 +82,25 @@ void main (void)
         spotCoeff = (LdotS - cosOuter) / (cosInner - cosOuter);
       
       //Diffuse color term (avoid going over the ambient term)
-      float diffuseCoeff = NdotL * spotCoeff * (1.0 - colorTexel.a);
+      //diffuseCoeff = NdotL * shadowCoeff * spotCoeff;
+      diffuseCoeff = NdotL * (1.0 - colorTexel.a) * shadowCoeff * spotCoeff;
       Color += diffuse * diffuseCoeff;
-      //Color += diffuse * NdotL * spotCoeff;
       
 		  //Phong specular coefficient
 		  vec3 E = - normalize( point );
 		  vec3 R = normalize( 2.0 * dot(L,N) * N  - L );
-		  float specCoeff = max( dot (R,E), 0.0 );
-		  specCoeff = pow( specCoeff, shininess );
+		  float shineCoeff = max( dot (R,E), 0.0 );
+		  shineCoeff = pow( shineCoeff, shininess );
 
       //Cell shading
-      if (paramTexel.x > 0.5)
-        specCoeff = floor( specCoeff + 0.5 ) * 0.5;
+      //if (paramTexel.x > 0.5)
+        //specCoeff = floor( specCoeff + 0.5 ) * 0.5;
 
-		  Color += specular * specCoeff * spotCoeff;
+      specCoeff = paramTexel.g * shineCoeff * shadowCoeff * spotCoeff;
+		  Color += specular * specCoeff;
 	  }
   }
 	
-	gl_FragColor = vec4( Color, 1.0 );
+	gl_FragColor = vec4( Color, diffuseCoeff + specCoeff );
+  //gl_FragColor = vec4( Color, diffuseCoeff );
 }

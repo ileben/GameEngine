@@ -549,8 +549,8 @@ int main (int argc, char **argv)
   ((StandardMaterial*)actorRender->getMaterial())->setCullBack(false);
   ((StandardMaterial*)actorRender->getMaterial())->setLuminosity(0.2f);
   ((StandardMaterial*)actorRender->getMaterial())->setDiffuseColor(Vector3(.7,.7,.7));
-  ((StandardMaterial*)actorRender->getMaterial())->setSpecularity(0.9f);
-  ((StandardMaterial*)actorRender->getMaterial())->setGlossiness(0.05f);
+  //((StandardMaterial*)actorRender->getMaterial())->setSpecularity(0.5f);
+  ((StandardMaterial*)actorRender->getMaterial())->setGlossiness(0.2f);
   ((StandardMaterial*)actorRender->getMaterial())->setCellShaded( true );
   
 /*

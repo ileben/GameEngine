@@ -177,6 +177,8 @@ namespace GE
     bool lighting;
     bool culling;
     bool cell;
+    Int32 uCellShading;
+    Int32 uSpecularity;
 
   public:
 
