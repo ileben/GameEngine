@@ -549,7 +549,7 @@ int main (int argc, char **argv)
   ((StandardMaterial*)actorRender->getMaterial())->setCullBack(false);
   ((StandardMaterial*)actorRender->getMaterial())->setLuminosity(0.2f);
   ((StandardMaterial*)actorRender->getMaterial())->setDiffuseColor(Vector3(.7,.7,.7));
-  ((StandardMaterial*)actorRender->getMaterial())->setSpecularity(3.0f);
+  ((StandardMaterial*)actorRender->getMaterial())->setSpecularity(1.0f);
   ((StandardMaterial*)actorRender->getMaterial())->setGlossiness(0.5f);
   ((StandardMaterial*)actorRender->getMaterial())->setCellShaded( true );
   
@@ -567,7 +567,7 @@ int main (int argc, char **argv)
   //Create floor cube
   StandardMaterial *matBox = new StandardMaterial;
   matBox->setSpecularity( 0.5 );
-  matBox->setDiffuseColor( Vector3(.6,.6,.6) );
+  matBox->setDiffuseColor( Vector3(2,2,2) );
 
   TriMesh *cubeMesh = new CubeMesh;
   TriMeshActor *cube = new TriMeshActor;
@@ -587,9 +587,11 @@ int main (int argc, char **argv)
 
   //Create lights
   light = new SpotLight( Vector3(-200,300,-200), Vector3(), 60, 0 );
+  //light = new SpotLight( Vector3(-200,150,200), Vector3(), 60, 0 );
+  //light = new SpotLight( Vector3(300,300,50), Vector3(), 60, 0 );
   light->setCastShadows( true );
   light->setDiffuseColor( Vector3(1,1,1) );
-  light->setSpecularColor( Vector3(3,3,3) );
+  light->setSpecularColor( Vector3(8,8,8) );
   light->lookInto( center );
   scene->addChild( light );
 
@@ -601,7 +603,7 @@ int main (int argc, char **argv)
   Light *light3 = new SpotLight( Vector3(-200,150,200), Vector3(), 60, 0 );
   light3->lookInto( center );
   light3->setDiffuseColor( Vector3(.5,.5,.5) );
-  scene->addChild( light3);
+  //scene->addChild( light3);
 
   cam3D = new Camera3D;
   cam3D->setCenter( center );

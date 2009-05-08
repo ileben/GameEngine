@@ -427,6 +427,7 @@ namespace GE
       uLuminosity = shader->getUniformID( "uLuminosity" );
       uSpecularity = shader->getUniformID( "uSpecularity" );
       uCellShading = shader->getUniformID( "uCellShading" );
+      gotUniforms = true;
     }
     
     //Lighting

@@ -24,11 +24,9 @@ void main (void)
     vec4 texel = texture2D( samplerColor, gl_TexCoord[0].xy + texOffset );
     float weight = (float(abs(r)) / float(radius));
     Color += (1.0 - weight) * texel.rgb;
-    //Color += texel.rgb * texel.a;
   }
 
   Color /= (float(radius)*2.0+1.0) * 0.5;
-  //Color *= 0.1;
 
   gl_FragColor = vec4( Color, 1.0 );
 }
