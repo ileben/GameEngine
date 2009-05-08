@@ -104,11 +104,28 @@ namespace GE
     Shader *shaderAmbient;
     Int32 ambientColorSampler;
 
+    Shader *shaderBloom;
+    Int32 bloomAccumSampler;
+
+    Uint32 blurFB;
+    Uint32 blurMaps[2];
+
+    Shader *shaderBlur;
+    Int32 blurColorSampler;
+    Int32 uBlurPixelSize;
+    Int32 uBlurDirection;
+    int blurW, blurH;
+
     Shader *shaderCell;
     Int32 cellColorSampler;
+
+    Shader *shaderFinal;
+    Int32 finalColorSampler;
+    Int32 finalEffectsSampler;
+
     
     void updateBuffers ();
-    void initBuffer (Uint *texID, Uint format, Uint attachment, bool gen=false);
+    void initBuffer (Uint *texID, Uint format, Uint attachment, bool gen=false, int W=-1, int H=-1);
     void traverseSceneNoMats (Scene *scene);
     void traverseSceneWithMats (Scene *scene);
     void renderShadowMap (Light *light, Scene *scene);

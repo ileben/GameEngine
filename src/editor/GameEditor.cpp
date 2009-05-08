@@ -549,8 +549,8 @@ int main (int argc, char **argv)
   ((StandardMaterial*)actorRender->getMaterial())->setCullBack(false);
   ((StandardMaterial*)actorRender->getMaterial())->setLuminosity(0.2f);
   ((StandardMaterial*)actorRender->getMaterial())->setDiffuseColor(Vector3(.7,.7,.7));
-  //((StandardMaterial*)actorRender->getMaterial())->setSpecularity(0.5f);
-  ((StandardMaterial*)actorRender->getMaterial())->setGlossiness(0.2f);
+  ((StandardMaterial*)actorRender->getMaterial())->setSpecularity(3.0f);
+  ((StandardMaterial*)actorRender->getMaterial())->setGlossiness(0.5f);
   ((StandardMaterial*)actorRender->getMaterial())->setCellShaded( true );
   
 /*
@@ -565,12 +565,13 @@ int main (int argc, char **argv)
   scene->addChild( actorRender );
 */
   //Create floor cube
-  StandardMaterial *matWhite = new StandardMaterial;
-  matWhite->setSpecularity( 0.5 );
+  StandardMaterial *matBox = new StandardMaterial;
+  matBox->setSpecularity( 0.5 );
+  matBox->setDiffuseColor( Vector3(.6,.6,.6) );
 
   TriMesh *cubeMesh = new CubeMesh;
   TriMeshActor *cube = new TriMeshActor;
-  cube->setMaterial( matWhite );
+  cube->setMaterial( matBox );
   cube->setMesh( cubeMesh );
   cube->scale( 300, 10, 300 );
   cube->translate( 0, -100, 0 );
@@ -581,18 +582,18 @@ int main (int argc, char **argv)
   axesMat.setUseLighting( false );
   AxisActor *axes = new AxisActor;
   axes->scale( 100 );
-  axes->setMaterial( matWhite );
+  axes->setMaterial( &axesMat );
   //scene->addChild( axes );
 
   //Create lights
   light = new SpotLight( Vector3(-200,300,-200), Vector3(), 60, 0 );
   light->setCastShadows( true );
+  light->setDiffuseColor( Vector3(1,1,1) );
+  light->setSpecularColor( Vector3(3,3,3) );
   light->lookInto( center );
-  //light->setDiffuseColor( Vector3(1,.8,.2) );
   scene->addChild( light );
 
   Light *light2 = new SpotLight( Vector3(300,300,50), Vector3(), 60, 0 );
-  //light2->setCastShadows( true );
   light2->lookInto( center );
   light2->setDiffuseColor( Vector3(.5,.5,1) );
   scene->addChild( light2);

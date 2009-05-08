@@ -501,7 +501,43 @@
 					</FileConfiguration>
 				</File>
 				<File
+					RelativePath="..\..\src\engine\embedit\Bloom.c"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="Embedit"
+							Preprocess="true"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\src\engine\embedit\Blur.c"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="Embedit"
+							Preprocess="true"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
 					RelativePath="..\..\src\engine\embedit\Cell.c"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="Embedit"
+							Preprocess="true"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\src\engine\embedit\Final.c"
 					>
 					<FileConfiguration
 						Name="Debug|Win32"

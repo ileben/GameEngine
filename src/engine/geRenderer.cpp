@@ -9,7 +9,10 @@
 #include "engine/actors/geSkinMeshActor.h"
 
 #include "engine/embedit/Ambient.embedded"
+#include "engine/embedit/Bloom.embedded"
+#include "engine/embedit/Blur.embedded"
 #include "engine/embedit/Cell.embedded"
+#include "engine/embedit/Final.embedded"
 #include "engine/embedit/shadevert.SpotLight.embedded"
 #include "engine/embedit/shadefrag.SpotLight.embedded"
 
@@ -169,13 +172,17 @@ namespace GE
     glDisable( GL_TEXTURE_2D );
   }
 
-  void Renderer::initBuffer (Uint *texID, Uint format, Uint attachment, bool gen)
+  void Renderer::initBuffer (Uint *texID, Uint format, Uint attachment, bool gen, int W, int H)
   {
+    if (W == -1) W = winW;
+    if (H == -1) H = winH;
     if (gen) glGenTextures( 1, texID );
     glBindTexture( GL_TEXTURE_2D, *texID );
-    glTexImage2D( GL_TEXTURE_2D, 0, format, winW, winH, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL );
+    glTexImage2D( GL_TEXTURE_2D, 0, format, W, H, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
     glFramebufferTexture2D( GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, *texID, 0 );
   }
 
@@ -189,6 +196,11 @@ namespace GE
       glDeleteRenderbuffers( 1, &deferredDepth );
       glDeleteTextures( 1, &deferredAccum );
       glDeleteTextures( GE_NUM_GBUFFERS, deferredMaps );
+      glDeleteTextures( 1, &deferredEffects1 );
+
+      glDeleteFramebuffers( 1, &blurFB );
+      glDeleteTextures( 1, &blurMaps[0] );
+      glDeleteTextures( 1, &blurMaps[1] );
     };
 
     //Generate deferred framebuffer
@@ -216,15 +228,38 @@ namespace GE
     initBuffer( &deferredMaps[ Deferred::Normal ], GL_RGBA16F, GL_COLOR_ATTACHMENT1 );
     initBuffer( &deferredMaps[ Deferred::Color ], GL_RGBA8, GL_COLOR_ATTACHMENT2 );
     initBuffer( &deferredMaps[ Deferred::Specular ], GL_RGBA8, GL_COLOR_ATTACHMENT3 );
-    initBuffer( &deferredMaps[ Deferred::Params ], GL_RGBA8, GL_COLOR_ATTACHMENT4 );
-
-    //Generate deferred effects buffer
-    initBuffer( &deferredEffects1, GL_RGBA16F, GL_COLOR_ATTACHMENT5, true );
+    initBuffer( &deferredMaps[ Deferred::Params ], GL_RGBA16F, GL_COLOR_ATTACHMENT4 );
 
     //Check framebuffer status
     GLenum status = glCheckFramebufferStatus( GL_FRAMEBUFFER );
     if (status != GL_FRAMEBUFFER_COMPLETE)
       printf( "Deferred framebuffer INCOMPLETE! (status: 0x%x)\n", (int)status );
+    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+
+    //Generate blur buffers
+    blurW = blurH = 256;
+    //blurW = winW;
+    //blurH = winH;
+
+    glGenFramebuffers( 1, &blurFB );
+    glBindFramebuffer( GL_FRAMEBUFFER, blurFB );
+
+    initBuffer( &deferredEffects1, GL_RGBA16F, GL_COLOR_ATTACHMENT2, true, blurW, blurH );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+
+    initBuffer( &blurMaps[0], GL_RGBA16F, GL_COLOR_ATTACHMENT0, true, blurW, blurH );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+    
+    initBuffer( &blurMaps[1], GL_RGBA16F, GL_COLOR_ATTACHMENT1, true, blurW, blurH );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+
+    //Check framebuffer status
+    status = glCheckFramebufferStatus( GL_FRAMEBUFFER );
+    if (status != GL_FRAMEBUFFER_COMPLETE)
+      printf( "Blur framebuffer INCOMPLETE! (status: 0x%x)\n", (int)status );
     glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 
     //Load deferred light shader once
@@ -235,10 +270,31 @@ namespace GE
       shaderAmbient->fromString( Ambient_VertexSource, Ambient_FragmentSource );
       ambientColorSampler = shaderAmbient->getUniformID( "samplerColor" );
 
+      shaderBloom = new Shader;
+      shaderBloom->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerAccum" );
+      shaderBloom->fromString( Bloom_VertexSource, Bloom_FragmentSource );
+      bloomAccumSampler = shaderBloom->getUniformID( "samplerAccum" );
+
       shaderCell = new Shader;
       shaderCell->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
       shaderCell->fromString( Cell_VertexSource, Cell_FragmentSource );
       cellColorSampler = shaderCell->getUniformID( "samplerColor" );
+
+      shaderBlur = new Shader;
+      shaderBlur->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
+      shaderBlur->registerUniform( ShaderType::Fragment, DataUnit::Vec2, "pixelSize" );
+      shaderBlur->registerUniform( ShaderType::Fragment, DataUnit::Vec2, "direction" );
+      shaderBlur->fromString( Blur_VertexSource, Blur_FragmentSource );
+      blurColorSampler = shaderBlur->getUniformID( "samplerColor" );
+      uBlurPixelSize = shaderBlur->getUniformID( "pixelSize" );
+      uBlurDirection = shaderBlur->getUniformID( "direction" );
+
+      shaderFinal = new Shader;
+      shaderFinal->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
+      shaderFinal->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerEffects" );
+      shaderFinal->fromString( Final_VertexSource, Final_FragmentSource );
+      finalColorSampler = shaderFinal->getUniformID( "samplerColor" );
+      finalEffectsSampler = shaderFinal->getUniformID( "samplerEffects" );
 
       shaderLightSpot = new Shader;
       shaderLightSpot->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerNormal" );
@@ -364,8 +420,8 @@ namespace GE
     GLenum drawBuffers[] = {
       GL_COLOR_ATTACHMENT0,
       GL_COLOR_ATTACHMENT5 };
-    glDrawBuffers( 2, drawBuffers );
-    //glDrawBuffer( GL_COLOR_ATTACHMENT0 );
+    //glDrawBuffers( 2, drawBuffers );
+    glDrawBuffer( GL_COLOR_ATTACHMENT0 );
     glClear( GL_COLOR_BUFFER_BIT );
   }
 
@@ -393,6 +449,9 @@ namespace GE
     glDrawBuffers( 4, drawBuffers );
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
     glViewport( viewX, viewY, viewW, viewH );
+
+    glEnable( GL_DEPTH_TEST );
+    glDisable( GL_BLEND );
 
     traverseSceneWithMats( scene );
 
@@ -560,10 +619,11 @@ namespace GE
       /*
       //Draw light volume
       glUseProgram( 0 );
-      glEnable( GL_DEPTH_TEST );
+      glDisable( GL_DEPTH_TEST );
       glEnable( GL_CULL_FACE );
       glDisable( GL_BLEND );
       glDisable( GL_LIGHTING );
+      glEnable( GL_COLOR_MATERIAL );
       glColor3f( 0,0,1 );
       glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
@@ -571,54 +631,18 @@ namespace GE
 
       glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
       */
-
-      //Cell shading pass
-      shaderCell->use();
-      glDrawBuffer( GL_COLOR_ATTACHMENT5 );
-
-      glUniform1i( cellColorSampler, 0 );
-      glActiveTexture( GL_TEXTURE0 );
-      glBindTexture( GL_TEXTURE_2D, deferredAccum );
-      glEnable( GL_TEXTURE_2D );
-
-      glDisable( GL_BLEND );
-      glDisable( GL_LIGHTING );
-      glDisable( GL_CULL_FACE );
-
-      glEnable( GL_DEPTH_TEST );
-      glDepthFunc( GL_GREATER );
-      glDepthMask( GL_FALSE );
-
-      glBegin( GL_QUADS );
-      glTexCoord2f( 0, 0 ); glVertex3f( -1, -1, 1 );
-      glTexCoord2f( 1, 0 ); glVertex3f( +1, -1, 1 );
-      glTexCoord2f( 1, 1 ); glVertex3f( +1, +1, 1 );
-      glTexCoord2f( 0, 1 ); glVertex3f( -1, +1, 1 );
-      glEnd();
-
-      glDepthMask( GL_TRUE );
-      glDepthFunc( GL_LESS );
-
-      glActiveTexture( GL_TEXTURE0);
-      glDisable( GL_TEXTURE_2D );
     }
   }
 
   void Renderer::endDeferred()
   {
-    //Transfer the image into the window buffer
-    glUseProgram( 0 );
-    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+    //////////////////////////////////////////
+
     glDisable( GL_LIGHTING );
     glDisable( GL_BLEND );
     glDisable( GL_DEPTH_TEST );
     glDisable( GL_CULL_FACE );
     glColor3f( 1,1,1 );
-
-    glActiveTexture( GL_TEXTURE0 );
-    glBindTexture( GL_TEXTURE_2D, deferredEffects1 );
-    //glBindTexture( GL_TEXTURE_2D, deferredAccum );
-    glEnable( GL_TEXTURE_2D );
 
     glMatrixMode( GL_TEXTURE );
     glLoadIdentity();
@@ -626,7 +650,44 @@ namespace GE
     glLoadIdentity();
     glMatrixMode( GL_MODELVIEW );
     glLoadIdentity();
-    
+
+    //////////////////////////////////////////
+
+    glViewport( 0,0,blurW,blurH );
+
+    shaderBloom->use();
+
+    glBindFramebuffer( GL_FRAMEBUFFER, blurFB );
+    glDrawBuffer( GL_COLOR_ATTACHMENT2 );
+
+    glUniform1i( bloomAccumSampler, 0 );
+    glActiveTexture( GL_TEXTURE0 );
+    glBindTexture( GL_TEXTURE_2D, deferredAccum );
+    glEnable( GL_TEXTURE_2D );
+
+    glBegin( GL_QUADS );
+    glTexCoord2f( 0, 0 ); glVertex3f( -1, -1, 1 );
+    glTexCoord2f( 1, 0 ); glVertex3f( +1, -1, 1 );
+    glTexCoord2f( 1, 1 ); glVertex3f( +1, +1, 1 );
+    glTexCoord2f( 0, 1 ); glVertex3f( -1, +1, 1 );
+    glEnd();
+
+    ////////////////////////////////////////
+  
+    glViewport( 0,0,blurW,blurH );
+
+    shaderBlur->use();
+    glUniform2f( uBlurPixelSize, 1.0/blurW, 1.0/blurH);
+    glUniform2f( uBlurDirection, 1.0, 0.0 );
+
+    glBindFramebuffer( GL_FRAMEBUFFER, blurFB );
+    glDrawBuffer( GL_COLOR_ATTACHMENT0 );
+
+    glUniform1i( blurColorSampler, 0 );
+    glActiveTexture( GL_TEXTURE0 );
+    glBindTexture( GL_TEXTURE_2D, deferredEffects1 );
+    glEnable( GL_TEXTURE_2D );
+
     glBegin( GL_QUADS );
     glTexCoord2f( 0, 0 ); glVertex2f( -1, -1 );
     glTexCoord2f( 1, 0 ); glVertex2f( +1, -1 );
@@ -634,6 +695,56 @@ namespace GE
     glTexCoord2f( 0, 1 ); glVertex2f( -1, +1 );
     glEnd();
 
+    ////////////////////////////////////////
+
+    glViewport( 0,0,blurW,blurH );
+    glUniform2f( uBlurPixelSize, 1.0/blurW, 1.0/blurH);
+    glUniform2f( uBlurDirection, 0.0, 1.0 );
+
+    glDrawBuffer( GL_COLOR_ATTACHMENT1 );
+
+    glUniform1i( blurColorSampler, 0 );
+    glActiveTexture( GL_TEXTURE0 );
+    glBindTexture( GL_TEXTURE_2D, blurMaps[0] );
+    glEnable( GL_TEXTURE_2D );
+
+    glBegin( GL_QUADS );
+    glTexCoord2f( 0, 0 ); glVertex2f( -1, -1 );
+    glTexCoord2f( 1, 0 ); glVertex2f( +1, -1 );
+    glTexCoord2f( 1, 1 ); glVertex2f( +1, +1 );
+    glTexCoord2f( 0, 1 ); glVertex2f( -1, +1 );
+    glEnd();
+
+    ////////////////////////////////////////
+
+    glViewport( viewX, viewY, viewW, viewH);
+
+    shaderFinal->use();
+    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+
+    glUniform1i( finalColorSampler, 0 );
+    glActiveTexture( GL_TEXTURE0 );
+    glBindTexture( GL_TEXTURE_2D, deferredAccum );
+    glEnable( GL_TEXTURE_2D );
+
+    glUniform1i( finalEffectsSampler, 1 );
+    glActiveTexture( GL_TEXTURE1 );
+    glBindTexture( GL_TEXTURE_2D, blurMaps[1] );
+    //glBindTexture( GL_TEXTURE_2D, deferredEffects1 );
+    glEnable( GL_TEXTURE_2D );
+
+    glBegin( GL_QUADS );
+    glTexCoord2f( 0, 0 ); glVertex2f( -1, -1 );
+    glTexCoord2f( 1, 0 ); glVertex2f( +1, -1 );
+    glTexCoord2f( 1, 1 ); glVertex2f( +1, +1 );
+    glTexCoord2f( 0, 1 ); glVertex2f( -1, +1 );
+    glEnd();
+
+    ////////////////////////////////////////
+
+    glActiveTexture( GL_TEXTURE1);
+    glDisable( GL_TEXTURE_2D );
+    glActiveTexture( GL_TEXTURE0);
     glDisable( GL_TEXTURE_2D );
   }
 

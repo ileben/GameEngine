@@ -14,6 +14,7 @@ namespace GE
     shadowsOn = false;
     diffuseColor.set( .9f, .9f, .9f );
     shadowColor.set( .2f, .2f, .2f );
+    specularColor.set( 1, 1, 1);
     setIsRenderable( false );
     volumeDLinit = false;
     attenuationEnd = 1000.0f;
@@ -36,12 +37,20 @@ namespace GE
     diffuseColor = c;
   }
 
-  void Light::setShadowColor (const Vector3 &c) {
-    shadowColor = c;
-  }
-
   const Vector3& Light::getDiffuseColor () {
     return diffuseColor;
+  }
+
+  void Light::setSpecularColor (const Vector3 &c) {
+    specularColor = c;
+  }
+
+  const Vector3& Light::getSpecularColor () {
+    return specularColor;
+  }
+
+  void Light::setShadowColor (const Vector3 &c) {
+    shadowColor = c;
   }
 
   const Vector3& Light::getShadowColor () {
@@ -118,10 +127,12 @@ namespace GE
   {
     GLfloat ambient[4] = {0.2f,0.2f,0.2f, 1.0f};
     GLfloat diffuse[4] = {diffuseColor.x, diffuseColor.y, diffuseColor.z, 1.0f};
+    GLfloat specular[4] = {specularColor.x, specularColor.y, specularColor.z, 1.0f};
     
     glEnable( GL_LIGHT0 + index );
     glLightfv( GL_LIGHT0 + index, GL_AMBIENT, ambient );
     glLightfv( GL_LIGHT0 + index, GL_DIFFUSE, diffuse );
+    glLightfv( GL_LIGHT0 + index, GL_SPECULAR, specular );
   }
 
   void DirLight::enable (int index)

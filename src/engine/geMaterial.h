@@ -177,8 +177,11 @@ namespace GE
     bool lighting;
     bool culling;
     bool cell;
-    Int32 uCellShading;
+
+    Int32 uLuminosity;
     Int32 uSpecularity;
+    Int32 uCellShading;
+    bool gotUniforms;
 
   public:
 
@@ -218,6 +221,63 @@ namespace GE
     bool getCellShaded ();
     
     virtual void begin();
+  };
+
+  /*
+  ============================================
+  
+  Uses a texture for diffuse color
+  
+  ============================================*/
+
+  class DiffuseTexMat : public StandardMaterial
+  {
+    DECLARE_SUBCLASS (DiffuseTexMat, StandardMaterial);
+    DECLARE_END;
+
+  private:
+
+    Texture *texDiffuse;
+    Int32 uDiffSampler;
+    bool gotUniforms;
+
+  public:
+
+    virtual ClassPtr getShaderComposingClass() { return Class(DiffuseTexMat); }
+    virtual void composeShader( Shader *shader );
+
+    DiffuseTexMat();
+
+    void setDiffuseTexture (Texture *tex);
+    Texture *getDiffuseTexture ();
+
+    virtual void begin();
+    virtual void end();
+  };
+
+  class NormalTexMat : public DiffuseTexMat
+  {
+    DECLARE_SUBCLASS (NormalTexMat, StandardMaterial);
+    DECLARE_END;
+
+  private:
+
+    Texture *texNormal;
+    Int32 uNormSampler;
+    bool gotUniforms;
+
+  public:
+
+    virtual ClassPtr getShaderComposingClass() { return Class(NormalTexMat); }
+    virtual void composeShader( Shader *shader );
+
+    NormalTexMat();
+
+    void setNormalTexture (Texture *tex);
+    Texture *getNormalTexture ();
+
+    virtual void begin();
+    virtual void end();
   };
 
   /*
@@ -293,59 +353,6 @@ namespace GE
     Texture *getSpecularityTexture ();
     
     virtual void begin ();
-  };
-
-  /*
-  ============================================
-  
-  Uses a texture for diffuse color
-  
-  ============================================*/
-
-  class DiffuseTexMat : public StandardMaterial
-  {
-    DECLARE_SUBCLASS (DiffuseTexMat, StandardMaterial);
-    DECLARE_END;
-
-  private:
-
-    Texture *texDiffuse;
-
-  public:
-
-    virtual ClassPtr getShaderComposingClass() { return Class(DiffuseTexMat); }
-    virtual void composeShader( Shader *shader );
-
-    DiffuseTexMat();
-
-    void setDiffuseTexture (Texture *tex);
-    Texture *getDiffuseTexture ();
-
-    virtual void begin();
-    virtual void end();
-  };
-
-  class NormalTexMat : public DiffuseTexMat
-  {
-    DECLARE_SUBCLASS (NormalTexMat, StandardMaterial);
-    DECLARE_END;
-
-  private:
-
-    Texture *texNormal;
-
-  public:
-
-    virtual ClassPtr getShaderComposingClass() { return Class(NormalTexMat); }
-    virtual void composeShader( Shader *shader );
-
-    NormalTexMat();
-
-    void setNormalTexture (Texture *tex);
-    Texture *getNormalTexture ();
-
-    virtual void begin();
-    virtual void end();
   };
   
   

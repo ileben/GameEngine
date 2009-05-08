@@ -16,6 +16,7 @@ namespace GE
   protected:
     bool shadowsOn;
     Vector3 diffuseColor;
+    Vector3 specularColor;
     Vector3 shadowColor;
 
     Float attenuationEnd;
@@ -30,8 +31,12 @@ namespace GE
     bool getCastShadows ();
 
     void setDiffuseColor (const Vector3 &color);
-    void setShadowColor (const Vector3 &color);
     const Vector3& getDiffuseColor ();
+
+    void setSpecularColor (const Vector3 &color);
+    const Vector3& getSpecularColor ();
+
+    void setShadowColor (const Vector3 &color);
     const Vector3& getShadowColor ();
 
     void setDirection (const Vector3 &dir);

@@ -15,6 +15,7 @@ void main (void)
   vec4 colorTexel = texture2D( samplerColor, texCoord );
   vec4 specTexel = texture2D( samplerSpec, texCoord );
   vec4 paramTexel = texture2D( samplerParams, texCoord );
+  float luminosity = colorTexel.a * 2.0;
 
   //Calculate eye-space point from eye-z coord
   Float eyeZ =  normalTexel.w;
@@ -62,7 +63,7 @@ void main (void)
 	float NdotL = max( dot(N,L), 0.0 );
 
   //Cell shading
-  //if (paramTexel.x > 0.5)
+  //if (paramTexel[1] > 0.5)
     //NdotL = floor( NdotL * 2.0 + 0.5 ) / 2.0;
 
   float diffuseCoeff = 0.0;
@@ -83,7 +84,8 @@ void main (void)
       
       //Diffuse color term (avoid going over the ambient term)
       //diffuseCoeff = NdotL * shadowCoeff * spotCoeff;
-      diffuseCoeff = NdotL * (1.0 - colorTexel.a) * shadowCoeff * spotCoeff;
+      float luminosityCoeff = (1.0 - min( luminosity, 1.0 ));
+      diffuseCoeff = NdotL * luminosityCoeff * shadowCoeff * spotCoeff;
       Color += diffuse * diffuseCoeff;
       
 		  //Phong specular coefficient
@@ -93,14 +95,15 @@ void main (void)
 		  shineCoeff = pow( shineCoeff, shininess );
 
       //Cell shading
-      //if (paramTexel.x > 0.5)
+      //if (paramTexel[1] > 0.5)
         //specCoeff = floor( specCoeff + 0.5 ) * 0.5;
 
-      specCoeff = paramTexel.g * shineCoeff * shadowCoeff * spotCoeff;
+      //specCoeff = shineCoeff * shadowCoeff * spotCoeff;
+      specCoeff = paramTexel[0] * shineCoeff * shadowCoeff * spotCoeff;
 		  Color += specular * specCoeff;
 	  }
   }
 	
-	gl_FragColor = vec4( Color, diffuseCoeff + specCoeff );
-  //gl_FragColor = vec4( Color, diffuseCoeff );
+	//gl_FragColor = vec4( Color, diffuseCoeff * 0.7 + specCoeff * 2.0 );
+  gl_FragColor = vec4( Color, diffuseCoeff + specCoeff );
 }
