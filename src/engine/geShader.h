@@ -166,7 +166,9 @@ namespace GE
     Node *newShaderNode;
     LinkedList< Node* > vertShaderNodes;
     LinkedList< Node* > fragShaderNodes;
-    
+    ArrayList<Uniform> uniforms;
+    ArrayList<VertexAttrib> attribs;
+
     void findNodesForSockets (LinkedList<Socket> *requiredSocks,
                               LinkedList<Node*> *availableNodes,
                               LinkedList<Socket> *satisfiedSocks,
@@ -179,19 +181,20 @@ namespace GE
                              const CharString &code,
                              ShaderType::Enum target);
     
-    GLShader  *vertex;
-    GLShader  *fragment;
+    ArrayList< GLShader* > vertShaders;
+    ArrayList< GLShader* > fragShaders;
     GLProgram *program;
-    ArrayList<Uniform> uniforms;
-    ArrayList<VertexAttrib> attribs;
-    
-    void freeProgram ();
+    void attachShaders ();
+    void detachShaders ();
+    void deleteShaders ();
+    void deleteProgram ();
     
   public:
     
     Shader ();
     virtual ~Shader ();
 
+    //Use this before any method of shader compilation
     Int32 registerVertexAttrib (const DataUnit &unit,
                                 const CharString &name);
 
@@ -200,6 +203,7 @@ namespace GE
                            const CharString &name,
                            Uint32 count=1);
 
+    //Used for automatic shader compositing
     void composeNodeNew (ShaderType::Enum location);
     void composeNodeCode (const CharString &code);
     void composeNodeEnd ();
@@ -218,21 +222,31 @@ namespace GE
 
     bool compose (RenderTarget::Enum target);
 
+    //Used for linking of multiple vertex/fragment sources
+    bool compile (ShaderType::Enum target,
+                  const CharString &source);
+    bool link();
 
-    Int32 getVertexAttribID (UintSize index);
-    Int32 getVertexAttribID (const CharString &name);
-    Int32 getUniformID (UintSize index);
-    Int32 getUniformID (const CharString &name);
-
+    //Used for single vertex/fragment source case
     bool fromString (const CharString &strVertex,
                      const CharString &strFragment);
 
     bool fromFile (const String &fileVertex,
                    const String &fileFragment);
+
+    UintSize getNumVertexShaders ();
+    UintSize getNumFragmentShaders ();
+    const GLShader* getVertex (UintSize index);
+    const GLShader* getFragment (UintSize index);
+    const GLProgram* getProgram ();
+
+    Int32 getVertexAttribID (UintSize index);
+    Int32 getVertexAttribID (const CharString &name);
+    Int32 getUniformID (UintSize index);
+    Int32 getUniformID (const CharString &name);
     
     UintSize getUniformCount ();
     Uniform& getUniform (UintSize index);
-    const GLProgram* getGLProgram ();
     void use ();
   };
 }

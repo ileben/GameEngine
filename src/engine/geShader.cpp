@@ -11,93 +11,108 @@ namespace GE
   
   Shader::Shader ()
   {
-    vertex = NULL;
-    fragment = NULL;
     program = NULL;
     newShaderNode = NULL;
   }
   
   Shader::~Shader ()
   {
-    freeProgram ();
+    detachShaders();
+    deleteShaders();
+    deleteProgram();
   }
   
-  void Shader::freeProgram ()
+  void Shader::deleteProgram ()
   {
     if (program != NULL)
-    {
-      program->detach( ShaderType::Vertex );
-      program->detach( ShaderType::Fragment );
+    { 
       delete program;
+      program = NULL;
     }
-    
-    if (vertex != NULL)
-      delete vertex;
-    
-    if (fragment != NULL)
-      delete fragment;
   }
 
-  bool Shader::fromString (const CharString &strVertex,
-                           const CharString &strFragment)
+  void Shader::deleteShaders ()
   {
-    freeProgram ();
-    
-    //Create program and shader objects
+    for (UintSize v=0; v<vertShaders.size(); ++v)
+      delete vertShaders[v];
+    vertShaders.clear();
+
+    for (UintSize f=0; f<fragShaders.size(); ++f)
+      delete fragShaders[f];
+    fragShaders.clear();
+  }
+
+  void Shader::attachShaders ()
+  {
+    if (program == NULL) return;
+
+    for (UintSize v=0; v<vertShaders.size(); ++v)
+      program->attach( vertShaders[v] );
+    for (UintSize f=0; f<fragShaders.size(); ++f)
+      program->attach( fragShaders[f] );
+  }
+
+  void Shader::detachShaders ()
+  {
+    if (program == NULL) return;
+
+    for (UintSize v=0; v<vertShaders.size(); ++v)
+      program->detach( vertShaders[v] );
+    for (UintSize f=0; f<fragShaders.size(); ++f)
+      program->detach( fragShaders[f] );
+  }
+
+  bool Shader::compile (ShaderType::Enum target, const CharString &source)
+  {
+    //Make sure old shaders are detached
+    detachShaders();
+
+    //Create a new shader
+    GLShader *shader = new GLShader;
+    shader->create( target );
+
+    //Add to shader list
+    switch (target) {
+    case ShaderType::Vertex:
+      vertShaders.pushBack( shader ); break;
+    case ShaderType::Fragment:
+      fragShaders.pushBack( shader ); break; }
+
+    //Compile the source
+    bool status = shader->compile( source );
+
+    if (status)
+      printf( "%s shader compiledd.\n",
+        target == ShaderType::Vertex ? "Vertex" : "Fragment" );
+    else
+      printf( "Failed compiling %s shader!",
+        target == ShaderType::Vertex ? "vertex" : "fragment" );
+
+    CharString infoLog = shader->getInfoLog ();
+    if (infoLog.length() > 0)
+      printf ("Info Log:\n%s\n", infoLog.buffer());
+
+    return status;
+  }
+
+  bool Shader::link()
+  {
+    //Create a new program
+    deleteProgram();
     program = new GLProgram;
-    vertex = new GLShader;
-    fragment = new GLShader;
-    CharString infoLog;
-    bool status;
+    program->create();
 
-    program->create ();
-    vertex->create( ShaderType::Vertex );
-    fragment->create( ShaderType::Fragment );
+    //Attach all the shaders and link the program
+    attachShaders();
+    bool status = program->link();
 
-    vertex->fromString( strVertex.buffer() );
-    fragment->fromString( strFragment.buffer() );
-
-    //Compile vertex shader
-    status = vertex->compile ();
     if (status)
-      printf ("Vertex shader compiled.\n");
-    else printf ("Failed compiling vertex shader!");
-
-    infoLog = vertex->getInfoLog ();
-    if (infoLog.length() > 0)
-      printf ("Info Log:\n%s\n", infoLog.buffer());
-
-    if (!status)
-      return false;
-    
-    //Compile fragment shader
-    status = fragment->compile();
-    if (status)
-      printf ("Fragment shader compiled.\n");
-    else printf ("Failed compiling fragment shader!\n");
-
-    infoLog = fragment->getInfoLog ();
-    if (infoLog.length() > 0)
-      printf ("Info Log:\n%s\n", infoLog.buffer());
-
-    if (!status)
-      return false;
-
-    //Link shading program
-    program->attach( vertex );
-    program->attach( fragment );
-    
-    status = program->link();
-    if (status)
-      printf ("Shading program linked.\n");
+      printf ("Shading program linkedd.\n");
     else printf ("Failed linking shading program!\n");
 
-    infoLog = program->getInfoLog ();
+    CharString infoLog = program->getInfoLog ();
     if (infoLog.length() > 0)
       printf ("Info Log:\n%s\n", infoLog.buffer());
-
-    if (!status)
-      return false;
 
     //Query attribute locations
     for (UintSize a=0; a<attribs.size(); ++a)
@@ -107,14 +122,29 @@ namespace GE
     for (UintSize u=0; u<uniforms.size(); ++u)
       uniforms[u].ID = program->getUniform( uniforms[u].name.buffer() );
 
+    return status;
+  }
+
+  bool Shader::fromString (const CharString &strVertex,
+                           const CharString &strFragment)
+  {
+    //Compile and link the source
+
+    if (!compile( ShaderType::Vertex, strVertex ))
+      return false;
+
+    if (!compile( ShaderType::Fragment, strFragment ))
+      return false;
+
+    if (!link())
+      return false;
+
     return true;
   }
-  
+
   bool Shader::fromFile (const String &fileNameVertex,
                          const String &fileNameFragment)
   {
-    freeProgram ();
-
     //Open the vertex file
     File fileVertex( fileNameVertex );
     if (!fileVertex.open( "rb" )) {
@@ -620,6 +650,28 @@ namespace GE
     return fromString( vertShaderStr, fragShaderStr );
   }
 
+  UintSize Shader::getNumVertexShaders () {
+    return vertShaders.size();
+  }
+
+  UintSize Shader::getNumFragmentShaders () {
+    return fragShaders.size();
+  }
+
+  const GLShader* Shader::getVertex (UintSize index) {
+    if (index > vertShaders.size()) return NULL;
+    return vertShaders[ index ];
+  }
+
+  const GLShader* Shader::getFragment (UintSize index) {
+    if (index > fragShaders.size()) return NULL;
+    return fragShaders[ index ];
+  }
+
+  const GLProgram* Shader::getProgram() {
+    return program;
+  }
+
   Int32 Shader::getVertexAttribID (UintSize index)
   {
     if (index > attribs.size()) return -1;
@@ -664,11 +716,6 @@ namespace GE
   {
     if (program != NULL)
       program->use ();
-  }
-
-  const GLProgram* Shader::getGLProgram()
-  {
-    return program;
   }
   
 }//namespace GE

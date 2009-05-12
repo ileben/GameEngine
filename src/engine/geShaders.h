@@ -20,7 +20,7 @@ namespace GE
     {
       Vertex     =  0,
       Fragment   =  1,
-      Invalid    =  2
+      Any        =  2
     };};
 
   class GE_API_ENTRY GLShader
@@ -36,9 +36,7 @@ namespace GE
     GLShader ();
     virtual ~GLShader ();
     void create (ShaderType::Enum type);
-    void fromString (const char *code);
-    bool fromFile (const String &file);
-    bool compile ();
+    bool compile (const CharString &source);
     CharString getInfoLog ();
   };
 
@@ -52,17 +50,15 @@ namespace GE
     
   protected:
     Uint32 handle;
-    GLShader *vertex;
-    GLShader *fragment;
    
   public:
     GLProgram ();
     virtual ~GLProgram ();
+    
     void create ();
     void attach (GLShader *s);
-    void detach (ShaderType::Enum which);
-    GLShader* getVertex ();
-    GLShader* getFragment ();
+    void detach (GLShader *s);
+
     bool link ();
     CharString getInfoLog ();
     void use ();

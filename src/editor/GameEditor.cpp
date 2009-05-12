@@ -179,6 +179,28 @@ void keyboard (unsigned char key, int x, int y)
   }
 }
 
+void specialKey (int key, int x, int y)
+{
+  float l;
+  float lstep = 0.05f;
+
+  switch (key)
+  {
+  case GLUT_KEY_F1:
+    l = renderer->getAvgLuminance();
+    l = Util::Max( l-lstep, 0.0f );
+    renderer->setAvgLuminance( l );
+    std::cout << "Luminance: " << l << std::endl;
+    break;
+  case GLUT_KEY_F2:
+    l = renderer->getAvgLuminance();
+    l = l+lstep;
+    renderer->setAvgLuminance( l );
+    std::cout << "Luminance: " << l << std::endl;
+    break;
+  }
+}
+
 void display ()
 {
   //switch camera
@@ -257,6 +279,7 @@ void initGlut (int argc, char **argv)
   glutReshapeFunc( reshape );
   glutDisplayFunc( display );
   glutKeyboardFunc( keyboard );
+  glutSpecialFunc( specialKey );
   glutMouseFunc( click );
   glutMotionFunc( drag );
   glutIdleFunc( animate );
@@ -567,7 +590,7 @@ int main (int argc, char **argv)
   //Create floor cube
   StandardMaterial *matBox = new StandardMaterial;
   matBox->setSpecularity( 0.5 );
-  matBox->setDiffuseColor( Vector3(2,2,2) );
+  matBox->setDiffuseColor( Vector3(1,1,1) );
 
   TriMesh *cubeMesh = new CubeMesh;
   TriMeshActor *cube = new TriMeshActor;
@@ -591,7 +614,7 @@ int main (int argc, char **argv)
   //light = new SpotLight( Vector3(300,300,50), Vector3(), 60, 0 );
   light->setCastShadows( true );
   light->setDiffuseColor( Vector3(1,1,1) );
-  light->setSpecularColor( Vector3(8,8,8) );
+  light->setSpecularColor( Vector3(5,5,5) );
   light->lookInto( center );
   scene->addChild( light );
 
@@ -603,7 +626,7 @@ int main (int argc, char **argv)
   Light *light3 = new SpotLight( Vector3(-200,150,200), Vector3(), 60, 0 );
   light3->lookInto( center );
   light3->setDiffuseColor( Vector3(.5,.5,.5) );
-  //scene->addChild( light3);
+  scene->addChild( light3);
 
   cam3D = new Camera3D;
   cam3D->setCenter( center );

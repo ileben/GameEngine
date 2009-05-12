@@ -82,6 +82,8 @@ namespace GE
     Shader *curShader;
     Material *curMaterial;
     ArrayList< ShaderKey > shaders;
+    Float avgLuminance;
+    Float maxLuminance;
     
     bool shadowInit;
     Uint32 shadowMap;
@@ -105,7 +107,9 @@ namespace GE
     Int32 ambientColorSampler;
 
     Shader *shaderBloom;
-    Int32 bloomAccumSampler;
+    Int32 uBloomColorSampler;
+    Int32 uBloomAvgLuminance;
+    Int32 uBloomMaxLuminance;
 
     Uint32 blurFB;
     Uint32 blurMaps[2];
@@ -120,9 +124,10 @@ namespace GE
     Int32 cellColorSampler;
 
     Shader *shaderFinal;
-    Int32 finalColorSampler;
-    Int32 finalEffectsSampler;
-
+    Int32 uFinalColorSampler;
+    Int32 uFinalEffectsSampler;
+    Int32 uFinalAvgLuminance;
+    Int32 uFinalMaxLuminance;
     
     void updateBuffers ();
     void initBuffer (Uint *texID, Uint format, Uint attachment, bool gen=false, int W=-1, int H=-1);
@@ -156,6 +161,11 @@ namespace GE
     void beginDeferred();
     void renderSceneDeferred (Scene *scene);
     void endDeferred();
+
+    void setAvgLuminance (Float l);
+    void setMaxLuminance (Float l);
+    Float getAvgLuminance ();
+    Float getMaxLuminance ();
   };
 }
 

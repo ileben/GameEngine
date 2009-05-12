@@ -1,8 +1,6 @@
 #begin Blur_VertexSource
 void main (void)
 {
-  //We assume vertex coords to be in [-1,1] interval
-  //for a full-screen quad
   gl_TexCoord[0] = gl_MultiTexCoord0;
   gl_Position = gl_Vertex;
 }

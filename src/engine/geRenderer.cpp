@@ -8,6 +8,7 @@
 #include "engine/geGLHeaders.h"
 #include "engine/actors/geSkinMeshActor.h"
 
+#include "engine/embedit/ToneMap.embedded"
 #include "engine/embedit/Ambient.embedded"
 #include "engine/embedit/Bloom.embedded"
 #include "engine/embedit/Blur.embedded"
@@ -34,6 +35,25 @@ namespace GE
 
     shaderAmbient = NULL;
     shaderLightSpot = NULL;
+
+    avgLuminance = 0.5f;
+    maxLuminance = 1.0f;
+  }
+
+  void Renderer::setAvgLuminance (Float l) {
+    avgLuminance = l;
+  }
+
+  void Renderer::setMaxLuminance (Float l) {
+    maxLuminance = l;
+  }
+
+  Float Renderer::getAvgLuminance () {
+    return avgLuminance;
+  }
+
+  Float Renderer::getMaxLuminance () {
+    return maxLuminance;
   }
 
   void Renderer::setBackColor (const Vector3 &color)
@@ -271,9 +291,16 @@ namespace GE
       ambientColorSampler = shaderAmbient->getUniformID( "samplerColor" );
 
       shaderBloom = new Shader;
-      shaderBloom->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerAccum" );
-      shaderBloom->fromString( Bloom_VertexSource, Bloom_FragmentSource );
-      bloomAccumSampler = shaderBloom->getUniformID( "samplerAccum" );
+      shaderBloom->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
+      shaderBloom->registerUniform( ShaderType::Fragment, DataUnit::Float, "avgLuminance" );
+      shaderBloom->registerUniform( ShaderType::Fragment, DataUnit::Float, "maxLuminance" );
+      shaderBloom->compile( ShaderType::Vertex, Bloom_VertexSource );
+      shaderBloom->compile( ShaderType::Fragment, Bloom_FragmentSource );
+      shaderBloom->compile( ShaderType::Fragment, ToneMapSource );
+      shaderBloom->link();
+      uBloomColorSampler = shaderBloom->getUniformID( "samplerColor" );
+      uBloomAvgLuminance = shaderBloom->getUniformID( "avgLuminance" );
+      uBloomMaxLuminance = shaderBloom->getUniformID( "maxLuminance" );
 
       shaderCell = new Shader;
       shaderCell->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
@@ -292,9 +319,16 @@ namespace GE
       shaderFinal = new Shader;
       shaderFinal->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
       shaderFinal->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerEffects" );
-      shaderFinal->fromString( Final_VertexSource, Final_FragmentSource );
-      finalColorSampler = shaderFinal->getUniformID( "samplerColor" );
-      finalEffectsSampler = shaderFinal->getUniformID( "samplerEffects" );
+      shaderBloom->registerUniform( ShaderType::Fragment, DataUnit::Float, "avgLuminance" );
+      shaderBloom->registerUniform( ShaderType::Fragment, DataUnit::Float, "maxLuminance" );
+      shaderFinal->compile( ShaderType::Vertex, Final_VertexSource );
+      shaderFinal->compile( ShaderType::Fragment, Final_FragmentSource );
+      shaderFinal->compile( ShaderType::Fragment, ToneMapSource );
+      shaderFinal->link();
+      uFinalColorSampler = shaderFinal->getUniformID( "samplerColor" );
+      uFinalEffectsSampler = shaderFinal->getUniformID( "samplerEffects" );
+      uFinalAvgLuminance = shaderBloom->getUniformID( "avgLuminance" );
+      uFinalMaxLuminance = shaderBloom->getUniformID( "maxLuminance" );
 
       shaderLightSpot = new Shader;
       shaderLightSpot->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerNormal" );
@@ -636,8 +670,6 @@ namespace GE
 
   void Renderer::endDeferred()
   {
-    //////////////////////////////////////////
-
     glDisable( GL_LIGHTING );
     glDisable( GL_BLEND );
     glDisable( GL_DEPTH_TEST );
@@ -654,13 +686,14 @@ namespace GE
     //////////////////////////////////////////
 
     glViewport( 0,0,blurW,blurH );
-
-    shaderBloom->use();
-
     glBindFramebuffer( GL_FRAMEBUFFER, blurFB );
     glDrawBuffer( GL_COLOR_ATTACHMENT2 );
 
-    glUniform1i( bloomAccumSampler, 0 );
+    shaderBloom->use();
+    glUniform1f( uBloomAvgLuminance, avgLuminance );
+    glUniform1f( uBloomMaxLuminance, maxLuminance );
+
+    glUniform1i( uBloomColorSampler, 0 );
     glActiveTexture( GL_TEXTURE0 );
     glBindTexture( GL_TEXTURE_2D, deferredAccum );
     glEnable( GL_TEXTURE_2D );
@@ -675,13 +708,12 @@ namespace GE
     ////////////////////////////////////////
   
     glViewport( 0,0,blurW,blurH );
+    glBindFramebuffer( GL_FRAMEBUFFER, blurFB );
+    glDrawBuffer( GL_COLOR_ATTACHMENT0 );
 
     shaderBlur->use();
     glUniform2f( uBlurPixelSize, 1.0/blurW, 1.0/blurH);
     glUniform2f( uBlurDirection, 1.0, 0.0 );
-
-    glBindFramebuffer( GL_FRAMEBUFFER, blurFB );
-    glDrawBuffer( GL_COLOR_ATTACHMENT0 );
 
     glUniform1i( blurColorSampler, 0 );
     glActiveTexture( GL_TEXTURE0 );
@@ -698,10 +730,10 @@ namespace GE
     ////////////////////////////////////////
 
     glViewport( 0,0,blurW,blurH );
+    glDrawBuffer( GL_COLOR_ATTACHMENT1 );
+
     glUniform2f( uBlurPixelSize, 1.0/blurW, 1.0/blurH);
     glUniform2f( uBlurDirection, 0.0, 1.0 );
-
-    glDrawBuffer( GL_COLOR_ATTACHMENT1 );
 
     glUniform1i( blurColorSampler, 0 );
     glActiveTexture( GL_TEXTURE0 );
@@ -718,16 +750,18 @@ namespace GE
     ////////////////////////////////////////
 
     glViewport( viewX, viewY, viewW, viewH);
-
-    shaderFinal->use();
     glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 
-    glUniform1i( finalColorSampler, 0 );
+    shaderFinal->use();
+    glUniform1f( uFinalAvgLuminance, avgLuminance );
+    glUniform1f( uFinalMaxLuminance, maxLuminance );
+
+    glUniform1i( uFinalColorSampler, 0 );
     glActiveTexture( GL_TEXTURE0 );
     glBindTexture( GL_TEXTURE_2D, deferredAccum );
     glEnable( GL_TEXTURE_2D );
 
-    glUniform1i( finalEffectsSampler, 1 );
+    glUniform1i( uFinalEffectsSampler, 1 );
     glActiveTexture( GL_TEXTURE1 );
     glBindTexture( GL_TEXTURE_2D, blurMaps[1] );
     //glBindTexture( GL_TEXTURE_2D, deferredEffects1 );

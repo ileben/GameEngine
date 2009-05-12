@@ -625,6 +625,18 @@
 						/>
 					</FileConfiguration>
 				</File>
+				<File
+					RelativePath="..\..\src\engine\embedit\ToneMap.c"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="Embedit"
+							Preprocess="true"
+						/>
+					</FileConfiguration>
+				</File>
 			</Filter>
 		</Filter>
 	</Files>
