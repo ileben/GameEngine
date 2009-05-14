@@ -79,6 +79,10 @@ GE_PFGLUNIFORM1F                 GE_glUniform1f = NULL;
 GE_PFGLUNIFORM2F                 GE_glUniform2f = NULL;
 GE_PFGLUNIFORM3F                 GE_glUniform3f = NULL;
 GE_PFGLUNIFORM4F                 GE_glUniform4f = NULL;
+GE_PFGLUNIFORM1FV                GE_glUniform1fv = NULL;
+GE_PFGLUNIFORM2FV                GE_glUniform2fv = NULL;
+GE_PFGLUNIFORM3FV                GE_glUniform3fv = NULL;
+GE_PFGLUNIFORM4FV                GE_glUniform4fv = NULL;
 GE_PFGLUNIFORMMATRIX4FV          GE_glUniformMatrix4fv = NULL;
 GE_PFGLBINDATTRIBLOCATION        GE_glBindAttribLocation = NULL;
 GE_PFGLGETATTRIBLOCATION         GE_glGetAttribLocation = NULL;
@@ -383,6 +387,14 @@ namespace GE
         getProcAddress ("glUniform3fARB");
       GE_glUniform4f = (GE_PFGLUNIFORM4F)
         getProcAddress ("glUniform4fARB");
+      GE_glUniform1fv = (GE_PFGLUNIFORM1FV)
+        getProcAddress ("glUniform1fvARB");
+      GE_glUniform2fv = (GE_PFGLUNIFORM2FV)
+        getProcAddress ("glUniform2fvARB");
+      GE_glUniform3fv = (GE_PFGLUNIFORM3FV)
+        getProcAddress ("glUniform3fvARB");
+      GE_glUniform4fv = (GE_PFGLUNIFORM4FV)
+        getProcAddress ("glUniform4fvARB");
       GE_glUniformMatrix4fv = (GE_PFGLUNIFORMMATRIX4FV)
         getProcAddress ("glUniformMatrix4fvARB");
       GE_glBindAttribLocation = (GE_PFGLBINDATTRIBLOCATION)
@@ -417,6 +429,8 @@ namespace GE
           GE_glUniform3i==NULL || GE_glUniform4i==NULL ||
           GE_glUniform1f==NULL || GE_glUniform2f==NULL ||
           GE_glUniform3f==NULL || GE_glUniform4f==NULL ||
+          GE_glUniform1fv==NULL || GE_glUniform2fv==NULL ||
+          GE_glUniform3fv==NULL || GE_glUniform4fv==NULL ||
           GE_glUniformMatrix4fv==NULL || GE_glBindAttribLocation==NULL ||
           GE_glGetAttribLocation==NULL || GE_glVertexAttribPointer==NULL ||
           GE_glDisableVertexAttribArray==NULL || GE_glEnableVertexAttribArray==NULL)

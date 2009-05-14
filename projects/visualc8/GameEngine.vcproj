@@ -537,6 +537,38 @@
 					</FileConfiguration>
 				</File>
 				<File
+					RelativePath="..\..\src\engine\embedit\Dof.c"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="Embedit"
+							Preprocess="true"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="Embedit"
+							Preprocess="true"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\src\engine\embedit\Down.c"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="Embedit"
+							Preprocess="true"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
 					RelativePath="..\..\src\engine\embedit\Final.c"
 					>
 					<FileConfiguration

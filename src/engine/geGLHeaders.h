@@ -241,6 +241,22 @@ typedef void
   (GLint, GLfloat, GLfloat, GLfloat, GLfloat);
 
 typedef void
+  (APIENTRY* GE_PFGLUNIFORM1FV)
+  (GLint, GLsizei, const GLfloat *);
+
+typedef void
+  (APIENTRY* GE_PFGLUNIFORM2FV)
+  (GLint, GLsizei, const GLfloat *);
+
+typedef void
+  (APIENTRY* GE_PFGLUNIFORM3FV)
+  (GLint, GLsizei, const GLfloat *);
+
+typedef void
+  (APIENTRY* GE_PFGLUNIFORM4FV)
+  (GLint, GLsizei, const GLfloat *);
+
+typedef void
   (APIENTRY* GE_PFGLUNIFORMMATRIX4FV)
   (GLint, GLsizei, GLboolean, const GLfloat *);
 
@@ -453,6 +469,10 @@ extern GE_PFGLUNIFORM1F                 GE_glUniform1f;
 extern GE_PFGLUNIFORM2F                 GE_glUniform2f;
 extern GE_PFGLUNIFORM3F                 GE_glUniform3f;
 extern GE_PFGLUNIFORM4F                 GE_glUniform4f;
+extern GE_PFGLUNIFORM1FV                GE_glUniform1fv;
+extern GE_PFGLUNIFORM2FV                GE_glUniform2fv;
+extern GE_PFGLUNIFORM3FV                GE_glUniform3fv;
+extern GE_PFGLUNIFORM4FV                GE_glUniform4fv;
 extern GE_PFGLUNIFORMMATRIX4FV          GE_glUniformMatrix4fv;
 extern GE_PFGLBINDATTRIBLOCATION        GE_glBindAttribLocation;
 extern GE_PFGLGETATTRIBLOCATION         GE_glGetAttribLocation;
@@ -529,6 +549,10 @@ Function re-routing
 #define glUniform2f                  GE_glUniform2f
 #define glUniform3f                  GE_glUniform3f
 #define glUniform4f                  GE_glUniform4f
+#define glUniform1fv                 GE_glUniform1fv
+#define glUniform2fv                 GE_glUniform2fv
+#define glUniform3fv                 GE_glUniform3fv
+#define glUniform4fv                 GE_glUniform4fv
 #define glUniformMatrix4fv           GE_glUniformMatrix4fv
 #define glBindAttribLocation         GE_glBindAttribLocation
 #define glGetAttribLocation          GE_glGetAttribLocation

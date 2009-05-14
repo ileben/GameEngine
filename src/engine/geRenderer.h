@@ -90,34 +90,47 @@ namespace GE
     Uint32 shadowMap2;
     Uint32 shadowFB;
 
-    bool deferredInit;
+    bool buffersInit;
     Uint32 deferredStencil;
     Uint32 deferredDepth;
     Uint32 deferredAccum;
-    Uint32 deferredEffects1;
+    Uint32 deferredDof;
     Uint32 deferredMaps[4];
     Uint32 deferredFB;
     Uint32 deferredPB;
     Int32 deferredSampler[5];
     Int32 deferredCastShadow;
     Int32 deferredWinSize;
+
+    Uint32 blurFB;
+    Uint32 blurMaps[2];
+    Uint32 effectsMaps[2];
+
     Shader *shaderLightSpot;
 
     Shader *shaderAmbient;
     Int32 ambientColorSampler;
 
+    Shader *shaderDofInit;
+    Int32 uDofInitColorSampler;
+    Int32 uDofInitNormalSampler;
+    Int32 uDofInitDofParams;
+
+    Shader *shaderDown;
+    Int32 uDownColorSampler;
+    Int32 uDownPixelSize;
+
     Shader *shaderBloom;
     Int32 uBloomColorSampler;
     Int32 uBloomAvgLuminance;
     Int32 uBloomMaxLuminance;
-
-    Uint32 blurFB;
-    Uint32 blurMaps[2];
+    Int32 uBloomPixelSize;
 
     Shader *shaderBlur;
     Int32 blurColorSampler;
     Int32 uBlurPixelSize;
     Int32 uBlurDirection;
+    Int32 uBlurRadius;
     int blurW, blurH;
 
     Shader *shaderCell;
@@ -125,12 +138,20 @@ namespace GE
 
     Shader *shaderFinal;
     Int32 uFinalColorSampler;
-    Int32 uFinalEffectsSampler;
+    Int32 uFinalNormalSampler;
+    Int32 uFinalBloomSampler;
+    Int32 uFinalDofSampler;
     Int32 uFinalAvgLuminance;
     Int32 uFinalMaxLuminance;
+    Int32 uFinalPoissonCoords;
+    Int32 uFinalPixelSize;
+
+    void doBlur (int targetAttachment);
     
-    void updateBuffers ();
-    void initBuffer (Uint *texID, Uint format, Uint attachment, bool gen=false, int W=-1, int H=-1);
+    void initShaders ();
+    void initTexture (Uint *texID, Uint format, Uint attachment, bool gen=false, int W=-1, int H=-1);
+    void initBuffers ();
+
     void traverseSceneNoMats (Scene *scene);
     void traverseSceneWithMats (Scene *scene);
     void renderShadowMap (Light *light, Scene *scene);

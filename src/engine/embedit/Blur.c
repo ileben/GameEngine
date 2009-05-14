@@ -10,10 +10,10 @@ void main (void)
 uniform sampler2D samplerColor;
 uniform vec2 pixelSize;
 uniform vec2 direction;
+uniform int radius;
 
 void main (void)
 {
-  int radius = 20;
   vec3 Color = vec3( 0.0, 0.0, 0.0 );
   
   for (int r=-radius; r<=radius; ++r)
