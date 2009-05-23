@@ -84,6 +84,7 @@ namespace GE
     ArrayList< ShaderKey > shaders;
     Float avgLuminance;
     Float maxLuminance;
+    Float focusDepth;
     
     bool shadowInit;
     Uint32 shadowMap;
@@ -91,22 +92,27 @@ namespace GE
     Uint32 shadowFB;
 
     bool buffersInit;
+    Uint32 deferredFB;
     Uint32 deferredStencil;
     Uint32 deferredDepth;
     Uint32 deferredAccum;
-    Uint32 deferredDof;
     Uint32 deferredMaps[4];
-    Uint32 deferredFB;
-    Uint32 deferredPB;
+    
+    Uint32 dofMap;
+    Uint32 dofMedBlurMap;
+
+    Uint32 blurFB;
+    Uint32 dofDownMap;
+    Uint32 depthDownMap;
+    Uint32 dofMaxBlurMap;
+    Uint32 depthMaxBlurMap;
+    Uint32 bloomDownMap;
+    Uint32 bloomBlurMap;
+
+    Shader *shaderLightSpot;
     Int32 deferredSampler[5];
     Int32 deferredCastShadow;
     Int32 deferredWinSize;
-
-    Uint32 blurFB;
-    Uint32 blurMaps[2];
-    Uint32 effectsMaps[2];
-
-    Shader *shaderLightSpot;
 
     Shader *shaderAmbient;
     Int32 ambientColorSampler;
@@ -114,39 +120,62 @@ namespace GE
     Shader *shaderDofInit;
     Int32 uDofInitColorSampler;
     Int32 uDofInitNormalSampler;
+    Int32 uDofInitParamsSampler;
     Int32 uDofInitDofParams;
 
-    Shader *shaderDown;
-    Int32 uDownColorSampler;
-    Int32 uDownPixelSize;
+    Shader *shaderDofDown;
+    Int32 uDofDownColorSampler;
+    Int32 uDofDownNormalSampler;
+    Int32 uDofDownDofParams;
+    Int32 uDofDownPixelSize;
 
-    Shader *shaderBloom;
-    Int32 uBloomColorSampler;
-    Int32 uBloomAvgLuminance;
-    Int32 uBloomMaxLuminance;
-    Int32 uBloomPixelSize;
+    Shader *shaderDofBlur;
+    Int32 uDofBlurColorSampler;
+    Int32 uDofBlurPixelSize;
+    Int32 uDofBlurDirection;
+    Int32 uDofBlurRadius;
+    Int32 uDofBlurDepthSampler;
+    Int32 uDofBlurDofParams;
 
-    Shader *shaderBlur;
-    Int32 blurColorSampler;
-    Int32 uBlurPixelSize;
-    Int32 uBlurDirection;
-    Int32 uBlurRadius;
+    Shader *shaderDofNear;
+    Int32 uDofNearColorSampler;
+    Int32 uDofNearPixelSize;
+    Int32 uDofNearDofParams;
+
+    Shader *shaderDepthBlur;
+    Int32 uDepthBlurColorSampler;
+    Int32 uDepthBlurPixelSize;
+    Int32 uDepthBlurDirection;
+    Int32 uDepthBlurRadius;
+    Int32 uDepthBlurDofParams;
     int blurW, blurH;
 
-    Shader *shaderCell;
-    Int32 cellColorSampler;
+    Shader *shaderDofMix;
+    Int32 uDofMixColorSampler;
+    Int32 uDofMixMedBlurSampler;
+    Int32 uDofMixLargeBlurSampler;
+    Int32 uDofMixDepthSampler;
+    Int32 uDofMixDepthBlurSampler;
+    Int32 uDofMixPixelSize;
+    Int32 uDofMixDofParams;
 
-    Shader *shaderFinal;
-    Int32 uFinalColorSampler;
-    Int32 uFinalNormalSampler;
-    Int32 uFinalBloomSampler;
-    Int32 uFinalDofSampler;
-    Int32 uFinalAvgLuminance;
-    Int32 uFinalMaxLuminance;
-    Int32 uFinalPoissonCoords;
-    Int32 uFinalPixelSize;
+    Shader *shaderBloomDown;
+    Int32 uBloomDownColorSampler;
+    Int32 uBloomDownAvgLuminance;
+    Int32 uBloomDownMaxLuminance;
+    Int32 uBloomDownPixelSize;
 
-    void doBlur (int targetAttachment);
+    Shader *shaderBloomBlur;
+    Int32 uBloomBlurColorSampler;
+    Int32 uBloomBlurPixelSize;
+    Int32 uBloomBlurDirection;
+    Int32 uBloomBlurRadius;
+
+    Shader *shaderBloomMix;
+    Int32 uBloomMixColorSampler;
+    Int32 uBloomMixBloomSampler;
+    Int32 uBloomMixAvgLuminance;
+    Int32 uBloomMixMaxLuminance;
     
     void initShaders ();
     void initTexture (Uint *texID, Uint format, Uint attachment, bool gen=false, int W=-1, int H=-1);
@@ -187,6 +216,9 @@ namespace GE
     void setMaxLuminance (Float l);
     Float getAvgLuminance ();
     Float getMaxLuminance ();
+
+    void setFocusDistance (Float d);
+    Float getFocusDistance ();
   };
 }
 

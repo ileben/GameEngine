@@ -181,8 +181,9 @@ void keyboard (unsigned char key, int x, int y)
 
 void specialKey (int key, int x, int y)
 {
-  float l;
+  float l,f;
   float lstep = 0.05f;
+  float fstep = 5.0f;
 
   switch (key)
   {
@@ -198,6 +199,19 @@ void specialKey (int key, int x, int y)
     renderer->setAvgLuminance( l );
     std::cout << "Luminance: " << l << std::endl;
     break;
+  case GLUT_KEY_F4:
+    f = renderer->getFocusDistance();
+    f = Util::Max( f-fstep, 0.0f );
+    renderer->setFocusDistance( f );
+    std::cout << "Focus distance: " << f << std::endl;
+    break;
+  case GLUT_KEY_F5:
+    f = renderer->getFocusDistance();
+    f = f+fstep;
+    renderer->setFocusDistance( f );
+    std::cout << "Focus distance: " << f << std::endl;
+    break;
+
   }
 }
 

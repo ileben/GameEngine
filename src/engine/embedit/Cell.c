@@ -1,4 +1,5 @@
 #begin Cell_VertexSource
+
 void main (void)
 {
   //We assume vertex coords to be in [-1,1] interval
@@ -6,11 +7,12 @@ void main (void)
   gl_TexCoord[0] = gl_MultiTexCoord0;
   gl_Position = gl_Vertex;
 }
+
 #end
 
+////////////////////////////////////////////////////////////////////////////////
 
-#begin Cell_FragmentSource
-uniform sampler2D samplerColor;
+#begin HSLHSV_Func
 
 void HSLtoRGB1 (inout float c)
 {
@@ -146,11 +148,25 @@ void quantizeHSV (inout vec3 c, float steps, float alpha)
   }
 }
 
+#end
+
+////////////////////////////////////////////////////////////////////////////////
+
+#begin QuantizeLight_Func
+
 void quantizeLight (inout vec3 c, float light, float steps, float alpha)
 {
   float coeff = alpha + (1.0 - alpha) * floor( light * steps + 0.5 ) / steps;
-  c *= coeff / light;
+  c *= coeff / max( light, 0.001 );
 }
+
+#end
+
+////////////////////////////////////////////////////////////////////////////////
+
+#begin Cell_FragmentSource
+
+uniform sampler2D samplerColor;
 
 void main (void)
 {
@@ -159,4 +175,5 @@ void main (void)
   //quantizeHSV( colorTexel.rgb, 4.0, 0.15 );
   gl_FragColor = vec4( colorTexel.rgb, 1.0 );
 }
+
 #end

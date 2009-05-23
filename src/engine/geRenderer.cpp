@@ -8,14 +8,10 @@
 #include "engine/geGLHeaders.h"
 #include "engine/actors/geSkinMeshActor.h"
 
-#include "engine/embedit/ToneMap.embedded"
 #include "engine/embedit/Ambient.embedded"
 #include "engine/embedit/Dof.embedded"
-#include "engine/embedit/Down.embedded"
 #include "engine/embedit/Bloom.embedded"
-#include "engine/embedit/Blur.embedded"
 #include "engine/embedit/Cell.embedded"
-#include "engine/embedit/Final.embedded"
 #include "engine/embedit/shadevert.SpotLight.embedded"
 #include "engine/embedit/shadefrag.SpotLight.embedded"
 
@@ -38,6 +34,15 @@ namespace GE
 
     avgLuminance = 0.5f;
     maxLuminance = 1.0f;
+    focusDepth = 50.0f;
+  }
+
+  void Renderer::setFocusDistance (Float d) {
+    focusDepth = d;
+  }
+
+  Float Renderer::getFocusDistance () {
+    return focusDepth;
   }
 
   void Renderer::setAvgLuminance (Float l) {
@@ -199,74 +204,6 @@ namespace GE
     shaderAmbient->fromString( Ambient_VertexSource, Ambient_FragmentSource );
     ambientColorSampler = shaderAmbient->getUniformID( "samplerColor" );
 
-    shaderDofInit = new Shader;
-    shaderDofInit->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
-    shaderDofInit->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerNormal" );
-    shaderDofInit->registerUniform( ShaderType::Fragment, DataUnit::Vec3, "dofParams" );
-    shaderDofInit->fromString( Dof_VertexSource, DofInit_FragmentSource );
-    uDofInitColorSampler = shaderDofInit->getUniformID( "samplerColor" );
-    uDofInitNormalSampler = shaderDofInit->getUniformID( "samplerNormal" );
-    uDofInitDofParams = shaderDofInit->getUniformID( "dofParams" );
-
-    shaderDown = new Shader;
-    shaderDown->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
-    shaderDown->registerUniform( ShaderType::Fragment, DataUnit::Vec2, "pixelSize" );
-    shaderDown->fromString( Down_VertexSource, Down_FragmentSource );
-    uDownColorSampler = shaderDown->getUniformID( "samplerColor" );
-    uDownPixelSize = shaderDown->getUniformID( "pixelSize" );
-
-    shaderBloom = new Shader;
-    shaderBloom->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
-    shaderBloom->registerUniform( ShaderType::Fragment, DataUnit::Vec2, "pixelSize" );
-    shaderBloom->registerUniform( ShaderType::Fragment, DataUnit::Float, "avgLuminance" );
-    shaderBloom->registerUniform( ShaderType::Fragment, DataUnit::Float, "maxLuminance" );
-    shaderBloom->compile( ShaderType::Vertex, Bloom_VertexSource );
-    shaderBloom->compile( ShaderType::Fragment, Bloom_FragmentSource );
-    shaderBloom->compile( ShaderType::Fragment, ToneMapSource );
-    shaderBloom->link();
-    uBloomColorSampler = shaderBloom->getUniformID( "samplerColor" );
-    uBloomPixelSize = shaderBloom->getUniformID( "pixelSize" );
-    uBloomAvgLuminance = shaderBloom->getUniformID( "avgLuminance" );
-    uBloomMaxLuminance = shaderBloom->getUniformID( "maxLuminance" );
-
-    shaderCell = new Shader;
-    shaderCell->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
-    shaderCell->fromString( Cell_VertexSource, Cell_FragmentSource );
-    cellColorSampler = shaderCell->getUniformID( "samplerColor" );
-
-    shaderBlur = new Shader;
-    shaderBlur->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
-    shaderBlur->registerUniform( ShaderType::Fragment, DataUnit::Vec2, "pixelSize" );
-    shaderBlur->registerUniform( ShaderType::Fragment, DataUnit::Vec2, "direction" );
-    shaderBlur->registerUniform( ShaderType::Fragment, DataUnit::Int, "radius" );
-    shaderBlur->fromString( Blur_VertexSource, Blur_FragmentSource );
-    blurColorSampler = shaderBlur->getUniformID( "samplerColor" );
-    uBlurPixelSize = shaderBlur->getUniformID( "pixelSize" );
-    uBlurDirection = shaderBlur->getUniformID( "direction" );
-    uBlurRadius = shaderBlur->getUniformID( "radius" );
-
-    shaderFinal = new Shader;
-    shaderFinal->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
-    shaderFinal->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerNormal" );
-    shaderFinal->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerBloom" );
-    shaderFinal->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerDof" );
-    shaderFinal->registerUniform( ShaderType::Fragment, DataUnit::Float, "avgLuminance" );
-    shaderFinal->registerUniform( ShaderType::Fragment, DataUnit::Float, "maxLuminance" );
-    shaderFinal->registerUniform( ShaderType::Fragment, DataUnit::Vec2, "poissonCoords", 12 );
-    shaderFinal->registerUniform( ShaderType::Fragment, DataUnit::Vec2, "pixelSize" );
-    shaderFinal->compile( ShaderType::Vertex, Final_VertexSource );
-    shaderFinal->compile( ShaderType::Fragment, Final_FragmentSource );
-    shaderFinal->compile( ShaderType::Fragment, ToneMapSource );
-    shaderFinal->link();
-    uFinalColorSampler = shaderFinal->getUniformID( "samplerColor" );
-    uFinalNormalSampler = shaderFinal->getUniformID( "samplerNormal" );
-    uFinalBloomSampler = shaderFinal->getUniformID( "samplerBloom" );
-    uFinalDofSampler = shaderFinal->getUniformID( "samplerDof" );
-    uFinalAvgLuminance = shaderFinal->getUniformID( "avgLuminance" );
-    uFinalMaxLuminance = shaderFinal->getUniformID( "maxLuminance" );
-    uFinalPoissonCoords = shaderFinal->getUniformID( "poissonCoords" );
-    uFinalPixelSize = shaderFinal->getUniformID( "pixelSize" );
-
     shaderLightSpot = new Shader;
     shaderLightSpot->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerNormal" );
     shaderLightSpot->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
@@ -284,6 +221,127 @@ namespace GE
     deferredSampler[ Deferred::Shadow ] = shaderLightSpot->getUniformID( "samplerShadow" );
     deferredCastShadow = shaderLightSpot->getUniformID( "castShadow" );
     deferredWinSize = shaderLightSpot->getUniformID( "winSize" );
+
+    shaderDofInit = new Shader;
+    shaderDofInit->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
+    shaderDofInit->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerNormal" );
+    shaderDofInit->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerParams" );
+    shaderDofInit->registerUniform( ShaderType::Fragment, DataUnit::Vec3, "dofParams" );
+    shaderDofInit->compile( ShaderType::Vertex, Dof_VS );
+    shaderDofInit->compile( ShaderType::Fragment, ComputeCoC_Func );
+    shaderDofInit->compile( ShaderType::Fragment, QuantizeLight_Func );
+    shaderDofInit->compile( ShaderType::Fragment, DofInit_FS );
+    shaderDofInit->link();
+    uDofInitColorSampler = shaderDofInit->getUniformID( "samplerColor" );
+    uDofInitNormalSampler = shaderDofInit->getUniformID( "samplerNormal" );
+    uDofInitParamsSampler = shaderDofInit->getUniformID( "samplerParams" );
+    uDofInitDofParams = shaderDofInit->getUniformID( "dofParams" );
+
+    shaderDofDown = new Shader;
+    shaderDofDown->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
+    shaderDofDown->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerNormal" );
+    shaderDofDown->registerUniform( ShaderType::Fragment, DataUnit::Vec2, "pixelSize" );
+    shaderDofDown->registerUniform( ShaderType::Fragment, DataUnit::Vec4, "dofParams" );
+    shaderDofDown->compile( ShaderType::Vertex, Dof_VS );
+    shaderDofDown->compile( ShaderType::Fragment, DofDown_FS );
+    shaderDofDown->link();
+    uDofDownColorSampler = shaderDofDown->getUniformID( "samplerColor" );
+    uDofDownNormalSampler = shaderDofDown->getUniformID( "samplerNormal" );
+    uDofDownPixelSize = shaderDofDown->getUniformID( "pixelSize" );
+    uDofDownDofParams = shaderDofDown->getUniformID( "dofParams" );
+
+    shaderDofBlur = new Shader;
+    shaderDofBlur->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
+    shaderDofBlur->registerUniform( ShaderType::Fragment, DataUnit::Vec2, "pixelSize" );
+    shaderDofBlur->registerUniform( ShaderType::Fragment, DataUnit::Vec2, "direction" );
+    shaderDofBlur->registerUniform( ShaderType::Fragment, DataUnit::Int, "radius" );
+    shaderDofBlur->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerDepth" );
+    shaderDofBlur->registerUniform( ShaderType::Fragment, DataUnit::Vec4, "dofParams" );
+    shaderDofBlur->fromString( Dof_VS, DofBlur_FS );
+    uDofBlurColorSampler = shaderDofBlur->getUniformID( "samplerColor" );
+    uDofBlurPixelSize = shaderDofBlur->getUniformID( "pixelSize" );
+    uDofBlurDirection = shaderDofBlur->getUniformID( "direction" );
+    uDofBlurRadius = shaderDofBlur->getUniformID( "radius" );
+    uDofBlurDepthSampler = shaderDofBlur->getUniformID( "samplerDepth" );
+    uDofBlurDofParams = shaderDofBlur->getUniformID( "dofParams" );
+
+    shaderDofNear = new Shader;
+    shaderDofNear->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
+    shaderDofNear->registerUniform( ShaderType::Fragment, DataUnit::Vec2, "pixelSize" );
+    shaderDofNear->registerUniform( ShaderType::Fragment, DataUnit::Vec4, "dofParams" );
+    shaderDofNear->fromString( Dof_VS, DofNear_FS );
+    uDofNearColorSampler = shaderDofNear->getUniformID( "samplerColor" );
+    uDofNearPixelSize = shaderDofNear->getUniformID( "pixelSize" );
+    uDofNearDofParams = shaderDofNear->getUniformID( "dofParams" );
+
+    shaderDepthBlur = new Shader;
+    shaderDepthBlur->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
+    shaderDepthBlur->registerUniform( ShaderType::Fragment, DataUnit::Vec2, "pixelSize" );
+    shaderDepthBlur->registerUniform( ShaderType::Fragment, DataUnit::Vec2, "direction" );
+    shaderDepthBlur->registerUniform( ShaderType::Fragment, DataUnit::Int, "radius" );
+    shaderDepthBlur->registerUniform( ShaderType::Fragment, DataUnit::Vec4, "dofParams" );
+    shaderDepthBlur->fromString( Dof_VS, DepthBlur_FS );
+    uDepthBlurColorSampler = shaderDepthBlur->getUniformID( "samplerColor" );
+    uDepthBlurPixelSize = shaderDepthBlur->getUniformID( "pixelSize" );
+    uDepthBlurDirection = shaderDepthBlur->getUniformID( "direction" );
+    uDepthBlurRadius = shaderDepthBlur->getUniformID( "radius" );
+    uDepthBlurDofParams = shaderDepthBlur->getUniformID( "dofParams" );
+
+    shaderDofMix = new Shader;
+    shaderDofMix->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
+    shaderDofMix->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerMedBlur" );
+    shaderDofMix->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerLargeBlur" );
+    shaderDofMix->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerDepth" );
+    shaderDofMix->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerDepthBlur" );
+    shaderDofMix->registerUniform( ShaderType::Fragment, DataUnit::Vec4, "dofParams" );
+    shaderDofMix->compile( ShaderType::Vertex, Dof_VS );
+    shaderDofMix->compile( ShaderType::Fragment, DofMix_FS );
+    shaderDofMix->link();
+    uDofMixColorSampler = shaderDofMix->getUniformID( "samplerColor" );
+    uDofMixMedBlurSampler = shaderDofMix->getUniformID( "samplerMedBlur" );
+    uDofMixLargeBlurSampler = shaderDofMix->getUniformID( "samplerLargeBlur" );
+    uDofMixDepthSampler = shaderDofMix->getUniformID( "samplerDepth" );
+    uDofMixDepthBlurSampler = shaderDofMix->getUniformID( "samplerDepthBlur" );
+    uDofMixDofParams = shaderDofMix->getUniformID( "dofParams" );
+
+    shaderBloomDown = new Shader;
+    shaderBloomDown->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
+    shaderBloomDown->registerUniform( ShaderType::Fragment, DataUnit::Vec2, "pixelSize" );
+    shaderBloomDown->registerUniform( ShaderType::Fragment, DataUnit::Float, "avgLuminance" );
+    shaderBloomDown->registerUniform( ShaderType::Fragment, DataUnit::Float, "maxLuminance" );
+    shaderBloomDown->compile( ShaderType::Vertex, Bloom_VS );
+    shaderBloomDown->compile( ShaderType::Fragment, BloomDown_FS );
+    shaderBloomDown->compile( ShaderType::Fragment, ToneMap_Func );
+    shaderBloomDown->link();
+    uBloomDownColorSampler = shaderBloomDown->getUniformID( "samplerColor" );
+    uBloomDownPixelSize = shaderBloomDown->getUniformID( "pixelSize" );
+    uBloomDownAvgLuminance = shaderBloomDown->getUniformID( "avgLuminance" );
+    uBloomDownMaxLuminance = shaderBloomDown->getUniformID( "maxLuminance" );
+
+    shaderBloomBlur = new Shader;
+    shaderBloomBlur->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
+    shaderBloomBlur->registerUniform( ShaderType::Fragment, DataUnit::Vec2, "pixelSize" );
+    shaderBloomBlur->registerUniform( ShaderType::Fragment, DataUnit::Vec2, "direction" );
+    shaderBloomBlur->registerUniform( ShaderType::Fragment, DataUnit::Int, "radius" );
+    shaderBloomBlur->fromString( Bloom_VS, BloomBlur_FS );
+    uBloomBlurColorSampler = shaderBloomBlur->getUniformID( "samplerColor" );
+    uBloomBlurPixelSize = shaderBloomBlur->getUniformID( "pixelSize" );
+    uBloomBlurDirection = shaderBloomBlur->getUniformID( "direction" );
+    uBloomBlurRadius = shaderBloomBlur->getUniformID( "radius" );
+
+    shaderBloomMix = new Shader;
+    shaderBloomMix->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
+    shaderBloomMix->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerBloom" );
+    shaderBloomMix->registerUniform( ShaderType::Fragment, DataUnit::Float, "avgLuminance" );
+    shaderBloomMix->registerUniform( ShaderType::Fragment, DataUnit::Float, "maxLuminance" );
+    shaderBloomMix->compile( ShaderType::Vertex, Bloom_VS );
+    shaderBloomMix->compile( ShaderType::Fragment, BloomMix_FS );
+    shaderBloomMix->compile( ShaderType::Fragment, ToneMap_Func );
+    shaderBloomMix->link();
+    uBloomMixColorSampler = shaderBloomMix->getUniformID( "samplerColor" );
+    uBloomMixBloomSampler = shaderBloomMix->getUniformID( "samplerBloom" );
+    uBloomMixAvgLuminance = shaderBloomMix->getUniformID( "avgLuminance" );
+    uBloomMixMaxLuminance = shaderBloomMix->getUniformID( "maxLuminance" );
 
     glUseProgram( 0 );
   }
@@ -308,15 +366,18 @@ namespace GE
     if (buffersInit)
     {
       glDeleteFramebuffers( 1, &deferredFB );
-      glDeleteRenderbuffers( 1, &deferredDepth );
-      glDeleteTextures( 1, &deferredAccum );
+      //glDeleteRenderbuffers( 1, &deferredDepth );
+      glDeleteTextures( 1, &deferredDepth );
       glDeleteTextures( GE_NUM_GBUFFERS, deferredMaps );
+      glDeleteTextures( 1, &deferredAccum );
+      glDeleteTextures( 1, &dofMap );
+      glDeleteTextures( 1, &dofMedBlurMap );
 
       glDeleteFramebuffers( 1, &blurFB );
-      glDeleteTextures( 1, &blurMaps[0] );
-      glDeleteTextures( 1, &blurMaps[1] );
-      glDeleteTextures( 1, &effectsMaps[0] );
-      glDeleteTextures( 1, &effectsMaps[1] );
+      glDeleteTextures( 1, &dofDownMap );
+      glDeleteTextures( 1, &depthDownMap );
+      glDeleteTextures( 1, &dofMaxBlurMap );
+      glDeleteTextures( 1, &depthMaxBlurMap );
     };
 
     //Generate deferred framebuffer
@@ -324,11 +385,22 @@ namespace GE
     glBindFramebuffer( GL_FRAMEBUFFER, deferredFB );
 
     //Generate deferred depth-stencil buffer
+    /*
     glGenRenderbuffers( 1, &deferredDepth );
     glBindRenderbuffer( GL_RENDERBUFFER, deferredDepth );
     glRenderbufferStorage( GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, winW, winH );
     glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, deferredDepth );
     glFramebufferRenderbuffer( GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, deferredDepth );
+    */
+    glGenTextures( 1, &deferredDepth );
+    glBindTexture( GL_TEXTURE_2D, deferredDepth );
+    glTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, winW, winH, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+    glFramebufferTexture2D( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, deferredDepth, 0 );
+    glFramebufferTexture2D( GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, deferredDepth, 0 );
 
     //Generate deferred geometry buffers
     glGenTextures( GE_NUM_GBUFFERS, deferredMaps );
@@ -337,13 +409,18 @@ namespace GE
     initTexture( &deferredMaps[ Deferred::Specular ], GL_RGBA8, GL_COLOR_ATTACHMENT3 );
     initTexture( &deferredMaps[ Deferred::Params ], GL_RGBA16F, GL_COLOR_ATTACHMENT4 );
 
-    //Generate deferred lighting accumulation buffer
+    //Generate deferred lighting accumulation buffer (linear filter for downsampling)
     initTexture( &deferredAccum, GL_RGBA16F, GL_COLOR_ATTACHMENT0, true );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
 
-    //Generate deferred dof buffer
-    initTexture( &deferredDof, GL_RGBA16F, GL_COLOR_ATTACHMENT5, true );
+    //Generate dof buffer (linear filter for downsampling)
+    initTexture( &dofMap, GL_RGBA16F, GL_COLOR_ATTACHMENT5, true );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+
+    //Generate medium blur buffer
+    initTexture( &dofMedBlurMap, GL_RGBA16F, GL_COLOR_ATTACHMENT6, true );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
 
@@ -360,19 +437,22 @@ namespace GE
     glGenFramebuffers( 1, &blurFB );
     glBindFramebuffer( GL_FRAMEBUFFER, blurFB );
 
-    initTexture( &blurMaps[0], GL_RGBA16F, GL_COLOR_ATTACHMENT0, true, blurW, blurH );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-    
-    initTexture( &blurMaps[1], GL_RGBA16F, GL_COLOR_ATTACHMENT1, true, blurW, blurH );
+    initTexture( &depthDownMap, GL_RGBA16F, GL_COLOR_ATTACHMENT0, true, blurW, blurH );
+    initTexture( &dofDownMap, GL_RGBA16F, GL_COLOR_ATTACHMENT1, true, blurW, blurH );
+
+    initTexture( &depthMaxBlurMap, GL_RGBA16F, GL_COLOR_ATTACHMENT2, true, blurW, blurH );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
 
-    initTexture( &effectsMaps[0], GL_RGBA16F, GL_COLOR_ATTACHMENT2, true, blurW, blurH );
+    initTexture( &dofMaxBlurMap, GL_RGBA16F, GL_COLOR_ATTACHMENT3, true, blurW, blurH );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
 
-    initTexture( &effectsMaps[1], GL_RGBA16F, GL_COLOR_ATTACHMENT3, true, blurW, blurH );
+    initTexture( &bloomDownMap, GL_RGBA16F, GL_COLOR_ATTACHMENT4, true, blurW, blurH );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+
+    initTexture( &bloomBlurMap, GL_RGBA16F, GL_COLOR_ATTACHMENT5, true, blurW, blurH );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
 
@@ -506,12 +586,13 @@ namespace GE
   {
     //Clear the lighting accumulation texture
     glBindFramebuffer( GL_FRAMEBUFFER, deferredFB );
-    glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
+
     //GLenum drawBuffers[] = {
     //  GL_COLOR_ATTACHMENT0,
     //  GL_COLOR_ATTACHMENT5 };
     //glDrawBuffers( 2, drawBuffers );
     glDrawBuffer( GL_COLOR_ATTACHMENT0 );
+    glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
     glClear( GL_COLOR_BUFFER_BIT );
   }
 
@@ -531,13 +612,26 @@ namespace GE
 
     //Render into geometry textures
     glBindFramebuffer( GL_FRAMEBUFFER, deferredFB );
+
+    glDrawBuffer( GL_COLOR_ATTACHMENT1 );
+    glClearColor( 0, 0, 0, camera->getFarClipPlane() );
+    glClear( GL_COLOR_BUFFER_BIT );
+
+    GLenum clearBuffers[] = {
+      GL_COLOR_ATTACHMENT2,
+      GL_COLOR_ATTACHMENT3,
+      GL_COLOR_ATTACHMENT4 };
+    glDrawBuffers( 3, clearBuffers );
+    glClearColor( 0, 0, 0, 0 );
+    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+
     GLenum drawBuffers[] = {
       GL_COLOR_ATTACHMENT1,
       GL_COLOR_ATTACHMENT2,
       GL_COLOR_ATTACHMENT3,
       GL_COLOR_ATTACHMENT4 };
     glDrawBuffers( 4, drawBuffers );
-    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+    //glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
     glViewport( viewX, viewY, viewW, viewH );
 
     glEnable( GL_DEPTH_TEST );
@@ -747,13 +841,20 @@ namespace GE
       -0.791559f, -0.59771f
     };
 
-    ////////////////////////////////////////
-    //Initialize DoF blur values
+    float focusZ = focusDepth;
+    //float focusW = 20; float farW = 30; float nearW = 30;
+    float focusW = 50; float farW = 200; float nearW = 200;
+    int medBlurRadius = 5;
+    int maxBlurRadius = 5;
+    int bloomBlurRadius = 14;
+
+    /////////////////////////////////////////
+    //Initialize CoC values to dofMap
 
     glDrawBuffer( GL_COLOR_ATTACHMENT5 );
 
     shaderDofInit->use();
-    glUniform3f( uDofInitDofParams, 10.0f, 40.0f, 100.0f );
+    glUniform4f( uDofInitDofParams, focusZ, focusW, farW, nearW );
 
     glUniform1i( uDofInitColorSampler, 0 );
     glActiveTexture( GL_TEXTURE0 );
@@ -765,142 +866,215 @@ namespace GE
     glBindTexture( GL_TEXTURE_2D, deferredMaps[ Deferred::Normal ]);
     glEnable( GL_TEXTURE_2D );
 
-    fullScreenQuad ();
-    /*
+    glUniform1i( uDofInitParamsSampler, 2 );
+    glActiveTexture( GL_TEXTURE2 );
+    glBindTexture( GL_TEXTURE_2D, deferredMaps[ Deferred::Params ] );
+    glEnable( GL_TEXTURE_2D );
+
+    fullScreenQuad();
+
+    ////////////////////////////////////////////
+    //Blur with middle radius to dofMidBlurMap
+/*
+    glDrawBuffer( GL_COLOR_ATTACHMENT6 );
+
+    shaderDofBlur->use();
+    glUniform1i( uDofBlurRadius, medBlurRadius );
+    glUniform2f( uDofBlurPixelSize, 1.0/winW, 1.0/winH );
+
+    glUniform1i( uDofBlurColorSampler, 0 );
+    glActiveTexture( GL_TEXTURE0 );
+    glBindTexture( GL_TEXTURE_2D, dofMap );
+    glEnable( GL_TEXTURE_2D );
+
+    fullScreenQuad();
+  */  
 
     ////////////////////////////////////////
-    //Downsample to blurMaps[0]
+    //Downsample depth to depthDownMap
 
     glViewport( 0,0,blurW,blurH );
     glBindFramebuffer( GL_FRAMEBUFFER, blurFB );
     glDrawBuffer( GL_COLOR_ATTACHMENT0 );
+    
+    shaderDofNear->use();
+    glUniform2f( uDofNearPixelSize, 1.0/winW, 1.0/winH );
+    glUniform4f( uDofNearDofParams, focusZ, focusW, farW, nearW );
 
-    shaderDown->use();
-    glUniform2f( uDownPixelSize, 1.0/winW, 1.0/winH );
-
-    glUniform1i( uDownColorSampler, 0 );
+    glUniform1i( uDofNearColorSampler, 0 );
     glActiveTexture( GL_TEXTURE0 );
-    glBindTexture( GL_TEXTURE_2D, deferredAccum );
+    glBindTexture( GL_TEXTURE_2D, deferredMaps[ Deferred::Normal ] );
     glEnable( GL_TEXTURE_2D );
 
-    fullScreenQuad ();
-
+    fullScreenQuad();
+    
     ////////////////////////////////////////
-    //Blur in X direction to blurMaps[1]
-  
+    //Downsample dofMap to dofDownMap
+
     glDrawBuffer( GL_COLOR_ATTACHMENT1 );
 
-    shaderBlur->use();
-    glUniform2f( uBlurPixelSize, 1.0/blurW, 1.0/blurH);
-    glUniform2f( uBlurDirection, 1.0, 0.0 );
-    glUniform1i( uBlurRadius, 5 );
+    shaderDofDown->use();
+    glUniform2f( uDofDownPixelSize, 1.0/winW, 1.0/winH );
 
-    glUniform1i( blurColorSampler, 0 );
+    glUniform1i( uDofDownColorSampler, 0 );
     glActiveTexture( GL_TEXTURE0 );
-    glBindTexture( GL_TEXTURE_2D, blurMaps[0] );
+    glBindTexture( GL_TEXTURE_2D, dofMap );
     glEnable( GL_TEXTURE_2D );
-    
-    fullScreenQuad ();
+
+    fullScreenQuad();
 
     ////////////////////////////////////////
-    //Blur in Y direction to effectsMaps[1]
+    //Blur depthDownMap to depthMaxBlurMap
+  
+    glDrawBuffer( GL_COLOR_ATTACHMENT2 );
 
-    glDrawBuffer( GL_COLOR_ATTACHMENT3 );
+    shaderDepthBlur->use();
+    glUniform1i( uDepthBlurRadius, maxBlurRadius );
+    glUniform2f( uDepthBlurPixelSize, 1.0/blurW, 1.0/blurH);
+    glUniform4f( uDepthBlurDofParams, focusZ, focusW, farW, nearW );
 
-    glUniform2f( uBlurDirection, 0.0, 1.0 );
-
-    glUniform1i( blurColorSampler, 0 );
+    glUniform1i( uDepthBlurColorSampler, 0 );
     glActiveTexture( GL_TEXTURE0 );
-    glBindTexture( GL_TEXTURE_2D, blurMaps[1] );
+    glBindTexture( GL_TEXTURE_2D, depthDownMap );
     glEnable( GL_TEXTURE_2D );
     
-    fullScreenQuad ();
+    fullScreenQuad();
 
-    //////////////////////////////////////////
-    //Downsample, tone map and bloom cutoff
-    //to blurMaps[0]
+    ////////////////////////////////////////
+    //Blur dofDownMap to dofMaxBlurMap
+  
+    glDrawBuffer( GL_COLOR_ATTACHMENT3 );
 
+    shaderDofBlur->use();
+    glUniform1i( uDofBlurRadius, maxBlurRadius );
+    glUniform2f( uDofBlurPixelSize, 1.0/blurW, 1.0/blurH);
+    glUniform4f( uDofBlurDofParams, focusZ, focusW, farW, nearW );
+
+    glUniform1i( uDofBlurColorSampler, 0 );
+    glActiveTexture( GL_TEXTURE0 );
+    glBindTexture( GL_TEXTURE_2D, dofDownMap );
+    glEnable( GL_TEXTURE_2D );
+
+    glUniform1i( uDofBlurDepthSampler, 1 );
+    glActiveTexture( GL_TEXTURE1 );
+    glBindTexture( GL_TEXTURE_2D, depthDownMap );
+    glEnable( GL_TEXTURE_2D );
+    
+    fullScreenQuad();
+
+    ////////////////////////////////////////
+    //Bloom + DoF + original image
+
+    glViewport( viewX, viewY, viewW, viewH);
+    glBindFramebuffer( GL_FRAMEBUFFER, deferredFB );
     glDrawBuffer( GL_COLOR_ATTACHMENT0 );
 
-    shaderBloom->use();
-    glUniform1f( uBloomAvgLuminance, avgLuminance );
-    glUniform1f( uBloomMaxLuminance, maxLuminance );
-    glUniform2f( uBloomPixelSize, 1.0/winW, 1.0/winH );
+    shaderDofMix->use();
+    glUniform4f( uDofMixDofParams, focusZ, focusW, farW, nearW );
 
-    glUniform1i( uBloomColorSampler, 0 );
+    glUniform1i( uDofMixColorSampler, 0 );
+    glActiveTexture( GL_TEXTURE0 );
+    glBindTexture( GL_TEXTURE_2D, dofMap );
+    glEnable( GL_TEXTURE_2D );
+
+    glUniform1i( uDofMixMedBlurSampler, 1 );
+    glActiveTexture( GL_TEXTURE1 );
+    glBindTexture( GL_TEXTURE_2D, dofMedBlurMap );
+    glEnable( GL_TEXTURE_2D );
+
+    glUniform1i( uDofMixLargeBlurSampler, 2 );
+    glActiveTexture( GL_TEXTURE2 );
+    glBindTexture( GL_TEXTURE_2D, dofMaxBlurMap );
+    glEnable( GL_TEXTURE_2D );
+
+    glUniform1i( uDofMixDepthSampler, 3 );
+    glActiveTexture( GL_TEXTURE3 );
+    //glBindTexture( GL_TEXTURE_2D, deferredDepth );
+    glBindTexture( GL_TEXTURE_2D, deferredMaps[ Deferred::Normal ] );
+    glEnable( GL_TEXTURE_2D );
+
+    glUniform1i( uDofMixDepthBlurSampler, 4 );
+    glActiveTexture( GL_TEXTURE4 );
+    glBindTexture( GL_TEXTURE_2D, depthMaxBlurMap );
+    glEnable( GL_TEXTURE_2D );
+
+    fullScreenQuad ();
+
+    //////////////////////////////////////////////////////////
+    //Downsample, tone map and bloom cutoff to bloomDownMap
+
+    glViewport( 0,0,blurW,blurH );
+    glBindFramebuffer( GL_FRAMEBUFFER, blurFB );
+    glDrawBuffer( GL_COLOR_ATTACHMENT4 );
+
+    shaderBloomDown->use();
+    glUniform1f( uBloomDownAvgLuminance, avgLuminance );
+    glUniform1f( uBloomDownMaxLuminance, maxLuminance );
+    glUniform2f( uBloomDownPixelSize, 1.0/winW, 1.0/winH );
+
+    glUniform1i( uBloomDownColorSampler, 0 );
     glActiveTexture( GL_TEXTURE0 );
     glBindTexture( GL_TEXTURE_2D, deferredAccum );
     glEnable( GL_TEXTURE_2D );
     
     fullScreenQuad();
 
-    ////////////////////////////////////////
-    //Blur in X direction to blurMaps[1]
+    ///////////////////////////////////////////////////
+    //Blur bloomDownMap in X direction to bloomBlurMap
   
-    glDrawBuffer( GL_COLOR_ATTACHMENT1 );
+    glDrawBuffer( GL_COLOR_ATTACHMENT5 );
 
-    shaderBlur->use();
-    glUniform2f( uBlurPixelSize, 1.0/blurW, 1.0/blurH);
-    glUniform2f( uBlurDirection, 1.0, 0.0 );
-    glUniform1i( uBlurRadius, 14 );
+    shaderBloomBlur->use();
+    glUniform2f( uBloomBlurPixelSize, 1.0/blurW, 1.0/blurH);
+    glUniform2f( uBloomBlurDirection, 1.0, 0.0 );
+    glUniform1i( uBloomBlurRadius, bloomBlurRadius );
 
-    glUniform1i( blurColorSampler, 0 );
+    glUniform1i( uBloomBlurColorSampler, 0 );
     glActiveTexture( GL_TEXTURE0 );
-    glBindTexture( GL_TEXTURE_2D, blurMaps[0] );
+    glBindTexture( GL_TEXTURE_2D, bloomDownMap );
     glEnable( GL_TEXTURE_2D );
     
-    fullScreenQuad ();
+    fullScreenQuad();
 
-    ////////////////////////////////////////
-    //Blur in Y direction to effectsMaps[0]
+    ///////////////////////////////////////////////////
+    //Blur bloomBlurMap in Y direction to bloomDownMap
 
-    glDrawBuffer( GL_COLOR_ATTACHMENT2 );
+    glDrawBuffer( GL_COLOR_ATTACHMENT4 );
 
-    glUniform2f( uBlurDirection, 0.0, 1.0 );
+    glUniform2f( uBloomBlurDirection, 0.0, 1.0 );
 
-    glUniform1i( blurColorSampler, 0 );
+    glUniform1i( uBloomBlurColorSampler, 0 );
     glActiveTexture( GL_TEXTURE0 );
-    glBindTexture( GL_TEXTURE_2D, blurMaps[1] );
+    glBindTexture( GL_TEXTURE_2D, bloomBlurMap );
     glEnable( GL_TEXTURE_2D );
     
-    fullScreenQuad ();
-*/
+    fullScreenQuad();
+
     ////////////////////////////////////////
-    //Bloom + DoF + original image
 
     glViewport( viewX, viewY, viewW, viewH);
     glBindFramebuffer( GL_FRAMEBUFFER, 0 );
 
-    shaderFinal->use();
-    glUniform1f( uFinalAvgLuminance, avgLuminance );
-    glUniform1f( uFinalMaxLuminance, maxLuminance );
-    glUniform2fv( uFinalPoissonCoords, 12, poissonCoords );
-    glUniform2f( uFinalPixelSize, 1.0/winW, 1.0/winH );
+    shaderBloomMix->use();
+    glUniform1f( uBloomMixAvgLuminance, avgLuminance );
+    glUniform1f( uBloomMixMaxLuminance, maxLuminance );
 
-    glUniform1i( uFinalColorSampler, 0 );
+    glUniform1i( uBloomMixColorSampler, 0 );
     glActiveTexture( GL_TEXTURE0 );
     glBindTexture( GL_TEXTURE_2D, deferredAccum );
     glEnable( GL_TEXTURE_2D );
 
-    glUniform1i( uFinalBloomSampler, 1 );
+    glUniform1i( uBloomMixBloomSampler, 1 );
     glActiveTexture( GL_TEXTURE1 );
-    glBindTexture( GL_TEXTURE_2D, effectsMaps[0] );
+    glBindTexture( GL_TEXTURE_2D, bloomDownMap );
     glEnable( GL_TEXTURE_2D );
 
-    glUniform1i( uFinalDofSampler, 2 );
-    glActiveTexture( GL_TEXTURE2 );
-    glBindTexture( GL_TEXTURE_2D, deferredDof );
-    glEnable( GL_TEXTURE_2D );
-
-    glUniform1i( uFinalNormalSampler, 3 );
-    glActiveTexture( GL_TEXTURE3 );
-    glBindTexture( GL_TEXTURE_2D, deferredMaps[ Deferred::Normal ] );
-    glEnable( GL_TEXTURE_2D );
-    
     fullScreenQuad ();
 
     ////////////////////////////////////////
 
+    glActiveTexture( GL_TEXTURE4);
+    glDisable( GL_TEXTURE_2D );
     glActiveTexture( GL_TEXTURE3);
     glDisable( GL_TEXTURE_2D );
     glActiveTexture( GL_TEXTURE2);
