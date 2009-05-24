@@ -190,6 +190,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\engine\geController.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\engine\geController.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\engine\geEngine.h"
 				>
 			</File>
@@ -511,12 +519,28 @@
 							Preprocess="true"
 						/>
 					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="Embedit"
+							Preprocess="true"
+						/>
+					</FileConfiguration>
 				</File>
 				<File
 					RelativePath="..\..\src\engine\embedit\Cell.c"
 					>
 					<FileConfiguration
 						Name="Debug|Win32"
+						>
+						<Tool
+							Name="Embedit"
+							Preprocess="true"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
 						>
 						<Tool
 							Name="Embedit"

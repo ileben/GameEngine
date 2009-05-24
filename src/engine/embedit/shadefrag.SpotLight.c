@@ -52,7 +52,7 @@ void main (void)
     if (shadowCoord.x >= 0.0 && shadowCoord.x <= 1.0 &&
         shadowCoord.y >= 0.0 && shadowCoord.y <= 1.0)
       if (shadowCoord.z > shadowValue.r)
-        { shadowCoeff = 0.0; }
+        { shadowCoeff = 0.2; }
   }
 
   //Input vectors

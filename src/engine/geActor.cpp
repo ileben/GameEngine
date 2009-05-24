@@ -41,11 +41,18 @@ namespace GE
     onMatrixChanged();
   }
 
-  void Actor::lookAt (const Vector3 &look, const Vector3 &up)
+  void Actor::lookAt (const Vector3 &look, Vector3 up)
   {
+    //Avoid up vector that matches the look vector
+    if (Vector::Cross( up, look ).norm() == 0.0 ) {
+      up.x += 0.0001f;
+      up.y += 0.0002f;
+      up.z += 0.0003f;
+    }
+
     //Assume look is to be the zAxis in world space
-    Vector3 xAxis = Vector::Cross( up, look );
-    Vector3 yAxis = Vector::Cross( look, xAxis );
+    Vector3 xAxis = Vector::Cross( up, look ).normalize();
+    Vector3 yAxis = Vector::Cross( look, xAxis ).normalize();
     actor2world.setColumn( 0, xAxis.xyz(0.0f) );
     actor2world.setColumn( 1, yAxis.xyz(0.0f) );
     actor2world.setColumn( 2, look.xyz(0.0f) );
@@ -53,7 +60,7 @@ namespace GE
     onMatrixChanged();
   }
 
-  void Actor::lookInto (const Vector3 &point, const Vector3 &up)
+  void Actor::lookInto (const Vector3 &point, Vector3 up)
   {
     Vector3 center = actor2world.getColumn(3).xyz();
     lookAt( point - center, up );

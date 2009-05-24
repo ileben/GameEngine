@@ -84,7 +84,12 @@ namespace GE
     ArrayList< ShaderKey > shaders;
     Float avgLuminance;
     Float maxLuminance;
+    
+    bool isDofEnabled;
     Float focusDepth;
+    Float focusRange;
+    Float nearFalloff;
+    Float farFalloff;
     
     bool shadowInit;
     Uint32 shadowMap;
@@ -189,6 +194,10 @@ namespace GE
                            Actor *geometry,
                            Material *material);
 
+    void doToon (Uint32 sourceTex, Uint32 targetFB, Uint32 targetAtch);
+    void doDof (Uint32 sourceTex, Uint32 targetFB, Uint32 targetAtch);
+    void doBloom (Uint32 sourceTex, Uint32 targetFB, Uint32 targetAtch);
+
   public:
     
     Renderer();
@@ -217,8 +226,12 @@ namespace GE
     Float getAvgLuminance ();
     Float getMaxLuminance ();
 
-    void setFocusDistance (Float d);
-    Float getFocusDistance ();
+    void setIsDofEnabled (bool onoff);
+    bool getIsDofEnabled ();
+
+    void setDofParams (Float focusDepth, Float focusRange, Float nearFalloff, Float farFalloff );
+    void setDofParams (const Vector4 &params);
+    Vector4 getDofParams ();
   };
 }
 

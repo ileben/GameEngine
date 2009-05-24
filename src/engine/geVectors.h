@@ -28,6 +28,7 @@ namespace GE
     Vector4 xy (Float z, Float w) const;
     
     Vector2 ();
+    Vector2 (Float xy);
     Vector2 (Float x0, Float y0);
     Vector2& set (Float x0, Float y0);
     Vector2& operator= (const Vector2 &v);
@@ -63,6 +64,7 @@ namespace GE
     Vector4 xyz (Float w) const;
     
     Vector3 ();
+    Vector3 (Float xyz);
     Vector3 (Float x0, Float y0, Float z0);
     Vector3& set (Float x0, Float y0, Float z0);
     Vector3& operator= (const Vector3 &v);
@@ -98,6 +100,7 @@ namespace GE
     Vector3 xyz () const;
     
     Vector4 ();
+    Vector4 (Float xyzw);
     Vector4 (Float x0, Float y0, Float z0, Float w0);
     Vector4& set (Float x0, Float y0, Float z0, Float w0);
     Vector4& operator= (const Vector4 &v);
@@ -234,6 +237,7 @@ namespace GE
   Vector inline functions
   =============================================*/
   
+  //Conversions
   inline Vector3 Vector2::xy (Float z) const
     { return Vector3 (x,y,z); }
   
@@ -255,6 +259,7 @@ namespace GE
     { return Vector3(x,y,z); }
   
   
+  //Default constructor
   inline Vector2::Vector2 ()
     { x=0.0f; y=0.0f; }
   
@@ -264,7 +269,19 @@ namespace GE
   inline Vector4::Vector4 ()
     { x=0.0f; y=0.0f; z=0.0f; w=0.0f; }
   
+
+  //All-members constructor
+  inline Vector2::Vector2 (Float xy)
+    { x=xy; y=xy; }
+
+  inline Vector3::Vector3 (Float xyz)
+    { x=xyz; y=xyz; z=xyz; }
+
+  inline Vector4::Vector4 (Float xyzw)
+    { x=xyzw; y=xyzw; z=xyzw; w=xyzw; }
+
   
+  //Separate members contructor
   inline Vector2::Vector2 (Float x0, Float y0)
     { x=x0; y=y0; }
   
@@ -275,6 +292,7 @@ namespace GE
     { x=x0; y=y0; z=z0; w=w0; }
   
   
+  //Separate members assignment
   inline Vector2& Vector2::set (Float x0, Float y0)
     { x=x0; y=y0; return *this; }
   

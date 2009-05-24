@@ -34,15 +34,35 @@ namespace GE
 
     avgLuminance = 0.5f;
     maxLuminance = 1.0f;
+
+    isDofEnabled = false;
     focusDepth = 50.0f;
+    focusRange = 50.0f;
+    nearFalloff = 150.0f;
+    farFalloff = 150.0f;
   }
 
-  void Renderer::setFocusDistance (Float d) {
-    focusDepth = d;
+  void Renderer::setIsDofEnabled (bool onoff) {
+    isDofEnabled = onoff;
   }
 
-  Float Renderer::getFocusDistance () {
-    return focusDepth;
+  bool Renderer::getIsDofEnabled () {
+    return isDofEnabled;
+  }
+
+  void Renderer::setDofParams (Float fd, Float fr, Float nf, Float ff ) {
+    focusDepth = fd;
+    focusRange = fr;
+    nearFalloff = nf;
+    farFalloff = ff;
+  }
+
+  void Renderer::setDofParams (const Vector4 &params) {
+    setDofParams( params.x, params.y, params.z, params.w );
+  }
+
+  Vector4 Renderer::getDofParams () {
+    return Vector4( focusDepth, focusRange, nearFalloff, farFalloff );
   }
 
   void Renderer::setAvgLuminance (Float l) {
@@ -502,7 +522,7 @@ namespace GE
     glEnable( GL_CULL_FACE );
     
     glEnable( GL_POLYGON_OFFSET_FILL );
-    glPolygonOffset( 2.0f, 2.0f );
+    glPolygonOffset( 5.0f, 2.0f );
     
     glBindFramebuffer( GL_FRAMEBUFFER, shadowFB );
     glClear( GL_DEPTH_BUFFER_BIT );
@@ -813,52 +833,26 @@ namespace GE
     }
   }
 
-  void doBlur ()
+  void Renderer::doToon (Uint32 sourceTex, Uint32 targetFB, Uint32 targetAtch)
   {
-    
-  }
-
-  void Renderer::endDeferred()
-  {
-    glDisable( GL_LIGHTING );
-    glDisable( GL_BLEND );
-    glDisable( GL_DEPTH_TEST );
-    glDisable( GL_CULL_FACE );
-    glColor3f( 1,1,1 );
-
-    GLfloat poissonCoords[] = {
-      -0.326212f, -0.40581f,
-      -0.840144f, -0.07358f,
-      -0.695914f,  0.457137f,
-      -0.203345f,  0.620716f,
-       0.96234f,  -0.194983f,
-       0.473434f, -0.480026f,
-       0.519456f,  0.767022f,
-       0.185461f, -0.893124f,
-       0.507431f,  0.064425f,
-       0.89642f,   0.412458f,
-      -0.32194f,  -0.932615f,
-      -0.791559f, -0.59771f
-    };
-
     float focusZ = focusDepth;
-    //float focusW = 20; float farW = 30; float nearW = 30;
-    float focusW = 50; float farW = 200; float nearW = 200;
-    int medBlurRadius = 5;
-    int maxBlurRadius = 5;
-    int bloomBlurRadius = 14;
+    float focusW = focusRange;
+    float farW = focusRange + farFalloff;
+    float nearW = focusRange + nearFalloff;
 
-    /////////////////////////////////////////
-    //Initialize CoC values to dofMap
+    ///////////////////////////////////////////////////
+    //Apply toon shading and initialize CoC values.
+    //Render target: dofMap
 
-    glDrawBuffer( GL_COLOR_ATTACHMENT5 );
+    glBindFramebuffer( GL_FRAMEBUFFER, targetFB );
+    if (targetFB != 0) glDrawBuffer( targetAtch );
 
     shaderDofInit->use();
     glUniform4f( uDofInitDofParams, focusZ, focusW, farW, nearW );
 
     glUniform1i( uDofInitColorSampler, 0 );
     glActiveTexture( GL_TEXTURE0 );
-    glBindTexture( GL_TEXTURE_2D, deferredAccum );
+    glBindTexture( GL_TEXTURE_2D, sourceTex );
     glEnable( GL_TEXTURE_2D );
 
     glUniform1i( uDofInitNormalSampler, 1 );
@@ -872,10 +866,23 @@ namespace GE
     glEnable( GL_TEXTURE_2D );
 
     fullScreenQuad();
+  }
+
+  void Renderer::doDof (Uint32 sourceTex, Uint32 targetFB, Uint32 targetAtch)
+  {
+    float focusZ = focusDepth;
+    float focusW = focusRange;
+    float farW = focusRange + farFalloff;
+    float nearW = focusRange + nearFalloff;
+
+    int medBlurRadius = 5;
+    int maxBlurRadius = 5;
 
     ////////////////////////////////////////////
-    //Blur with middle radius to dofMidBlurMap
+    //Blur with medium size radius.
+    //Render target: dofMidBlurMap
 /*
+    glBindFramebuffer( GL_FRAMEBUFFER, deferredFB );
     glDrawBuffer( GL_COLOR_ATTACHMENT6 );
 
     shaderDofBlur->use();
@@ -884,14 +891,15 @@ namespace GE
 
     glUniform1i( uDofBlurColorSampler, 0 );
     glActiveTexture( GL_TEXTURE0 );
-    glBindTexture( GL_TEXTURE_2D, dofMap );
+    glBindTexture( GL_TEXTURE_2D, sourceTex );
     glEnable( GL_TEXTURE_2D );
 
     fullScreenQuad();
   */  
 
-    ////////////////////////////////////////
-    //Downsample depth to depthDownMap
+    ////////////////////////////////////////////
+    //Downsample depth information.
+    //Render target: depthDownMap
 
     glViewport( 0,0,blurW,blurH );
     glBindFramebuffer( GL_FRAMEBUFFER, blurFB );
@@ -908,8 +916,9 @@ namespace GE
 
     fullScreenQuad();
     
-    ////////////////////////////////////////
-    //Downsample dofMap to dofDownMap
+    /////////////////////////////////////////////
+    //Downsample color and CoC information.
+    //Render target: dofDownMap
 
     glDrawBuffer( GL_COLOR_ATTACHMENT1 );
 
@@ -918,13 +927,14 @@ namespace GE
 
     glUniform1i( uDofDownColorSampler, 0 );
     glActiveTexture( GL_TEXTURE0 );
-    glBindTexture( GL_TEXTURE_2D, dofMap );
+    glBindTexture( GL_TEXTURE_2D, sourceTex );
     glEnable( GL_TEXTURE_2D );
 
     fullScreenQuad();
 
-    ////////////////////////////////////////
-    //Blur depthDownMap to depthMaxBlurMap
+    //////////////////////////////////////////////////
+    //Blur downsampled depth with large blur radius
+    //Render target: depthMaxBlurMap
   
     glDrawBuffer( GL_COLOR_ATTACHMENT2 );
 
@@ -940,8 +950,9 @@ namespace GE
     
     fullScreenQuad();
 
-    ////////////////////////////////////////
-    //Blur dofDownMap to dofMaxBlurMap
+    //////////////////////////////////////////////////////////
+    //Blur downsampled color and CoC with large blur radius
+    //Render target: dofMaxBlurMap
   
     glDrawBuffer( GL_COLOR_ATTACHMENT3 );
 
@@ -962,12 +973,13 @@ namespace GE
     
     fullScreenQuad();
 
-    ////////////////////////////////////////
-    //Bloom + DoF + original image
+    /////////////////////////////////////////////////
+    //Mix blurred and original DoF images
+    //Render target: input argument
 
     glViewport( viewX, viewY, viewW, viewH);
-    glBindFramebuffer( GL_FRAMEBUFFER, deferredFB );
-    glDrawBuffer( GL_COLOR_ATTACHMENT0 );
+    glBindFramebuffer( GL_FRAMEBUFFER, targetFB );
+    if (targetFB != 0) glDrawBuffer( targetAtch );
 
     shaderDofMix->use();
     glUniform4f( uDofMixDofParams, focusZ, focusW, farW, nearW );
@@ -989,7 +1001,6 @@ namespace GE
 
     glUniform1i( uDofMixDepthSampler, 3 );
     glActiveTexture( GL_TEXTURE3 );
-    //glBindTexture( GL_TEXTURE_2D, deferredDepth );
     glBindTexture( GL_TEXTURE_2D, deferredMaps[ Deferred::Normal ] );
     glEnable( GL_TEXTURE_2D );
 
@@ -999,6 +1010,11 @@ namespace GE
     glEnable( GL_TEXTURE_2D );
 
     fullScreenQuad ();
+  }
+
+  void Renderer::doBloom (Uint32 sourceTex, Uint32 targetFB, Uint32 targetAtch)
+  {
+    int bloomBlurRadius = 14;
 
     //////////////////////////////////////////////////////////
     //Downsample, tone map and bloom cutoff to bloomDownMap
@@ -1014,7 +1030,7 @@ namespace GE
 
     glUniform1i( uBloomDownColorSampler, 0 );
     glActiveTexture( GL_TEXTURE0 );
-    glBindTexture( GL_TEXTURE_2D, deferredAccum );
+    glBindTexture( GL_TEXTURE_2D, sourceTex );
     glEnable( GL_TEXTURE_2D );
     
     fullScreenQuad();
@@ -1053,7 +1069,8 @@ namespace GE
     ////////////////////////////////////////
 
     glViewport( viewX, viewY, viewW, viewH);
-    glBindFramebuffer( GL_FRAMEBUFFER, 0 );
+    glBindFramebuffer( GL_FRAMEBUFFER, targetFB );
+    if (targetFB != 0) glDrawBuffer( targetAtch );
 
     shaderBloomMix->use();
     glUniform1f( uBloomMixAvgLuminance, avgLuminance );
@@ -1061,7 +1078,7 @@ namespace GE
 
     glUniform1i( uBloomMixColorSampler, 0 );
     glActiveTexture( GL_TEXTURE0 );
-    glBindTexture( GL_TEXTURE_2D, deferredAccum );
+    glBindTexture( GL_TEXTURE_2D, sourceTex );
     glEnable( GL_TEXTURE_2D );
 
     glUniform1i( uBloomMixBloomSampler, 1 );
@@ -1070,8 +1087,27 @@ namespace GE
     glEnable( GL_TEXTURE_2D );
 
     fullScreenQuad ();
+  }
 
-    ////////////////////////////////////////
+  void Renderer::endDeferred()
+  {
+    glDisable( GL_LIGHTING );
+    glDisable( GL_BLEND );
+    glDisable( GL_DEPTH_TEST );
+    glDisable( GL_CULL_FACE );
+    glColor3f( 1,1,1 );
+
+    doToon( deferredAccum, deferredFB, GL_COLOR_ATTACHMENT5 );
+    
+    if (isDofEnabled)
+    {
+      doDof( dofMap, deferredFB, GL_COLOR_ATTACHMENT0 );
+      doBloom( deferredAccum, 0, 0 );
+    }
+    else
+    {
+      doBloom( dofMap, 0, 0 );
+    }
 
     glActiveTexture( GL_TEXTURE4);
     glDisable( GL_TEXTURE_2D );

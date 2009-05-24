@@ -134,6 +134,55 @@ void exportTransformJoint (const MObject &o, Quat &R, Vector3 &T, Matrix4x4 &S)
 }
 
 /*
+------------------------------------------------
+Outputs the material ID / texture filename map
+------------------------------------------------*/
+
+void outputShaderFilename (int id, const MObject &shader)
+{
+  MStatus status;
+  bool anyTexture = false;
+
+  //Find the surface shader plug on this node
+  MFnDependencyNode shaderDepNode( shader );
+  MPlug surfShaderPlug = shaderDepNode.findPlug( "surfaceShader", &status );
+  if (status != MStatus::kSuccess) {
+    trace( "Material #" + CharString::FInt(id) + ": no texture" );
+    return;
+  }
+
+  //Walk all the surface shaders connected to this plug as destination
+  MPlugArray surfShaderPlugs;
+  surfShaderPlug.connectedTo( surfShaderPlugs, true, false );
+  for (Uint p=0; p<surfShaderPlugs.length(); ++p)
+  {
+    //Walk the dep graph upstream and search for file textures
+    MItDependencyGraph depIt( surfShaderPlugs[p],
+      MFn::kFileTexture, MItDependencyGraph::kUpstream );
+    for ( ; !depIt.isDone(); depIt.next())
+    {
+      //Find the filename plug on the texture object
+      MFnDependencyNode texDepNode( depIt.thisNode() );
+      MPlug texFileNamePlug = texDepNode.findPlug( "fileTextureName", &status );
+      if (status != MStatus::kSuccess) {
+        trace( "Material #" + CharString::FInt(id) + ": no texture" );
+        continue;
+      }
+
+      //Output the filename
+      MString texFileName;
+      texFileNamePlug.getValue( texFileName );
+      trace( "Material #" + CharString::FInt(id) + ": texture '" + texFileName.asChar() + "'" );
+      anyTexture = true;
+    }
+  }
+
+  //Report if no textures found
+  if (!anyTexture)
+    trace( "Material #" + CharString::FInt(id) + ": no texture" );
+}
+
+/*
 -----------------------------------------------
 Exports the mesh geometry and UV data.
 -----------------------------------------------*/
@@ -156,15 +205,15 @@ protected:
   double getU (int uvId) { return meshPointsU[ uvId ]; }
   double getV (int uvId) { return meshPointsV[ uvId ]; }
 
-  virtual void visitNumbers (int numPoints, int numNormals, int numTangents, int numUVs, int numFaces) {}
+  virtual void visitNumbers (int numPoints, int numNormals, int numTangents, int numUVs, int numFaces, int numMaterials) {}
   virtual void visitPoint (const MFloatPoint &point) {}
   virtual void visitNormal (const MVector &normal) {}
   virtual void visitTangent (const MVector &tangent, const MVector &bitangent) {}
   virtual void visitUV (double u, double v) {}
   virtual void visitPolygonStart (int faceId, int numCorners) {}
   virtual void visitPolygonCorner (int faceId, int corner, int vertId, int normalId, int tangentId, int uvId) {}
-  virtual bool visitPolygonEnd (int faceId) { return true; }
-  virtual bool visitTriangle (int faceId, int vertIds[3]) { return true; }
+  virtual bool visitPolygonEnd (int faceId, int materialId) { return true; }
+  virtual bool visitTriangle (int faceId, int materialId, int vertIds[3]) { return true; }
   virtual bool visitEdge (int vertIds[2], bool isSmooth) { return true; }
   virtual void visitReport () {}
 
@@ -181,6 +230,8 @@ void MeshExporter::exportMesh (const MObject &meshNode)
   MIntArray meshFaceNormalIds;
   MIntArray meshTriCounts;
   MIntArray meshTriIndices;
+  MObjectArray meshShaders;
+  MIntArray meshFaceShaderIds;
   Uint meshNumPoints;
   Uint meshNumNormals;
   Uint meshNumTangents;
@@ -188,6 +239,7 @@ void MeshExporter::exportMesh (const MObject &meshNode)
   Uint meshNumPointsUV;
   Uint meshNumFaces;
   Uint meshNumEdges;
+  Uint meshNumShaders;
 
   int invalidVertIds = 0;
   int invalidNormalIds = 0;
@@ -223,6 +275,16 @@ void MeshExporter::exportMesh (const MObject &meshNode)
   //Get triangulation
   mesh.getTriangles( meshTriCounts, meshTriIndices );
 
+  //Get shaders
+  MDagPath meshDagPath;
+  MFnDagNode meshDagNode( meshNode );
+  meshDagNode.getPath( meshDagPath );
+  mesh.getConnectedShaders( meshDagPath.instanceNumber(), meshShaders, meshFaceShaderIds );
+
+  //Walk the shader objects
+  for (Uint s=0; s<meshShaders.length(); ++s)
+    outputShaderFilename( s, meshShaders[ s ] );
+
   //Numbers
   meshNumPoints = meshPoints.length();
   meshNumNormals = meshNormals.length();
@@ -231,6 +293,7 @@ void MeshExporter::exportMesh (const MObject &meshNode)
   meshNumPointsUV = meshPointsU.length();
   meshNumFaces = mesh.numPolygons();
   meshNumEdges = mesh.numEdges();
+  meshNumShaders = Util::Max( (int)meshShaders.length(), 1 );
 
   //VISIT
   visitNumbers(
@@ -238,7 +301,8 @@ void MeshExporter::exportMesh (const MObject &meshNode)
     (int) meshNumNormals,
     (int) meshNumTangents,
     (int) meshNumPointsUV,
-    (int) meshNumFaces );
+    (int) meshNumFaces,
+    (int) meshNumShaders );
 
   //Walk the mesh points
   for (Uint p=0; p<meshNumPoints; ++p)
@@ -259,6 +323,16 @@ void MeshExporter::exportMesh (const MObject &meshNode)
   //Walk the mesh polygons
   for (Uint f=0; f<meshNumFaces; ++f)
   {
+    //Get polygon material ID
+    int meshFaceMaterialId = 0;
+    if (f < meshFaceShaderIds.length()) {
+      int meshFaceShaderId = meshFaceShaderIds[ f ];
+
+      //Check if the material ID is in range then assign
+      if (meshFaceShaderId >= 0 && meshFaceShaderId < (int)meshNumShaders)
+        meshFaceMaterialId = meshFaceShaderId;
+    }
+
     //Get polygon corner indices
     meshFaceVertIds.clear();
     mesh.getPolygonVertices( f, meshFaceVertIds);
@@ -316,7 +390,7 @@ void MeshExporter::exportMesh (const MObject &meshNode)
     }
 
     //VISIT
-    if (!visitPolygonEnd( f )) {
+    if (!visitPolygonEnd( f, meshFaceMaterialId )) {
       invalidFaces++;
       continue;
     }
@@ -345,7 +419,7 @@ void MeshExporter::exportMesh (const MObject &meshNode)
       if (!valid) continue;
 
       //VISIT
-      if (!visitTriangle( f, meshTriVertIds ))
+      if (!visitTriangle( f, meshFaceMaterialId, meshTriVertIds ))
         invalidTriangles++;
     }
   }
@@ -491,6 +565,8 @@ protected:
   TriMesh *outTriMesh;
   VertToVariantMap *vertToVariantMap;
   ArrayList<int> faceVertVariantIds;
+  ArrayList<int> *indexGroups;
+  int numIndexGroups;
   int faceMaxCorners;
   int faceNumCorners;
 
@@ -515,15 +591,19 @@ public:
      VertToVariantMap &variants)
   {
     outTriMesh = mesh;
-    outTriMesh->addFaceGroup( 0 );
     vertToVariantMap = &variants;
   }
 
-  void visitNumbers (int numPoints, int numNormals, int numTangents, int numUVs, int numFaces)
+  void visitNumbers (int numPoints, int numNormals, int numTangents, int numUVs, int numFaces, int numMaterials)
   {
+    //Init vertex to variant map
     vertToVariantMap->init( numPoints );
     for (int p=0; p<numPoints; ++p)
       faceVertVariantIds.pushBack( -1 );
+
+    //Init array of per-group index arrays
+    indexGroups = new ArrayList<int>[ numMaterials ];
+    numIndexGroups = numMaterials;
   }
 
   void visitPolygonStart (int faceId, int numCorners)
@@ -565,24 +645,45 @@ public:
       vertId, normalId, tangentId, uvId);
   }
 
-  bool visitTriangle (int faceId, int vertIds[3])
+  bool visitTriangle (int faceId, int materialId, int vertIds[3])
   {
     //Make sure we have all the vertex variants available
     if (faceNumCorners != faceMaxCorners)
       return false;
 
-    //Add new triangle to mesh
-    outTriMesh->addFace(
-      faceVertVariantIds[ vertIds[0] ],
-      faceVertVariantIds[ vertIds[1] ],
-      faceVertVariantIds[ vertIds[2] ]
-    );
+    //Add new triangle to group
+    ArrayList<int> &group = indexGroups[ materialId ];
+    group.pushBack( faceVertVariantIds[ vertIds[0] ] );
+    group.pushBack( faceVertVariantIds[ vertIds[1] ] );
+    group.pushBack( faceVertVariantIds[ vertIds[2] ] );
 
     return true;
   }
 
   void visitReport ()
   {
+    //Walk the index groups
+    for (int g=0; g<numIndexGroups; ++g)
+    {
+      //Create a face group for this material
+      ArrayList<int> &group = indexGroups[ g ];
+      outTriMesh->addFaceGroup( (MaterialID) g );
+
+      //Walk the triples of indices in this group
+      for (UintSize i=0; i<group.size(); i+=3)
+      {
+        //Add new triangle to mesh
+        outTriMesh->addFace(
+          group[ i+0 ],
+          group[ i+1 ],
+          group[ i+2 ] );
+      }
+    }
+
+    //Cleanup
+    delete[] indexGroups;
+
+    //Report
     trace( "exportMesh: exported "
            + CharString::FInt( (int)outTriMesh->getVertexCount() ) + " vertices." );
     trace( "exportMesh: exported "
@@ -659,7 +760,7 @@ public:
     outTexMesh = texMesh;
   }
 
-  void visitNumbers (int numPoints, int numNormals, int numTangents, int numUVs, int numFaces)
+  void visitNumbers (int numPoints, int numNormals, int numTangents, int numUVs, int numFaces, int numMaterials)
   {
     outVerts.reserve( numPoints );
     outTexVerts.reserve( numUVs );
@@ -699,7 +800,7 @@ public:
     outTexFaceVerts.pushBack( outTexVerts[ uvId ] );
   }
 
-  bool visitPolygonEnd (int faceId)
+  bool visitPolygonEnd (int faceId, int materialId)
   {
     //Add new face to the mesh
     SPolyMesh::Face *face = outPolyMesh->addFace(
@@ -716,7 +817,7 @@ public:
     return true;
   }
 
-  bool visitTriangle (int faceId, int vertIds[3])
+  bool visitTriangle (int faceId, int materialId, int vertIds[3])
   {
     SPolyMesh::HalfEdge *triHedges[3];
 

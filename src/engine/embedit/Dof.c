@@ -335,38 +335,54 @@ void main (void)
 #end
 
 ////////////////////////////////////////////////////////////////////////////////////////
+/////// Poisson disc implementation (retained for reference)
+/*
 
-  /*
-  /// Poisson disc implementation (retained for reference)
+//This array is passed in as a uniform
+GLfloat poissonCoords[] = {
+  -0.326212f, -0.40581f,
+  -0.840144f, -0.07358f,
+  -0.695914f,  0.457137f,
+  -0.203345f,  0.620716f,
+   0.96234f,  -0.194983f,
+   0.473434f, -0.480026f,
+   0.519456f,  0.767022f,
+   0.185461f, -0.893124f,
+   0.507431f,  0.064425f,
+   0.89642f,   0.412458f,
+  -0.32194f,  -0.932615f,
+  -0.791559f, -0.59771f
+};
 
-  vec4 centerTexel = texture2D( samplerDof, gl_TexCoord[0].xy );
-  float centerBlur = abs( centerTexel.a * 2.0 - 1.0 );
-  vec3 Color = vec3( 0.0 );
+vec4 centerTexel = texture2D( samplerDof, gl_TexCoord[0].xy );
+float centerBlur = abs( centerTexel.a * 2.0 - 1.0 );
+vec3 Color = vec3( 0.0 );
 
-  vec4 dofColor = vec4( 0.0 );
-  //dofColor.rgb += centerTexel.rgb;
+vec4 dofColor = vec4( 0.0 );
+//dofColor.rgb += centerTexel.rgb;
+//dofColor.a += 1.0;
+
+float discRadius = centerBlur * 20.0;
+for (int p=0; p<12; ++p)
+{
+  //Sample the dof texture
+  vec2 tapCoord = gl_TexCoord[0].xy + pixelSize * poissonCoords[p] * discRadius;
+  vec4 tapTexel = texture2D( samplerDof, tapCoord );
+
+  //Unpack tap pixel's own blur value
+  float tapBlur = abs( tapTexel.a * 2.0 - 1.0 );
+
+  //If tap is closer than center pixel use it's blur as weight else full weight
+  float tapWeight = (tapTexel.a >= centerTexel.a) ? 1.0 : tapBlur;
+  //float tapWeight = (tapTexel.a >= centerTexel.a) ? 1.0 : 0.0;
+
+  //Accumulate
+  dofColor.rgb += tapTexel.rgb * tapWeight;
+  dofColor.a += tapWeight;
+  //dofColor.rgb += tapTexel.rgb;
   //dofColor.a += 1.0;
+}
 
-  float discRadius = centerBlur * 20.0;
-  for (int p=0; p<12; ++p)
-  {
-    //Sample the dof texture
-    vec2 tapCoord = gl_TexCoord[0].xy + pixelSize * poissonCoords[p] * discRadius;
-    vec4 tapTexel = texture2D( samplerDof, tapCoord );
+Color += dofColor.rgb / dofColor.a;
 
-    //Unpack tap pixel's own blur value
-    float tapBlur = abs( tapTexel.a * 2.0 - 1.0 );
-
-    //If tap is closer than center pixel use it's blur as weight else full weight
-    float tapWeight = (tapTexel.a >= centerTexel.a) ? 1.0 : tapBlur;
-    //float tapWeight = (tapTexel.a >= centerTexel.a) ? 1.0 : 0.0;
-
-    //Accumulate
-    dofColor.rgb += tapTexel.rgb * tapWeight;
-    dofColor.a += tapWeight;
-    //dofColor.rgb += tapTexel.rgb;
-    //dofColor.a += 1.0;
-  }
-
-  Color += dofColor.rgb / dofColor.a;
-  */
+*/

@@ -66,8 +66,8 @@ namespace GE
     void scale (Float x, Float y, Float z);
     void scale (Float k);
     void rotate (const Vector3 &axis, Float angle);
-    void lookAt (const Vector3 &look, const Vector3 &up = Vector3(0,1,0));
-    void lookInto (const Vector3 &point, const Vector3 &up = Vector3(0,1,0));
+    void lookAt (const Vector3 &look, Vector3 up = Vector3(0,1,0));
+    void lookInto (const Vector3 &point, Vector3 up = Vector3(0,1,0));
     
     //Material assignment
     void setMaterial(Material *material);

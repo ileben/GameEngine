@@ -53,6 +53,9 @@
 #include "geShaders.h"
 #include "geKernel.h"
 
+//Controllers
+#include "geController.h"
+
 //Prevent
 //#include "geUnClass.h"
 

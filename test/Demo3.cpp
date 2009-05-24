@@ -31,25 +31,23 @@ Actor *actorRender = NULL;
 Light *light = NULL;
 
 Scene *scene = NULL;
+Scene *sceneSky = NULL;
 Scene *sceneRender = NULL;
 
-CameraMode::Enum cameraMode;
+FpsController *ctrl = NULL;
 Camera2D *cam2D = NULL;
 Camera3D *cam3D = NULL;
+Camera3D *camSky = NULL;
 Camera3D *camRender = NULL;
-FpsController *ctrl = NULL;
+CameraMode::Enum cameraMode;
 
 Renderer *renderer = NULL;
-
-bool down3D;
-Vector2 lastMouse3D;
 
 int resX = 800;
 int resY = 600;
 Vector3 center( 0,0,0 );
 Vector3 boundsMin( 0,0,0 );
 Vector3 boundsMax( 0,0,0 );
-
 
 //Makes toggling idle draw easier
 bool idleDraw = false;
@@ -59,110 +57,34 @@ void INLINE postRedisplay()
     glutPostRedisplay();
 }
 
-void drag3D (int x, int y)
-{  
-  Vector2 diff = Vector2( (Float)x,(Float)y ) - lastMouse3D;
-  float eyeDist = ( camRender->getEye() - center ).norm();
-  
-  Float angleH = diff.x * (2*PI) / 400;
-  Float angleV = diff.y * (2*PI) / 400;
-  Float panH = -diff.x * ( eyeDist * 0.002f );
-  Float panV =  diff.y * ( eyeDist * 0.002f );
-  Float zoom =  diff.y * ( eyeDist * 0.01f );
-  lastMouse3D.set( (Float)x, (Float)y );
-  
-  switch (cameraMode)
-  {  
-  case CameraMode::Zoom:
-
-    camRender->zoom( zoom );
-    break;
-    
-  case CameraMode::Orbit:
-    
-    camRender->setCenter( center );
-    camRender->orbitH( angleH, true );
-    camRender->orbitV( angleV, true );
-    break;
-
-  case CameraMode::Pan:
-
-    camRender->panH( panH );
-    camRender->panV( panV );
-    break;
-  }
-  
-  postRedisplay();
-}
-
-void click3D (int button, int state, int x, int y)
-{
-  if (state != GLUT_DOWN)
-  {
-    down3D = false;
-    return;
-  }
-
-  int mods = glutGetModifiers();
-
-  if (mods & GLUT_ACTIVE_ALT)
-  {
-    if (button == GLUT_LEFT_BUTTON)
-      cameraMode = CameraMode::Orbit;
-    else if (button == GLUT_RIGHT_BUTTON)
-      cameraMode = CameraMode::Zoom;
-    else if (button == GLUT_MIDDLE_BUTTON)
-      cameraMode = CameraMode::Pan;
-  }
-  else if (mods & GLUT_ACTIVE_CTRL)
-  {
-    cameraMode = CameraMode::Pan;
-  }
-  else return;
-  
-  lastMouse3D.set( (Float)x, (Float)y );
-  down3D = true;
-}
-
 void click (int button, int state, int x, int y)
 {
   ctrl->mouseClick( button, state, x, y );
-  return;
-
-  click3D( button, state, x, y );
 }
 
 void drag (int x, int y)
 {
   ctrl->mouseMove( x, y );
-  return;
-
-  if (down3D)
-    drag3D( x, y );
 }
 
 void keyDown (unsigned char key, int x, int y)
 {
-  ctrl->keyDown( key );
-  return;
-
   switch (key)
   {
   case 9://tab
-    light->setCastShadows( !light->getCastShadows() );
+    renderer->setIsDofEnabled( !renderer->getIsDofEnabled() );
     break;
 
   case 8://backspace
     if (skinMeshActor == NULL) return;
     skinMeshActor->loadPose();
     break;
-
-  case 13://return
+  /*
     if (skinMeshActor == NULL) return;
     skinMeshActor->playAnimation( animName, animSpeed );
     break;
-
-  case ' ':
+  */
+  case 13://return
     if (skinMeshActor == NULL) return;
     if (!skinMeshActor->isAnimationPlaying())
       skinMeshActor->loopAnimation( animName, animSpeed );
@@ -187,6 +109,8 @@ void keyDown (unsigned char key, int x, int y)
     //Quit on escape
     exit(0);
   }
+
+  ctrl->keyDown( key );
 }
 
 void keyUp (unsigned char key, int x, int y)
@@ -198,7 +122,7 @@ void specialKey (int key, int x, int y)
 {
   float l;
   float lstep = 0.05f;
-  float fstep = 5.0f;
+  float fstep = 10.0f;
   Vector4 dof;
 
   switch (key)
@@ -231,14 +155,26 @@ void specialKey (int key, int x, int y)
   }
 }
 
+
+void updateSkyCamera()
+{
+  Matrix4x4 mSky = camRender->getMatrix();
+  mSky.setColumn( 3, camSky->getMatrix().getColumn(3) );
+  camSky->setMatrix( mSky );
+}
+
 void display ()
 {
+  updateSkyCamera();
+
   //switch camera
   renderer->setViewport( 0,0,resX, resY );
   renderer->beginFrame();
   
   //draw model
   renderer->beginDeferred();
+  renderer->setCamera( camSky );
+  renderer->renderSceneDeferred( sceneSky );
   renderer->setCamera( camRender );
   renderer->renderSceneDeferred( sceneRender );
   renderer->endDeferred();
@@ -306,7 +242,7 @@ void initGlut (int argc, char **argv)
 
   glutInitWindowPosition( 100,100 );
   glutInitWindowSize( resX,resY );
-  glutCreateWindow( "Game Editor" );
+  glutCreateWindow( "Demo" );
   
   glutReshapeFunc( reshape );
   glutDisplayFunc( display );
@@ -318,53 +254,6 @@ void initGlut (int argc, char **argv)
   glutIdleFunc( animate );
   idleDraw = true;
 }
-/*
-class VertColorMaterial : public StandardMaterial { public:
-  virtual void begin ()  {
-    StandardMaterial::begin ();
-    glEnable( GL_COLOR_MATERIAL );
-  }
-};
-
-void SPolyActor::renderMesh (MaterialID matid)
-{
-  glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-  
-  TexMesh::FaceIter uf( texMesh );
-  for (SPolyMesh::FaceIter f( polyMesh ); !f.end(); ++f, ++uf) {
-    
-    //Check if this face belongs to current material
-    if (matid != f->materialID() &&
-        matid != GE_ANY_MATERIAL_ID)
-      continue;
-    
-    glBegin( GL_POLYGON );
-    
-    TexMesh::FaceVertIter uv(*uf);
-    for(SPolyMesh::FaceHedgeIter h(*f); !h.end(); ++h, ++uv) {
-      
-      //Adjust the color based on bone weight
-      SPolyMesh::Vertex *vert = h->dstVertex();
-      glColor3f (1,1,1);
-      for (int b=0; b<4; ++b) {
-        if (vert->boneIndex[ b ] == boneColorIndex &&
-            vert->boneWeight[ b ] > 0.0f)
-            glColor3f( 1, 0, 0 ); }
-      
-      //Vertex normal
-      glNormal3fv( (Float*) &h->vertexNormal()->coord );
-      
-      //UV coordinates
-      if (!uv.end()) {
-        glTexCoord2f( uv->point.x, uv->point.y ); }
-      
-      //Vertex coordinate
-      glVertex3fv( (Float*) &h->dstVertex()->point );
-    }
-    
-    glEnd();
-  }
-}*/
 
 bool loadPackage (const CharString &fileName)
 {
@@ -463,8 +352,12 @@ Actor* loadActor (const CharString &meshFileName,
   character = NULL;
   actorRender = NULL;
 
-  if (!loadPackage( meshFileName ))
+  if (!loadPackage( meshFileName )) {
+    std::cout << "Failed loading '" << meshFileName.buffer() << std::endl;
+    std::getchar();
+    exit(0);
     return NULL;
+  }
 
   //Create actor
   TriMesh *meshRender = NULL;
@@ -553,6 +446,22 @@ Actor* loadActor (const CharString &meshFileName,
   return actorRender;
 }
 
+Material* loadTexMaterial (const CharString &texFileName)
+{
+  Image *img = new Image;
+  ImageErrorCode err = img->readFile( texFileName, "png" );
+  if (err != IMAGE_NO_ERROR)
+    std::cout << "Problems while loading '" << texFileName.buffer() << "'!" << std::endl;
+
+  Texture *tex = new Texture;
+  tex->fromImage( img );
+
+  DiffuseTexMat *mat = new DiffuseTexMat;
+  mat->setDiffuseTexture( tex );
+  mat->setLuminosity( 0.05f );
+  return mat;
+}
+
 int main (int argc, char **argv)
 {
   //Initialize GLUT
@@ -564,137 +473,100 @@ int main (int argc, char **argv)
   printf( "Kernel loaded\n" );
 
   //Setup depth-of-field
-  renderer->setDofParams( 50, 50, 150, 150 );
-  renderer->setIsDofEnabled( false );
+  renderer->setDofParams( 200, 50, 150, 150 );
 
   //Setup 3D scene
+  sceneSky = new Scene;
   scene = new Scene;
-/*
-  if (argc < 4)
-  {
-    //Get input filename and load it
-    CharString fileName;
-    do {
-      char buf[256];
-      std::cout << "Filename: ";
-      std::cin.width( 256 );
-      std::cin >> buf;
-      fileName = buf;
-      loadActor( fileName );
-    }
-    while (actorRender == NULL);
-  }
-  else
-  {
-    //Take filename from argument
-    CharString fileName = argv[1];
 
-    CharString texFileName = argv[2];
-    if (texFileName == "notex")
-      texFileName = "";
+  MultiMaterial *mm = new MultiMaterial;
+  mm->setNumSubMaterials( 24 );
+  mm->setSubMaterial( 0, loadTexMaterial( "Textures/BlackWoodToon.png" ) );
+  mm->setSubMaterial( 1, loadTexMaterial( "Textures/WoodFloor.png" ) );
+  mm->setSubMaterial( 2, loadTexMaterial( "Textures/DarkBrickToon.png" ) );
+  mm->setSubMaterial( 3, loadTexMaterial( "Textures/WhiteTileToon4x4.png" ) );
+  mm->setSubMaterial( 4, loadTexMaterial( "Textures/BeigePlasterToon.png" ) );
+  mm->setSubMaterial( 5, new StandardMaterial() );
+  mm->setSubMaterial( 6, loadTexMaterial( "Textures/HouseWood5Toon.png" ) );
+  mm->setSubMaterial( 7, loadTexMaterial( "Textures/FrostedGlass.png" ) );
+  mm->setSubMaterial( 8, loadTexMaterial( "Textures/BrushedMetal.png" ) );
+  mm->setSubMaterial( 9, loadTexMaterial( "Textures/HouseTowelToon.png" ) );
+  mm->setSubMaterial( 10, loadTexMaterial( "Textures/TVdotsToon.png" ) );
+  mm->setSubMaterial( 11, loadTexMaterial( "Textures/TVplastic.png" ) );
+  mm->setSubMaterial( 12, new StandardMaterial() );
+  mm->setSubMaterial( 13, loadTexMaterial( "Textures/StoveTopToon.png" ) );
+  mm->setSubMaterial( 14, loadTexMaterial( "Textures/PilllowUV.png" ) );
+  mm->setSubMaterial( 15, loadTexMaterial( "Textures/BedHeadUVToon.png" ) );
+  mm->setSubMaterial( 16, loadTexMaterial( "Textures/BedUVToon3.png" ) );
+  mm->setSubMaterial( 17, loadTexMaterial( "Textures/HouseWood2Toon.png" ) );
+  mm->setSubMaterial( 18, loadTexMaterial( "Textures/LeatherSquareButtonToonSmall.png" ) );
+  mm->setSubMaterial( 19, loadTexMaterial( "Textures/DarkBrushedMetal.png" ) );
+  mm->setSubMaterial( 20, loadTexMaterial( "Textures/LeatherSquareToon.png" ) );
+  mm->setSubMaterial( 21, loadTexMaterial( "Textures/DarkBrushedMetal.png" ) );
+  mm->setSubMaterial( 22, loadTexMaterial( "Textures/LeatherSquareToon.png" ) );
+  mm->setSubMaterial( 23, new StandardMaterial() );
 
-    animName = argv[3];
-    if (animName == "noanim")
-      animName = "";
-
-    loadActor( fileName, texFileName );
-    if (actorRender == NULL) {
-      printf( "Failed loading '%s'\n", argv[1] );
-      getchar();
-      return 1;
-    }
-  }
-
-  scene->addChild( actorRender );
-  ((StandardMaterial*)actorRender->getMaterial())->setCullBack(false);
-  ((StandardMaterial*)actorRender->getMaterial())->setLuminosity(0.2f);
-  ((StandardMaterial*)actorRender->getMaterial())->setDiffuseColor(Vector3(.7,.7,.7));
-  ((StandardMaterial*)actorRender->getMaterial())->setSpecularity(1.0f);
-  ((StandardMaterial*)actorRender->getMaterial())->setGlossiness(0.5f);
-  ((StandardMaterial*)actorRender->getMaterial())->setCellShaded( true );
-  */
-
-  loadActor( "Lobby.pak" );
-  actorRender->scale( 10 );
-  ((StandardMaterial*)actorRender->getMaterial())->setLuminosity(0.2f);
-  scene->addChild( actorRender );
-/*
-  loadActor( "trex.pak", "rex.jpg", "rex_normal.jpg" );
-  //((StandardMaterial*)actorRender->getMaterial())->setCullBack(false);
-  ((StandardMaterial*)actorRender->getMaterial())->setDiffuseColor(Vector3(0,.5,0));
-  ((StandardMaterial*)actorRender->getMaterial())->setSpecularity(0.9f);
-  ((StandardMaterial*)actorRender->getMaterial())->setGlossiness(0.05f);
-  ((StandardMaterial*)actorRender->getMaterial())->setCellShaded( true );
-  actorRender->scale(1,-1,-1);
-  actorRender->translate(0,-50,0);
-  scene->addChild( actorRender );
-*/
-  /*
-  //Create floor cube
-  StandardMaterial *matBox = new StandardMaterial;
-  matBox->setSpecularity( 0.5 );
-  matBox->setDiffuseColor( Vector3(1,1,1) );
-
-  TriMesh *cubeMesh = new CubeMesh;
-  TriMeshActor *cube = new TriMeshActor;
-  cube->setMaterial( matBox );
-  cube->setMesh( cubeMesh );
-  cube->scale( 300, 10, 300 );
-  cube->translate( 0, -100, 0 );
-  scene->addChild( cube );
-*/
-  //Create axes
-  StandardMaterial axesMat;
-  axesMat.setUseLighting( false );
-  AxisActor *axes = new AxisActor;
-  axes->scale( 100 );
-  axes->setMaterial( &axesMat );
-  //scene->addChild( axes );
+  Actor *house = loadActor( "Meshes/House2.pak" );
+  house->scale( 10 );
+  house->setMaterial( mm );
+  scene->addChild( house );
 
   //Create lights
-  light = new SpotLight( Vector3(-200,300,-200), Vector3(), 60, 0 );
-  //light = new SpotLight( Vector3(-200,150,200), Vector3(), 60, 0 );
-  //light = new SpotLight( Vector3(300,300,50), Vector3(), 60, 0 );
+  light = new SpotLight( Vector3(0,320,-120), Vector3(0.5,-1,0), 70, 0 );
   light->setCastShadows( true );
-  light->setDiffuseColor( Vector3(1,1,1) );
-  light->setSpecularColor( Vector3(5,5,5) );
-  light->lookInto( center );
+  light->setDiffuseColor( Vector3(1) );
   scene->addChild( light );
 
-  Light *light2 = new SpotLight( Vector3(300,300,50), Vector3(), 60, 0 );
-  light2->lookInto( center );
-  light2->setDiffuseColor( Vector3(.5,.5,1) );
+  Light *light2 = new SpotLight( Vector3(-200,400,-120), Vector3(-0.5,-1,0), 70, 0 );
+  light2->setDiffuseColor( Vector3(1) );
   light2->setCastShadows( true );
-  scene->addChild( light2);
+  scene->addChild( light2 );
 
-  Light *light3 = new SpotLight( Vector3(-200,150,200), Vector3(), 60, 0 );
-  light3->lookInto( center );
-  light3->setDiffuseColor( Vector3(.5,.5,.5) );
+  Light *light5 = new SpotLight( Vector3(-100,400,-120), Vector3(0,-1,0), 70, 0 );
+  light5->setDiffuseColor( Vector3(1) );
+  light5->setCastShadows( true );
+  scene->addChild( light5 );
+
+  Light *light3 = new SpotLight( Vector3(400,300,-100), Vector3(0,-1,0), 60, 0 );
+  light3->setDiffuseColor( Vector3(1) );
   light3->setCastShadows( true );
-  scene->addChild( light3);
+  scene->addChild( light3 );
 
+  Light *light4 = new SpotLight( Vector3(-100,250,300), Vector3(0,-1,0), 100, 0 );
+  light4->setDiffuseColor( Vector3(1) );
+  light4->setCastShadows( true );
+  scene->addChild( light4 );
+
+  Light *light6 = new SpotLight( Vector3(150,300,200), Vector3(0,-1,0), 60, 0 );
+  light6->setDiffuseColor( Vector3(1) );
+  light6->setCastShadows( true );
+  scene->addChild( light6 );
+
+
+  //Setup 3D camera
+  camSky = new Camera3D;
   cam3D = new Camera3D;
   cam3D->setCenter( center );
-  cam3D->translate( 0, 0, -300 );
-  cam3D->orbitV( Util::DegToRad( 25 ) );
+  cam3D->orbitH( Util::DegToRad( -40 ) );
+  cam3D->orbitV( Util::DegToRad( 50 ) );
+  cam3D->translate( 400, 600, -400 );
   cam3D->setNearClipPlane( 1.0f );
   cam3D->setFarClipPlane( 3000.0f );
+
+  //Attach to controller
+  ctrl = new FpsController;
+  ctrl->attachCamera( cam3D );
+  ctrl->setMoveSpeed( 200 );
 
   //Setup 2D overlay
   lblFps = new FpsLabel;
   lblFps->setLocation( Vector2( 0.0f, (Float)resY ));
   lblFps->setColor( Vector3( 1.0f, 1.0f, 1.0f ));
-
   cam2D = new Camera2D;
 
-  //Start with Logo scene
+  //Setup current scene to render
   sceneRender = scene;
   camRender = cam3D;
-
-  //Assign controller
-  ctrl = new FpsController;
-  ctrl->attachCamera( cam3D );
-  ctrl->setMoveSpeed( 200 );
 
   //Run application
   atexit( cleanup );
