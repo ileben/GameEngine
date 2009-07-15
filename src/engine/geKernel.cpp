@@ -113,6 +113,17 @@ GE_PFGLRENDERBUFFERSTORAGE       GE_glRenderbufferStorage = NULL;
 GE_PFGLDRAWBUFFERS               GE_glDrawBuffers = NULL;
 #endif
 
+#ifndef GL_ARB_occlusion_query
+GE_PFGLGENQUERIES                GE_glGenQueries = NULL;
+GE_PFGLDELETEQUERIES             GE_glDeleteQueries = NULL;
+GE_PFGLISQUERY                   GE_glIsQuery = NULL;
+GE_PFGLBEGINQUERY                GE_glBeginQuery = NULL;
+GE_PFGLENDQUERY                  GE_glEndQuery = NULL;
+GE_PFGLGETQUERYIV                GE_glGetQueryiv = NULL;
+GE_PFGLGETQUERYOBJECTIV          GE_glGetQueryObjectiv = NULL;
+GE_PFGLGETQUERYOBJECTUIV         GE_glGetQueryObjectuiv = NULL;
+#endif
+
 GE_PFGLSWAPINTERVAL glSwapInterval = NULL;
 
 
@@ -508,6 +519,44 @@ namespace GE
     }else{ hasDepthStencilFormat = false; }
 
     /*
+    Check for occlusion query
+    *****************************************/
+
+    if (checkExtension( ext, "GL_ARB_occlusion_query" )) {
+      hasOcclusionQuery = true;
+
+      #ifndef GL_ARB_occlusion_query
+      GE_glGenQueries = (GE_PFGLGENQUERIES)
+        getProcAddress( "glGenQueriesARB" );
+      GE_glDeleteQueries = (GE_PFGLDELETEQUERIES)
+        getProcAddress( "glDeleteQueriesARB" );
+      GE_glIsQuery = (GE_PFGLISQUERY)
+        getProcAddress( "glIsQueryARB" );
+      GE_glBeginQuery = (GE_PFGLBEGINQUERY)
+        getProcAddress( "glBeginQueryARB" );
+      GE_glEndQuery = (GE_PFGLENDQUERY)
+        getProcAddress( "glEndQueryARB" );
+      GE_glGetQueryiv = (GE_PFGLGETQUERYIV)
+        getProcAddress( "glGetQueryivARB" );
+      GE_glGetQueryObjectiv = (GE_PFGLGETQUERYOBJECTIV)
+        getProcAddress( "glGetQueryObjectivARB" );
+      GE_glGetQueryObjectuiv = (GE_PFGLGETQUERYOBJECTUIV)
+        getProcAddress( "glGetQueryObjectuivARB" );
+
+      if (GE_glGenQueries==NULL || GE_glDeleteQueries==NULL ||
+          GE_glIsQuery==NULL || GE_glBeginQuery==NULL ||
+          GE_glEndQuery==NULL || GE_glGetQueryiv==NULL ||
+          GE_glGetQueryObjectiv==NULL || GE_glGetQueryObjectuiv==NULL)
+        hasOcclusionQuery = false;
+      #endif
+
+      maxOcclusionBits = 0;
+      if (hasOcclusionQuery)
+        GE_glGetQueryiv( GL_SAMPLES_PASSED, GL_QUERY_COUNTER_BITS, &maxOcclusionBits );
+
+    }else{ hasOcclusionQuery = false; }
+
+    /*
     Check vertical sync control
     *****************************************/
     
@@ -526,9 +575,11 @@ namespace GE
     printf( "hasMultipleRenderTargets: %s\n", (hasMultipleRenderTargets ? "true" : "false" ));
     printf( "hasDepthStencilFormat: %s\n", (hasDepthStencilFormat ? "true" : "false" ));
     printf( "hasRangeElements: %s\n", (hasRangeElements ? "true" : "false" ));
+    printf( "hasOcclusionQuery: %s\n", (hasOcclusionQuery ? "true" : "false" ));
     printf( "maxRenderTargets: %d\n", maxRenderTargets );
     printf( "maxElementsVertices: %d\n", maxElementsVertices );
     printf( "maxElementsIndices: %d\n", maxElementsIndices );
+    printf( "maxOcclusionBits: %d\n", maxOcclusionBits);
   }
   
   /*

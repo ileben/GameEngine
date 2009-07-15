@@ -63,6 +63,8 @@ namespace GE
     bool hasMultipleRenderTargets;
     bool hasDepthStencilFormat;
     bool hasRangeElements;
+    bool hasOcclusionQuery;
+    int maxOcclusionBits;
     int maxRenderTargets;
     int maxElementsIndices;
     int maxElementsVertices;

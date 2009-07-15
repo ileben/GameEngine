@@ -427,6 +427,51 @@ GL_ARB_pixel_buffer_object
 #define GL_PIXEL_UNPACK_BUFFER_BINDING    0x88EF
 #endif
 
+/***********************************************
+GL_ARB_occlusion_query
+***********************************************/
+
+#ifndef GL_ARB_occlusion_query
+#define GL_QUERY_COUNTER_BITS             0x8864
+#define GL_CURRENT_QUERY                  0x8865
+#define GL_QUERY_RESULT                   0x8866
+#define GL_QUERY_RESULT_AVAILABLE         0x8867
+#define GL_SAMPLES_PASSED                 0x8914
+
+typedef void
+  (APIENTRY* GE_PFGLGENQUERIES)
+  (GLsizei n, GLuint *ids);
+
+typedef void
+  (APIENTRY* GE_PFGLDELETEQUERIES)
+  (GLsizei n, const GLuint *ids);
+
+typedef GLboolean
+  (APIENTRY* GE_PFGLISQUERY)
+  (GLuint id);
+
+typedef void
+  (APIENTRY* GE_PFGLBEGINQUERY)
+  (GLenum target, GLuint id);
+
+typedef void
+  (APIENTRY* GE_PFGLENDQUERY)
+  (GLenum target);
+
+typedef void
+  (APIENTRY* GE_PFGLGETQUERYIV)
+  (GLenum target, GLenum pname, GLint *params);
+
+typedef void
+  (APIENTRY* GE_PFGLGETQUERYOBJECTIV)
+  (GLuint id, GLenum pname, GLint *params);
+
+typedef void
+  (APIENTRY* GE_PFGLGETQUERYOBJECTUIV)
+  (GLuint id, GLenum pname, GLuint *params);
+
+#endif
+
 /*******************************************************
 Function pointers
 ********************************************************/
@@ -501,6 +546,17 @@ extern GE_PFGLRENDERBUFFERSTORAGE       GE_glRenderbufferStorage;
 
 #ifndef GL_ARB_draw_buffers
 extern GE_PFGLDRAWBUFFERS               GE_glDrawBuffers;
+#endif
+
+#ifndef GL_ARB_occlusion_query
+extern GE_PFGLGENQUERIES                GE_glGenQueries;
+extern GE_PFGLDELETEQUERIES             GE_glDeleteQueries;
+extern GE_PFGLISQUERY                   GE_glIsQuery;
+extern GE_PFGLBEGINQUERY                GE_glBeginQuery;
+extern GE_PFGLENDQUERY                  GE_glEndQuery;
+extern GE_PFGLGETQUERYIV                GE_glGetQueryiv;
+extern GE_PFGLGETQUERYOBJECTIV          GE_glGetQueryObjectiv;
+extern GE_PFGLGETQUERYOBJECTUIV         GE_glGetQueryObjectuiv;
 #endif
 
 
@@ -581,6 +637,17 @@ Function re-routing
 
 #ifndef GL_ARB_draw_buffers
 #define glDrawBuffers               GE_glDrawBuffers
+#endif
+
+#ifndef GL_ARB_occlusion_query
+#define glGenQueries                GE_glGenQueries
+#define glDeleteQueries             GE_glDeleteQueries
+#define glIsQuery                   GE_glIsQuery
+#define glBeginQuery                GE_glBeginQuery
+#define glEndQuery                  GE_glEndQuery
+#define glGetQueryiv                GE_glGetQueryiv
+#define glGetQueryObjectiv          GE_glGetQueryObjectiv
+#define glGetQueryObjectuiv         GE_glGetQueryObjectuiv
 #endif
 
 #endif//!GE_NO_EXTENSION_ROUTING

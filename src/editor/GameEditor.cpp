@@ -614,22 +614,18 @@ int main (int argc, char **argv)
   ((StandardMaterial*)actorRender->getMaterial())->setCellShaded( true );
   */
 
-  loadActor( "Lobby.pak" );
-  actorRender->scale( 10 );
-  ((StandardMaterial*)actorRender->getMaterial())->setLuminosity(0.2f);
-  scene->addChild( actorRender );
-/*
+
   loadActor( "trex.pak", "rex.jpg", "rex_normal.jpg" );
-  //((StandardMaterial*)actorRender->getMaterial())->setCullBack(false);
+  ((StandardMaterial*)actorRender->getMaterial())->setCullBack( false );
   ((StandardMaterial*)actorRender->getMaterial())->setDiffuseColor(Vector3(0,.5,0));
   ((StandardMaterial*)actorRender->getMaterial())->setSpecularity(0.9f);
   ((StandardMaterial*)actorRender->getMaterial())->setGlossiness(0.05f);
-  ((StandardMaterial*)actorRender->getMaterial())->setCellShaded( true );
+  //((StandardMaterial*)actorRender->getMaterial())->setCellShaded( true );
   actorRender->scale(1,-1,-1);
   actorRender->translate(0,-50,0);
   scene->addChild( actorRender );
-*/
-  /*
+
+  
   //Create floor cube
   StandardMaterial *matBox = new StandardMaterial;
   matBox->setSpecularity( 0.5 );
@@ -642,7 +638,7 @@ int main (int argc, char **argv)
   cube->scale( 300, 10, 300 );
   cube->translate( 0, -100, 0 );
   scene->addChild( cube );
-*/
+
   //Create axes
   StandardMaterial axesMat;
   axesMat.setUseLighting( false );
@@ -656,11 +652,11 @@ int main (int argc, char **argv)
   //light = new SpotLight( Vector3(-200,150,200), Vector3(), 60, 0 );
   //light = new SpotLight( Vector3(300,300,50), Vector3(), 60, 0 );
   light->setCastShadows( true );
-  light->setDiffuseColor( Vector3(1,1,1) );
-  light->setSpecularColor( Vector3(5,5,5) );
+  light->setDiffuseColor( Vector3(1) );
+  light->setSpecularColor( Vector3(5) );
   light->lookInto( center );
   scene->addChild( light );
-
+/*
   Light *light2 = new SpotLight( Vector3(300,300,50), Vector3(), 60, 0 );
   light2->lookInto( center );
   light2->setDiffuseColor( Vector3(.5,.5,1) );
@@ -669,10 +665,10 @@ int main (int argc, char **argv)
 
   Light *light3 = new SpotLight( Vector3(-200,150,200), Vector3(), 60, 0 );
   light3->lookInto( center );
-  light3->setDiffuseColor( Vector3(.5,.5,.5) );
+  light3->setDiffuseColor( Vector3(.5) );
   light3->setCastShadows( true );
   scene->addChild( light3);
-
+*/
   cam3D = new Camera3D;
   cam3D->setCenter( center );
   cam3D->translate( 0, 0, -300 );

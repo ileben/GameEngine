@@ -518,6 +518,7 @@ namespace GE
     glDisable( GL_LIGHTING );
     glDisable( GL_BLEND );
     glDisable( GL_TEXTURE_2D );
+    glDisable( GL_STENCIL_TEST );
     glEnable( GL_DEPTH_TEST );
     glEnable( GL_CULL_FACE );
     
@@ -633,10 +634,12 @@ namespace GE
     //Render into geometry textures
     glBindFramebuffer( GL_FRAMEBUFFER, deferredFB );
 
+    //Clear depth (normal buffer alpha) with far clip values
     glDrawBuffer( GL_COLOR_ATTACHMENT1 );
     glClearColor( 0, 0, 0, camera->getFarClipPlane() );
     glClear( GL_COLOR_BUFFER_BIT );
 
+    //Clear the rest of the buffers
     GLenum clearBuffers[] = {
       GL_COLOR_ATTACHMENT2,
       GL_COLOR_ATTACHMENT3,
@@ -645,6 +648,7 @@ namespace GE
     glClearColor( 0, 0, 0, 0 );
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
+    //Enable all buffers for drawing
     GLenum drawBuffers[] = {
       GL_COLOR_ATTACHMENT1,
       GL_COLOR_ATTACHMENT2,
@@ -681,22 +685,106 @@ namespace GE
     glDepthFunc( GL_LESS );
     glDisable( GL_TEXTURE_2D );
 
+    static int lastVisibleLights = -1;
+    int numVisibleLights = 0;
+
+    UintSize numLights = scene->getLights()->size();
+    GLuint *lightQueries = new GLuint[ numLights ];
+    glGenQueries( (GLsizei) numLights, lightQueries );
+
+    ///////////////////////////////////////////////////////////////
+    //Query pixels lit by each light
+
+    //Only write to stencil buffer
+    glUseProgram( 0 );
+    glDrawBuffer( GL_NONE );
+    glDepthMask( GL_FALSE );
+    glDisable( GL_BLEND );
+    glDisable( GL_LIGHTING );
+    glEnable( GL_DEPTH_TEST );
+    glEnable( GL_STENCIL_TEST );
+    glEnable( GL_CULL_FACE );
+
+    //Walk all the lights in the scene
+    for (UintSize l=0; l<numLights; ++l)
+    {
+      Light* light = scene->getLights()->at( l );
+
+      //Setup view and projection
+      glViewport( viewX, viewY, viewW, viewH );
+      camera->updateProjection( viewW, viewH );
+      camera->updateView();
+
+      //Enable the light
+      Matrix4x4 worldCtm = light->getWorldMatrix();
+      glMatrixMode( GL_MODELVIEW );
+      glMultMatrixf( (GLfloat*) worldCtm.m );
+
+      //Avoid front faces being clipped by the camera near plane
+      if (light->isPointInVolume( camera->getEye(), camera->getNearClipPlane()*2 ))
+      {
+        //Pass for pixels in front of light volume back
+        glDepthFunc( GL_GEQUAL );
+        glStencilFunc( GL_ALWAYS, 0x0, 0xFF );
+        glStencilOp( GL_KEEP, GL_KEEP, GL_KEEP );
+
+        //Render light volume back faces and query
+        glCullFace( GL_FRONT );
+        glBeginQuery( GL_SAMPLES_PASSED, lightQueries[l] );
+        light->renderVolume();
+        glEndQuery( GL_SAMPLES_PASSED );
+      }
+      else
+      {
+        //Pass for pixels in front of light volume back and incr stencil
+        glDepthFunc( GL_GEQUAL );
+        glStencilFunc( GL_ALWAYS, 0x0, 0xFF );
+        glStencilOp( GL_KEEP, GL_KEEP, GL_INCR );
+
+        //Render light volume back faces
+        glCullFace( GL_FRONT );
+        light->renderVolume();
+
+        //Pass for pixels behind light volume front and in front of light volume back
+        glDepthFunc( GL_LESS );
+        glStencilFunc( GL_EQUAL, 0x1, 0xFF );
+        glStencilOp( GL_ZERO, GL_ZERO, GL_ZERO );
+
+        //Render light volume front faces and query
+        glCullFace( GL_BACK );
+        glBeginQuery( GL_SAMPLES_PASSED, lightQueries[l] );
+        light->renderVolume();
+        glEndQuery( GL_SAMPLES_PASSED );
+      }
+    }
+
+    //Restore other state
+    glDisable( GL_STENCIL_TEST );
+    glDepthMask( GL_TRUE );
+    glDepthFunc( GL_LESS );
+    glCullFace( GL_BACK );
+
+    ///////////////////////////////////////////////////////////////
     //Perform shading for each light
+
+    //Walk all the lights in the scene
     for (UintSize l=0; l<scene->getLights()->size(); ++l)
     {
       Light* light = scene->getLights()->at( l );
 
-      //Render the shadow map if needed
-      if (light->getCastShadows())
-        renderShadowMap( light, scene );
+      //Obtain light query result (better than querying right after the
+      //drawing the queries or drawing them in this loop as it gives more
+      //time for that part of the pipeline to complete while the other
+      //lights are being rendered)
+      GLint litSamples = 0;
+      glGetQueryObjectiv( lightQueries[l], GL_QUERY_RESULT, &litSamples );
+      if (litSamples > 0) numVisibleLights++;
+      else continue;
 
       //Setup view and projection
       glViewport( viewX, viewY, viewW, viewH );
-      
-      if (camera != NULL) {
-        camera->updateProjection( viewW, viewH );
-        camera->updateView();
-      }
+      camera->updateProjection( viewW, viewH );
+      camera->updateView();
 
       //Enable the light
       Matrix4x4 worldCtm = light->getWorldMatrix();
@@ -704,60 +792,99 @@ namespace GE
       glMultMatrixf( (GLfloat*) worldCtm.m );
       light->enable( 0 );
 
-      ///////////////////////////////////////////////
+      /////////////////////////////////////////////////////////
+      //Setup the stencil buffer to pass only for lit pixels
 
-      //Clear stencil, only write to stencil buffer
+      //Only write to stencil buffer
       glUseProgram( 0 );
       glBindFramebuffer( GL_FRAMEBUFFER, deferredFB );
       glDrawBuffer( GL_NONE );
       glDepthMask( GL_FALSE );
-      glClear( GL_STENCIL_BUFFER_BIT );
       glDisable( GL_BLEND );
       glDisable( GL_LIGHTING );
       glEnable( GL_STENCIL_TEST );
       glEnable( GL_DEPTH_TEST );
-
-      //Incr stencil for pixel in front of light volume back
-      glDepthFunc( GL_GEQUAL );
-      glStencilFunc( GL_ALWAYS, 0x0, 0xFF );
-      glStencilOp( GL_KEEP, GL_KEEP, GL_INCR );
-
-      //Render light volume back faces
       glEnable( GL_CULL_FACE );
-      glCullFace( GL_FRONT );
-      light->renderVolume();
+      glClear( GL_STENCIL_BUFFER_BIT );
 
       //Avoid front faces being clipped by the camera near plane
-      if (!light->isPointInVolume( camera->getEye(), camera->getNearClipPlane()*2 ))
+      if (light->isPointInVolume( camera->getEye(), camera->getNearClipPlane()*2 ))
       {
-        //Incr stencil for pixel behind light volume front
+        //Pass for pixels in front of light volume back and incr stencil
+        glDepthFunc( GL_GEQUAL );
+        glStencilFunc( GL_ALWAYS, 0x0, 0xFF );
+        glStencilOp( GL_KEEP, GL_KEEP, GL_INCR );
+
+        //Render light volume back faces
+        glCullFace( GL_FRONT );
+        //glBeginQuery( GL_SAMPLES_PASSED, lightQueries[l] );
+        light->renderVolume();
+        //glEndQuery( GL_SAMPLES_PASSED );
+
+        //Pass for pixels in front of light volume back
+        glDepthFunc( GL_LESS );
+        glStencilFunc( GL_EQUAL, 0x1, 0xFF );
+        glStencilOp( GL_ZERO, GL_ZERO, GL_ZERO );
+      }
+      else
+      {
+        //Pass for pixels in front of light volume back
+        glDepthFunc( GL_GEQUAL );
+        glStencilFunc( GL_ALWAYS, 0x0, 0xFF );
+        glStencilOp( GL_KEEP, GL_KEEP, GL_INCR );
+
+        //Render light volume back faces
+        glCullFace( GL_FRONT );
+        light->renderVolume();
+
+        //Pass for pixels behind light volume front and in front of light volume back
         glDepthFunc( GL_LESS );
         glStencilFunc( GL_EQUAL, 0x1, 0xFF );
         glStencilOp( GL_KEEP, GL_KEEP, GL_INCR );
 
         //Render light volume front faces
         glCullFace( GL_BACK );
+        //glBeginQuery( GL_SAMPLES_PASSED, lightQueries[l] );
         light->renderVolume();
+        //glEndQuery( GL_SAMPLES_PASSED );
 
-        //Allow write only for pixels inside the light volume
+        //Pass for pixels inside the light volume
         glStencilFunc( GL_EQUAL, 0x2, 0xFF );
-        glStencilOp( GL_KEEP, GL_KEEP, GL_KEEP );
-      }
-      else
-      {
-        //Allow write only for pixels in front of light volume back
-        glDepthFunc( GL_LESS );
-        glStencilFunc( GL_EQUAL, 0x1, 0xFF );
-        glStencilOp( GL_KEEP, GL_KEEP, GL_KEEP );
+        glStencilOp( GL_ZERO, GL_ZERO, GL_ZERO );
       }
 
-      //TODO: Check whether any pixels in the volume at all,
-      //then render the shadow map and restore the state for
-      //rendering to the accumulation framebuffer
+      //Restore state
+      glDepthMask( GL_TRUE );
+      glDepthFunc( GL_LESS );
+      glCullFace( GL_BACK );
 
-      ///////////////////////////////////////////////
+      //GLint litSamples = 0;
+      //glGetQueryObjectiv( lightQueries[l], GL_QUERY_RESULT, &litSamples );
+      //if (litSamples > 0) numVisibleLights++;
+      //else continue;
 
-      //Render into lighting accumulation texture
+      /////////////////////////////////////////////////
+      //Render the shadow map
+
+      //Check if shadows enabled and render
+      if (light->getCastShadows())
+        renderShadowMap( light, scene );
+
+      //Setup view and projection
+      glViewport( viewX, viewY, viewW, viewH );
+      camera->updateProjection( viewW, viewH );
+      camera->updateView();
+
+      //Enable the light
+      //Matrix4x4 worldCtm = light->getWorldMatrix();
+      glMatrixMode( GL_MODELVIEW );
+      glMultMatrixf( (GLfloat*) worldCtm.m );
+      light->enable( 0 );
+
+      /////////////////////////////////////////////////
+      //Finally light the pixels that need to be lit
+
+      //Render to accumulation texture
       shaderLightSpot->use();
       glUniform2f( deferredWinSize, (GLfloat) winW, (GLfloat) winH );
       glBindFramebuffer( GL_FRAMEBUFFER, deferredFB );
@@ -765,6 +892,7 @@ namespace GE
       glDisable( GL_DEPTH_TEST );
       glEnable( GL_CULL_FACE );
       glEnable( GL_BLEND );
+      glEnable( GL_STENCIL_TEST );
       glBlendFunc( GL_ONE, GL_ONE );
 
       //Bind shadow texture if needed
@@ -813,7 +941,6 @@ namespace GE
       //Restore other state
       glDisable( GL_STENCIL_TEST );
       glCullFace( GL_BACK );
-      glDepthMask( GL_TRUE );
       
       /*
       //Draw light volume
@@ -830,6 +957,14 @@ namespace GE
 
       glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
       */
+    }
+
+    glDeleteQueries( (GLsizei) numLights, lightQueries );
+    delete[] lightQueries;
+
+    if (numVisibleLights != lastVisibleLights) {
+      printf( "numVisibleLights: %d\n", numVisibleLights );
+      lastVisibleLights = numVisibleLights;
     }
   }
 

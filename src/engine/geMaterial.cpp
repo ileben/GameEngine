@@ -603,10 +603,10 @@ namespace GE
     shader->composeNodeCode(
       "mat3 normMatrix = mat3( inTangent, inBitangent, inNormal);\n"
       //"mat3 normMatrix = mat3( inBitangent, inTangent, inNormal);\n"
-      "vec3 normTexel = texture2D( normSampler, inTexCoord0.xy ).xyz;\n"
-      //"normTexel.y = -normTexel.y;\n"
-      //"normTexel.x = -normTexel.x;\n"
-      //"normTexel.z = -normTexel.z;\n"
+      "vec3 normTexel = texture2D( normSampler, inTexCoord0.xy ).yxz;\n"
+      "normTexel.y = -normTexel.y;\n"
+      "normTexel.x = -normTexel.x;\n"
+      "normTexel.z = -normTexel.z;\n"
       "outNormal = normMatrix * ((normTexel * 2.0) - vec3(1.0,1.0,1.0));\n" );
     shader->composeNodeEnd();
   }

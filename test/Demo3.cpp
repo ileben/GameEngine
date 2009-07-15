@@ -173,8 +173,6 @@ void display ()
   
   //draw model
   renderer->beginDeferred();
-  renderer->setCamera( camSky );
-  renderer->renderSceneDeferred( sceneSky );
   renderer->setCamera( camRender );
   renderer->renderSceneDeferred( sceneRender );
   renderer->endDeferred();
