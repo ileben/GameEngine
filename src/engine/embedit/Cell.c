@@ -171,7 +171,7 @@ uniform sampler2D samplerColor;
 void main (void)
 {
   vec4 colorTexel = texture2D( samplerColor, gl_TexCoord[0].xy );
-  quantizeLight( colorTexel.rgb, colorTexel.a, 4.0, 0.15 );
+  quantizeLight( colorTexel.rgb, colorTexel.a, 1.0, 0.15 );
   //quantizeHSV( colorTexel.rgb, 4.0, 0.15 );
   gl_FragColor = vec4( colorTexel.rgb, 1.0 );
 }

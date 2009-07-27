@@ -7,7 +7,7 @@
 		<CustomBuildRule
 			Name="Embedit"
 			DisplayName="Embedit"
-			CommandLine="$(SolutionDir)Release\bin\embedit.exe $(InputPath) $(InputDir)$(InputName).embedded [Preprocess]"
+			CommandLine="&quot;$(SolutionDir)Release\bin\embedit.exe&quot; &quot;$(InputPath)&quot; &quot;$(InputDir)$(InputName).embedded&quot; [Preprocess]"
 			Outputs="$(InputDir)$(InputName).embedded"
 			FileExtensions="*.embedit"
 			ExecutionDescription="Embedding $(InputFileName) ..."

@@ -70,7 +70,7 @@ uniform sampler2D samplerColor;
 uniform vec2 pixelSize;
 uniform float avgLuminance;
 uniform float maxLuminance;
-vec3 toneMap (vec3 c, float avg, float max);
+vec3 toneMap (vec3, float, float);
 
 void main (void)
 {

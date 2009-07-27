@@ -18,7 +18,7 @@ void main (void)
   float luminosity = colorTexel.a * 2.0;
 
   //Calculate eye-space point from eye-z coord
-  Float eyeZ =  normalTexel.w;
+  float eyeZ =  normalTexel.w;
   vec4 clipPoint = vec4(
     eyeZ * ((gl_FragCoord.x / winSize.x) * 2.0 - 1.0),
     eyeZ * ((gl_FragCoord.y / winSize.y) * 2.0 - 1.0), 1.0,1.0 );

@@ -54,7 +54,7 @@ void main (void)
   float depth = texture2D( samplerNormal, gl_TexCoord[0].xy ).w;
 
   if (paramsTexel[1] > 0.0)
-    quantizeLight( colorTexel.rgb, colorTexel.a, 4.0, 0.15 );
+    quantizeLight( colorTexel.rgb, colorTexel.a, 4.0, 0.3 );
 
   gl_FragColor = vec4( colorTexel.rgb, computeCoC( depth ) );
 }

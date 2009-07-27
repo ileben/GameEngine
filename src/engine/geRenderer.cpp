@@ -330,8 +330,8 @@ namespace GE
     shaderBloomDown->registerUniform( ShaderType::Fragment, DataUnit::Float, "avgLuminance" );
     shaderBloomDown->registerUniform( ShaderType::Fragment, DataUnit::Float, "maxLuminance" );
     shaderBloomDown->compile( ShaderType::Vertex, Bloom_VS );
-    shaderBloomDown->compile( ShaderType::Fragment, BloomDown_FS );
     shaderBloomDown->compile( ShaderType::Fragment, ToneMap_Func );
+    shaderBloomDown->compile( ShaderType::Fragment, BloomDown_FS );
     shaderBloomDown->link();
     uBloomDownColorSampler = shaderBloomDown->getUniformID( "samplerColor" );
     uBloomDownPixelSize = shaderBloomDown->getUniformID( "pixelSize" );
@@ -355,8 +355,8 @@ namespace GE
     shaderBloomMix->registerUniform( ShaderType::Fragment, DataUnit::Float, "avgLuminance" );
     shaderBloomMix->registerUniform( ShaderType::Fragment, DataUnit::Float, "maxLuminance" );
     shaderBloomMix->compile( ShaderType::Vertex, Bloom_VS );
-    shaderBloomMix->compile( ShaderType::Fragment, BloomMix_FS );
     shaderBloomMix->compile( ShaderType::Fragment, ToneMap_Func );
+    shaderBloomMix->compile( ShaderType::Fragment, BloomMix_FS );
     shaderBloomMix->link();
     uBloomMixColorSampler = shaderBloomMix->getUniformID( "samplerColor" );
     uBloomMixBloomSampler = shaderBloomMix->getUniformID( "samplerBloom" );
@@ -962,10 +962,10 @@ namespace GE
     glDeleteQueries( (GLsizei) numLights, lightQueries );
     delete[] lightQueries;
 
-    if (numVisibleLights != lastVisibleLights) {
-      printf( "numVisibleLights: %d\n", numVisibleLights );
-      lastVisibleLights = numVisibleLights;
-    }
+    //if (numVisibleLights != lastVisibleLights) {
+    //  printf( "numVisibleLights: %d\n", numVisibleLights );
+    //  lastVisibleLights = numVisibleLights;
+    //}
   }
 
   void Renderer::doToon (Uint32 sourceTex, Uint32 targetFB, Uint32 targetAtch)
