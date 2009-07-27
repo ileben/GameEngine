@@ -1,0 +1,15 @@
+Integrate PhysX
+
+HUD and Interaction:
+- think / say line selection
+- item selection with DoF
+
+Editor:
+- UI framework
+- import, place, transform, save
+- dialogues / event tree
+- walk paths
+- trigger items and areas
+
+AI:
+- follow mode
