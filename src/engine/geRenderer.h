@@ -108,6 +108,7 @@ namespace GE
 
     Uint32 blurFB;
     Uint32 dofDownMap;
+    Uint32 dofNearMap;
     Uint32 depthDownMap;
     Uint32 dofMaxBlurMap;
     Uint32 depthMaxBlurMap;
@@ -134,18 +135,19 @@ namespace GE
     Int32 uDofDownDofParams;
     Int32 uDofDownPixelSize;
 
+    Shader *shaderDofNear;
+    Int32 uDofNearNormalSampler;
+    Int32 uDofNearDofParams;
+    Int32 uDofNearPixelSize;
+
     Shader *shaderDofBlur;
     Int32 uDofBlurColorSampler;
+    Int32 uDofBlurNearSampler;
     Int32 uDofBlurPixelSize;
     Int32 uDofBlurDirection;
     Int32 uDofBlurRadius;
     Int32 uDofBlurDepthSampler;
     Int32 uDofBlurDofParams;
-
-    Shader *shaderDofNear;
-    Int32 uDofNearColorSampler;
-    Int32 uDofNearPixelSize;
-    Int32 uDofNearDofParams;
 
     Shader *shaderDepthBlur;
     Int32 uDepthBlurColorSampler;

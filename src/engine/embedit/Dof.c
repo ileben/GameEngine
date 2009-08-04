@@ -24,14 +24,14 @@ float computeCoC (float depth)
   //clamp( ((depth - focusDepth) + focusRange) / (nearFalloff - focusRange), -1.0, 0.0 );
 
   return
-    clamp( ((depth - dofParams[0]) - dofParams[1]) / (dofParams[2] - dofParams[1]), 0.0, +1.0 ) -
+    clamp( ((depth - dofParams[0]) - dofParams[1]) / (dofParams[2] - dofParams[1]), 0.0, +1.0 ) +
     clamp( ((depth - dofParams[0]) + dofParams[1]) / (dofParams[3] - dofParams[1]), -1.0, 0.0 );
 }
 
 vec4 computeCoC4 (vec4 depth)
 {
   return
-    clamp( ((depth - dofParams[0]) - dofParams[1]) / (dofParams[2] - dofParams[1]), vec4(0.0), vec4(+1.0) ) -
+    clamp( ((depth - dofParams[0]) - dofParams[1]) / (dofParams[2] - dofParams[1]), vec4(0.0), vec4(+1.0) ) +
     clamp( ((depth - dofParams[0]) + dofParams[1]) / (dofParams[3] - dofParams[1]), vec4(-1.0), vec4(0.0) );
 }
 
@@ -56,7 +56,7 @@ void main (void)
   if (paramsTexel[1] > 0.0)
     quantizeLight( colorTexel.rgb, colorTexel.a, 4.0, 0.3 );
 
-  gl_FragColor = vec4( colorTexel.rgb, computeCoC( depth ) );
+  gl_FragColor = vec4( colorTexel.rgb, abs( computeCoC( depth ) ) );
 }
 
 #end
@@ -72,7 +72,7 @@ void main (void)
 {
   vec4 color = vec4(0.0);
 
-  //Sample 4 times in the middle of 4 pixels. This takes advantage of
+  //Sample 4 times on the corners between 4 pixels. This takes advantage of
   //bilinear filtering to get the same result as if sampling 16 pixel centers.
   color += texture2D( samplerColor, gl_TexCoord[0].xy + vec2(-1.0,-1.0) * pixelSize );
   color += texture2D( samplerColor, gl_TexCoord[0].xy + vec2(+1.0,-1.0) * pixelSize );
@@ -128,25 +128,62 @@ void main (void)
 
 #end
 
+////////////////////////////////////////////////////////////////////////////////
+
 #begin DofNear_FS
 
-uniform sampler2D samplerColor;
+uniform sampler2D samplerNormal;
 uniform vec2 pixelSize;
-uniform vec4 dofParams;
+vec4 computeCoC4 (vec4 depth);
 
 void main (void)
 {
-  vec4 color = vec4(0.0);
+  //We need only the near (negative) CoC values so we need to downsample "manually"
+  //instead of filtering the texture and using non-center pixel lookups. We would either
+  //need to do this for the full CoC or near CoC depending on which is written into
+  //the color buffer at the dof init pass.
 
-  //Sample 4 times in the middle of 4 pixels. This takes advantage of
-  //bilinear filtering to get the same result as if sampling 16 pixel centers.
-  color += texture2D( samplerColor, gl_TexCoord[0].xy + vec2(-1.0,-1.0) * pixelSize );
-  color += texture2D( samplerColor, gl_TexCoord[0].xy + vec2(+1.0,-1.0) * pixelSize );
-  color += texture2D( samplerColor, gl_TexCoord[0].xy + vec2(+1.0,+1.0) * pixelSize );
-  color += texture2D( samplerColor, gl_TexCoord[0].xy + vec2(-1.0,+1.0) * pixelSize );
-  color /= 4.0;
+  vec4 depth = vec4( 0.0 );
+  vec4 CoC = vec4( 0.0 );
+  vec4 newCoC;
 
-  gl_FragColor = color;
+  vec4 offset = vec4(-1.5, -0.5, 0.5, 1.5);
+
+  depth[0] = texture2D( samplerNormal, gl_TexCoord[0].xy + offset.xx * pixelSize ).w;
+  depth[1] = texture2D( samplerNormal, gl_TexCoord[0].xy + offset.xy * pixelSize ).w;
+  depth[2] = texture2D( samplerNormal, gl_TexCoord[0].xy + offset.xz * pixelSize ).w;
+  depth[3] = texture2D( samplerNormal, gl_TexCoord[0].xy + offset.xw * pixelSize ).w;
+  newCoC = -1.0 * min( computeCoC4( depth ), 0.0 );
+  //CoC = max( CoC, newCoC );
+  CoC += newCoC;
+
+  depth[0] = texture2D( samplerNormal, gl_TexCoord[0].xy + offset.yx * pixelSize ).w;
+  depth[1] = texture2D( samplerNormal, gl_TexCoord[0].xy + offset.yy * pixelSize ).w;
+  depth[2] = texture2D( samplerNormal, gl_TexCoord[0].xy + offset.yz * pixelSize ).w;
+  depth[3] = texture2D( samplerNormal, gl_TexCoord[0].xy + offset.yw * pixelSize ).w;
+  newCoC = -1.0 * min( computeCoC4( depth ), 0.0 );
+  //CoC = max( CoC, newCoC );
+  CoC += newCoC;
+
+  depth[0] = texture2D( samplerNormal, gl_TexCoord[0].xy + offset.zx * pixelSize ).w;
+  depth[1] = texture2D( samplerNormal, gl_TexCoord[0].xy + offset.zy * pixelSize ).w;
+  depth[2] = texture2D( samplerNormal, gl_TexCoord[0].xy + offset.zz * pixelSize ).w;
+  depth[3] = texture2D( samplerNormal, gl_TexCoord[0].xy + offset.zw * pixelSize ).w;
+  newCoC = -1.0 * min( computeCoC4( depth ), 0.0 );
+  //CoC = max( CoC, newCoC );
+  CoC += newCoC;
+
+  depth[0] = texture2D( samplerNormal, gl_TexCoord[0].xy + offset.wx * pixelSize ).w;
+  depth[1] = texture2D( samplerNormal, gl_TexCoord[0].xy + offset.wy * pixelSize ).w;
+  depth[2] = texture2D( samplerNormal, gl_TexCoord[0].xy + offset.wz * pixelSize ).w;
+  depth[3] = texture2D( samplerNormal, gl_TexCoord[0].xy + offset.ww * pixelSize ).w;
+  newCoC = -1.0 * min( computeCoC4( depth ), 0.0 );
+  //CoC = max( CoC, newCoC );
+  CoC += newCoC;
+
+  //float maxCoC = max( max( CoC[0], CoC[1] ), max( CoC[2], CoC[3] ) );
+  float maxCoC = (CoC[0] + CoC[1] + CoC[2] + CoC[3]) / 16.0;
+  gl_FragColor = vec4( maxCoC );
 }
 
 #end
@@ -204,6 +241,7 @@ void main (void)
 #begin DofBlur_FS
 
 uniform sampler2D samplerColor;
+uniform sampler2D samplerNear;
 uniform sampler2D samplerDepth;
 uniform vec2 pixelSize;
 uniform vec2 direction;
@@ -219,8 +257,10 @@ void main (void)
   vec4 depthCenter = texture2D( samplerDepth, gl_TexCoord[0].xy );
 
   //Start with center texel;
-  vec4 center = texture2D( samplerColor, gl_TexCoord[0].xy );
-  colorSum += center;
+  vec4 colorCenter = texture2D( samplerColor, gl_TexCoord[0].xy );
+  vec4 nearCenter = texture2D( samplerNear, gl_TexCoord[0].xy );
+  colorSum.rgb += colorCenter.rgb;
+  colorSum.a += nearCenter.a;
   rgbWeightSum += 1.0;
   cocWeightSum += 1.0;
   
@@ -232,6 +272,7 @@ void main (void)
       vec2 dir = vec2(float(rx),float(ry));
       vec2 texOffset = dir * pixelSize;
       vec4 texel = texture2D( samplerColor, gl_TexCoord[0].xy + texOffset );
+      vec4 nearTexel = texture2D( samplerNear, gl_TexCoord[0].xy + texOffset );
       vec4 depthTexel = texture2D( samplerDepth, gl_TexCoord[0].xy + texOffset );
 
       //Weight the texels by CoC
@@ -240,7 +281,11 @@ void main (void)
       //float texelWeight = 1.0 - distRatio;
 
       float distRatio = (min(length(dir),float(radius)) / float(radius));
-      float rgbWeight = (1.0 - distRatio) * texel.a;
+      //float rgbWeight = (1.0 - distRatio) * texel.a;
+      float rgbWeight = (1.0 - distRatio);
+      if (depthTexel.a < depthCenter.a)
+        rgbWeight *= texel.a;
+
       //if (texel.a == 0.0)
         //if (depthTexel.a > dofParams[0] + dofParams[1])
           //rgbWeight = 0.0;
@@ -260,7 +305,7 @@ void main (void)
 
       //Accumulate
       colorSum.rgb += rgbWeight * texel.rgb;
-      colorSum.a   += cocWeight * texel.a;
+      colorSum.a   += cocWeight * nearTexel.a;
       rgbWeightSum += rgbWeight;
       cocWeightSum += cocWeight;
     }
@@ -282,7 +327,8 @@ uniform sampler2D samplerMedBlur;
 uniform sampler2D samplerLargeBlur;
 uniform sampler2D samplerDepth;
 uniform sampler2D samplerDepthBlur;
-uniform vec4 dofParams;
+//uniform vec4 dofParams;
+float computeCoC (float depth);
 
 void main (void)
 {
@@ -296,8 +342,17 @@ void main (void)
   //float CoC = (depthBlurTexel.r < depthTexel.r) ? dofLargeTexel.a : colorTexel.a;
 
   //This blends between blurred and non-blurred CoC so that pixel right on the edge have full blur
-  float nearCoC = max( colorTexel.a, 2.0 * dofLargeTexel.a - colorTexel.a );
-  float CoC = (depthBlurTexel.a < depthTexel.a) ? nearCoC : colorTexel.a;
+  //float nearCoC = clamp( max( colorTexel.a, 2.0 * dofLargeTexel.a - colorTexel.a ), 0.0, 1.0 );
+  //float CoC = (depthBlurTexel.a < depthTexel.a) ? nearCoC : colorTexel.a;
+
+  float rawCoC = computeCoC( depthTexel.a );
+  float farCoC = abs( rawCoC );
+  
+  float clearNearCoC = -1.0 * min( rawCoC, 0.0 );
+  float nearCoC = clamp( max( clearNearCoC, 2.0 * dofLargeTexel.a - clearNearCoC), 0.0, 1.0 );
+  //float nearCoC = dofLargeTexel.a;
+  
+  float CoC = max( nearCoC, farCoC );
 
   //if (depthBlurTexel.a > 0.0 )
     //CoC = mix( colorTexel.a, nearCoC, depthBlurTexel.a );
@@ -313,10 +368,11 @@ void main (void)
 
   //Color = colorTexel.rgb;
   //Color = colorTexel.aaa;
-  //Color = dofLargeTexel.rgb;
+  Color = dofLargeTexel.rgb;
   //Color = dofLargeTexel.aaa;
   //Color = dofMedTexel.rgb;
-  Color = mix( colorTexel.rgb, dofLargeTexel.rgb, CoC );
+  //Color = vec3( CoC );
+  //Color = mix( colorTexel.rgb, dofLargeTexel.rgb, CoC );
 
   /*
   float d = 0.50;

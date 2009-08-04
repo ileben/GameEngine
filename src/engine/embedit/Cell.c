@@ -154,6 +154,11 @@ void quantizeHSV (inout vec3 c, float steps, float alpha)
 
 #begin QuantizeLight_Func
 
+//The input color is the sum of contribuitions from every light so it is a
+//"lit color". In order to quantize the entire sum of lightness we multiply
+//the color with the ratio between the original lightness and quantized
+//lightness.
+
 void quantizeLight (inout vec3 c, float light, float steps, float alpha)
 {
   float coeff = alpha + (1.0 - alpha) * floor( light * steps + 0.5 ) / steps;
