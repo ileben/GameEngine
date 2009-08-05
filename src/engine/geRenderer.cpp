@@ -299,19 +299,6 @@ namespace GE
     uDofBlurDepthSampler = shaderDofBlur->getUniformID( "samplerDepth" );
     uDofBlurDofParams = shaderDofBlur->getUniformID( "dofParams" );
 
-    shaderDepthBlur = new Shader;
-    shaderDepthBlur->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
-    shaderDepthBlur->registerUniform( ShaderType::Fragment, DataUnit::Vec2, "pixelSize" );
-    shaderDepthBlur->registerUniform( ShaderType::Fragment, DataUnit::Vec2, "direction" );
-    shaderDepthBlur->registerUniform( ShaderType::Fragment, DataUnit::Int, "radius" );
-    shaderDepthBlur->registerUniform( ShaderType::Fragment, DataUnit::Vec4, "dofParams" );
-    shaderDepthBlur->fromString( Dof_VS, DepthBlur_FS );
-    uDepthBlurColorSampler = shaderDepthBlur->getUniformID( "samplerColor" );
-    uDepthBlurPixelSize = shaderDepthBlur->getUniformID( "pixelSize" );
-    uDepthBlurDirection = shaderDepthBlur->getUniformID( "direction" );
-    uDepthBlurRadius = shaderDepthBlur->getUniformID( "radius" );
-    uDepthBlurDofParams = shaderDepthBlur->getUniformID( "dofParams" );
-
     shaderDofMix = new Shader;
     shaderDofMix->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
     shaderDofMix->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerMedBlur" );
@@ -327,7 +314,6 @@ namespace GE
     uDofMixMedBlurSampler = shaderDofMix->getUniformID( "samplerMedBlur" );
     uDofMixLargeBlurSampler = shaderDofMix->getUniformID( "samplerLargeBlur" );
     uDofMixDepthSampler = shaderDofMix->getUniformID( "samplerDepth" );
-    uDofMixDepthBlurSampler = shaderDofMix->getUniformID( "samplerDepthBlur" );
     uDofMixDofParams = shaderDofMix->getUniformID( "dofParams" );
 
     shaderBloomDown = new Shader;
@@ -404,7 +390,6 @@ namespace GE
       glDeleteTextures( 1, &dofNearMap );
       glDeleteTextures( 1, &depthDownMap );
       glDeleteTextures( 1, &dofMaxBlurMap );
-      glDeleteTextures( 1, &depthMaxBlurMap );
     };
 
     //Generate deferred framebuffer
@@ -466,11 +451,7 @@ namespace GE
 
     initTexture( &depthDownMap, GL_RGBA16F, GL_COLOR_ATTACHMENT0, true, blurW, blurH );
     initTexture( &dofDownMap, GL_RGBA16F, GL_COLOR_ATTACHMENT1, true, blurW, blurH );
-    initTexture( &dofNearMap, GL_RGBA16F, GL_COLOR_ATTACHMENT6, true, blurW, blurH );
-
-    initTexture( &depthMaxBlurMap, GL_RGBA16F, GL_COLOR_ATTACHMENT2, true, blurW, blurH );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+    initTexture( &dofNearMap, GL_RGBA16F, GL_COLOR_ATTACHMENT2, true, blurW, blurH );
 
     initTexture( &dofMaxBlurMap, GL_RGBA16F, GL_COLOR_ATTACHMENT3, true, blurW, blurH );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
@@ -1046,6 +1027,7 @@ namespace GE
 
     glViewport( 0,0,blurW,blurH );
     glBindFramebuffer( GL_FRAMEBUFFER, blurFB );
+/*
     glDrawBuffer( GL_COLOR_ATTACHMENT0 );
 
     shaderDofDown->use();
@@ -1057,7 +1039,7 @@ namespace GE
     glEnable( GL_TEXTURE_2D );
 
     fullScreenQuad();
-    
+*/
     /////////////////////////////////////////////
     //Downsample color and CoC information.
     //Render target: dofDownMap
@@ -1078,7 +1060,7 @@ namespace GE
     //Downsample near part of the CoC.
     //Render target: dofNearMap
 
-    glDrawBuffer( GL_COLOR_ATTACHMENT6 );
+    glDrawBuffer( GL_COLOR_ATTACHMENT2 );
 
     shaderDofNear->use();
     glUniform2f( uDofNearPixelSize, 1.0/winW, 1.0/winH );
@@ -1091,26 +1073,8 @@ namespace GE
 
     fullScreenQuad();
 
-    //////////////////////////////////////////////////
-    //Blur downsampled depth with large blur radius
-    //Render target: depthMaxBlurMap
-  
-    glDrawBuffer( GL_COLOR_ATTACHMENT2 );
-
-    shaderDepthBlur->use();
-    glUniform1i( uDepthBlurRadius, maxBlurRadius );
-    glUniform2f( uDepthBlurPixelSize, 1.0/blurW, 1.0/blurH);
-    glUniform4f( uDepthBlurDofParams, focusZ, focusW, farW, nearW );
-
-    glUniform1i( uDepthBlurColorSampler, 0 );
-    glActiveTexture( GL_TEXTURE0 );
-    glBindTexture( GL_TEXTURE_2D, depthDownMap );
-    glEnable( GL_TEXTURE_2D );
-    
-    fullScreenQuad();
-
-    //////////////////////////////////////////////////////////
-    //Blur downsampled color and CoC with large blur radius
+    /////////////////////////////////////////////////////////////
+    //Blur downsampled color and near CoC with large blur radius
     //Render target: dofMaxBlurMap
   
     glDrawBuffer( GL_COLOR_ATTACHMENT3 );
@@ -1129,12 +1093,12 @@ namespace GE
     glActiveTexture( GL_TEXTURE1 );
     glBindTexture( GL_TEXTURE_2D, dofNearMap );
     glEnable( GL_TEXTURE_2D );
-
+/*
     glUniform1i( uDofBlurDepthSampler, 2 );
     glActiveTexture( GL_TEXTURE2 );
     glBindTexture( GL_TEXTURE_2D, depthDownMap );
     glEnable( GL_TEXTURE_2D );
-    
+*/
     fullScreenQuad();
 
     /////////////////////////////////////////////////
@@ -1166,11 +1130,6 @@ namespace GE
     glUniform1i( uDofMixDepthSampler, 3 );
     glActiveTexture( GL_TEXTURE3 );
     glBindTexture( GL_TEXTURE_2D, deferredMaps[ Deferred::Normal ] );
-    glEnable( GL_TEXTURE_2D );
-
-    glUniform1i( uDofMixDepthBlurSampler, 4 );
-    glActiveTexture( GL_TEXTURE4 );
-    glBindTexture( GL_TEXTURE_2D, depthMaxBlurMap );
     glEnable( GL_TEXTURE_2D );
 
     fullScreenQuad ();

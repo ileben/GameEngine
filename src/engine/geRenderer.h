@@ -111,9 +111,9 @@ namespace GE
     Uint32 dofNearMap;
     Uint32 depthDownMap;
     Uint32 dofMaxBlurMap;
-    Uint32 depthMaxBlurMap;
     Uint32 bloomDownMap;
     Uint32 bloomBlurMap;
+    int blurW, blurH;
 
     Shader *shaderLightSpot;
     Int32 deferredSampler[5];
@@ -149,20 +149,11 @@ namespace GE
     Int32 uDofBlurDepthSampler;
     Int32 uDofBlurDofParams;
 
-    Shader *shaderDepthBlur;
-    Int32 uDepthBlurColorSampler;
-    Int32 uDepthBlurPixelSize;
-    Int32 uDepthBlurDirection;
-    Int32 uDepthBlurRadius;
-    Int32 uDepthBlurDofParams;
-    int blurW, blurH;
-
     Shader *shaderDofMix;
     Int32 uDofMixColorSampler;
     Int32 uDofMixMedBlurSampler;
     Int32 uDofMixLargeBlurSampler;
     Int32 uDofMixDepthSampler;
-    Int32 uDofMixDepthBlurSampler;
     Int32 uDofMixPixelSize;
     Int32 uDofMixDofParams;
 
