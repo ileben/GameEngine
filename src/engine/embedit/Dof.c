@@ -137,6 +137,40 @@ uniform sampler2D samplerNormal;
 uniform vec2 pixelSize;
 vec4 computeCoC4 (vec4 depth);
 
+void updateCoC (vec4 depth, inout vec4 CoC)
+{
+  vec4 newCoC;
+
+  newCoC = computeCoC4( depth );
+  CoC = min( CoC, newCoC );
+
+  //newCoC = computeCoC4( depth );
+  //CoC = max( CoC, newCoC );
+
+  //newCoC = max( computeCoC4( depth ), 0.0 );
+  //CoC = max( CoC, newCoC );
+
+  //newCoC = abs( computeCoC4( depth ) );
+  //CoC += newCoC;
+
+  //newCoC = max( computeCoC4( depth ), 0.0 );
+  //CoC += newCoC;
+}
+
+void updateSignedCoC (vec4 depth, inout vec4 CoC)
+{
+  vec4 newCoC;
+
+  //newCoC = computeCoC4( depth );
+  //CoC = min( CoC, newCoC );
+
+  //newCoC = computeCoC4( depth );
+  //CoC = max( CoC, newCoC );
+
+  newCoC = computeCoC4( depth );
+  CoC += newCoC;
+}
+
 void main (void)
 {
   //We need only the near (negative) CoC values so we need to downsample "manually"
@@ -145,7 +179,8 @@ void main (void)
   //the color buffer at the dof init pass.
 
   vec4 depth = vec4( 0.0 );
-  vec4 CoC = vec4( -1.0 );
+  vec4 CoC = vec4( 1.0 );
+  vec4 signedCoC = vec4( 0.0 );
   vec4 newCoC;
 
   vec4 offset = vec4(-1.5, -0.5, 0.5, 1.5);
@@ -154,59 +189,87 @@ void main (void)
   depth[1] = texture2D( samplerNormal, gl_TexCoord[0].xy + offset.xy * pixelSize ).w;
   depth[2] = texture2D( samplerNormal, gl_TexCoord[0].xy + offset.xz * pixelSize ).w;
   depth[3] = texture2D( samplerNormal, gl_TexCoord[0].xy + offset.xw * pixelSize ).w;
+  updateCoC( depth, CoC );
+  updateSignedCoC( depth, signedCoC );
+  
   //newCoC = -1.0 * min( computeCoC4( depth ), 0.0 );
   //CoC += newCoC;
   
   //newCoC = computeCoC4( depth );
   //CoC = max( CoC, newCoC );
 
-  newCoC = abs( computeCoC4( depth ) );
-  CoC += newCoC;
+  //newCoC = max( computeCoC4( depth ), 0.0 );
+  //CoC = max( CoC, newCoC );
+
+  //newCoC = abs( computeCoC4( depth ) );
+  //CoC += newCoC;
 
   depth[0] = texture2D( samplerNormal, gl_TexCoord[0].xy + offset.yx * pixelSize ).w;
   depth[1] = texture2D( samplerNormal, gl_TexCoord[0].xy + offset.yy * pixelSize ).w;
   depth[2] = texture2D( samplerNormal, gl_TexCoord[0].xy + offset.yz * pixelSize ).w;
   depth[3] = texture2D( samplerNormal, gl_TexCoord[0].xy + offset.yw * pixelSize ).w;
+  updateCoC( depth, CoC );
+  updateSignedCoC( depth, signedCoC );
+  
   //newCoC = -1.0 * min( computeCoC4( depth ), 0.0 );
   //CoC += newCoC;
   
   //newCoC = computeCoC4( depth );
   //CoC = max( CoC, newCoC );
 
-  newCoC = abs( computeCoC4( depth ) );
-  CoC += newCoC;
+  //newCoC = max( computeCoC4( depth ), 0.0 );
+  //CoC = max( CoC, newCoC );
+
+  //newCoC = abs( computeCoC4( depth ) );
+  //CoC += newCoC;
 
   depth[0] = texture2D( samplerNormal, gl_TexCoord[0].xy + offset.zx * pixelSize ).w;
   depth[1] = texture2D( samplerNormal, gl_TexCoord[0].xy + offset.zy * pixelSize ).w;
   depth[2] = texture2D( samplerNormal, gl_TexCoord[0].xy + offset.zz * pixelSize ).w;
   depth[3] = texture2D( samplerNormal, gl_TexCoord[0].xy + offset.zw * pixelSize ).w;
+  updateCoC( depth, CoC );
+  updateSignedCoC( depth, signedCoC );
+
   //newCoC = -1.0 * min( computeCoC4( depth ), 0.0 );
   //CoC += newCoC;
   
   //newCoC = computeCoC4( depth );
   //CoC = max( CoC, newCoC );
 
-  newCoC = abs( computeCoC4( depth ) );
-  CoC += newCoC;
+  //newCoC = max( computeCoC4( depth ), 0.0 );
+  //CoC = max( CoC, newCoC );
+
+  //newCoC = abs( computeCoC4( depth ) );
+  //CoC += newCoC;
 
   depth[0] = texture2D( samplerNormal, gl_TexCoord[0].xy + offset.wx * pixelSize ).w;
   depth[1] = texture2D( samplerNormal, gl_TexCoord[0].xy + offset.wy * pixelSize ).w;
   depth[2] = texture2D( samplerNormal, gl_TexCoord[0].xy + offset.wz * pixelSize ).w;
   depth[3] = texture2D( samplerNormal, gl_TexCoord[0].xy + offset.ww * pixelSize ).w;
+  updateCoC( depth, CoC );
+  updateSignedCoC( depth, signedCoC );
+
   //newCoC = -1.0 * min( computeCoC4( depth ), 0.0 );
   //CoC += newCoC;
   
   //newCoC = computeCoC4( depth );
   //CoC = max( CoC, newCoC );
 
-  newCoC = abs( computeCoC4( depth ) );
-  CoC += newCoC;
+  //newCoC = max( computeCoC4( depth ), 0.0 );
+  //CoC = max( CoC, newCoC );
 
-  float maxCoC = (CoC[0] + CoC[1] + CoC[2] + CoC[3]) / 16.0;
-  //float maxCoC = min( min( CoC[0], CoC[1] ), min( CoC[2], CoC[3] ) );
+  //newCoC = abs( computeCoC4( depth ) );
+  //CoC += newCoC;
+
+  float maxCoC = min( min( CoC[0], CoC[1] ), min( CoC[2], CoC[3] ) );
   //float maxCoC = max( max( CoC[0], CoC[1] ), max( CoC[2], CoC[3] ) );
+  //float maxCoC = (CoC[0] + CoC[1] + CoC[2] + CoC[3]) / 16.0;
 
-  gl_FragColor = vec4( maxCoC );
+  //float sCoC = min( min( signedCoC[0], signedCoC[1] ), min( signedCoC[2], signedCoC[3] ) );
+  //float sCoC = max( max( signedCoC[0], signedCoC[1] ), max( signedCoC[2], signedCoC[3] ) );
+  float sCoC = (signedCoC[0] + signedCoC[1] + signedCoC[2] + signedCoC[3]) / 16.0;
+
+  gl_FragColor = vec4( sCoC, sCoC, sCoC, maxCoC );
 }
 
 #end
@@ -251,11 +314,11 @@ void main (void)
 
       //Weight the texels by CoC
       float distRatio = (min(length(dir),float(radius)) / float(radius));
-      float rgbWeight = (1.0 - distRatio) * abs( nearTexel.a );
+      //float rgbWeight = (1.0 - distRatio) * abs( nearTexel.a );
       
-      //float rgbWeight = (1.0 - distRatio);
-      //if (nearTexel.a < nearCenter.a)
-        //rgbWeight *= abs( nearTexel.a );
+      float rgbWeight = (1.0 - distRatio);
+      if (nearTexel.r < nearCenter.r)// && nearCenter.a > 0.0)
+        rgbWeight *= abs( nearTexel.a );
 
       float cocWeight = (1.0 - distRatio);
 
@@ -294,7 +357,7 @@ void main (void)
   vec3 Color = vec3(0.0);
 
   float rawCoC = computeCoC( depthTexel.a );
-  float farCoC = abs( rawCoC );
+  float farCoC = max( rawCoC, 0.0 );
 
   //This blends between blurred and non-blurred CoC so pixels right on the edge have full blur
   float clearNearCoC = -1.0 * min( rawCoC, 0.0 );
