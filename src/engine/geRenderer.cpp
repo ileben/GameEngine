@@ -263,6 +263,7 @@ namespace GE
     shaderDofDown->registerUniform( ShaderType::Fragment, DataUnit::Vec2, "pixelSize" );
     shaderDofDown->registerUniform( ShaderType::Fragment, DataUnit::Vec4, "dofParams" );
     shaderDofDown->compile( ShaderType::Vertex, Dof_VS );
+    shaderDofDown->compile( ShaderType::Fragment, ComputeCoC_Func );
     shaderDofDown->compile( ShaderType::Fragment, DofDown_FS );
     shaderDofDown->link();
     uDofDownColorSampler = shaderDofDown->getUniformID( "samplerColor" );
@@ -270,17 +271,44 @@ namespace GE
     uDofDownPixelSize = shaderDofDown->getUniformID( "pixelSize" );
     uDofDownDofParams = shaderDofDown->getUniformID( "dofParams" );
 
-    shaderDofNear = new Shader;
-    shaderDofNear->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerNormal" );
-    shaderDofNear->registerUniform( ShaderType::Fragment, DataUnit::Vec2, "pixelSize" );
-    shaderDofNear->registerUniform( ShaderType::Fragment, DataUnit::Vec4, "dofParams" );
-    shaderDofNear->compile( ShaderType::Vertex, Dof_VS );
-    shaderDofNear->compile( ShaderType::Fragment, ComputeCoC_Func );
-    shaderDofNear->compile( ShaderType::Fragment, DofNear_FS );
-    shaderDofNear->link();
-    uDofNearNormalSampler = shaderDofNear->getUniformID( "samplerNormal" );
-    uDofNearPixelSize = shaderDofNear->getUniformID( "pixelSize" );
-    uDofNearDofParams = shaderDofNear->getUniformID( "dofParams" );
+    shaderDofExtractFar = new Shader;
+    shaderDofExtractFar->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
+    shaderDofExtractFar->fromString( Dof_VS, DofExtractFar_FS );
+    uDofExtractFarColorSampler = shaderDofExtractFar->getUniformID( "samplerColor" );
+
+    shaderDofExtractNear = new Shader;
+    shaderDofExtractNear->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
+    shaderDofExtractNear->fromString( Dof_VS, DofExtractNear_FS );
+    uDofExtractNearColorSampler = shaderDofExtractNear->getUniformID( "samplerColor" );
+
+    shaderDofBlurNear = new Shader;
+    shaderDofBlurNear->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
+    shaderDofBlurNear->registerUniform( ShaderType::Fragment, DataUnit::Vec2, "pixelSize" );
+    shaderDofBlurNear->registerUniform( ShaderType::Fragment, DataUnit::Vec2, "direction" );
+    shaderDofBlurNear->registerUniform( ShaderType::Fragment, DataUnit::Int, "radius" );
+    shaderDofBlurNear->fromString( Dof_VS, DofBlurNear_FS );
+    uDofBlurNearSampler = shaderDofBlurNear->getUniformID( "samplerColor" );
+    uDofBlurNearPixelSize = shaderDofBlurNear->getUniformID( "pixelSize" );
+    uDofBlurNearDirection = shaderDofBlurNear->getUniformID( "direction" );
+    uDofBlurNearRadius = shaderDofBlurNear->getUniformID( "radius" );
+
+    shaderDofMerge = new Shader;
+    shaderDofMerge->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerNear" );
+    shaderDofMerge->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerNearBlur" );
+    shaderDofMerge->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerFar" );
+    shaderDofMerge->fromString( Dof_VS, DofMerge_FS );
+    uDofMergeNearSampler = shaderDofMerge->getUniformID( "samplerNear" );
+    uDofMergeNearBlurSampler = shaderDofMerge->getUniformID( "samplerNearBlur" );
+    uDofMergeFarSampler = shaderDofMerge->getUniformID( "samplerFar" );
+
+    shaderGaussBlur = new Shader;
+    shaderGaussBlur->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
+    shaderGaussBlur->registerUniform( ShaderType::Fragment, DataUnit::Vec2, "pixelSize" );
+    shaderGaussBlur->registerUniform( ShaderType::Fragment, DataUnit::Int, "radius" );
+    shaderGaussBlur->fromString( Dof_VS, GaussBlur_FS );
+    uGaussBlurColorSampler = shaderGaussBlur->getUniformID( "samplerColor" );
+    uGaussBlurPixelSize = shaderGaussBlur->getUniformID( "pixelSize" );
+    uGaussBlurRadius = shaderGaussBlur->getUniformID( "radius" );
 
     shaderDofBlur = new Shader;
     shaderDofBlur->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
@@ -452,6 +480,10 @@ namespace GE
     initTexture( &depthDownMap, GL_RGBA16F, GL_COLOR_ATTACHMENT0, true, blurW, blurH );
     initTexture( &dofDownMap, GL_RGBA16F, GL_COLOR_ATTACHMENT1, true, blurW, blurH );
     initTexture( &dofNearMap, GL_RGBA16F, GL_COLOR_ATTACHMENT2, true, blurW, blurH );
+
+    initTexture( &dofNearBlurMap, GL_RGBA16F, GL_COLOR_ATTACHMENT6, true, blurW, blurH );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
 
     initTexture( &dofMaxBlurMap, GL_RGBA16F, GL_COLOR_ATTACHMENT3, true, blurW, blurH );
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
@@ -1048,33 +1080,114 @@ namespace GE
 
     shaderDofDown->use();
     glUniform2f( uDofDownPixelSize, 1.0/winW, 1.0/winH );
+    glUniform4f( uDofDownDofParams, focusZ, focusW, farW, nearW );
 
     glUniform1i( uDofDownColorSampler, 0 );
     glActiveTexture( GL_TEXTURE0 );
     glBindTexture( GL_TEXTURE_2D, sourceTex );
     glEnable( GL_TEXTURE_2D );
 
-    fullScreenQuad();
-
-    /////////////////////////////////////////////
-    //Downsample near part of the CoC.
-    //Render target: dofNearMap
-
-    glDrawBuffer( GL_COLOR_ATTACHMENT2 );
-
-    shaderDofNear->use();
-    glUniform2f( uDofNearPixelSize, 1.0/winW, 1.0/winH );
-    glUniform4f( uDofNearDofParams, focusZ, focusW, farW, nearW );
-
-    glUniform1i( uDofNearNormalSampler, 0 );
-    glActiveTexture( GL_TEXTURE0 );
+    glUniform1i( uDofDownNormalSampler, 1 );
+    glActiveTexture( GL_TEXTURE1 );
     glBindTexture( GL_TEXTURE_2D, deferredMaps[ Deferred::Normal ] );
     glEnable( GL_TEXTURE_2D );
 
     fullScreenQuad();
 
+    /////////////////////////////////////////////
+    //Extract far CoC
+    //Render target: depthDownMap
+
+    glDrawBuffer( GL_COLOR_ATTACHMENT0 );
+
+    shaderDofExtractFar->use();
+
+    glUniform1i( uDofExtractFarColorSampler, 0 );
+    glActiveTexture( GL_TEXTURE0 );
+    glBindTexture( GL_TEXTURE_2D, dofDownMap );
+    glEnable( GL_TEXTURE_2D );
+
+    fullScreenQuad();
+
+    /////////////////////////////////////////////
+    //Extract near CoC
+    //Render target: dofNearMap
+
+    glDrawBuffer( GL_COLOR_ATTACHMENT2 );
+
+    shaderDofExtractNear->use();
+
+    glUniform1i( uDofExtractNearColorSampler, 0 );
+    glActiveTexture( GL_TEXTURE0 );
+    glBindTexture( GL_TEXTURE_2D, dofDownMap );
+    glEnable( GL_TEXTURE_2D );
+
+    fullScreenQuad();
+
+    ///////////////////////////////////////////////////
+    //Blur dofNearMap in X direction
+  
+    glDrawBuffer( GL_COLOR_ATTACHMENT1 );
+    glColorMask( GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE );
+
+    shaderDofBlurNear->use();
+    glUniform2f( uDofBlurNearPixelSize, 1.0/blurW, 1.0/blurH);
+    glUniform2f( uDofBlurNearDirection, 1.0, 0.0 );
+    glUniform1i( uDofBlurNearRadius, maxBlurRadius );
+
+    glUniform1i( uDofBlurNearColorSampler, 0 );
+    glActiveTexture( GL_TEXTURE0 );
+    glBindTexture( GL_TEXTURE_2D, dofNearMap );
+    glEnable( GL_TEXTURE_2D );
+    
+    fullScreenQuad();
+    glColorMask( GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE );
+
+    ///////////////////////////////////////////////////
+    //Blur dofNearMap in Y direction
+
+    glDrawBuffer( GL_COLOR_ATTACHMENT6 );
+
+    glUniform2f( uDofBlurNearDirection, 0.0, 1.0 );
+
+    glUniform1i( uDofBlurNearColorSampler, 0 );
+    glActiveTexture( GL_TEXTURE0 );
+    glBindTexture( GL_TEXTURE_2D, dofDownMap );
+    glEnable( GL_TEXTURE_2D );
+    
+    fullScreenQuad();
+
+
+    /////////////////////////////////////////////
+    //Merge near and far CoC into alpha chanel
+    //Render target: dofDownMap
+
+    glDrawBuffer( GL_COLOR_ATTACHMENT1 );
+    glColorMask( GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE );
+
+    shaderDofMerge->use();
+
+    glUniform1i( uDofMergeNearSampler, 0 );
+    glActiveTexture( GL_TEXTURE0 );
+    glBindTexture( GL_TEXTURE_2D, dofNearMap );
+    glEnable( GL_TEXTURE_2D );
+
+    glUniform1i( uDofMergeNearBlurSampler, 2 );
+    glActiveTexture( GL_TEXTURE2 );
+    glBindTexture( GL_TEXTURE_2D, dofNearBlurMap );
+    glEnable( GL_TEXTURE_2D );
+
+    glUniform1i( uDofMergeFarSampler, 1 );
+    glActiveTexture( GL_TEXTURE1 );
+    glBindTexture( GL_TEXTURE_2D, depthDownMap );
+    glEnable( GL_TEXTURE_2D );
+
+    fullScreenQuad();
+    glColorMask( GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE );
+
+
     /////////////////////////////////////////////////////////////
-    //Blur downsampled color and near CoC with large blur radius
+    //Blur downsampled color with large blur radius
     //Render target: dofMaxBlurMap
   
     glDrawBuffer( GL_COLOR_ATTACHMENT3 );
@@ -1089,16 +1202,6 @@ namespace GE
     glBindTexture( GL_TEXTURE_2D, dofDownMap );
     glEnable( GL_TEXTURE_2D );
 
-    glUniform1i( uDofBlurNearSampler, 1 );
-    glActiveTexture( GL_TEXTURE1 );
-    glBindTexture( GL_TEXTURE_2D, dofNearMap );
-    glEnable( GL_TEXTURE_2D );
-/*
-    glUniform1i( uDofBlurDepthSampler, 2 );
-    glActiveTexture( GL_TEXTURE2 );
-    glBindTexture( GL_TEXTURE_2D, depthDownMap );
-    glEnable( GL_TEXTURE_2D );
-*/
     fullScreenQuad();
 
     /////////////////////////////////////////////////
@@ -1119,7 +1222,8 @@ namespace GE
 
     glUniform1i( uDofMixMedBlurSampler, 1 );
     glActiveTexture( GL_TEXTURE1 );
-    glBindTexture( GL_TEXTURE_2D, dofMedBlurMap );
+    //glBindTexture( GL_TEXTURE_2D, dofMedBlurMap );
+    glBindTexture( GL_TEXTURE_2D, dofNearBlurMap );
     glEnable( GL_TEXTURE_2D );
 
     glUniform1i( uDofMixLargeBlurSampler, 2 );

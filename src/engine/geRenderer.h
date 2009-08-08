@@ -110,6 +110,7 @@ namespace GE
     Uint32 dofDownMap;
     Uint32 dofNearMap;
     Uint32 depthDownMap;
+    Uint32 dofNearBlurMap;
     Uint32 dofMaxBlurMap;
     Uint32 bloomDownMap;
     Uint32 bloomBlurMap;
@@ -135,10 +136,22 @@ namespace GE
     Int32 uDofDownDofParams;
     Int32 uDofDownPixelSize;
 
-    Shader *shaderDofNear;
-    Int32 uDofNearNormalSampler;
-    Int32 uDofNearDofParams;
-    Int32 uDofNearPixelSize;
+    Shader *shaderDofExtractFar;
+    Int32 uDofExtractFarColorSampler;
+
+    Shader *shaderDofExtractNear;
+    Int32 uDofExtractNearColorSampler;
+
+    Shader *shaderDofBlurNear;
+    Int32 uDofBlurNearColorSampler;
+    Int32 uDofBlurNearPixelSize;
+    Int32 uDofBlurNearDirection;
+    Int32 uDofBlurNearRadius;
+
+    Shader *shaderDofMerge;
+    Int32 uDofMergeNearSampler;
+    Int32 uDofMergeNearBlurSampler;
+    Int32 uDofMergeFarSampler;
 
     Shader *shaderDofBlur;
     Int32 uDofBlurColorSampler;
@@ -148,6 +161,11 @@ namespace GE
     Int32 uDofBlurRadius;
     Int32 uDofBlurDepthSampler;
     Int32 uDofBlurDofParams;
+
+    Shader *shaderGaussBlur;
+    Int32 uGaussBlurColorSampler;
+    Int32 uGaussBlurPixelSize;
+    Int32 uGaussBlurRadius;
 
     Shader *shaderDofMix;
     Int32 uDofMixColorSampler;
