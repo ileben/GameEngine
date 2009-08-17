@@ -4,7 +4,78 @@
 namespace GE
 {
   DEFINE_SERIAL_CLASS( TriMesh, CLSID_TRIMESH );
+/*
+  class VMemberBase
+  {
+  private:
+    VMemberBase() {}
 
+  public:
+    ShaderData::Enum data;
+    DataUnit unit;
+    UintSize size;
+    CharString attribName;
+    DataUnit attribUnit;
+    bool attribNorm;
+    Int32 attribID;
+    
+    void *base;
+    UintSize offset;
+
+    VMemberBase (UintSize newSize) { size = newSize; }
+  };
+
+  template <class T> class VMember : public VMemberBase
+  {
+  public:
+    VMember () : VMemberBase (sizeof(T)) {}
+    T* operator-> () { return (T*) Util::PtrOff( base, offset ); }
+  };
+
+  class VFFormat
+  {
+    UintSize size;
+    ArrayList<VMemberBase*> members;
+  
+  public:
+
+    VFFormat() { size = 0; }
+    
+    void addMember (VMemberBase *m,
+                    ShaderData::Enum newData,
+                    DataUnit newUnit,
+                    CharString newAttribName = "",
+                    DataUnit newAttribUnit = DataUnit(),
+                    bool newAttribNorm = false)
+    {
+      m->data = newData;
+      m->unit = newUnit;
+      m->attribName = newAttribName;
+      m->attribUnit = newAttribUnit;
+      m->attribNorm = newAttribNorm;
+
+      m->offset = members.empty() ? 0 :
+        members.last()->offset + members.last()->size;
+
+      size += m->size;
+      members.pushBack( m );
+    }
+  };
+
+  class TestFormat : public VFFormat
+  {
+    VMember <Vector2> texcoord;
+    VMember <Vector3> coord;
+    VMember <Vector3> normal;
+
+    TestFormat ()
+    {
+      addMember( &texcoord, ShaderData::TexCoord, DataUnit::Vec2 );
+      addMember( &normal,   ShaderData::Normal,   DataUnit::Vec3 );
+      addMember( &coord,    ShaderData::Coord,    DataUnit::Vec3 );
+    };
+  };
+*/
   /*
   ---------------------------------------------------
   Adds vertex data to the buffer
