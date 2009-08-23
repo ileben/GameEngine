@@ -20,8 +20,13 @@ namespace GE
   within the vertex structure
   --------------------------------------------------------*/
 
-  struct VFMember
+  class FormatMember
   {
+    DECLARE_SERIAL_CLASS( FormatMember );
+    DECLARE_CALLBACK( ClassEvent::Serialize, serialize );
+    DECLARE_END;
+
+  public:
     ShaderData::Enum data;
     DataUnit unit;
     UintSize size;
@@ -29,38 +34,137 @@ namespace GE
     CharString attribName;
     DataUnit attribUnit;
     bool attribNorm;
-    Int32 attribID;
 
-    VFMember () {};
-    VFMember (ShaderData::Enum newData,
-              DataUnit newUnit,
-              UintSize newSize,
-              CharString newAttribName = "",
-              DataUnit newAttribUnit = DataUnit(),
-              bool newAttribNorm = false)
+    FormatMember () {}
+    FormatMember (SM *sm) : attribName(sm) {}
+
+    void serialize (void *p)
     {
-      data = newData;
-      unit = newUnit;
-      size = newSize;
-      attribUnit = newAttribUnit;
-      attribName = newAttribName;
-      attribNorm = newAttribNorm;
+      SM *sm = (SM*)p;
+      sm->dataVar( &data );
+      sm->dataVar( &unit );
+      sm->dataVar( &size );
+      sm->dataVar( &offset );
+      sm->objectVar( &attribName );
+      sm->dataVar( &attribUnit );
+      sm->dataVar( &attribNorm );
     }
   };
 
-  class VFormat
-  { public:
+  class VertexFormat
+  {
+    DECLARE_SERIAL_CLASS( VertexFormat );
+    DECLARE_CALLBACK( ClassEvent::Serialize, serialize );
+    DECLARE_END;
+
+  private:
     UintSize size;
-    ArrayList<VFMember> members;
-    VFormat( UintSize newSize ) { size = newSize; }
-    void addMember (VFMember &m)
+    ObjArrayList <FormatMember> members;
+
+  public:
+
+    VertexFormat () { size = 0; }
+    VertexFormat (SM *sm) : members (sm) {}
+
+    void serialize (void *p)
     {
-      m.offset = members.empty() ? 0 :
-        members.last().offset + members.last().size;
-      members.pushBack( m );
+      SM *sm = (SM*)p;
+      sm->dataVar( &size );
+      sm->objectVar( &members );
+    }
+
+    UintSize getByteSize() const;
+    const ObjArrayList <FormatMember> * getMembers () const;
+    VertexFormat& operator= (const VertexFormat &f);
+
+    FormatMember* findMember (ShaderData::Enum data,
+                              const CharString &attribName) const;
+
+    void addMember (ShaderData::Enum newData,
+                    DataUnit newUnit,
+                    UintSize newSize,
+                    CharString newAttribName = "",
+                    DataUnit newAttribUnit = DataUnit(),
+                    bool newAttribNorm = false);
+  };
+
+  /*
+  -------------------------------------------------------------
+  VertexBinding allows for strong-typed access to vertex data
+  -------------------------------------------------------------*/
+
+  class BindTarget
+  {
+  public:
+    ShaderData::Enum type;
+    CharString name;
+
+    BindTarget (ShaderData::Enum t) {
+      type = t;
+    }
+
+    BindTarget (const CharString &n) {
+      type = ShaderData::Attribute;
+      name = n;
     }
   };
 
+  template <class VertexType> class VertexBinding
+  {
+    struct Binding
+    {
+      MemberPtr member;
+      UintSize offset;
+    };
+
+    VertexType prototype;
+    ArrayList <Binding> bindings;
+
+  public:
+
+    void init (const VertexFormat *vertexFormat)
+    {
+      //Get vertex class and format members
+      const ArrayList< FormatMember > *fmembers = vertexFormat->getMembers();
+      const MTable *vmembers = Class(VertexType)->getMembers();
+      Binding binding;
+
+      //Walk class members
+      for (UintSize m=0; m<vmembers->size(); ++m)
+      {
+        //Get member bind target
+        MemberPtr vmember = vmembers->at( m );
+        BindTarget *target = (BindTarget*) vmember->data;
+
+        //Find the matching format member
+        FormatMember *fmember = vertexFormat->findMember ( target->type, target->name );
+        if (fmember != NULL)
+        {
+          //Bind vertex to format member
+          binding.member = vmember;
+          binding.offset = fmember->offset;
+          bindings.pushBack( binding );
+        }
+        else
+        {
+          //Init unmatched vertex members to NULL
+          void **pmember = (void**) vmember->findIn( &prototype );
+          *pmember = NULL;
+        }
+      }
+    }
+
+    VertexType& operator()(void *dataPtr)
+    {
+      //Set pointer offsets to match data at given base
+      for (UintSize b=0; b<bindings.size(); ++b) {
+        void **pmember = (void**) bindings[b].member->findIn( &prototype );
+        *pmember = Util::PtrOff( dataPtr, bindings[b].offset );
+      }
+
+      return prototype;
+    }
+  };
 
   /*
   ---------------------------------------------------------
@@ -72,27 +176,22 @@ namespace GE
   ---------------------------------------------------------*/
   
   typedef Uint32 VertexID;
-  
-  class TriMeshTraits
+
+  class TriVertex
   {
   public:
-    struct Vertex
-    {
-      Vector2 texcoord;
-      Vector3 normal;
-      Vector3 point;
-    };
 
-    class VertexFormat : public VFormat { public:
-      VertexFormat() : VFormat(sizeof(Vertex))
-      {
-        addMember( VFMember( ShaderData::TexCoord, DataUnit::Vec2, sizeof(Vector2) ) );
-        addMember( VFMember( ShaderData::Normal,   DataUnit::Vec3, sizeof(Vector3) ) );
-        addMember( VFMember( ShaderData::Coord,    DataUnit::Vec3, sizeof(Vector3) ) );
-      }
-    };
+    Vector2 *texcoord;
+    Vector3 *normal;
+    Vector3 *coord;
+
+    DECLARE_CLASS( TriVertex );
+    DECLARE_MEMBER_DATA( texcoord, new BindTarget( ShaderData::TexCoord ) );
+    DECLARE_MEMBER_DATA( normal, new BindTarget( ShaderData::Normal ) );
+    DECLARE_MEMBER_DATA( coord, new BindTarget( ShaderData::Coord ) );
+    DECLARE_END;
   };
-  
+
   class TriMesh : public Resource
   {
     friend class Renderer;
@@ -101,12 +200,6 @@ namespace GE
     DECLARE_END;
     
   public:
-
-    typedef TriMeshTraits::Vertex Vertex;
-    typedef TriMeshTraits::VertexFormat VertexFormat;
-    virtual VFormat* getVertexFormat() {
-      static VertexFormat vertexFormat;
-      return &vertexFormat; }
     
     struct IndexGroup
     {
@@ -128,6 +221,9 @@ namespace GE
     
   protected:
 
+    VertexFormat format;
+    VertexBinding <TriVertex> binding;
+
     virtual bool isPolyVertexEqual (PolyMesh::Vertex *polyVert,
                                     PolyMesh::HalfEdge *polyHedge1,
                                     PolyMesh::HalfEdge *polyHedge2);
@@ -140,64 +236,42 @@ namespace GE
     
   public:
     
-    void serialize (void *sm)
+    void serialize (void *p)
     {
-      ( (SM*)sm )->objectVar( &data );
-      ( (SM*)sm )->objectVar( &indices );
-      ( (SM*)sm )->objectVar( &groups );
+      SM *sm = (SM*) p;
+      sm->objectVar( &format );
+      sm->objectVar( &data );
+      sm->objectVar( &indices );
+      sm->objectVar( &groups );
     }
     
-    TriMesh (SerializeManager *sm) : data(sm), indices(sm), groups(sm)
+    TriMesh (SerializeManager *sm) : format(sm), data(sm), indices(sm), groups(sm)
     { isOnGpu = false; }
+
+    TriMesh (const VertexFormat &f) : data(f.getByteSize(), NULL, false)
+    { isOnGpu = false; setFormat( f ); }
     
-    TriMesh (Uint32 vertexSize) : data (vertexSize, NULL, false)
-    { isOnGpu = false; }
+    TriMesh ()
+    { isOnGpu = false; setDefaultFormat(); }
+
+    void setDefaultFormat();
+    void setFormat( const VertexFormat &f);
+    const VertexFormat* getFormat() { return &format; }
     
-    TriMesh () : data (sizeof(Vertex), NULL, false)
-    { isOnGpu = false; }
-    
+    void* addVertex ();
     void* addVertex (void *data);
     void addFaceGroup (MaterialID matID);
     void addFace (VertexID v1, VertexID v2, VertexID v3);
-    void fromPoly (PolyMesh *m, TexMesh *uv);
+    virtual void fromPoly (PolyMesh *m, TexMesh *uv);
     void toSubMesh (TriMesh *m);
 
     VertexID getCornerIndex (UintSize group, UintSize face, UintSize corner);
-    Vertex* getVertex (UintSize index);
+    void* getVertex (UintSize index);
     UintSize getVertexCount ();
     UintSize getFaceCount ();
     UintSize getGroupFaceCount (UintSize group);
 
     void sendToGpu ();
-  };
-
-  /*
-  ----------------------------------------------------------------
-  Glue base class
-  ----------------------------------------------------------------*/
-  
-  template <class Derived, class Base> class TriMeshBase : public Base
-  {
-  public:
-
-    typedef typename Derived::Vertex Vertex;
-    typedef typename Derived::VertexFormat VertexFormat;
-    virtual VFormat* getVertexFormat() {
-      static VertexFormat vertexFormat;
-      return &vertexFormat; }
-
-    TriMeshBase (SerializeManager *sm) : Base (sm)
-    {}
-
-    TriMeshBase () : Base (sizeof(typename Derived::Vertex))
-    {}
-
-    INLINE typename Derived::Vertex* addVertex (typename Derived::Vertex *data) {
-      return (typename Derived::Vertex*) Base::addVertex( data );
-    }
-
-    INLINE typename Derived::Vertex* getVertex (UintSize index) {
-      return (typename Derived::Vertex*) Base::getVertex( index ); }
   };
 
   /*

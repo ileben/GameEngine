@@ -25,6 +25,11 @@ namespace GE
   {
     return &properties;
   }
+
+  const MTable* IClass::getMembers()
+  {
+    return &members;
+  }
   
   void IClass::Classify (ClassPtr cls)
   {

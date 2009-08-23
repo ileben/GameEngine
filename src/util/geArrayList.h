@@ -180,12 +180,35 @@ namespace GE
       destruct( elements, sz );
       sz = 0;
     }
-      
+
+    /*
+    -----------------------------------------------
+    Changes the size of the elements. All existing
+    data becomes invalid and size of the array is
+    reset to 0.
+    -----------------------------------------------*/
+
+    void resetElementSize (UintSize esz)
+    {
+      //Clear existing elements
+      destruct( elements, sz );
+
+      //Reset element info
+      sz = 0;
+      cap = 1;
+      eltSize = (Uint32) esz;
+
+      //Free old memory and allocate new
+      std::free( elements );
+      elements = (Uint8*) std::malloc( cap * eltSize );
+    }
+    
     /*
     ---------------------------------------------
     Assures that the capacity of the array
     is at least [n]. All the elements become
-    invalid and size of the array is reset to 0.
+    invalid and size of the array is reset to 0
+    unless the resize operation is requested.
     ---------------------------------------------*/
 
     void reserve (UintSize n)
@@ -193,14 +216,41 @@ namespace GE
       //Clear existing elements
       destruct( elements, sz );
       sz = 0;
-      
-      //Return if enough capacity
-      if( n <= cap ) return;
-      
-      //Free old memory and allocate more
-      std::free( elements );
-      elements = (Uint8*) std::malloc( n * eltSize );
-      cap = (Uint32) n;
+
+      //Check if enough capacity
+      if (n > cap)
+      {
+        //Free old memory and allocate more
+        std::free( elements );
+        elements = (Uint8*) std::malloc( n * eltSize );
+        cap = (Uint32) n;
+      }
+    }
+
+    void resize (UintSize n)
+    {
+      if (n <= sz)
+        return;
+
+      //Check if enough capacity
+      if (n > cap)
+      {
+        //Clear existing elements
+        destruct( elements, sz );
+        sz = 0;
+
+        //Free old memory and allocate more
+        std::free( elements );
+        elements = (Uint8*) std::malloc( n * eltSize );
+        cap = (Uint32) n;
+
+        //Construct new elements
+        construct( elements, sz );
+      }
+
+      //Construct additional elements
+      construct( at( sz ), n-sz );
+      sz = (Uint32) n;
     }
 
     /*
@@ -213,21 +263,51 @@ namespace GE
 
     void reserveAndCopy (UintSize n)
     {
-      //No-op if enough capacity
-      if( n <= cap ) return;
-      
-      //Allocate array for new elements,
-      //construct and copy existing ones
-      void* newElements = std::malloc( n * eltSize );
-      construct( newElements, sz );
-      copy( newElements, elements, sz );
-      
-      //Destruct and free old elements
-      destruct( elements, sz );
-      std::free( elements );
-      
-      elements = (Uint8*) newElements;
-      cap = (Uint32) n;
+      //Check if enough capacity
+      if (n > cap)
+      {
+        //Allocate and construct new elements,
+        //copy existing elements
+        void* newElements = std::malloc( n * eltSize );
+        construct( newElements, sz );
+        copy( newElements, elements, sz );
+        
+        //Destruct and free old elements
+        destruct( elements, sz );
+        std::free( elements );
+        
+        //Switch to new array
+        elements = (Uint8*) newElements;
+        cap = (Uint32) n;
+      }
+    }
+
+    void resizeAndCopy (UintSize n)
+    {
+      if (n <= sz)
+        return;
+
+      //Check if enough capacity
+      if (n > cap)
+      {
+        //Allocate and construct new elements,
+        //copy existing elements
+        void* newElements = std::malloc( n * eltSize );
+        construct( newElements, sz );
+        copy( newElements, elements, sz );
+        
+        //Destruct and free old elements
+        destruct( elements, sz );
+        std::free( elements );
+        
+        //Switch to new array
+        elements = (Uint8*) newElements;
+        cap = (Uint32) n;
+      }
+
+      //Construct additional elements
+      construct( at( sz ), n-sz );
+      sz = (Uint32) n;
     }
     
     /*
@@ -260,15 +340,15 @@ namespace GE
       if( sz == cap ) reserveAndCopy( cap * 2 );
       
       //Construct an element at the back
-      construct( elements + sz*eltSize, 1 );
+      construct( at(sz), 1 );
       
       //Shift forward the elements above the index
       if( index < sz )
         for( UintSize i=sz-1; i>=index; --i )
-          copy( elements + (i+1)*eltSize, elements + i*eltSize, 1 );
+          copy( at(i+1), at(i), 1 );
       
       //Copy the new element at [index]
-      copy( elements + index*eltSize, copyElt, 1 );
+      copy( at(index), copyElt, 1 );
       sz++;
       
       //Delete the clone
@@ -276,6 +356,25 @@ namespace GE
         destruct( copyElt, 1 );
         std::free( copyElt );
       }
+    }
+
+    void insertAt( UintSize index )
+    {
+      //Clamp insertion point to size
+      if( index > sz ) index = sz;
+
+      //Make sure we got enough space
+      if( sz == cap ) reserveAndCopy( cap * 2 );
+
+      //Construct an element at the back
+      construct( at(sz), 1 );
+
+      //Shift forward the elements above the index
+      if( index < sz )
+        for( UintSize i=sz-1; i>=index; --i )
+          copy( at(i+1), at(i), 1 );
+
+      sz++;
     }
     
     void removeAt( UintSize index )
@@ -300,6 +399,11 @@ namespace GE
     void pushBack( const void *newElt )
     {
       insertAt( sz, newElt );
+    }
+
+    void pushBack()
+    {
+      insertAt( sz );
     }
     
     void popBack()

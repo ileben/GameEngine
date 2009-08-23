@@ -3,87 +3,100 @@
 
 namespace GE
 {
+  DEFINE_SERIAL_CLASS( FormatMember, CLSID_FORMATMEMBER );
+  DEFINE_SERIAL_CLASS( VertexFormat, CLSID_VERTEXFORMAT );
   DEFINE_SERIAL_CLASS( TriMesh, CLSID_TRIMESH );
-/*
-  class VMemberBase
-  {
-  private:
-    VMemberBase() {}
+  DEFINE_CLASS( TriVertex );
 
-  public:
-    ShaderData::Enum data;
-    DataUnit unit;
-    UintSize size;
-    CharString attribName;
-    DataUnit attribUnit;
-    bool attribNorm;
-    Int32 attribID;
+
+  UintSize VertexFormat::getByteSize() const {
+    return size;
+  }
+
+  const ObjArrayList <FormatMember> * VertexFormat::getMembers () const {
+    return &members;
+  }
+
+  void VertexFormat::addMember (
+    ShaderData::Enum newData,
+    DataUnit newUnit,
+    UintSize newSize,
+    CharString newAttribName,
+    DataUnit newAttribUnit,
+    bool newAttribNorm )
+  {
+    FormatMember m;
+    m.data = newData;
+    m.unit = newUnit;
+    m.size = newSize;
+    m.attribName = newAttribName;
+    m.attribUnit = newAttribUnit;
+    m.attribNorm = newAttribNorm;
+
+    m.offset = members.empty() ? 0 :
+      members.last().offset + members.last().size;
+
+    size += m.size;
+    members.pushBack( m );
+  }
+
+  VertexFormat& VertexFormat::operator= (const VertexFormat &f)
+  {
+    size = f.size;
+    members.clear();
     
-    void *base;
-    UintSize offset;
-
-    VMemberBase (UintSize newSize) { size = newSize; }
-  };
-
-  template <class T> class VMember : public VMemberBase
-  {
-  public:
-    VMember () : VMemberBase (sizeof(T)) {}
-    T* operator-> () { return (T*) Util::PtrOff( base, offset ); }
-  };
-
-  class VFFormat
-  {
-    UintSize size;
-    ArrayList<VMemberBase*> members;
-  
-  public:
-
-    VFFormat() { size = 0; }
+    for (UintSize m=0; m<f.members.size(); ++m)
+      members.pushBack( f.members[m] );
     
-    void addMember (VMemberBase *m,
-                    ShaderData::Enum newData,
-                    DataUnit newUnit,
-                    CharString newAttribName = "",
-                    DataUnit newAttribUnit = DataUnit(),
-                    bool newAttribNorm = false)
+    return *this;
+  }
+
+  FormatMember* VertexFormat::findMember (ShaderData::Enum dataType,
+                                          const CharString &attribName) const
+  {
+    for (UintSize m=0; m<members.size(); ++m)
     {
-      m->data = newData;
-      m->unit = newUnit;
-      m->attribName = newAttribName;
-      m->attribUnit = newAttribUnit;
-      m->attribNorm = newAttribNorm;
-
-      m->offset = members.empty() ? 0 :
-        members.last()->offset + members.last()->size;
-
-      size += m->size;
-      members.pushBack( m );
+      if (dataType == ShaderData::Attribute) {
+        if (members[m].attribName == attribName)
+          return &members[m];
+      }
+      else if (members[m].data == dataType)
+        return &members[m];
     }
-  };
 
-  class TestFormat : public VFFormat
+    return NULL;
+  }
+
+  void TriMesh::setDefaultFormat()
   {
-    VMember <Vector2> texcoord;
-    VMember <Vector3> coord;
-    VMember <Vector3> normal;
+    VertexFormat f;
+    f.addMember( ShaderData::Coord, DataUnit::Vec3, sizeof(Vector3) );
+    f.addMember( ShaderData::Normal, DataUnit::Vec3, sizeof(Vector3) );
+    setFormat( f );
+  }
 
-    TestFormat ()
-    {
-      addMember( &texcoord, ShaderData::TexCoord, DataUnit::Vec2 );
-      addMember( &normal,   ShaderData::Normal,   DataUnit::Vec3 );
-      addMember( &coord,    ShaderData::Coord,    DataUnit::Vec3 );
-    };
-  };
-*/
+  void TriMesh::setFormat( const VertexFormat &f)
+  {
+    format = f;
+    groups.clear();
+    indices.clear();
+    data.resetElementSize( f.getByteSize() );
+  }
+
   /*
   ---------------------------------------------------
   Adds vertex data to the buffer
   ---------------------------------------------------*/
   
-  void* TriMesh::addVertex( void *vertData )
+  void* TriMesh::addVertex()
   {
-    data.pushBack( vertData );
+    data.pushBack();
+    return data.last();
+  }
+
+  void* TriMesh::addVertex (void *v)
+  {
+    data.pushBack( v );
     return data.last();
   }
   
@@ -172,6 +185,7 @@ namespace GE
 
     data.clear();
     indices.clear();
+    binding.init( &format );
 
     //Allocate structures for vert-per-face unique data
     //and store texture vertex pointers
@@ -263,15 +277,13 @@ namespace GE
                                 PolyMesh::HalfEdge *polyHedge,
                                 TexMesh::Vertex *texVert)
   {
-    Vertex vert;
+    TriVertex vert = binding( addVertex() );
     
     if (texVert != NULL)
-      vert.texcoord = texVert->point;
+      *vert.texcoord = texVert->point;
     
-    vert.normal = polyHedge->vertexNormal()->coord;
-    vert.point = polyVert->point;
-    
-    addVertex( &vert );
+    *vert.normal = polyHedge->vertexNormal()->coord;
+    *vert.coord = polyVert->point;
   }
   
   /*
@@ -304,9 +316,9 @@ namespace GE
     return indices[ groups[ group ].start + face*3 + corner ];
   }
 
-  TriMesh::Vertex* TriMesh::getVertex (UintSize index)
+  void* TriMesh::getVertex (UintSize index)
   {
-    return (TriMesh::Vertex*) data[ index ];
+    return data[ index ];
   }
 
   UintSize TriMesh::getVertexCount ()
@@ -371,7 +383,7 @@ namespace GE
 
   void SuperToSubMesh::newSubVertex (UintSize subMeshID, VertexID superID)
   {
-    TriMesh::Vertex *superVert = super->getVertex( superID );
+    void *superVert = super->getVertex( superID );
     subs[ subMeshID ].mesh->addVertex( superVert );
   }
 
@@ -401,8 +413,10 @@ namespace GE
           subs.pushBack( SubMeshInfo() );
 
         //Create new mesh if missing
-        if (subs[ subMeshID ].mesh == NULL)
+        if (subs[ subMeshID ].mesh == NULL) {
           subs[ subMeshID ].mesh = newSubMesh( subMeshID );
+          subs[ subMeshID ].mesh->setFormat( *super->getFormat() );
+        }
 
         //Create new material group if missing
         SubMeshInfo *sub = &subs[ subMeshID ];

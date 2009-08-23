@@ -10,6 +10,8 @@ namespace GE
                           int i1, int i2, int i3, int i4,
                           Vector3 *points)
   {
+    binding.init( getFormat() );
+
     //First index in the final data array
     VertexID ifirst = (VertexID) data.size();
     
@@ -20,10 +22,9 @@ namespace GE
     //given array and with given normal
     for (int i=0; i<4; ++i)
     {
-      TriMesh::Vertex vert;
-      vert.point = points[ *pi[i] ];
-      vert.normal = normal;
-      addVertex( &vert );
+      TriVertex vert = binding( addVertex() );
+      *vert.coord = points[ *pi[i] ];
+      *vert.normal = normal;
     }
     
     //Add 2 triangle faces
@@ -59,6 +60,8 @@ namespace GE
   
   SphereMesh::SphereMesh (int numSegments)
   {
+    binding.init( getFormat() );
+
     //Minimum is 3 segments in XZ plane and
     //half that rounded up vertical segments
     numSegments = Util::Max( numSegments, 3 );
@@ -71,10 +74,9 @@ namespace GE
     float xza, ya;
     
     //South pole
-    TriMesh::Vertex sPole;
-    sPole.point = Vector3( 0.0f, -1.0f, 0.0f );
-    sPole.normal = sPole.point;
-    addVertex( &sPole );
+    TriVertex sPole = binding( addVertex() );
+    *sPole.coord = Vector3( 0.0f, -1.0f, 0.0f );
+    *sPole.normal = *sPole.coord;
     
     //Walk half-circle in XY plane bottom-up (6 o'clock up to 12 o'clock)
     for (ys=1, ya = -PI*0.5f + ystep; ys < numYSegments; ++ys, ya += ystep)
@@ -92,18 +94,16 @@ namespace GE
         float z = SIN( xza ) * r;
         
         //Insert vertex
-        TriMesh::Vertex vert;
-        vert.point = Vector3( x,y,z );
-        vert.normal = vert.point;
-        addVertex( &vert );
+        TriVertex vert = binding( addVertex() );
+        *vert.coord = Vector3( x,y,z );
+        *vert.normal = *vert.coord;
       }
     }
     
     //North pole
-    TriMesh::Vertex nPole;
-    nPole.point = Vector3( 0.0f, 1.0f, 0.0f );
-    nPole.normal = nPole.point;
-    addVertex( &nPole );
+    TriVertex nPole = binding( addVertex() );
+    *nPole.coord = Vector3( 0.0f, 1.0f, 0.0f );
+    *nPole.normal = *nPole.coord;
 
     //Create a group to add faces to
     addFaceGroup( 0 );

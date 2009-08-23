@@ -490,10 +490,28 @@ class VertToVariantMap
 {
 private:
 
+  bool matchNormal;
+  bool matchTangent;
+  bool matchUV;
+
   LinkedList<Variant> variants;
   ArrayList<VariantIter> firstVariants;
 
 public:
+
+  VertToVariantMap ()
+  {
+    matchNormal = true;
+    matchTangent = true;
+    matchUV = true;
+  }
+
+  void setVariantMask (bool normal, bool tangent, bool uv)
+  {
+    matchNormal = normal;
+    matchTangent = tangent;
+    matchUV = uv;
+  }
 
   void clear ()
   {
@@ -505,6 +523,7 @@ public:
   {
     clear();
 
+    //Add variant list terminator for each vertex
     for (UintSize v=0; v<numVerts; ++v)
     {
       Variant var;
@@ -521,15 +540,18 @@ public:
 
   int findVariantId (Uint vertId, Uint normalId, Uint tangentId, Uint uvId)
   {
+    //Check if vertex within range
     if (vertId >= firstVariants.size())
       return -1;
 
+    //Walk the variant list until terminator found
     VariantIter var = firstVariants[ vertId ];
     for (; var->id != -1; ++var)
     {
-      if (var->normalId != normalId) continue;
-      if (var->tangentId != tangentId) continue;
-      if (var->uvId != uvId) continue;
+      //Compare
+      if (matchNormal) if (var->normalId != normalId) continue;
+      if (matchTangent) if (var->tangentId != tangentId) continue;
+      if (matchUV) if (var->uvId != uvId) continue;
       return (int) var->id;
     }
 
@@ -558,6 +580,30 @@ public:
   }
 };
 
+class OmniVertex
+{
+public:
+  Vector2 *texcoord;
+  Vector3 *coord;
+  Vector3 *normal;
+  Vector3 *tangent;
+  Vector3 *bitangent;
+  Float32 *jointWeight;
+  Float32 *jointIndex;
+
+  DECLARE_CLASS( OmniVertex );
+  DECLARE_MEMBER_DATA( texcoord, new BindTarget( ShaderData::TexCoord ) );
+  DECLARE_MEMBER_DATA( coord, new BindTarget( ShaderData::Coord ) );
+  DECLARE_MEMBER_DATA( normal, new BindTarget( ShaderData::Normal ) );
+  DECLARE_MEMBER_DATA( tangent, new BindTarget( ShaderData::Tangent ) );
+  DECLARE_MEMBER_DATA( bitangent, new BindTarget( ShaderData::Bitangent ) );
+  DECLARE_MEMBER_DATA( jointWeight, new BindTarget( "jointWeight" ) );
+  DECLARE_MEMBER_DATA( jointIndex, new BindTarget( "jointIndex" ) );
+  DECLARE_END;
+};
+
+DEFINE_CLASS( OmniVertex );
+
 class TriMeshExporter : public MeshExporter
 {
 protected:
@@ -569,6 +615,7 @@ protected:
   int numIndexGroups;
   int faceMaxCorners;
   int faceNumCorners;
+  VertexBinding <OmniVertex> vertBind;
 
   virtual void newVertex (
     const Vector3 &point,
@@ -577,11 +624,13 @@ protected:
     const Vector3 &bitangent,
     const Vector2 &uv )
   {
-    TriMesh::Vertex newVert;
-    newVert.point = point;
-    newVert.normal = normal;
-    newVert.texcoord = uv;
-    outTriMesh->addVertex( &newVert );
+    
+    OmniVertex vert = vertBind( outTriMesh->addVertex() );
+    if (vert.coord != NULL) *vert.coord = point;
+    if (vert.normal != NULL) *vert.normal = normal;
+    if (vert.tangent != NULL) *vert.tangent = tangent;
+    if (vert.bitangent != NULL) *vert.bitangent = bitangent;
+    if (vert.texcoord != NULL) *vert.texcoord = uv;
   }
 
 public:
@@ -592,6 +641,15 @@ public:
   {
     outTriMesh = mesh;
     vertToVariantMap = &variants;
+
+    //Init vertex binding
+    const VertexFormat *format = mesh->getFormat();
+    vertBind.init( format );
+
+    //Init variant matching mask
+    FormatMember *fmember = format->findMember( ShaderData::Attribute, "Tangent" );
+    if (fmember == NULL) vertToVariantMap->setVariantMask( true, false, true );
+    else vertToVariantMap->setVariantMask( true, true, true );
   }
 
   void visitNumbers (int numPoints, int numNormals, int numTangents, int numUVs, int numFaces, int numMaterials)
@@ -689,52 +747,6 @@ public:
     trace( "exportMesh: exported "
            + CharString::FInt( (int)outTriMesh->getFaceCount() ) + " faces." );
   }
-};
-
-class TanTriMeshExporter : public TriMeshExporter
-{
-protected:
-  virtual void newVertex (
-    const Vector3 &point,
-    const Vector3 &normal,
-    const Vector3 &tangent,
-    const Vector3 &bitangent,
-    const Vector2 &uv )
-  {
-    TanTriMesh::Vertex newVert;
-    newVert.point = point;
-    newVert.normal = normal;
-    newVert.texcoord = uv;
-    newVert.tangent = tangent;
-    newVert.bitangent = bitangent;
-    ((TanTriMesh*)outTriMesh)->addVertex( &newVert );
-  }
-
-public:
-  TanTriMeshExporter (TriMesh *mesh, VertToVariantMap &variants)
-    : TriMeshExporter (mesh, variants) {}
-};
-
-class SkinTriMeshExporter : public TriMeshExporter
-{
-protected:
-  virtual void newVertex (
-    const Vector3 &point,
-    const Vector3 &normal,
-    const Vector3 &tangent,
-    const Vector3 &bitangent,
-    const Vector2 &uv )
-  {
-    SkinTriMesh::Vertex newVert;
-    newVert.point = point;
-    newVert.normal = normal;
-    newVert.texcoord = uv;
-    ((SkinTriMesh*)outTriMesh)->addVertex( &newVert );
-  }
-
-public:
-  SkinTriMeshExporter (TriMesh *mesh, VertToVariantMap &variants)
-    : TriMeshExporter (mesh, variants) {}
 };
 
 /*
@@ -1294,12 +1306,14 @@ class TriWeightExporter : public WeightExporter
 {
   SkinTriMesh *outTriMesh;
   VertToVariantMap *vertToVariantMap;
+  VertexBinding <SkinVertex> vertBind;
 
 public:
 
   TriWeightExporter (SkinTriMesh *mesh, VertToVariantMap &variants) {
     outTriMesh = mesh;
     vertToVariantMap = &variants;
+    vertBind.init( mesh->getFormat() );
   }
 
   int getNumVertices () {
@@ -1311,9 +1325,9 @@ public:
     VariantIter var = vertToVariantMap->getFirstVariant( vertId );
     for (; var->id != -1; ++var)
     {
-      SkinTriMesh::Vertex *outVert = outTriMesh->getVertex( var->id );
-      outVert->boneIndex[ weightId ] = jointId;
-      outVert->boneWeight[ weightId ] = weight;
+      SkinVertex outVert = vertBind( outTriMesh->getVertex( var->id ) );
+      outVert.jointIndex[ weightId ] = jointId;
+      outVert.jointWeight[ weightId ] = weight;
     }
   }
 };
@@ -1448,10 +1462,34 @@ void exportWithSkin (void **outData, UintSize *outSize, bool tangents)
   delete outTexMesh;
 */
 
+  //Prepare vertex format
+  VertexFormat format;
+  format.addMember( ShaderData::TexCoord, DataUnit::Vec2, sizeof(Vector2) );
+  format.addMember( ShaderData::Normal,   DataUnit::Vec3, sizeof(Vector3) );
+  format.addMember( ShaderData::Coord,    DataUnit::Vec3, sizeof(Vector3) );
+
+  format.addMember( ShaderData::Attribute, DataUnit::UVec4, sizeof(Uint32)*4,
+                    "jointIndex", DataUnit::Vec4 );
+
+  format.addMember( ShaderData::Attribute, DataUnit::Vec4, sizeof(Float32)*4,
+                    "jointWeight", DataUnit::Vec4 );
+
+  if (tangents)
+  {
+    format.addMember( ShaderData::Attribute, DataUnit::Vec3, sizeof(Vector3),
+                      "Tangent", DataUnit::Vec3 );
+
+    format.addMember( ShaderData::Attribute, DataUnit::Vec3, sizeof(Vector3),
+                      "Bitangent", DataUnit::Vec3 );
+  }
+
   //Export pose mesh
   VertToVariantMap vertToVariantMap;
+  
   SkinTriMesh *outTriMesh = new SkinTriMesh;
-  SkinTriMeshExporter meshExporter( outTriMesh, vertToVariantMap );
+  outTriMesh->setFormat( format );
+
+  TriMeshExporter meshExporter( outTriMesh, vertToVariantMap );
   meshExporter.exportMesh( skinMesh );
 
   //Export skin weights
@@ -1503,22 +1541,29 @@ void exportNoSkin (void **outData, UintSize *outSize, bool tangents)
   delete outTexMesh;
   */
 
-  //Export mesh data
-  TriMesh *outTriMesh;
-  VertToVariantMap vertToVariantMap;
+  //Prepare vertex format
+  VertexFormat format;
+  format.addMember( ShaderData::TexCoord, DataUnit::Vec2, sizeof(Vector2) );
+  format.addMember( ShaderData::Normal,   DataUnit::Vec3, sizeof(Vector3) );
+  format.addMember( ShaderData::Coord,    DataUnit::Vec3, sizeof(Vector3) );
 
   if (tangents)
   {
-    outTriMesh = new TanTriMesh;
-    TanTriMeshExporter meshExporter( outTriMesh, vertToVariantMap );
-    meshExporter.exportMesh( meshNode );
+    format.addMember( ShaderData::Attribute, DataUnit::Vec3, sizeof(Vector3),
+                      "Tangent", DataUnit::Vec3 );
+
+    format.addMember( ShaderData::Attribute, DataUnit::Vec3, sizeof(Vector3),
+                      "Bitangent", DataUnit::Vec3 );
   }
-  else
-  {
-    outTriMesh = new TriMesh;
-    TriMeshExporter meshExporter( outTriMesh, vertToVariantMap );
-    meshExporter.exportMesh( meshNode );
-  }
+
+  //Export mesh data
+  VertToVariantMap vertToVariantMap;
+
+  TriMesh *outTriMesh = new TriMesh;
+  outTriMesh->setFormat( format );
+
+  TriMeshExporter meshExporter( outTriMesh, vertToVariantMap );
+  meshExporter.exportMesh( meshNode );
 
   //Serialize
   SerializeManager sm;

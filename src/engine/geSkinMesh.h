@@ -51,33 +51,25 @@ namespace GE
   Tri mesh with skin data
   ==========================================================*/
 
-  class SkinTriMeshTraits
+  class SkinVertex
   {
   public:
-    struct Vertex
-    {
-      Vector2 texcoord;
-      Vector3 normal;
-      Vector3 point;
-      Uint32 boneIndex[4];
-      Float32 boneWeight[4];
-    };
+    Vector2 *texcoord;
+    Vector3 *normal;
+    Vector3 *coord;
+    Uint32 *jointIndex;
+    Float32 *jointWeight;
 
-    class VertexFormat : public VFormat { public:
-      VertexFormat() : VFormat(sizeof(Vertex))
-      {
-        addMember( VFMember( ShaderData::TexCoord, DataUnit::Vec2, sizeof(Vector2) ));
-        addMember( VFMember( ShaderData::Normal, DataUnit::Vec3, sizeof(Vector3) ));
-        addMember( VFMember( ShaderData::Coord, DataUnit::Vec3, sizeof(Vector3) ));
-        addMember( VFMember( ShaderData::Attribute, DataUnit::UVec4, sizeof(Uint32)*4,
-                             "jointIndex", DataUnit::Vec4 ));
-        addMember( VFMember( ShaderData::Attribute, DataUnit::Vec4, sizeof(Float32)*4,
-                             "jointWeight", DataUnit::Vec4 ));
-      }
-    };
+    DECLARE_CLASS( SkinVertex );
+    DECLARE_MEMBER_DATA( texcoord, new BindTarget( ShaderData::TexCoord ) );
+    DECLARE_MEMBER_DATA( normal, new BindTarget( ShaderData::Normal ) );
+    DECLARE_MEMBER_DATA( coord, new BindTarget( ShaderData::Coord ) );
+    DECLARE_MEMBER_DATA( jointIndex, new BindTarget( "jointIndex" ) );
+    DECLARE_MEMBER_DATA( jointWeight, new BindTarget( "jointWeight" ) );
+    DECLARE_END;
   };
 
-  class SkinTriMesh : public TriMeshBase <SkinTriMeshTraits, TriMesh>
+  class SkinTriMesh : public TriMesh
   {
     DECLARE_SERIAL_SUBCLASS( SkinTriMesh, TriMesh );
     DECLARE_CALLBACK( ClassEvent::Serialize, serialize );
@@ -87,6 +79,7 @@ namespace GE
 
     Uint32 mesh2skinSize;
     Uint32 mesh2skinMap[24];
+    VertexBinding <SkinVertex> binding;
     
     void serialize (void *sm)
     {
@@ -95,11 +88,12 @@ namespace GE
         //((SM*)sm)->dataVar( &mesh2skinMap[i] );
     }
 
-    SkinTriMesh (SerializeManager *sm) : TriMeshBase <SkinTriMeshTraits, TriMesh> (sm) {}
+    SkinTriMesh (SerializeManager *sm) : TriMesh (sm) {}
     SkinTriMesh () : mesh2skinSize(0) {}
     
   protected:
     
+    virtual void fromPoly (PolyMesh *m, TexMesh *um);
     virtual void vertexFromPoly (PolyMesh::Vertex *polyVert,
                                  PolyMesh::HalfEdge *polyHedge,
                                  TexMesh::Vertex *texVert);
@@ -129,6 +123,7 @@ namespace GE
     Uint32 maxBones;
     Uint32 subMeshCount;
     ArrayList<SkinSubMeshInfo> subs;
+    VertexBinding<SkinVertex> binding;
 
   protected:
     std::pair<bool,Uint32> getSubBoneID ( UintSize subMeshID, Uint32 superID );
@@ -140,55 +135,6 @@ namespace GE
     SkinSuperToSubMesh (SkinTriMesh *superMesh) : SuperToSubMesh(superMesh) {}
     void splitByBoneLimit (UintSize maxBonesPerMesh);
   };
-
-  /*
-  ===============================================
-  Tri mesh with skin and tangent data
-  ===============================================*/
-/*
-  class SkinTanTriMeshTraits
-  {
-  public:
-    struct Vertex
-    {
-      Vector2 texcoord;
-      Vector3 normal;
-      Vector3 point;
-      Uint32 boneIndex[4];
-      Float32 boneWeight[4];
-      Vector3 tangent;
-      Vector3 bitangent;
-    };
-
-    class VertexFormat : public VFormat { public:
-      VertexFormat() : VFormat(sizeof(Vertex))
-      {
-        addMember( VFMember( ShaderData::TexCoord, DataUnit::Vec2, sizeof(Vector2) ) );
-        addMember( VFMember( ShaderData::Normal,   DataUnit::Vec3, sizeof(Vector3) ) );
-        addMember( VFMember( ShaderData::Coord,    DataUnit::Vec3, sizeof(Vector3) ) );
-        addMember( VFMember( ShaderData::Attribute, DataUnit::UVec4, sizeof(Uint32)*4,
-                             "boneIndex", DataUnit::Vec4 ));
-        addMember( VFMember( ShaderData::Attribute, DataUnit::Vec4, sizeof(Float32)*4,
-                             "boneWeight", DataUnit::Vec4 ));
-        addMember( VFMember( ShaderData::Attribute, DataUnit::Vec3, sizeof(Vector3),
-                             "Tangent", DataUnit::Vec3 ));
-        addMember( VFMember( ShaderData::Attribute, DataUnit::Vec3, sizeof(Vector3),
-                             "Bitangent", DataUnit::Vec3 ));
-      }
-    };
-  };
-
-  class SkinTanTriMesh : public TriMeshBase <SkinTanTriMeshTraits, SkinTriMesh>
-  {
-    DECLARE_SERIAL_SUBCLASS( SkinTanTriMesh, SkinTriMesh );
-    DECLARE_END;
-
-  public:
-    SkinTanTriMesh (SerializeManager *sm) : TriMeshBase <SkinTanTriMeshTraits, SkinTriMesh> (sm) {}
-    SkinTanTriMesh () {}
-  };*/
-
-
 
   /*
   ==========================================================

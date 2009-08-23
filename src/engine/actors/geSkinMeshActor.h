@@ -2,6 +2,7 @@
 #define __GESKINMESHACTOR_H
 
 #include "util/geUtil.h"
+#include "engine/geSkinMesh.h"
 #include "engine/actors/geTriMeshActor.h"
 
 namespace GE
@@ -33,6 +34,7 @@ namespace GE
     Vector3 *boneTranslations;
     Quat    *boneRotations;
     ArrayList <Matrix4x4> skinMats;
+    VertexBinding <SkinVertex> vertexBinding;
 
     void freeAnimData();
     void initAnimData();

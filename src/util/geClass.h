@@ -31,6 +31,7 @@ namespace GE
   Forward declarations
   -----------------------------------------------*/
 
+  class IMember;
   class IClass;
   class Property;
   class SerializeManager;
@@ -81,12 +82,44 @@ namespace GE
   };
 
   /*
+  -----------------------------------------------
+  Class member descriptor
+  -----------------------------------------------*/
+
+  class IMember
+  {
+  public:
+    std::string name;
+    void *data;
+    virtual void* findIn (void* obj) = 0;
+  };
+
+  template <class T, class C> class Member : public IMember
+  {
+  private:
+    T C::* ptr;
+
+  public:
+    Member (T C::* p, const std::string &n, void *d) {
+      ptr = p;
+      name = n;
+      data = d;
+    }
+
+    void* findIn (void* obj) {
+      return &( ((C*)obj)->*ptr );
+    }
+  };
+
+  /*
   ------------------------------------------------------
   Forward declarations
   ------------------------------------------------------*/
   
+  typedef IMember* MemberPtr;
   typedef IClass* ClassPtr;
   typedef std::vector <Property*> PTable;
+  typedef std::vector <IMember*> MTable;
   typedef std::map <std::string, ClassPtr> CTable;
   typedef std::map <ClassID, ClassPtr> ITable;
   #define INVALID_CLASS_PTR NULL
@@ -138,6 +171,7 @@ namespace GE
 
     ClassID id;
     std::string name;
+    MTable members;
     PTable properties;
     static void Classify (ClassPtr cls);
     
@@ -148,6 +182,7 @@ namespace GE
     //Base layer
     const ClassID&  getID ();
     const char *    getString ();
+    const MTable *  getMembers ();
     PTable *        getProperties ();
     
     //Layer-2 (IClass2)
@@ -226,6 +261,11 @@ namespace GE
       //If not found search in superclass
       if (getSuper() != this)
         getSuper()->invokeCallback (e, obj, param);
+    }
+
+    //Generic template for adding members of any type
+    template <class T> void addMember (T Name::*ptr, const std::string &name, void *data) {
+      members.push_back( new Member<T,Name> (ptr, name, data) );
     }
   };
   
@@ -319,9 +359,12 @@ class CLASS_DLL_ACTION ClassDesc : public Interface <Name, Super > { public: \
     
     #define DECLARE_CALLBACK( evnt, func ) \
     registerCallback (evnt, &ThisClass::func);
-    
-    #define DECLARE_PROPERTY( Type, pname ) \
-    properties.push_back (new TypeProperty <Type, ThisClass> (&ThisClass::pname, #pname));
+
+    #define DECLARE_MEMBER( mname ) \
+    addMember( &ThisClass::mname, #mname, NULL );
+
+    #define DECLARE_MEMBER_DATA( mname, data ) \
+    addMember( &ThisClass::mname, #mname, data );
     
     #define DECLARE_END \
     IClass::Classify (this); \
@@ -397,6 +440,8 @@ namespace GE
   #define CLSID_BYTESTRING           ClassID (0xf7bca47cu, 0x4089, 0x4d7f, 0xb22d9bab68d87c42ull)
   #define CLSID_UNICODESTRING        ClassID (0xf54b6286u, 0xaebb, 0x48fb, 0x84cf8ffaca844ed8ull)
   #define CLSID_GENARRAYLIST         ClassID (0x66fd1aa8u, 0xc068, 0x4072, 0x8699a02e75e1a55dull)
+  #define CLSID_VERTEXFORMAT         ClassID (0x0ad07051u, 0xb8c1, 0x4f5d, 0x8a806c62dd16cf3full)
+  #define CLSID_FORMATMEMBER         ClassID (0x95fea7e0u, 0x527d, 0x43fe, 0xb5018eebd7fa36a5ull)
   #define CLSID_TRIMESH              ClassID (0x827c9bdfu, 0x8e80, 0x47bf, 0x8c6b2f0505bcdd6dull)
   #define CLSID_SKINTRIMESH          ClassID (0x71186776u, 0xe0e9, 0x428a, 0xb910329aafd3392full)
   #define CLSID_SKINMESH             ClassID (0xb9a1c7cdu, 0xcf04, 0x46b3, 0x837765467e60293bull)

@@ -32,8 +32,9 @@ namespace GE
 
   void SkinMeshActor::setMesh (MaxCharacter *c)
   {
-    TriMeshActor::setMesh( (GE::TriMesh*) c->mesh );
     character = c;
+    TriMeshActor::setMesh( character->mesh );
+    vertexBinding.init( character->mesh->getFormat() );
 
     freeAnimData();
     initAnimData();
@@ -63,6 +64,7 @@ namespace GE
     if (character == NULL) return;
 
     SkinTriMesh *mesh = character->mesh;
+    SkinVertex vert;
 
     skinVertices = new Vector3[ mesh->data.size() ];
     skinNormals = new Vector3[ mesh->data.size() ];
@@ -71,8 +73,9 @@ namespace GE
 
     for (UintSize v=0; v < mesh->data.size(); ++v)
     {
-      skinVertices[ v ] = mesh->getVertex( v )->point;
-      skinNormals[ v ] = mesh->getVertex( v )->normal;
+      vert = vertexBinding( mesh->getVertex( v ) );
+      skinVertices[ v ] = *vert.coord;
+      skinNormals[ v ] = *vert.normal;
     }
 
     anim = NULL;

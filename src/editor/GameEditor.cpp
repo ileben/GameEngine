@@ -144,7 +144,7 @@ void drag (int x, int y)
 void keyDown (unsigned char key, int x, int y)
 {
   ctrl->keyDown( key );
-  return;
+  //return;
 
   switch (key)
   {
@@ -262,12 +262,19 @@ void reshape (int w, int h)
 
 void findBounds (TriMesh *mesh, const Matrix4x4 xform)
 {
-  if (mesh->getVertexCount() > 0)
-    center = boundsMin = boundsMax = xform * mesh->getVertex(0)->point;
+  VertexBinding <TriVertex> vertBind;
+  vertBind.init( mesh->getFormat() );
+  TriVertex vert;
+
+  if (mesh->getVertexCount() > 0) {
+    vert = vertBind( mesh->getVertex(0) );
+    center = boundsMin = boundsMax = xform * (*vert.coord);
+  }
 
   for (UintSize v=1; v<mesh->getVertexCount(); ++v)
   {
-    Vector3 point = xform * mesh->getVertex( v )->point;
+    TriVertex vert = vertBind( mesh->getVertex( v ) );
+    Vector3 point = xform * (*vert.coord);
     center += point;
 
     if (point.x < boundsMin.x) boundsMin.x = point.x;
@@ -400,7 +407,7 @@ bool loadPackage (const CharString &fileName)
   void *object = sm.load( (void*)data.buffer(), &cls );
 
   //Check object class
-  if (cls == Class(TriMesh) || cls == Class(TanTriMesh))
+  if (cls == Class(TriMesh))
   {
     mesh = (TriMesh*) object;
     mesh->sendToGpu();
@@ -438,7 +445,7 @@ bool loadPackage (const CharString &fileName)
       }
       animName = character->anims[ animIndex ]->name;
     }
-    
+
     //Split into 24-bone sub meshes
     SkinSuperToSubMesh splitter( character->mesh );
     splitter.splitByBoneLimit( 24 );
@@ -471,20 +478,10 @@ Actor* loadActor (const CharString &meshFileName,
   
   if (mesh != NULL)
   {
-    if (ClassOf(mesh) == Class(TriMesh))
-    {
-      triMeshActor = new TriMeshActor;
-      triMeshActor->setMesh( mesh );
-      meshRender = mesh;
-      actorRender = triMeshActor;
-    }
-    else if (ClassOf(mesh) == Class(TanTriMesh))
-    {
-      triMeshActor = new TanTriMeshActor;
-      triMeshActor->setMesh( mesh );
-      meshRender = mesh;
-      actorRender = triMeshActor;
-    }
+    triMeshActor = new TriMeshActor;
+    triMeshActor->setMesh( mesh );
+    meshRender = mesh;
+    actorRender = triMeshActor;
   }
 
   if (character != NULL)
@@ -538,7 +535,6 @@ Actor* loadActor (const CharString &meshFileName,
     tex->fromImage( img );
 
     DiffuseTexMat *matTex = new DiffuseTexMat;
-    //matTex->setSpecularity( 0.5 );
     matTex->setDiffuseTexture( tex );
     actorRender->setMaterial( matTex );
   }
@@ -546,7 +542,6 @@ Actor* loadActor (const CharString &meshFileName,
   {
     //Assign solid color material
     StandardMaterial *matWhite = new StandardMaterial;
-    //matWhite->setSpecularity( 0.5 );
     actorRender->setMaterial( matWhite );
   }
 
@@ -569,7 +564,7 @@ int main (int argc, char **argv)
 
   //Setup 3D scene
   scene = new Scene;
-/*
+
   if (argc < 4)
   {
     //Get input filename and load it
@@ -611,10 +606,9 @@ int main (int argc, char **argv)
   ((StandardMaterial*)actorRender->getMaterial())->setDiffuseColor(Vector3(.7,.7,.7));
   ((StandardMaterial*)actorRender->getMaterial())->setSpecularity(1.0f);
   ((StandardMaterial*)actorRender->getMaterial())->setGlossiness(0.5f);
-  ((StandardMaterial*)actorRender->getMaterial())->setCellShaded( true );
-  */
+  //((StandardMaterial*)actorRender->getMaterial())->setCellShaded( true );
 
-
+/*
   loadActor( "trex.pak", "rex.jpg", "rex_normal.jpg" );
   ((StandardMaterial*)actorRender->getMaterial())->setCullBack( false );
   ((StandardMaterial*)actorRender->getMaterial())->setDiffuseColor(Vector3(0,.5,0));
@@ -624,7 +618,7 @@ int main (int argc, char **argv)
   actorRender->scale(1,-1,-1);
   actorRender->translate(0,-50,0);
   scene->addChild( actorRender );
-
+*/
   
   //Create floor cube
   StandardMaterial *matBox = new StandardMaterial;

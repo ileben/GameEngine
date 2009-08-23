@@ -5,14 +5,10 @@
 #include "engine/geKernel.h"
 #include "engine/geRenderer.h"
 #include "engine/geShader.h"
-#define CLSID_TANTRIMESH ClassID (0xffff2786u, 0x54f2, 0x4814, 0x84566d0fbb185381ull)
 
 namespace GE
 {
   DEFINE_CLASS (TriMeshActor);
-  DEFINE_CLASS (TanTriMeshActor);
-  DEFINE_SERIAL_CLASS( TanTriMesh, CLSID_TANTRIMESH );
-
   
   TriMeshActor::TriMeshActor()
   {
@@ -42,26 +38,35 @@ namespace GE
   void TriMeshActor::composeShader( Shader *shader )
   {
     if (mesh == NULL) return;
-    VFormat *format = mesh->getVertexFormat();
+
+    //Get mesh vertex format
+    const VertexFormat *format = mesh->getFormat();
+    attributeIDs.clear();
 
     //Walk the vertex data members
-    for (UintSize m=0; m<format->members.size(); ++m)
+    for (UintSize m=0; m<format->getMembers()->size(); ++m)
     {
-      //Register all attribute members with the shader
-      VFMember &member= format->members[m];
-      if (member.data != ShaderData::Attribute) continue;
-      member.attribID = shader->registerVertexAttrib( member.attribUnit, member.attribName );
+      //Check if data type is an attribute
+      FormatMember &member= format->getMembers()->at( m );
+      if (member.data == ShaderData::Attribute)
+      {
+        //Register all attribute members with the shader
+        Int32 id = shader->registerVertexAttrib( member.attribUnit, member.attribName );
+        attributeIDs.pushBack( id );
+      }
+      else attributeIDs.pushBack( -1 );
     }
   }
 
-  void TriMeshActor::beginVertexData (Shader *shader, VFormat *format, void *data)
+  void TriMeshActor::beginVertexData (Shader *shader, VertexFormat *format, void *data)
   {
     //Walk the vertx data members
-    for (UintSize m=0; m<format->members.size(); ++m)
+    for (UintSize m=0; m<format->getMembers()->size(); ++m)
     {
       //Get the offset into the data
-      VFMember &member = format->members[m];
+      FormatMember &member= format->getMembers()->at( m );
       void *memberData = Util::PtrOff( data, member.offset );
+      UintSize stride = format->getByteSize();
 
       //Find the GL data type
       GLenum gltype;
@@ -78,32 +83,32 @@ namespace GE
       switch (member.data)
       {
       case ShaderData::Coord:
-        glVertexPointer( member.unit.count, gltype, (GLsizei) format->size, memberData);
+        glVertexPointer( member.unit.count, gltype, (GLsizei) stride, memberData);
         glEnableClientState( GL_VERTEX_ARRAY );
         break;
       case ShaderData::TexCoord:
-        glTexCoordPointer( member.unit.count, gltype, (GLsizei) format->size, memberData);
+        glTexCoordPointer( member.unit.count, gltype, (GLsizei) stride, memberData);
         glEnableClientState( GL_TEXTURE_COORD_ARRAY );
         break;
       case ShaderData::Normal:
-        glNormalPointer( gltype, (GLsizei) format->size, memberData );
+        glNormalPointer( gltype, (GLsizei) stride, memberData );
         glEnableClientState( GL_NORMAL_ARRAY );
         break;
       case ShaderData::Attribute:
         if (shader == NULL) break;
-        Int32 glattrib = shader->getVertexAttribID( member.attribID );
-        glVertexAttribPointer( glattrib, member.unit.count, gltype, glnormalize, (GLsizei) format->size, memberData );
+        Int32 glattrib = shader->getVertexAttribID( attributeIDs[ m ] );
+        glVertexAttribPointer( glattrib, member.unit.count, gltype, glnormalize, (GLsizei) stride, memberData );
         glEnableVertexAttribArray( glattrib );
         break;
       }
     }
   }
 
-  void TriMeshActor::endVertexData (Shader *shader, VFormat *format)
+  void TriMeshActor::endVertexData (Shader *shader, VertexFormat *format)
   {
-    for (UintSize m=0; m<format->members.size(); ++m)
+    for (UintSize m=0; m<format->getMembers()->size(); ++m)
     {
-      VFMember &member = format->members[m];
+      FormatMember &member= format->getMembers()->at( m );
       switch (member.data)
       {
       case ShaderData::Coord:
@@ -117,7 +122,7 @@ namespace GE
         break;
       case ShaderData::Attribute:
         if (shader == NULL) break;
-        Int32 glattrib = shader->getVertexAttribID( member.attribID );
+        Int32 glattrib = shader->getVertexAttribID( attributeIDs[ m ] );
         glDisableVertexAttribArray( glattrib );
         break;
       }
@@ -128,7 +133,7 @@ namespace GE
   {
     //Make sure there's something to render
     if (mesh == NULL) return;
-    VFormat *format = mesh->getVertexFormat();
+    VertexFormat *format = const_cast<VertexFormat*>( mesh->getFormat() );
     Shader *shader = Kernel::GetInstance()->getRenderer()->getCurrentShader();
 
     //Walk material index groups

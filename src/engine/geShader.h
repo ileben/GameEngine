@@ -39,7 +39,7 @@ namespace GE
     int count;
 
     DataUnit ()
-      { type=DataType::Int; count=1; }
+      { }
     DataUnit (DataType::Enum t, int c)
       { type=t; count=c; }
     bool operator== (const DataUnit &u)
