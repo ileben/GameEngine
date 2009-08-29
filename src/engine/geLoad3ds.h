@@ -2,8 +2,8 @@
 #define __GELOAD3DS_H
 
 #include "util/geUtil.h"
+#include "math/geVectors.h"
 #include "io/geFile.h"
-#include "geVectors.h"
 #include "geLoader.h"
 #include "gePolyMesh.h"
 

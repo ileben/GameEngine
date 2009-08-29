@@ -19,7 +19,6 @@ namespace CameraMode
 CharString animName;
 Float animSpeed = 1.0f;
 
-UI::Window *window = NULL;
 FpsLabel *lblFps = NULL;
 
 ByteString data;
@@ -30,15 +29,20 @@ SkinMeshActor *skinMeshActor = NULL;
 Actor *actorRender = NULL;
 
 Light *light = NULL;
+ArrayList<Light*> lights;
+int lightCols = 2;
+int lightRows = 2;
+Label *lblLights = NULL;
 
+Scene *sceneSky = NULL;
 Scene *scene = NULL;
 Scene *sceneRender = NULL;
 
-CameraMode::Enum cameraMode;
+Camera3D *camSky = NULL;
 Camera2D *cam2D = NULL;
 Camera3D *cam3D = NULL;
 Camera3D *camRender = NULL;
-FpsController *ctrl = NULL;
+CameraMode::Enum cameraMode = CameraMode::Orbit;
 
 Renderer *renderer = NULL;
 
@@ -51,6 +55,15 @@ Vector3 center( 0,0,0 );
 Vector3 boundsMin( 0,0,0 );
 Vector3 boundsMax( 0,0,0 );
 
+float moveSpeed = 15.0f;
+int moveDir = 0;
+float strafeSpeed = 15.0f;
+int strafeDir = 0;
+float climbSpeed = 15.0f;
+int climbDir = 0;
+
+bool lastTimeInit = false;
+Float lastTime = 0.0f;
 
 //Makes toggling idle draw easier
 bool idleDraw = false;
@@ -58,6 +71,44 @@ void INLINE postRedisplay()
 {
   if (!idleDraw)
     glutPostRedisplay();
+}
+
+void updateLights()
+{
+  //Clear old
+  for (int l=0; l<lights.size(); ++l)
+  {
+    Light *lt = lights[l];
+    scene->removeChild( lt );
+    delete lt;
+  }
+
+  lights.clear();
+
+  //Make new
+  float xStep = 100.0f / lightCols;
+  float yStep = 100.0f / lightRows;
+
+  for (int x=0; x<lightCols; ++x)
+  {
+    for (int y=0; y<lightRows; ++y)
+    {
+      light = new SpotLight( Vector3(-30 + x*xStep, 20, -30 + y*yStep ), Vector3(0,-1,0), 30, 0 );
+      light->lookAt( Vector3(0,-1,0), Vector3(1,0,0) );
+      light->setDiffuseColor( Vector3(1,1,1) );
+      scene->addChild( light );
+      lights.pushBack( light );
+    }
+  }
+
+  lblLights->setText( CharString::Format( "Num lights: %d\n", lightRows * lightCols ));
+}
+
+void updateSkyCamera()
+{
+  Matrix4x4 mSky = camRender->getMatrix();
+  mSky.setColumn( 3, camSky->getMatrix().getColumn(3) );
+  camSky->setMatrix( mSky );
 }
 
 void drag3D (int x, int y)
@@ -81,7 +132,8 @@ void drag3D (int x, int y)
     
   case CameraMode::Orbit:
     
-    camRender->setCenter( center );
+    //camRender->setCenter( center );
+    camRender->setCenter( camRender->getEye() );
     camRender->orbitH( angleH, true );
     camRender->orbitV( angleV, true );
     break;
@@ -93,6 +145,7 @@ void drag3D (int x, int y)
     break;
   }
   
+  updateSkyCamera();
   postRedisplay();
 }
 
@@ -103,7 +156,7 @@ void click3D (int button, int state, int x, int y)
     down3D = false;
     return;
   }
-
+/*
   int mods = glutGetModifiers();
 
   if (mods & GLUT_ACTIVE_ALT)
@@ -120,6 +173,7 @@ void click3D (int button, int state, int x, int y)
     cameraMode = CameraMode::Pan;
   }
   else return;
+  */
   
   lastMouse3D.set( (Float)x, (Float)y );
   down3D = true;
@@ -127,32 +181,19 @@ void click3D (int button, int state, int x, int y)
 
 void click (int button, int state, int x, int y)
 {
-  ctrl->mouseClick( button, state, x, y );
-  return;
-
   click3D( button, state, x, y );
 }
 
 void drag (int x, int y)
 {
-  ctrl->mouseMove( x, y );
-  return;
-
   if (down3D)
     drag3D( x, y );
 }
 
-void keyDown (unsigned char key, int x, int y)
+void keyboard (unsigned char key, int x, int y)
 {
-  ctrl->keyDown( key );
-  //return;
-
   switch (key)
-  {
-  case 9://tab
-    light->setCastShadows( !light->getCastShadows() );
-    break;
-
+  {/*
   case 8://backspace
     if (skinMeshActor == NULL) return;
     skinMeshActor->loadPose();
@@ -183,6 +224,36 @@ void keyDown (unsigned char key, int x, int y)
     skinMeshActor->setAnimationSpeed( animSpeed );
     printf ("Animation speed: %f\n", animSpeed );
     break;
+    */
+  case '+':
+    lightCols++;
+    lightRows++;
+    updateLights();
+    break;
+  case '-':
+    if (lightCols <= 2) break;
+    lightCols--;
+    lightRows--;
+    updateLights();
+    break;
+  case 9://tab
+    light->setCastShadows( !light->getCastShadows() );
+    break;
+  case 'e':
+    moveDir = 1;
+    break;
+  case 'd':
+    moveDir = -1;
+    break;
+  case 'f':
+    strafeDir = 1;
+    break;
+  case 's':
+    strafeDir = -1;
+    break;
+  case ' ':
+    climbDir = 1;
+    break;
 
   case 27:
     //Quit on escape
@@ -190,45 +261,25 @@ void keyDown (unsigned char key, int x, int y)
   }
 }
 
-void keyUp (unsigned char key, int x, int y)
+void keyboardUp (unsigned char key, int x, int y)
 {
-  ctrl->keyUp( key );
-}
-
-void specialKey (int key, int x, int y)
-{
-  float l;
-  float lstep = 0.05f;
-  float fstep = 5.0f;
-  Vector4 dof;
-
   switch (key)
   {
-  case GLUT_KEY_F1:
-    l = renderer->getAvgLuminance();
-    l = Util::Max( l-lstep, 0.0f );
-    renderer->setAvgLuminance( l );
-    std::cout << "Luminance: " << l << std::endl;
+  case 'e':
+    if (moveDir == 1) moveDir = 0;
     break;
-  case GLUT_KEY_F2:
-    l = renderer->getAvgLuminance();
-    l = l+lstep;
-    renderer->setAvgLuminance( l );
-    std::cout << "Luminance: " << l << std::endl;
+  case 'd':
+    if (moveDir == -1) moveDir = 0;
     break;
-  case GLUT_KEY_F4:
-    dof = renderer->getDofParams();
-    dof.x = Util::Max( dof.x-fstep, 0.0f );
-    renderer->setDofParams( dof );
-    std::cout << "Focus distance: " << dof.x << std::endl;
+  case 'f':
+    if (strafeDir == 1) strafeDir = 0;
     break;
-  case GLUT_KEY_F5:
-    dof = renderer->getDofParams();
-    dof.x = dof.x + fstep;
-    renderer->setDofParams( dof );
-    std::cout << "Focus distance: " << dof.x << std::endl;
+  case 's':
+    if (strafeDir == -1) strafeDir = 0;
     break;
-
+  case ' ':
+    if (climbDir == 1) climbDir = 0;
+    break;
   }
 }
 
@@ -240,6 +291,8 @@ void display ()
   
   //draw model
   renderer->beginDeferred();
+  renderer->setCamera( camSky );
+  renderer->renderSceneDeferred( sceneSky );
   renderer->setCamera( camRender );
   renderer->renderSceneDeferred( sceneRender );
   renderer->endDeferred();
@@ -247,7 +300,8 @@ void display ()
   //Frames per second
   renderer->setViewport( 0,0,resX, resY );
   renderer->setCamera( cam2D );
-  renderer->renderWindow( window );
+  renderer->renderWidget( lblFps );
+  renderer->renderWidget( lblLights );
   
   renderer->endFrame();
 }
@@ -263,19 +317,12 @@ void reshape (int w, int h)
 
 void findBounds (TriMesh *mesh, const Matrix4x4 xform)
 {
-  VertexBinding <TriVertex> vertBind;
-  vertBind.init( mesh->getFormat() );
-  TriVertex vert;
-
-  if (mesh->getVertexCount() > 0) {
-    vert = vertBind( mesh->getVertex(0) );
-    center = boundsMin = boundsMax = xform * (*vert.coord);
-  }
+  if (mesh->getVertexCount() > 0)
+    center = boundsMin = boundsMax = xform * mesh->getVertex(0)->point;
 
   for (UintSize v=1; v<mesh->getVertexCount(); ++v)
   {
-    TriVertex vert = vertBind( mesh->getVertex( v ) );
-    Vector3 point = xform * (*vert.coord);
+    Vector3 point = xform * mesh->getVertex( v )->point;
     center += point;
 
     if (point.x < boundsMin.x) boundsMin.x = point.x;
@@ -296,13 +343,37 @@ void cleanup()
 
 void animate()
 {
+  //Kernel time
   Float time = (Float) glutGet( GLUT_ELAPSED_TIME ) * 0.001f;
   Kernel::GetInstance()->tick( time );
   
+  //Animation
   if (skinMeshActor != NULL)
     skinMeshActor->tick();
 
-  ctrl->tick();
+  //Moving
+  if (!lastTimeInit) {
+    lastTime = time;
+    lastTimeInit = true;
+  }
+
+  Float interval = time - lastTime;
+  lastTime = time;
+
+  if (moveDir != 0) {
+    Vector3 look = camRender->getLook();
+    camRender->translate( look * moveSpeed * (Float)moveDir * interval );
+  }
+
+  if (strafeDir != 0) {
+    Vector3 side = camRender->getSide();
+    camRender->translate( side * strafeSpeed * (Float)strafeDir * interval );
+  }
+
+  if (climbSpeed != 0) {
+    Vector3 up = Vector3(0,1,0);
+    camRender->translate( up * climbSpeed * (Float)climbDir * interval );
+  }
 
   glutPostRedisplay();
 }
@@ -318,61 +389,13 @@ void initGlut (int argc, char **argv)
   
   glutReshapeFunc( reshape );
   glutDisplayFunc( display );
-  glutKeyboardFunc( keyDown );
-  glutKeyboardUpFunc( keyUp );
-  glutSpecialFunc( specialKey );
+  glutKeyboardFunc( keyboard );
+  glutKeyboardUpFunc( keyboardUp );
   glutMouseFunc( click );
   glutMotionFunc( drag );
   glutIdleFunc( animate );
   idleDraw = true;
 }
-/*
-class VertColorMaterial : public StandardMaterial { public:
-  virtual void begin ()  {
-    StandardMaterial::begin ();
-    glEnable( GL_COLOR_MATERIAL );
-  }
-};
-
-void SPolyActor::renderMesh (MaterialID matid)
-{
-  glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-  
-  TexMesh::FaceIter uf( texMesh );
-  for (SPolyMesh::FaceIter f( polyMesh ); !f.end(); ++f, ++uf) {
-    
-    //Check if this face belongs to current material
-    if (matid != f->materialID() &&
-        matid != GE_ANY_MATERIAL_ID)
-      continue;
-    
-    glBegin( GL_POLYGON );
-    
-    TexMesh::FaceVertIter uv(*uf);
-    for(SPolyMesh::FaceHedgeIter h(*f); !h.end(); ++h, ++uv) {
-      
-      //Adjust the color based on bone weight
-      SPolyMesh::Vertex *vert = h->dstVertex();
-      glColor3f (1,1,1);
-      for (int b=0; b<4; ++b) {
-        if (vert->boneIndex[ b ] == boneColorIndex &&
-            vert->boneWeight[ b ] > 0.0f)
-            glColor3f( 1, 0, 0 ); }
-      
-      //Vertex normal
-      glNormal3fv( (Float*) &h->vertexNormal()->coord );
-      
-      //UV coordinates
-      if (!uv.end()) {
-        glTexCoord2f( uv->point.x, uv->point.y ); }
-      
-      //Vertex coordinate
-      glVertex3fv( (Float*) &h->dstVertex()->point );
-    }
-    
-    glEnd();
-  }
-}*/
 
 bool loadPackage (const CharString &fileName)
 {
@@ -434,7 +457,7 @@ bool loadPackage (const CharString &fileName)
               character->anims[ a ]->name.buffer());
 
     //Get animation name
-    if (character->anims.size() > 0 && animName == "") {
+    if (character->anims.size() > 0) {
       char buf[256]; int len=0; UintSize animIndex=0;
       while (len==0 || animIndex >= character->anims.size())
       {
@@ -446,7 +469,7 @@ bool loadPackage (const CharString &fileName)
       }
       animName = character->anims[ animIndex ]->name;
     }
-
+    
     //Split into 24-bone sub meshes
     SkinSuperToSubMesh splitter( character->mesh );
     splitter.splitByBoneLimit( 24 );
@@ -463,13 +486,10 @@ bool loadPackage (const CharString &fileName)
   return true;
 }
 
-Actor* loadActor (const CharString &meshFileName,
-                  const CharString &texFileName="",
-                  const CharString &normTexFileName="")
+Actor* loadActor (const CharString &meshFileName, const CharString &texFileName="")
 {
   mesh = NULL;
   character = NULL;
-  actorRender = NULL;
 
   if (!loadPackage( meshFileName ))
     return NULL;
@@ -481,16 +501,16 @@ Actor* loadActor (const CharString &meshFileName,
   {
     triMeshActor = new TriMeshActor;
     triMeshActor->setMesh( mesh );
-    meshRender = mesh;
     actorRender = triMeshActor;
+    meshRender = mesh;
   }
 
   if (character != NULL)
   {
     skinMeshActor = new SkinMeshActor;
     skinMeshActor->setMesh( character );
-    meshRender = character->mesh;
     actorRender = skinMeshActor;
+    meshRender = character->mesh;
   }
 
   //Center in the scene
@@ -505,30 +525,16 @@ Actor* loadActor (const CharString &meshFileName,
   actorRender->scale( scale );
   findBounds( meshRender, actorRender->getWorldMatrix() );
 
-  if (normTexFileName != "")
+  if (texFileName == "")
   {
-    //Assing normal-texture material
-    Image *imgDiff = new Image;
-    imgDiff->readFile( texFileName, "jpeg" );
-
-    Image *imgNorm = new Image;
-    imgNorm->readFile( normTexFileName, "jpeg" );
-
-    Texture *texDiff = new Texture;
-    texDiff->fromImage( imgDiff );
-
-    Texture *texNorm = new Texture;
-    texNorm->fromImage( imgNorm );
-
-    NormalTexMat *matTex = new NormalTexMat;
-    matTex->setSpecularity( 0.5 );
-    matTex->setDiffuseTexture( texDiff );
-    matTex->setNormalTexture( texNorm );
-    actorRender->setMaterial( matTex );
+    //Assign solid color material
+    StandardMaterial *matWhite = new StandardMaterial;
+    matWhite->setAmbientColor( matWhite->getDiffuseColor() * .8f );
+    actorRender->setMaterial( matWhite );
   }
-  else if (texFileName != "")
+  else
   {
-    //Assing diffuse-texture material
+    //Assign diffuse-texture material
     Image *img = new Image;
     img->readFile( texFileName, "jpeg" );
 
@@ -538,12 +544,6 @@ Actor* loadActor (const CharString &meshFileName,
     DiffuseTexMat *matTex = new DiffuseTexMat;
     matTex->setDiffuseTexture( tex );
     actorRender->setMaterial( matTex );
-  }
-  else
-  {
-    //Assign solid color material
-    StandardMaterial *matWhite = new StandardMaterial;
-    actorRender->setMaterial( matWhite );
   }
 
   return actorRender;
@@ -559,137 +559,118 @@ int main (int argc, char **argv)
   renderer = kernel.getRenderer();
   printf( "Kernel loaded\n" );
 
-  //Setup depth-of-field
-  renderer->setDofParams( 50, 50, 150, 150 );
-  renderer->setIsDofEnabled( false );
+  //Setup skybox scene
+  sceneSky = new Scene;
+
+  Actor *sky = loadActor( "Sky.pak", "SkyBoxMoreBlue.jpg" );
+  ((StandardMaterial*)sky->getMaterial())->setLuminosity( 1 );
+
+  sceneSky->addChild( sky );
+  camSky = new Camera3D;
 
   //Setup 3D scene
   scene = new Scene;
 
-  if (argc < 4)
-  {
-    //Get input filename and load it
-    CharString fileName;
-    do {
-      char buf[256];
-      std::cout << "Filename: ";
-      std::cin.width( 256 );
-      std::cin >> buf;
-      fileName = buf;
-      loadActor( fileName );
-    }
-    while (actorRender == NULL);
-  }
-  else
-  {
-    //Take filename from argument
-    CharString fileName = argv[1];
+  Actor *city = loadActor( "CityDemo.pak" );
+  ((StandardMaterial*)city->getMaterial())->setDiffuseColor( Vector3(.5,.6,.9) );
+  scene->addChild( city );
 
-    CharString texFileName = argv[2];
-    if (texFileName == "notex")
-      texFileName = "";
-
-    animName = argv[3];
-    if (animName == "noanim")
-      animName = "";
-
-    loadActor( fileName, texFileName );
-    if (actorRender == NULL) {
-      printf( "Failed loading '%s'\n", argv[1] );
-      getchar();
-      return 1;
-    }
-  }
-
-  scene->addChild( actorRender );
-  ((StandardMaterial*)actorRender->getMaterial())->setCullBack(false);
-  ((StandardMaterial*)actorRender->getMaterial())->setLuminosity(0.2f);
-  ((StandardMaterial*)actorRender->getMaterial())->setDiffuseColor(Vector3(.7,.7,.7));
-  ((StandardMaterial*)actorRender->getMaterial())->setSpecularity(1.0f);
-  ((StandardMaterial*)actorRender->getMaterial())->setGlossiness(0.5f);
-  //((StandardMaterial*)actorRender->getMaterial())->setCellShaded( true );
+  Actor *house = loadActor( "CityDemoHouse.pak", "House01_Texture.jpg" );
+  house->scale( 0.02f );
+  house->rotate( Vector3(0,1,0), Util::DegToRad(-90) );
+  house->translate( 1,-1.4,-18.6);
+  scene->addChild( house );
 
 /*
-  loadActor( "trex.pak", "rex.jpg", "rex_normal.jpg" );
-  ((StandardMaterial*)actorRender->getMaterial())->setCullBack( false );
-  ((StandardMaterial*)actorRender->getMaterial())->setDiffuseColor(Vector3(0,.5,0));
-  ((StandardMaterial*)actorRender->getMaterial())->setSpecularity(0.9f);
-  ((StandardMaterial*)actorRender->getMaterial())->setGlossiness(0.05f);
-  //((StandardMaterial*)actorRender->getMaterial())->setCellShaded( true );
-  actorRender->scale(1,-1,-1);
-  actorRender->translate(0,-50,0);
-  scene->addChild( actorRender );
-*/
-  
-  //Create floor cube
-  StandardMaterial *matBox = new StandardMaterial;
-  matBox->setSpecularity( 0.5 );
-  matBox->setDiffuseColor( Vector3(1,1,1) );
+  Actor *bridge = loadActor( "Bridge.pak" );
+  bridge->scale( 10 );
+  ((StandardMaterial*)bridge->getMaterial())->setLuminosity( .11f );
+  scene->addChild( bridge );
 
-  TriMesh *cubeMesh = new CubeMesh;
-  TriMeshActor *cube = new TriMeshActor;
-  cube->setMaterial( matBox );
-  cube->setMesh( cubeMesh );
-  cube->scale( 300, 10, 300 );
-  cube->translate( 0, -100, 0 );
-  scene->addChild( cube );
+  Actor *house1 = loadActor( "House01_Unwrapped.pak", "House01_Texture.jpg" );
+  house1->scale( .5f );
+  house1->translate( 0,0,-100 );
+  scene->addChild( house1 );
 
-  //Create axes
-  StandardMaterial axesMat;
-  axesMat.setUseLighting( false );
-  AxisActor *axes = new AxisActor;
-  axes->scale( 100 );
-  axes->setMaterial( &axesMat );
-  //scene->addChild( axes );
+  Actor *news1 = loadActor( "Newspaper1.pak" );
+  news1->scale( .5f );
+  news1->translate( 50,0,-150 );
+  scene->addChild( news1 );
+
+  Actor *news2 = loadActor( "Newspaper2.pak" );
+  news2->scale( .5f );
+  news2->translate( 100,0,-150 );
+  scene->addChild( news2 );
+
+  Actor *verasign1 = loadActor( "VeraSign.pak" );
+  verasign1->scale( .5f );
+  verasign1->translate( 0,0,-150 );
+  scene->addChild( verasign1 );
+
+  Actor *verasign2 = loadActor( "VeraSignCastle.pak" );
+  verasign2->scale( .5f );
+  verasign2->translate( 0,0,-200 );
+  scene->addChild( verasign2 );
+
+  //Actor *charActor = loadActor( "mayaexport3.pak" );
+  Actor *charActor = loadActor( "Ash.pak" );
+
+  //Clone the actor multiple times
+  for (int x=0; x<4; ++x)
+  {
+    for (int z=0; z<4; ++z)
+    {
+      SkinMeshActor *a = new SkinMeshActor;
+      a->setMesh( character );
+      //TriMeshActor *a = new TriMeshActor;
+      //a->setMesh( mesh );
+      a->setMatrix( charActor->getMatrix() );
+      a->translate( -200 + x * 100, 0, -200 + z * 100 );
+      a->setMaterial( charActor->getMaterial() );
+      //a->setMaterial( matTex );
+      scene->addChild( a );
+    }
+  }
+  */
 
   //Create lights
-  light = new SpotLight( Vector3(-200,300,-200), Vector3(), 60, 0 );
-  //light = new SpotLight( Vector3(-200,150,200), Vector3(), 60, 0 );
-  //light = new SpotLight( Vector3(300,300,50), Vector3(), 60, 0 );
+  /*
+  light = new SpotLight( Vector3(-100,200,80), Vector3(), 60, 0 );
   light->setCastShadows( true );
-  light->setDiffuseColor( Vector3(1) );
-  light->setSpecularColor( Vector3(5) );
   light->lookInto( center );
-  scene->addChild( light );
+  light->setDiffuseColor( Vector3(1,1,1) );
+  scene->addChild( light );*/
 /*
-  Light *light2 = new SpotLight( Vector3(300,300,50), Vector3(), 60, 0 );
+  Light *light2 = new SpotLight( Vector3(100,200,-80), Vector3(), 60, 0 );
   light2->lookInto( center );
-  light2->setDiffuseColor( Vector3(.5,.5,1) );
-  light2->setCastShadows( true );
-  scene->addChild( light2);
-
-  Light *light3 = new SpotLight( Vector3(-200,150,200), Vector3(), 60, 0 );
-  light3->lookInto( center );
-  light3->setDiffuseColor( Vector3(.5) );
-  light3->setCastShadows( true );
-  scene->addChild( light3);
+  light2->setDiffuseColor( Vector3(.2,.2,.2) );
+  scene->addChild( light2 );
 */
+
   cam3D = new Camera3D;
   cam3D->setCenter( center );
-  cam3D->translate( 0, 0, -300 );
-  cam3D->orbitV( Util::DegToRad( 25 ) );
-  cam3D->setNearClipPlane( 1.0f );
+  cam3D->orbitH( Util::DegToRad( -30 ), false );
+  cam3D->orbitV( Util::DegToRad( 30 ), false );
+  cam3D->translate( 40, 40, -60 );
+  cam3D->setNearClipPlane( 0.1f );
   cam3D->setFarClipPlane( 3000.0f );
 
   //Setup 2D overlay
-  UI::Stage *stage = new UI::Stage;
-  window = new UI::Window;
-
   lblFps = new FpsLabel;
-  lblFps->setLoc( Vector2( 0.0f, (Float)resY ));
+  lblFps->setLocation( Vector2( 0.0f, (Float)resY ));
   lblFps->setColor( Vector3( 1.0f, 1.0f, 1.0f ));
-  lblFps->setParent( window );
+
+  lblLights = new Label;
+  lblLights->setLocation( Vector2( 0.0f, (Float)resY - 30 ));
+  lblLights->setColor( Vector3( 1.0f, 1.0f, 1.0f ));
 
   cam2D = new Camera2D;
 
   //Start with Logo scene
   sceneRender = scene;
   camRender = cam3D;
-
-  //Assign controller
-  ctrl = new FpsController;
-  ctrl->attachCamera( cam3D );
-  ctrl->setMoveSpeed( 200 );
+  updateSkyCamera();
+  updateLights();
 
   //Run application
   atexit( cleanup );

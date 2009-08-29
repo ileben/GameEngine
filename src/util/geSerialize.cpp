@@ -270,7 +270,8 @@ namespace GE
   {
     if (!simulate)
     {
-      //Make pointer at given offset point to copy offset
+      //Make serialized pointer at given offset
+      //point to current store offset
       void *pptr = data + ptrOffset;
       Util::PtrSet (pptr, offset);
     }
@@ -478,7 +479,7 @@ namespace GE
       }
       else if (ri.isptr && ri.isarray)
       {
-        //Allocate memory for the array of object
+        //Allocate memory for the array of objects
         void *ptr = std::malloc( ri.count * ri.cls->getSize() );
 
         //Adjust the pointer to the array
@@ -635,6 +636,142 @@ namespace GE
     return root;
   }
 
+  /*
+  ---------------------------------------------------*/
+/*
+  void save()
+  {
+    while (!empty)
+    {
+      int classinfo = popinfo();
+
+      for (UintSize m=0; m<classinfo.member.size(); ++m)
+      {
+        if (member.isdatavar)
+          store();
+
+        if (member.isobjvar)
+          stackobj( nonpointed );
+        
+        if (member.isobjptr)
+          stackobj( pointedto )
+
+        if (member.isdataptr)
+          stackdata();
+      }
+
+      for (UintSize d=0; d<datas.size(); ++d)
+      {
+        if (data.isobjvararray)
+          foreach
+            stackobj();
+
+        if (data.isobjptrarray)
+          foreach
+            stackobj();
+
+        else
+          store();
+      }
+    }
+  }
+
+  void load()
+  {
+    while (!empty)
+    {
+      int classinfo = popinfo();
+
+      for (UintSize m=0; m<classinfo.member.size(); ++m)
+      {
+        if (member.isdatavar)
+          load();
+
+        if (member.isobjvar)
+          stackobj( nonpointed, instance );
+        
+        if (member.isobjptr)
+          newinstance();
+          adjustptr();
+          stackobj( pointedto, instance )
+
+        if (member.isdataptr)
+          stackdata();
+      }
+
+      for (UintSize d=0; d<datas.size(); ++d)
+      {
+        if (data.isobjvararray)
+          malloc( objects );
+          adjustptr();
+
+          foreach
+            newinplace();
+            stackobj( nonpointed, inplace );
+
+        if (data.isobjptrarray)
+          malloc( pointers );
+          adjustptr();
+
+          foreach
+            newinstance();
+            adjustptr();
+            stackobj( pointedto, instance );
+
+        else
+          malloc( data );
+          adjustptr();
+          load();
+      }
+    }
+  }
+
+  void serialize()
+  {
+    while (!empty)
+    {
+      int classinfo = popinfo();
+      
+      if (classinfo.pointedto)
+        store();
+        adjustptr();
+
+      for (UintSize m=0; m<classinfo.member.size(); ++m)
+      {
+        if (member.isdatavar)
+          ;
+
+        if (member.isobjvar)
+          stackobj( nonpointed );
+        
+        if (member.isobjptr)
+          stackobj( pointedto )
+
+        if (member.isdataptr)
+          stackdata();
+      }
+
+      for (UintSize d=0; d<datas.size(); ++d)
+      {
+        adjustptr();
+
+        if (data.isobjvararray)
+          store( objects );
+          foreach
+            stackobj( nonpointed );
+        
+        if (data.isobjptrarray)
+          store( pointers );
+          foreach
+            stackobj( pointedto );
+
+        else
+          store();
+      }
+    }
+  }
+
+*/
   /*
   --------------------------------------------------
   Saving start

@@ -10,19 +10,22 @@ namespace GE
   to the constructor.
   =======================================================*/
   
-  class GE_API_ENTRY GenericArrayList
+  class SerialArray
+  {
+
+  };
+
+  class GenericArrayList
   {
     DECLARE_SERIAL_CLASS( GenericArrayList );
     DECLARE_CALLBACK( ClassEvent::Serialize, serialize );
+    DECLARE_CALLBACK( ClassEvent::Loaded, loaded );
     DECLARE_END;
     
   protected:
     Uint32 sz;
     Uint32 cap;
     Uint32 eltSize;
-    ClassID eltClsID;
-    ClassPtr eltCls;
-    bool eltIsPtr;
     Uint8 *elements;
     
   public:
@@ -32,75 +35,25 @@ namespace GE
     Serialization
     ------------------------------------------------------*/
     
-    GenericArrayList (SerializeManager *sm) : eltClsID (sm)
-    {
-      //Make sure it is re-serializable
-      if (sm->isDeserializing())
-        eltCls = IClass::FromID( eltClsID );
-    }
-    
-    virtual void serialize (void *param)
+    void serialize (void *param)
     {
       SerializeManager *sm = (SM*)param;
       sm->dataVar( &sz );
       sm->dataVar( &eltSize );
-      sm->dataVar( &eltClsID );
-      sm->dataVar( &eltIsPtr );
-      
-      //Make sure it is modifiable after loading
-      //(deserialized is non-modifiable so cap and class don't matter)
-      if (sm->isLoading()) {
-        eltCls = IClass::FromID( eltClsID );
-        cap = sz;
-      }
-      
-      //Serialize data if any
-      if (sz > 0)
+      if (sz > 0) sm->dataPtr( &elements, sz * eltSize );
+    }
+
+    void loaded (void *param)
+    {
+      if (sz == 0)
       {
-        //If object class given it's an array of objects or pointers to objects
-        if (eltCls != NULL) {
-          if (eltIsPtr) sm->objectPtrArray( eltCls, (void***)&elements, sz );
-          else sm->objectArray( eltCls, (void**)&elements, sz );
-        } else sm->dataPtr( &elements, sz * eltSize );
-      }
-      
-      //Make sure it is modifiable after loading
-      if (sm->isLoading() && sz == 0) {
         elements = (Uint8*) std::malloc( eltSize );
         cap = 1;
       }
+      else cap = sz;
     }
-    
-  protected:
-    
-    /*
-    -----------------------------------------------------
-    Constructs n elements at given address
-    -----------------------------------------------------*/
-    
-    virtual void construct( void *dst, UintSize n ){
-      //Implemented in ArrayList<T>
-    }
-    
-    /*
-    -----------------------------------------------------
-    Destructs n elements at given address
-    -----------------------------------------------------*/
-    
-    virtual void destruct( void *dst, UintSize n ){
-      //Implemented in ArrayList<T>
-    }
-    
-    /*
-    -----------------------------------------------------
-    Copies n elements from source to destination buffer
-    -----------------------------------------------------*/
-    
-    virtual void copy( void *dst, const void *src, UintSize n ){
-      std::memcpy( dst, src, n * eltSize );
-    }
-    
-  public:
+
+    GenericArrayList (SerializeManager *sm) {}
     
     /*
     ---------------------------------------------
@@ -111,9 +64,6 @@ namespace GE
     GenericArrayList ()
     {
       this->eltSize = sizeof( Uint8 );
-      this->eltClsID = ClassID();
-      this->eltCls = NULL;
-      this->eltIsPtr = false;
       
       sz = 0;
       cap = 1;
@@ -126,12 +76,9 @@ namespace GE
     array with storage for 1 element
     --------------------------------------*/
     
-    GenericArrayList (UintSize eltSize, ClassPtr eltCls, bool eltIsPtr)
+    GenericArrayList (UintSize eltSize)
     {
       this->eltSize = (Uint32) eltSize;
-      this->eltClsID = ( eltCls ? eltCls->getID() : ClassID() );
-      this->eltCls = eltCls;
-      this->eltIsPtr = eltIsPtr;
       
       sz = 0;
       cap = 1;
@@ -144,12 +91,9 @@ namespace GE
     array with given capacity.
     -----------------------------------*/
     
-    GenericArrayList (UintSize newCap, UintSize eltSize, ClassPtr eltCls, bool eltIsPtr)
+    GenericArrayList (UintSize newCap, UintSize eltSize)
     {
       this->eltSize = (Uint32) eltSize;
-      this->eltClsID = ( eltCls ? eltCls->getID() : ClassID() );
-      this->eltCls = eltCls;
-      this->eltIsPtr = eltIsPtr;
       
       sz = 0;
       cap = (Uint32) (newCap > 0 ? newCap : 1);
@@ -164,10 +108,35 @@ namespace GE
     virtual ~GenericArrayList ()
     {
       //Can't call virtuals in destructor!
-      //Implemented in ArrayList<T>.
-      //destruct( elements, sz );
       std::free( elements );
     }
+
+  protected:
+    
+    /*
+    -----------------------------------------------------
+    Constructs n elements at given address
+    -----------------------------------------------------*/
+    
+    virtual void construct (void *dst, UintSize n) {}
+    
+    /*
+    -----------------------------------------------------
+    Destructs n elements at given address
+    -----------------------------------------------------*/
+    
+    virtual void destruct (void *dst, UintSize n) {}
+    
+    /*
+    -----------------------------------------------------
+    Copies n elements from source to destination buffer
+    -----------------------------------------------------*/
+    
+    virtual void copy (void *dst, const void *src, UintSize n) {
+      std::memcpy( dst, src, n * eltSize );
+    }
+  
+  public:
     
     /*
     ---------------------------------------
@@ -392,64 +361,40 @@ namespace GE
     }
     
     void setAt( UintSize index, const void *newElt )
-    {
-      copy( elements + index, newElt, 1 );
-    }
+    { copy( at( index ), newElt, 1 ); }
     
     void pushBack( const void *newElt )
-    {
-      insertAt( sz, newElt );
-    }
+    { insertAt( sz, newElt ); }
 
     void pushBack()
-    {
-      insertAt( sz );
-    }
+    { insertAt( sz ); }
     
     void popBack()
-    {
-      removeAt( sz-1 );
-    }
+    { removeAt( sz-1 ); }
 
     void* at( UintSize index ) const
-    {
-      return elements + index * eltSize;
-    }
+    { return elements + index * eltSize; }
     
     void* operator[]( UintSize index ) const
-    {
-      return elements + index * eltSize;
-    }
+    { return elements + index * eltSize; }
 
     void* last() const
-    {
-      return elements + (sz-1) * eltSize;
-    }
+    { return elements + (sz-1) * eltSize; }
     
     UintSize capacity() const
-    {
-      return cap;
-    }
+    { return cap; }
     
     UintSize size() const
-    {
-      return sz;
-    }
+    { return sz; }
     
     bool empty() const
-    {
-      return sz == 0;
-    }
+    { return sz == 0; }
     
     void* buffer() const
-    {
-      return elements;
-    }
+    { return elements; }
     
     UintSize elementSize() const
-    {
-      return eltSize;
-    }
+    { return eltSize; }
 
     void insertListAt( UintSize index, const GenericArrayList *list )
     {
@@ -463,35 +408,225 @@ namespace GE
         pushBack( list->at( i ) );
     }
   };
-  
+
+  class GenericPtrArrayList : public GenericArrayList
+  {
+    DECLARE_SERIAL_CLASS( GenericPtrArrayList );
+    DECLARE_CALLBACK( ClassEvent::Serialize, serialize );
+    DECLARE_CALLBACK( ClassEvent::Loaded, loaded );
+    DECLARE_CALLBACK( ClassEvent::Deserialized, loaded );
+    DECLARE_END;
+
+    ClassID eltClsID;
+    ClassPtr eltCls;
+
+  public:
+
+    void serialize (void *param)
+    {
+      SerializeManager *sm = (SM*) param;
+      sm->dataVar( &sz );
+      sm->dataVar( &eltSize );
+      sm->dataVar( &eltClsID );
+      if (sz > 0) sm->objectPtrArray(
+        IClass::FromID(eltClsID), (void***)&elements, sz );
+    }
+
+    void loaded (void *param)
+    {
+      eltCls = IClass::FromID( eltClsID );
+    }
+
+    GenericPtrArrayList (SM *sm)
+      : GenericArrayList(sm), eltClsID (sm) {}
+
+    GenericPtrArrayList ()
+    {
+      this->eltCls = NULL;
+    }
+
+    GenericPtrArrayList (ClassPtr eltCls)
+      : GenericArrayList (sizeof(void*))
+    {
+      this->eltClsID = ( eltCls ? eltCls->getID() : ClassID() );
+      this->eltCls = eltCls;
+    }
+
+    GenericPtrArrayList (UintSize newCap, ClassPtr eltCls)
+      : GenericArrayList (newCap, sizeof(void*))
+    {
+      this->eltClsID = ( eltCls ? eltCls->getID() : ClassID() );
+      this->eltCls = eltCls;
+    }
+  };
+
+  class GenericObjArrayList : public GenericArrayList
+  {
+    DECLARE_SERIAL_CLASS( GenericObjArrayList );
+    DECLARE_CALLBACK( ClassEvent::Serialize, serialize );
+    DECLARE_CALLBACK( ClassEvent::Loaded, loaded );
+    DECLARE_END;
+
+    ClassID eltClsID;
+    ClassPtr eltCls;
+
+  public:
+
+    void serialize (void *param)
+    {
+      SerializeManager *sm = (SM*) param;
+      sm->dataVar( &sz );
+      sm->dataVar( &eltSize );
+      sm->dataVar( &eltClsID );
+      if (sz > 0) sm->objectArray(
+        IClass::FromID(eltClsID), (void**)&elements, sz );
+    };
+
+    void loaded (void *param)
+    {
+      eltCls = IClass::FromID( eltClsID );
+    }
+
+    GenericObjArrayList (SM *sm)
+      : GenericArrayList(sm), eltClsID (sm) {}
+
+    GenericObjArrayList ()
+    {
+      this->eltCls = NULL;
+    }
+
+    GenericObjArrayList (ClassPtr eltCls)
+      : GenericArrayList (eltCls->getSize())
+    {
+      this->eltClsID = ( eltCls ? eltCls->getID() : ClassID() );
+      this->eltCls = eltCls;
+    }
+
+    GenericObjArrayList (UintSize newCap, ClassPtr eltCls)
+      : GenericArrayList (newCap, eltCls->getSize())
+    {
+      this->eltClsID = ( eltCls ? eltCls->getID() : ClassID() );
+      this->eltCls = eltCls;
+    }
+
+    ~GenericObjArrayList ()
+    {
+      destruct( this->elements, this->sz );
+    }
+
+    virtual void construct (void *dst, UintSize n)
+    {
+      for( UintSize i=0; i<n; ++i )
+        eltCls->newInPlace( Util::PtrOff( dst, i*eltSize ) );
+    }
+    
+    virtual void destruct (void *dst, UintSize n)
+    {
+      for( UintSize i=0; i<n; ++i )
+        eltCls->destruct( Util::PtrOff( dst, i*eltSize ) );
+    }
+    
+    virtual void copy (void *dst, const void *src, UintSize n)
+    {
+      for( UintSize i=0; i<n; ++i )
+        eltCls->copy( Util::PtrOff( dst, i*eltSize ),
+                      Util::PtrOff( src, i*eltSize ) );
+    }
+  };
+
   /*
   ======================================================
-  A non-serializable templated list
+  A base for templated list classes.
   ======================================================*/
+
+
+  template <class T, class Base> class TArrayList : public Base
+  {
+  public:
+
+    TArrayList (SerializeManager *sm)
+      : Base (sm) {}
+
+    TArrayList (UintSize eltSize)
+      : Base (eltSize) {}
+
+    TArrayList (ClassPtr eltCls)
+      : Base (eltCls) {}
+    
+    TArrayList (UintSize newCap, UintSize eltSize)
+      : Base (newCap, eltSize) {}
+
+    TArrayList (UintSize newCap, ClassPtr eltCls)
+      : Base (newCap, eltCls) {}
+    
+    T& first() const
+    { return ((T*)elements)[ 0 ]; }
+    
+    T& last() const
+    { return ((T*)elements)[ sz-1 ]; }
+    
+    T& elementAt( UintSize index ) const
+    { return ((T*)elements)[ index ]; }
+    
+    T& at( UintSize index ) const
+    { return ((T*)elements)[ index ]; }
+    
+    T& operator[]( UintSize index ) const
+    { return ((T*)elements)[ index ]; }
+    
+    T* buffer() const
+    { return (T*)elements; }
+
+    void insertAt( UintSize index, const T &newElt )
+    { Base::insertAt( index, &newElt ); }
+    
+    void pushBack( const T &newElt )
+    { Base::pushBack( &newElt ); }
+    
+    void setAt( UintSize index, const T &newElt )
+    { Base::setAt( index, &newElt ); }
+
+    bool contains( const T &el ) const
+    {
+      return (indexOf( el ) != -1);
+    }
+    
+    int indexOf( const T &el ) const
+    {
+      for (UintSize i=0; i<sz; i++)
+        if (((T*)elements)[i] == el)
+          return (int) i;
+      
+      return -1;
+    }
+    
+    void remove( const T &el )
+    {
+      int i = indexOf( el );
+      if (i > -1) removeAt( (UintSize) i );
+    }
+  };
+
+
+  /*
+  ======================================================
+  A non-serializable templated list.
+  Should be used with base types.
+  ======================================================*/
+
   
-  template <class T> class ArrayList : public GenericArrayList
+  template <class T> class ArrayList : public TArrayList <T,GenericArrayList>
   {
   public:
 
     ArrayList (SerializeManager *sm)
-      : GenericArrayList (sm)
-      {}
+      : TArrayList <T,GenericArrayList> (sm) {}
     
-    ArrayList()
-      : GenericArrayList( sizeof(T), NULL, false )
-      {}
+    ArrayList ()
+      : TArrayList <T,GenericArrayList> (sizeof(T)) {}
     
-    ArrayList( UintSize newCap )
-      : GenericArrayList( newCap, sizeof(T), NULL, false )
-      {}
-    
-    ArrayList( UintSize eltSize, ClassPtr eltCls, bool eltIsPtr )
-      : GenericArrayList( eltSize, eltCls, eltIsPtr  )
-      {}
-    
-    ArrayList( UintSize newCap, UintSize eltSize, ClassPtr eltCls, bool eltIsPtr )
-      : GenericArrayList( newCap, eltSize, eltCls, eltIsPtr )
-      {}
+    ArrayList (UintSize newCap)
+      : TArrayList <T,GenericArrayList> (newCap, sizeof(T)) {}
     
     ~ArrayList()
     {
@@ -519,120 +654,53 @@ namespace GE
       for( UintSize i=0; i<n; ++i )
         tdst[i] = tsrc[i];
     }
-
-    void insertAt( UintSize index, const T &newElt )
-    {
-      GenericArrayList::insertAt( index, &newElt );
-    }
-    
-    void pushBack( const T &newElt )
-    {
-      GenericArrayList::pushBack( &newElt );
-    }
-    
-    void setAt( UintSize index, const T &newElt )
-    {
-      GenericArrayList::setAt( index, &newElt );
-    }
-    
-    T& first() const
-    {
-      return ((T*)elements)[ 0 ];
-    }
-    
-    T& last() const
-    {
-      return ((T*)elements)[ sz-1 ];
-    }
-    
-    T& elementAt( UintSize index ) const
-    {
-      return ((T*)elements)[ index ];
-    }
-    
-    T& at( UintSize index ) const
-    {
-      return ((T*)elements)[ index ];
-    }
-    
-    T& operator[]( UintSize index ) const
-    {
-      return ((T*)elements)[ index ];
-    }
-    
-    T* buffer() const
-    {
-      return (T*)elements;
-    }
-    
-    bool contains( const T &el ) const
-    {
-      return (indexOf( el ) != -1);
-    }
-    
-    int indexOf( const T &el ) const
-    {
-      for( UintSize i=0; i<sz; i++ )
-        if( ((T*)elements) [i] == el )
-          return (int) i;
-      
-      return -1;
-    }
-    
-    void remove( const T &el )
-    {
-      int i = indexOf( el );
-      if( i > -1 ) removeAt( (UintSize) i );
-    }
   };
+
 
   /*
   ========================================================
-  A serializable list of serializable classes
+  A serializable list of serializable classes.
+  This interface features simplified constructors as the
+  class is implied from the template argument.
   ========================================================*/
   
   template <class T>
-    class ObjArrayList : public ArrayList <T>
+    class ObjArrayList : public TArrayList <T,GenericObjArrayList>
   {
   public:
     
     ObjArrayList (SerializeManager *sm)
-      : ArrayList <T> (sm)
-     {}
+      : TArrayList <T,GenericObjArrayList> (sm) {}
 
-    ObjArrayList()
-      : ArrayList <T> ( sizeof(T), Class(T), false )
-      {}
+    ObjArrayList ()
+      : TArrayList <T,GenericObjArrayList> (Class(T)) {}
     
-    ObjArrayList( UintSize newCap )
-      : ArrayList <T> ( newCap, sizeof(T), Class(T), false )
-      {}
-  };
+    ObjArrayList (UintSize newCap)
+      : TArrayList <T,GenericObjArrayList> (newCap, Class(T)) {}
+    };
 
   
   /*
   ========================================================
-  A serializable list of pointers to serializable classes
+  A serializable list of pointers to serializable classes.
+  This interface features simplified constructors as the
+  class is implied from the template argument.
   ========================================================*/
   
   template <class T>
-    class ObjPtrArrayList : public ArrayList <T*>
+    class ObjPtrArrayList : public TArrayList <T*,GenericPtrArrayList>
   {
   public:
     
     ObjPtrArrayList (SerializeManager *sm)
-      : ArrayList <T*> (sm)
-     {}
+      : TArrayList <T*,GenericPtrArrayList> (sm) {}
 
-    ObjPtrArrayList()
-      : ArrayList <T*> ( sizeof(T*), Class(T), true )
-      {}
+    ObjPtrArrayList ()
+      : TArrayList <T*,GenericPtrArrayList> (Class(T)) {}
     
-    ObjPtrArrayList( UintSize newCap )
-      : ArrayList <T*> ( newCap, sizeof(T*), Class(T), true )
-      {}
+    ObjPtrArrayList (UintSize newCap)
+      : TArrayList <T*,GenericPtrArrayList> (newCap, Class(T)) {}
   };
-  
   
 }//namespace GE
 #endif //__GEARRAYLIST_RES_H

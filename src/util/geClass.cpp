@@ -197,10 +197,5 @@ namespace GE
     return index;
   }
   */
-  void
-  IClass::Create (const ObjectPtr &ptr, void *data, int size)
-  {
-    ptr.cls->invokeCallback (ClassEvent::Create, ptr.obj, data);
-  }
   
 }//namespace GE

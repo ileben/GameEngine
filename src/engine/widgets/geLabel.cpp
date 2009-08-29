@@ -7,6 +7,8 @@ namespace GE
   
   void Label::setText (const String &newText) {
     text = newText;
+    ByteString cstr = newText;
+    setSize( glutStrokeLength( GLUT_STROKE_ROMAN, cstr.buffer() ), 20.0f );
   }
   
   void Label::setColor (const Vector3 &c) {
@@ -16,8 +18,8 @@ namespace GE
   void Label::draw ()
   {
     float k = 0.15f;
-    float x = location.x + 0.5f;
-    float y = location.y - 0.5f;
+    float x = getLeft() + 0.5f;
+    float y = getTop() + 20.0f - 0.5f;
     
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

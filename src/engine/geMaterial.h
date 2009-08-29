@@ -5,7 +5,7 @@
 #pragma warning(disable:4251)
 
 #include "util/geUtil.h"
-#include "geVectors.h"
+#include "math/geMath.h"
 #include "geResource.h"
 
 namespace GE

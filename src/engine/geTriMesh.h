@@ -2,7 +2,7 @@
 #define __GESTATICMESH_H
 
 #include "util/geUtil.h"
-#include "geVectors.h"
+#include "math/geMath.h"
 #include "geResource.h"
 #include "geMaterial.h"
 #include "gePolyMesh.h"
@@ -125,7 +125,7 @@ namespace GE
     void init (const VertexFormat *vertexFormat)
     {
       //Get vertex class and format members
-      const ArrayList< FormatMember > *fmembers = vertexFormat->getMembers();
+      const ObjArrayList< FormatMember > *fmembers = vertexFormat->getMembers();
       const MTable *vmembers = Class(VertexType)->getMembers();
       Binding binding;
 
@@ -248,7 +248,7 @@ namespace GE
     TriMesh (SerializeManager *sm) : format(sm), data(sm), indices(sm), groups(sm)
     { isOnGpu = false; }
 
-    TriMesh (const VertexFormat &f) : data(f.getByteSize(), NULL, false)
+    TriMesh (const VertexFormat &f) : data(f.getByteSize())
     { isOnGpu = false; setFormat( f ); }
     
     TriMesh ()

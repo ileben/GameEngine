@@ -155,8 +155,10 @@ namespace GE
   {
     enum Enum
     {
-      Create,
-      Serialize
+      Serialize      = 0,
+      Loaded         = 1,
+      Deserialized   = 2,
+      Num            = 3
     };
   }
   
@@ -195,6 +197,8 @@ namespace GE
     virtual void* newInPlace (void *pwhere) = 0;
     virtual void* newSerialInstance (SerializeManager *sm) = 0;
     virtual void* newSerialInPlace (void *pwhere, SerializeManager *sm) = 0;
+    virtual void  destruct (void *pwhere) = 0;
+    virtual void  copy (void *pwhere, void *pfrom) = 0;
     
     //Utilities
     static ClassPtr FromString (const char *name);
@@ -205,7 +209,6 @@ namespace GE
     static void SaveBinary (const ObjectPtr &ptr, ByteString &buf);
     static int LoadText (const ObjectPtr &ptr, const ByteString &buf, int index);
     static int LoadBinary (const ObjectPtr &ptr, const ByteString &buf, int index);*/
-    static void Create (const ObjectPtr &ptr, void *buf, int size);
   };
 
   /*
@@ -230,21 +233,20 @@ namespace GE
     typedef void (Name::*ClassEventFunc) (void *param);
     
   private:
-    
-    struct CallbackInfo
-    {
-      ClassEvent::Enum evnt;
-      ClassEventFunc func;
-    };
 
-    std::vector <CallbackInfo> funcs;
+    ClassEventFunc callbacks[ ClassEvent::Num ];
     
   public://Callback management
 
+    IClass2()
+    {
+      for (int i=0; i<ClassEvent::Num; ++i)
+        callbacks[ i ] = NULL;
+    }
+
     void registerCallback (ClassEvent::Enum e, ClassEventFunc func)
     {
-      CallbackInfo ccinfo = {e, func};
-      funcs.push_back (ccinfo);
+      callbacks[ e ] = func;
     }
     
     void invokeCallback (ClassEvent::Enum e, void *obj, void *param)
@@ -252,14 +254,11 @@ namespace GE
       Name *nobj = (Name*) obj;
 
       //Search for callback in this class
-      for (UintSize f=0; f<funcs.size(); ++f) {
-        if (funcs[f].evnt = e) {
-          (nobj->*funcs[f].func) (param);
-          return;
-        }}
+      if (callbacks[ e ] != NULL)
+        (nobj->*callbacks[ e ]) (param);
 
       //If not found search in superclass
-      if (getSuper() != this)
+      else if (getSuper() != this)
         getSuper()->invokeCallback (e, obj, param);
     }
 
@@ -290,6 +289,12 @@ namespace GE
 
     void* newSerialInPlace (void *pwhere, SerializeManager *sm)
       { return NULL; }
+
+    void  destruct (void *pwhere)
+      {}
+
+    void  copy (void *pwhere, void *pfrom)
+      {}
   };
 
   template <class Name, class Super > class IReal
@@ -307,6 +312,12 @@ namespace GE
     
     void* newSerialInPlace (void *pwhere, SerializeManager *sm)
       { return NULL; }
+
+    void  destruct (void *pwhere)
+      { ((Name*)pwhere) -> ~Name(); }
+
+    void  copy (void *pwhere, void *pfrom)
+      { *((Name*)pwhere) = *((Name*)pfrom); }
   };
   
   template <class Name, class Super > class ISerial
@@ -324,6 +335,12 @@ namespace GE
     
     void* newSerialInPlace (void *pwhere, SerializeManager *sm)
       { return (void*) new (pwhere) Name (sm); }
+
+    void  destruct (void *pwhere)
+      { ((Name*)pwhere) -> ~Name(); }
+
+    void  copy (void *pwhere, void *pfrom)
+      { *((Name*)pwhere) = *((Name*)pfrom); }
   };
   
 }//namespace GE
@@ -440,6 +457,8 @@ namespace GE
   #define CLSID_BYTESTRING           ClassID (0xf7bca47cu, 0x4089, 0x4d7f, 0xb22d9bab68d87c42ull)
   #define CLSID_UNICODESTRING        ClassID (0xf54b6286u, 0xaebb, 0x48fb, 0x84cf8ffaca844ed8ull)
   #define CLSID_GENARRAYLIST         ClassID (0x66fd1aa8u, 0xc068, 0x4072, 0x8699a02e75e1a55dull)
+  #define CLSID_GENOBJARRAYLIST      ClassID (0xc26bed4fu, 0x0944, 0x4f44, 0xa7efa5605759ca05ull)
+  #define CLSID_GENPTRARRAYLIST      ClassID (0x066fd45au, 0x6338, 0x48f9, 0x87ebf565239dbea9ull)
   #define CLSID_VERTEXFORMAT         ClassID (0x0ad07051u, 0xb8c1, 0x4f5d, 0x8a806c62dd16cf3full)
   #define CLSID_FORMATMEMBER         ClassID (0x95fea7e0u, 0x527d, 0x43fe, 0xb5018eebd7fa36a5ull)
   #define CLSID_TRIMESH              ClassID (0x827c9bdfu, 0x8e80, 0x47bf, 0x8c6b2f0505bcdd6dull)

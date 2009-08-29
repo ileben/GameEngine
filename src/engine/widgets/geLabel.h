@@ -2,7 +2,7 @@
 #define __GELABEL_H
 
 #include "util/geUtil.h"
-#include "engine/geVectors.h"
+#include "math/geVectors.h"
 #include "geWidget.h"
 
 #pragma warning(push)
@@ -11,9 +11,9 @@
 
 namespace GE
 {
-  class GE_API_ENTRY Label : public Widget
+  class GE_API_ENTRY Label : public UIWidget
   {
-    DECLARE_SUBCLASS (Label, Widget);
+    DECLARE_SUBCLASS (Label, UIWidget);
     DECLARE_END;
     
   protected:
@@ -23,7 +23,8 @@ namespace GE
     
   public:
     void setText (const String &text);
-    void setColor(const Vector3 &c);
+    void setColor (const Vector3 &c);
+    Vector3 getColor () { return color; }
   };
 
 }//namespace GE

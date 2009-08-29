@@ -20,6 +20,7 @@ namespace GE
 
   FpsController::FpsController()
   {
+    mouseDown = false;
     moveSpeed = 15.0f;
     moveDir = 0;
     strafeSpeed = 15.0f;

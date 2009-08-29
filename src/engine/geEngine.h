@@ -5,10 +5,9 @@
 #include "util/geUtil.h"
 #include "io/geFile.h"
 #include "image/geImage.h"
+#include "math/geMath.h"
 
 //Miscelaneous
-#include "geVectors.h"
-#include "geMatrix.h"
 #include "geObject.h"
 
 //Resources

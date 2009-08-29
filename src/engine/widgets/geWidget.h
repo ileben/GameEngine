@@ -2,22 +2,20 @@
 #define __WIDGET_H
 
 #include "util/geUtil.h"
-#include "engine/geVectors.h"
+#include "math/geVectors.h"
+#include "ui/uiUI.h"
 
 namespace GE
 {
 
-  class GE_API_ENTRY Widget
+  class UIWidget : public UI::Widget
   {
-    DECLARE_ABSTRACT (Widget); DECLARE_END;
+    DECLARE_ABSTRACT (UIWidget);
+    DECLARE_END;
     friend class Renderer;
     
   protected:
-    Vector2 location;
     virtual void draw() = 0;
-    
-  public:
-    virtual void setLocation(const Vector2 &l);
   };
   
 }//namespace GE

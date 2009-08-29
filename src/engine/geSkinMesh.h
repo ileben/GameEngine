@@ -2,7 +2,7 @@
 #define __GESKINPOLYMESH_H
 
 #include "util/geUtil.h"
-#include "engine/geVectors.h"
+#include "math/geMath.h"
 #include "engine/geTriMesh.h"
 #include "engine/gePolyMesh.h"
 

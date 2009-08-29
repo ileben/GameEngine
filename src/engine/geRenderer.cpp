@@ -1513,7 +1513,7 @@ namespace GE
     }
   }
   
-  void Renderer::renderWidget( Widget *w )
+  void Renderer::renderWindow( UI::Window *w )
   {
     //Setup GL state
     GLProgram::UseFixed();
@@ -1532,8 +1532,22 @@ namespace GE
       camera->updateView();
     }
     
-    //Render the widget
-    w->draw();
+    //Update widget traversal
+    if (w->hasChanged()) w->updateChanges();
+    const ArrayList <UI::Widget*> &traversal = w->getTraversal();
+
+    //Render the widgets
+    for (UintSize t=0; t<traversal.size(); ++t)
+    {
+      UIWidget *widget = SafeCast( UIWidget, traversal[t] );
+      if (widget == NULL) continue;
+
+      Matrix4x4 g = widget->getGlobalMatrix();
+      glPushMatrix();
+      glMultMatrixf( (GLfloat*) g.m );
+      widget->draw();
+      glPopMatrix();
+    }
   }
 
 }/* namespace GE */

@@ -1,4 +1,4 @@
-#include "geMatrix.h"
+#include "math/geMatrix.h"
 
 namespace GE
 {

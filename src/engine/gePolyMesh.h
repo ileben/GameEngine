@@ -2,7 +2,7 @@
 #define __GEDYNAMICMESH_H
 
 #include "util/geUtil.h"
-#include "geVectors.h"
+#include "math/geVectors.h"
 #include "geHmesh.h"
 #include "geMaterial.h"
 #include "geTexMesh.h"

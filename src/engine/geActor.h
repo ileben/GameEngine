@@ -2,8 +2,8 @@
 #define __GEACTOR_H
 
 #include "util/geUtil.h"
-#include "geVectors.h"
-#include "geMatrix.h"
+#include "math/geVectors.h"
+#include "math/geMatrix.h"
 #include "geObject.h"
 #include "geMaterial.h"
 

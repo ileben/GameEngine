@@ -2,7 +2,7 @@
 #define __GESKELANIM_H
 
 #include "util/geUtil.h"
-#include "geVectors.h"
+#include "math/geVectors.h"
 
 namespace GE
 {

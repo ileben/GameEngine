@@ -2,8 +2,9 @@
 #define __GERENDERER_H
 
 #include "util/geUtil.h"
-#include "geVectors.h"
+#include "math/geMath.h"
 #include "geShaders.h"
+#include "ui/uiUI.h"
 
 namespace GE
 {
@@ -225,7 +226,7 @@ namespace GE
 
     void beginFrame ();
     void renderScene (Scene *scene);
-    void renderWidget (Widget *w);
+    void renderWindow (UI::Window *w);
     void endFrame ();
 
     void beginDeferred();

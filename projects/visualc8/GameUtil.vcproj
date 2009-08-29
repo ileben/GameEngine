@@ -189,6 +189,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\util\geMisc.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\util\geSerialize.cpp"
 				>
 			</File>

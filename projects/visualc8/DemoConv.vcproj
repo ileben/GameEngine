@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8.00"
-	Name="GameEditor"
-	ProjectGUID="{69F738F0-6458-4767-AC9B-36935A7B1025}"
+	Name="DemoConv"
+	ProjectGUID="{A8C7F7AC-14AC-4C0B-A050-1B647CB04E88}"
 	RootNamespace="TestCollision"
 	Keyword="Win32Proj"
 	>
@@ -62,7 +62,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="GameEngine.lib GameUtil.lib GameMath.lib GameUI.lib GameIO.lib GameImage.lib jpeg.lib libpng.lib zlib.lib opengl32.lib glu32.lib glut32.lib"
+				AdditionalDependencies="GameEngine.lib GameUtil.lib GameUI.lib GameIO.lib GameImage.lib jpeg.lib libpng.lib zlib.lib opengl32.lib glu32.lib glut32.lib"
 				OutputFile="$(OutDir)/$(ProjectName)_DEBUG.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="Debug/bin"
@@ -141,7 +141,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="GameEngine.lib GameUtil.lib GameMath.lib GameUI.lib GameIO.lib GameImage.lib jpeg.lib libpng.lib zlib.lib opengl32.lib glu32.lib glut32.lib"
+				AdditionalDependencies="GameEngine.lib GameUtil.lib GameUI.lib GameIO.lib GameImage.lib jpeg.lib libpng.lib zlib.lib opengl32.lib glu32.lib glut32.lib"
 				OutputFile="$(OutDir)/$(ProjectName).exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="Release/bin"
@@ -189,7 +189,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\..\src\editor\GameEditor.cpp"
+				RelativePath="..\..\test\DemoConv.cpp"
 				>
 			</File>
 		</Filter>

@@ -1,5 +1,5 @@
-#include "geVectors.h"
-#include "geMatrix.h"
+#include "math/geVectors.h"
+#include "math/geMatrix.h"
 
 namespace GE
 {	

@@ -1,5 +1,5 @@
 #include "gePolyMesh.h"
-#include "engine/geMatrix.h"
+#include "math/geMatrix.h"
 
 namespace GE
 {

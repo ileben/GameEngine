@@ -105,7 +105,6 @@ namespace GE
   void SkinMeshActor::applySkin ()
   {
     SkinPose *pose = character->pose;
-    SkinAnim *anim = character->anims.first();
     ArrayList <Matrix4x4> fkMats;
     skinMats.clear();
     int cindex = 1;

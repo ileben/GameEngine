@@ -2,7 +2,7 @@
 #define __GECONTROLLER_H
 
 #include "util/geUtil.h"
-#include "engine/geVectors.h"
+#include "math/geVectors.h"
 
 namespace GE
 {

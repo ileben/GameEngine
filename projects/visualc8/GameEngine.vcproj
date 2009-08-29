@@ -274,14 +274,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\engine\geMatrix.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\engine\geMatrix.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\src\engine\geObject.cpp"
 				>
 			</File>
@@ -411,14 +403,6 @@
 			</File>
 			<File
 				RelativePath="..\..\src\engine\geTriMesh.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\engine\geVectors.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\engine\geVectors.h"
 				>
 			</File>
 			<Filter
@@ -645,6 +629,10 @@
 						/>
 					</FileConfiguration>
 				</File>
+			</Filter>
+			<Filter
+				Name="ui"
+				>
 			</Filter>
 		</Filter>
 	</Files>
