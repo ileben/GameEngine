@@ -82,36 +82,6 @@ namespace GE
   };
 
   /*
-  -----------------------------------------------
-  Class member descriptor
-  -----------------------------------------------*/
-
-  class IMember
-  {
-  public:
-    std::string name;
-    void *data;
-    virtual void* findIn (void* obj) = 0;
-  };
-
-  template <class T, class C> class Member : public IMember
-  {
-  private:
-    T C::* ptr;
-
-  public:
-    Member (T C::* p, const std::string &n, void *d) {
-      ptr = p;
-      name = n;
-      data = d;
-    }
-
-    void* findIn (void* obj) {
-      return &( ((C*)obj)->*ptr );
-    }
-  };
-
-  /*
   ------------------------------------------------------
   Forward declarations
   ------------------------------------------------------*/
@@ -123,6 +93,88 @@ namespace GE
   typedef std::map <std::string, ClassPtr> CTable;
   typedef std::map <ClassID, ClassPtr> ITable;
   #define INVALID_CLASS_PTR NULL
+
+  /*
+  -----------------------------------------------
+  Class member descriptor
+  -----------------------------------------------*/
+
+  namespace MemberType {
+    enum Enum {
+      DataVar,
+      DataPtr,
+      ObjVar,
+      ObjPtr,
+      ObjArray,
+      ObjPtrArray
+    };
+  }
+
+  struct MemberInfo
+  {
+    MemberType::Enum type;
+    UintSize size;
+    ClassPtr cls;
+
+    MemberInfo () {}
+    MemberInfo (MemberType::Enum t, UintSize s, ClassPtr c)
+    { type = t; size = s; cls = c; }
+  };
+
+  class IMember
+  {
+  public:
+    MemberInfo info;
+    std::string name;
+    void *data;
+
+    virtual void* getFrom (void* obj) = 0;
+    virtual MemberInfo getInfo (void *obj) = 0;
+  };
+
+  template <class T, class C> class Member : public IMember
+  {
+  public:
+    T C::* ptr;
+    MemberInfo (C:: *infofunc) ();
+
+    void* getFrom (void* obj) {
+      return &( ((C*)obj)->*ptr );
+    }
+
+    MemberInfo getInfo (void* obj) {
+      return infofunc ? (((C*)obj)->*infofunc)() : info;
+    }
+  };
+
+  /*
+  ------------------------------------------------------------
+  Info templates. These can be returned by the info function.
+  ------------------------------------------------------------*/
+
+  template <class T, class C> MemberInfo MEMBER_DATAVAR (T C::* ptr) {
+    return MemberInfo( MemberType::DataVar, sizeof(T), NULL );
+  }
+
+  template <class T, class C> MemberInfo MEMBER_DATAPTR (T C::* ptr) {
+    return MemberInfo( MemberType::DataPtr, sizeof(T), NULL );
+  }
+
+  template <class T, class C> MemberInfo MEMBER_OBJVAR (T C::* ptr) {
+    return MemberInfo( MemberType::ObjVar, sizeof(T), T::GetClassPtr() );
+  }
+
+  template <class T, class C> MemberInfo MEMBER_OBJPTR (T* C::* ptr) {
+    return MemberInfo( MemberType::ObjPtr, sizeof(T), T::GetClassPtr() );
+  }
+
+  MemberInfo MEMBER_OBJARRAY (ClassPtr cls, UintSize sz) {
+    return MemberInfo( MemberType::ObjArray, sz, cls );
+  }
+
+  MemberInfo MEMBER_OBJPTRARRAY (ClassPtr cls, UintSize sz) {
+    return MemberInfo( MemberType::ObjPtrArray, sz, cls );
+  }
   
   /*
   --------------------------------------------------------
@@ -240,12 +292,14 @@ namespace GE
 
     IClass2()
     {
+      //Init callback pointers
       for (int i=0; i<ClassEvent::Num; ++i)
         callbacks[ i ] = NULL;
     }
 
     void registerCallback (ClassEvent::Enum e, ClassEventFunc func)
     {
+      //Store callback pointer
       callbacks[ e ] = func;
     }
     
@@ -262,9 +316,21 @@ namespace GE
         getSuper()->invokeCallback (e, obj, param);
     }
 
-    //Generic template for adding members of any type
-    template <class T> void addMember (T Name::*ptr, const std::string &name, void *data) {
-      members.push_back( new Member<T,Name> (ptr, name, data) );
+    //Generic templates for adding members of any type    
+    template <class T> void addMember (
+      const MemberInfo &   i,
+      T Name::*            p,
+      const std::string &  n,
+      void *               d     = NULL,
+      MemberInfo (Name::*  f)()  = NULL)
+    {
+      Member<T,Name> *mbr = new Member<T,Name>;
+      mbr->info = i;
+      mbr->ptr = p;
+      mbr->name = n;
+      mbr->data = d;
+      mbr->infofunc = f;
+      members.push_back( mbr );
     }
   };
   
@@ -377,11 +443,20 @@ class CLASS_DLL_ACTION ClassDesc : public Interface <Name, Super > { public: \
     #define DECLARE_CALLBACK( evnt, func ) \
     registerCallback (evnt, &ThisClass::func);
 
-    #define DECLARE_MEMBER( mname ) \
-    addMember( &ThisClass::mname, #mname, NULL );
+    #define DECLARE_DATAVAR( mbr ) \
+    addMember( MEMBER_DATAVAR( &ThisClass::mbr ), &ThisClass::mbr, #mbr);
 
-    #define DECLARE_MEMBER_DATA( mname, data ) \
-    addMember( &ThisClass::mname, #mname, data );
+    #define DECLARE_DATAPTR( mbr )\
+    addMember( MEMBER_DATAPTR( &ThisClass::mbr ), &ThisClass::mbr, #mbr );
+
+    #define DECLARE_OBJVAR( mbr )\
+    addMember( MEMBER_OBJVAR( &ThisClass::mbr ), &ThisClass::mbr, #mbr );
+
+    #define DECLARE_OBJPTR( mbr )\
+    addMember( MEMBER_OBJPTR( &ThisClass::mbr, &ThisClass::mbr, #mbr );
+
+    #define DECLARE_MEMBER_DATA( mbr, data ) \
+    addMember( MEMBER_DATAVAR( &ThisClass::mbr ), &ThisClass::mbr, #mbr, data );
     
     #define DECLARE_END \
     IClass::Classify (this); \

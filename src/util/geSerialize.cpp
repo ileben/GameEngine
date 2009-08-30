@@ -55,30 +55,6 @@ namespace GE
   bool SerializeManager::isLoading () {
     return state == &stateLoad;
   }
-  
-  void SerializeManager::dataVar (void *ptr, UintSize size) {
-    state->dataVar( ptr, size );
-  }
-
-  void SerializeManager::objectVar (ClassPtr cls, void *ptr) {
-    state->objectVar( cls, ptr );
-  }
-
-  void SerializeManager::objectArray (ClassPtr cls, void **pptr, UintSize count) {
-    state->objectArray( cls, pptr, count );
-  }
-
-  void SerializeManager::objectPtr (ClassPtr cls, void **pptr) {
-    state->objectPtr( cls, pptr );
-  }
-
-  void SerializeManager::objectPtrArray (ClassPtr cls, void ***pptr, UintSize count) {
-    state->objectPtrArray( cls, pptr, count );
-  }
-  
-  void SerializeManager::dataPtr (void **pptr, UintSize size) {
-    state->dataPtr( pptr, size );
-  }
 
   /*
   ---------------------------------------------------------
@@ -87,8 +63,7 @@ namespace GE
 
   void SerializeManager::State::reset (UintSize startOffset, bool realRun)
   {
-    resQueue.clear ();
-    dynQueue.clear ();
+    objQueue.clear ();
     ptrList.clear ();
     clsList.clear ();
     offset = startOffset;
@@ -119,153 +94,238 @@ namespace GE
     offset += size;
   }
 
-  void SerializeManager::State::rootPtr
-    (ClassPtr cls, void **pptr)
+  void SerializeManager::State::enqueueObjVar
+    (ClassPtr cls, void *var, UintSize offset)
   {
-    ResPtrInfo riroot;
-    riroot.cls = cls;
-    riroot.ptr = pptr;
-    riroot.count = 1;
-    riroot.offset = 0;
-    riroot.isptr = true;
-    riroot.isarray = false;
-    riroot.isptrarray = false;
-    riroot.isroot = true;
-    riroot.ptroffset = 0;
-    resQueue.push_back( riroot );
+    ObjectNode o;
+    o.cls = cls;
+    o.var = var;
+    o.offset = offset;
+    o.ptroffset = 0;
+    o.pointedTo = false;
+    objQueue.push_back( o );
   }
 
-  void SerializeManager::State::arrayMemberPtr
-    (ClassPtr cls, void **pptr, UintSize ptroffset)
+  void SerializeManager::State::enqueueObjPtr
+    (ClassPtr cls, void *var, UintSize ptroffset)
   {
-    ResPtrInfo ri;
-    ri.cls = cls;
-    ri.ptr = pptr;
-    ri.count = 1;
-    ri.offset = 0;
-    ri.isptr = true;
-    ri.isarray = false;
-    ri.isptrarray = false;
-    ri.isroot = false;
-    ri.ptroffset = ptroffset;
-    resQueue.push_back( ri );
+    ObjectNode o;
+    o.cls = cls;
+    o.var = var;
+    o.offset = 0;
+    o.ptroffset = ptroffset;
+    o.pointedTo = true;
+    objQueue.push_back( o );
   }
 
   /*
-  -----------------------------------------------------
-  Serialization state
-  -----------------------------------------------------*/
+  ---------------------------------------------------------
+  State-specific serialization routine
+  ---------------------------------------------------------*/
 
-  void SerializeManager::StateSerial::dataVar
-    (void *ptr, UintSize size)
+  void SerializeManager::StateSave::run (ClassPtr rcls, void **rptr)
   {
-    //The data will be copied along with the whole object
+    //Push root info to queue
+    ObjectNode robj;
+    robj.cls = rcls;
+    robj.var = rptr;
+    robj.offset = 0;
+    robj.ptroffset = 0;
+    robj.pointedTo = true;
+    objQueue.push_back( robj );
+
+    //Process objects in queue
+    while (!objQueue.empty())
+    {
+      //Pop first object info off the stack
+      ObjectNode obj = objQueue.front();
+      objQueue.pop_front();
+
+      //Get pointer to object
+      void *pobj = obj.pointedTo ? *((void**)obj.var) : obj.var;
+
+      //Walk object members
+      const MTable *members = obj.cls->getMembers();
+      for (UintSize m=0; m<members->size(); ++m)
+      {
+        //Get member info
+        MemberInfo mbr = members->at(m)->getInfo( pobj );
+        switch (mbr.type)
+        {
+        case MemberType::DataVar:
+        {
+          //Store data from the variable
+          void *pmbr = members->at(m)->getFrom( pobj );
+          store( pmbr, mbr.size );
+          break;
+
+        }
+        case MemberType::ObjVar:
+        {
+          //Enqueue object
+          void *pmbr = members->at(m)->getFrom( pobj );
+          enqueueObjVar( mbr.cls, pmbr );
+          break;
+        }
+        case MemberType::ObjPtr:
+        {
+          //Enqueue pointer to object
+          void **pmbr = (void**) members->at(m)->getFrom( pobj );
+          enqueueObjPtr( mbr.cls, pmbr );
+          break;
+        }
+        case MemberType::ObjArray:
+        {
+          //Walk the array of objects
+          void *p = *((void**) members->at(m)->getFrom( pobj ));
+          for (UintSize o=0; o<mbr.size; ++o)
+          {
+            //Enqueue object
+            enqueueObjVar( mbr.cls, p );
+
+            //Next object in the array
+            Util::PtrAdd( &p, mbr.cls->getSize() );
+          }
+          break;
+        }
+        case MemberType::ObjPtrArray:
+        {
+          //Walk the array of pointers to objects
+          void **p = *((void***) members->at(m)->getFrom( pobj ));
+          for (UintSize o=0; o<mbr.size; ++o)
+          {
+            //Enqueue pointer to object
+            enqueueObjPtr( mbr.cls, p );
+
+            //Next pointer in the array
+            Util::PtrAdd( &p, sizeof(void*) );
+          }
+          break;
+        }
+        case MemberType::DataPtr:
+        {
+          //Store data from the buffer
+          void **pmbr = (void**) members->at(m)->getFrom( pobj );
+          store( *pmbr, mbr.size );
+          break;
+        }}
+      }
+    }
   }
 
-  void SerializeManager::StateSerial::dataPtr
-    (void **pptr, UintSize size)
+  void SerializeManager::StateLoad::run (ClassPtr rcls, void **rptr)
   {
-    DynPtrInfo di;
-    di.ptr = pptr;
-    di.size = size;
-    di.ptroffset = current->offset + Util::PtrDist( current->ptr, pptr );
-    dynQueue.push_back( di );
+    //Push root info to queue
+    ObjectNode robj;
+    robj.cls = rcls;
+    robj.var = rptr;
+    robj.offset = 0;
+    robj.ptroffset = 0;
+    robj.pointedTo = true;
+    objQueue.push_back( robj );
+
+    //Process objects in queue
+    while (!objQueue.empty())
+    {
+      //Pop first object info off the stack
+      ObjectNode obj = objQueue.front();
+      objQueue.pop_front();
+      void *pobj;
+
+      //Is there a pointer to it?
+      if (obj.pointedTo)
+      {
+        //Construct new object instance and adjust pointer to it
+        void **p = (void**)obj.var;
+        *p = obj.cls->newInstance();
+        pobj = *p;
+      }
+      else
+      {
+        //Construct new object in-place
+        obj.cls->newInPlace( obj.var );
+        pobj = obj.var;
+      }
+
+      //Walk object members
+      const MTable *members = obj.cls->getMembers();
+      for (UintSize m=0; m<members->size(); ++m)
+      {
+        //Get member info
+        MemberInfo mbr = members->at(m)->getInfo( pobj );
+        switch (mbr.type)
+        {
+        case MemberType::DataVar:
+        {
+          //Load data into variable
+          void *pmbr = members->at(m)->getFrom( pobj );
+          load( pmbr, mbr.size );
+          break;
+        }
+        case MemberType::ObjVar:
+        {
+          //Enqueue object
+          void *pmbr = members->at(m)->getFrom( pobj );
+          enqueueObjVar( mbr.cls, pmbr );
+          break;
+        }
+        case MemberType::ObjPtr:
+        {
+          //Enqueue pointer to object
+          void **pmbr = (void**) members->at(m)->getFrom( pobj );
+          enqueueObjPtr( mbr.cls, pmbr );
+          break;
+        }
+        case MemberType::ObjArray:
+        {
+          //Allocate an array of objects
+          void **pmbr = (void**) members->at(m)->getFrom( pobj );
+          *pmbr = std::malloc( mbr.size * mbr.cls->getSize() );
+
+          //Walk the array of objects
+          void *p = *pmbr;
+          for (UintSize o=0; o<mbr.size; ++o)
+          {
+            //Enqueue each object
+            enqueueObjVar( mbr.cls, p );
+
+            //Next object in the array
+            Util::PtrAdd( &p, mbr.cls->getSize() );
+          }
+          break;
+        }
+        case MemberType::ObjPtrArray:
+        {
+          //Allocate an array of pointers to objects
+          void ***pmbr = (void***) members->at(m)->getFrom( pobj );
+          *pmbr = (void**) std::malloc( mbr.size * sizeof(void*) );
+
+          //Walk the array of pointers to objects
+          void **p = *pmbr;
+          for (UintSize o=0; o<mbr.size; ++o)
+          {
+            //Enqueue each pointer to object
+            enqueueObjPtr( mbr.cls, p );
+
+            //Next pointer in the array
+            Util::PtrAdd( &p, sizeof(void*) );
+          }
+          break;
+        }
+        case MemberType::DataPtr:
+        {
+          //Allocate a buffer for data
+          void **pmbr = (void**) members->at(m)->getFrom( pobj );
+          *pmbr = std::malloc( mbr.size );
+
+          //Load data into buffer
+          load( *pmbr, mbr.size );
+          break;
+        }}
+      }
+    }
   }
 
-  void SerializeManager::StateSerial::objectVar
-    (ClassPtr cls, void *ptr)
-  {
-    ResPtrInfo ri;
-    ri.count = 1;
-    ri.offset = current->offset + Util::PtrDist( current->ptr, ptr );
-    ri.cls = cls;
-    ri.ptr = ptr;
-    ri.isptr = false;
-    ri.isarray = false;
-    ri.isptrarray = false;
-    ri.isroot = false;
-    ri.ptroffset = 0;
-    resQueue.push_back( ri );
-  }
-
-  void SerializeManager::StateSerial::objectPtr
-    (ClassPtr cls, void **pptr)
-  {
-    ResPtrInfo ri;
-    ri.count = 1;
-    ri.offset = 0;
-    ri.cls = cls;
-    ri.ptr = pptr;
-    ri.isptr = true;
-    ri.isarray = false;
-    ri.isptrarray = false;
-    ri.isroot = false;
-    ri.ptroffset = current->offset + Util::PtrDist( current->ptr, pptr );
-    resQueue.push_back( ri );
-  }
-
-  void SerializeManager::StateSerial::objectArray
-    (ClassPtr cls, void **pptr, UintSize count)
-  {
-    ResPtrInfo ri;
-    ri.count = count;
-    ri.offset = 0;
-    ri.cls = cls;
-    ri.ptr = pptr;
-    ri.isptr = true;
-    ri.isarray = true;
-    ri.isptrarray = false;
-    ri.isroot = false;
-    ri.ptroffset = current->offset + Util::PtrDist( current->ptr, pptr );
-    resQueue.push_back( ri );
-  }
-
-  void SerializeManager::StateSerial::objectPtrArray
-    (ClassPtr cls, void ***ppptr, UintSize count)
-  {
-    ResPtrInfo ri;
-    ri.count = count;
-    ri.offset = 0;
-    ri.cls = cls;
-    ri.ptr = ppptr;
-    ri.isptr = true;
-    ri.isarray = true;
-    ri.isptrarray = true;
-    ri.isroot = false;
-    ri.ptroffset = current->offset + Util::PtrDist( current->ptr, ppptr );
-    resQueue.push_back( ri );
-  }
-
- 
-  /*
-  -----------------------------------------------------
-  Saving state
-  -----------------------------------------------------*/
-
-  void SerializeManager::StateSave::dataVar
-    (void *ptr, UintSize size)
-  {
-    //Copy data from resource to buffer
-    store( ptr, size );
-  }
-
-  /*
-  -----------------------------------------------------
-  Loading state
-  -----------------------------------------------------*/
-
-  void SerializeManager::StateLoad::dataVar
-    (void *ptr, UintSize size)
-  {
-    //Copy data from buffer to object
-    load( ptr, size );
-  }
-  
-  /*
-  --------------------------------------------------
-  Serialization state
-  --------------------------------------------------*/
-  
   void SerializeManager::StateSerial::adjust (UintSize ptrOffset)
   {
     if (!simulate)
@@ -281,7 +341,174 @@ namespace GE
     ph.offset = ptrOffset;
     ptrList.push_back (ph);
   }
+
+  void SerializeManager::StateSerial::run (ClassPtr rcls, void **rptr)
+  {
+    //Push root info to queue
+    ObjectNode robj;
+    robj.cls = rcls;
+    robj.var = rptr;
+    robj.offset = 0;
+    robj.ptroffset = 0;
+    robj.pointedTo = true;
+    objQueue.push_back( robj );
+
+    //Process objects in queue
+    while (!objQueue.empty())
+    {
+      //Pop first object info off the stack
+      ObjectNode obj = objQueue.front();
+      objQueue.pop_front();
+      
+      //Get pointer to object
+      void *pobj = obj.pointedTo ? *((void**)obj.var) : obj.var;
+
+      //Is there a pointer to it?
+      if (obj.pointedTo)
+      {
+        //Store object offset and adjust pointer to it
+        obj.offset = offset;
+        adjust( obj.ptroffset );
+
+        //TODO: store ClassHeader
+
+        //Store object data
+        void **p = ((void**)obj.var);
+        store( pobj, obj.cls->getSize() );
+      }
+
+      //Walk object members
+      const MTable *members = obj.cls->getMembers();
+      for (UintSize m=0; m<members->size(); ++m)
+      {
+        //Get member info
+        MemberInfo mbr = members->at(m)->getInfo( pobj );
+        switch (mbr.type)
+        {
+        case MemberType::DataVar:
+        {
+          //Data stored along with the object
+          break;
+        }
+        case MemberType::ObjVar:
+        {
+          //Enqueue object
+          void *pmbr = members->at(m)->getFrom( pobj );
+          UintSize offset = obj.offset + Util::PtrDist( pobj, pmbr );
+          enqueueObjVar( mbr.cls, pmbr, offset );
+          break;
+        }
+        case MemberType::ObjPtr:
+        {
+          //Enqueue pointer to object
+          void **pmbr = (void**) members->at(m)->getFrom( pobj );
+          UintSize ptroffset = obj.offset + Util::PtrDist( pobj, pmbr );
+          enqueueObjPtr( mbr.cls, pmbr, ptroffset );
+          break;
+        }
+        case MemberType::ObjArray:
+        {
+          //Walk the array of objects
+          void *p = *((void**) members->at(m)->getFrom( pobj ));
+          for (UintSize o=0; o<mbr.size; ++o)
+          {
+            //TODO: store ClassHeader
+
+            //Store object data
+            store( p, mbr.cls->getSize() );
+
+            //Enqueue object with offset
+            enqueueObjVar( mbr.cls, p, offset  );
+
+            //Next object in the array
+            Util::PtrAdd( &p, mbr.cls->getSize() );
+          }
+          break;
+        }
+        case MemberType::ObjPtrArray:
+        {
+          //Walk the array of pointers to objects
+          void **p = *((void***) members->at(m)->getFrom( pobj ));
+          for (UintSize o=0; o<mbr.size; ++o)
+          {
+            //Reserve space for serialized pointer
+            offset += sizeof(void*);
+
+            //Enqueue pointer to object with offset
+            enqueueObjPtr( mbr.cls, p, offset );
+
+            //Next pointer in the array
+            Util::PtrAdd( &p, sizeof(void*) );
+          }
+          break;
+        }
+        case MemberType::DataPtr:
+        {
+          //Adjust pointer to the buffer
+          void **pmbr = (void**) members->at(m)->getFrom( pobj );
+          adjust( obj.offset + Util::PtrDist( pobj, pmbr ) );
+
+          //Store data from the buffer
+          store( *pmbr, mbr.size );
+          break;
+        }}
+      }
+    }
+  }
+/*
+  void serialize()
+  {
+    while (!empty)
+    {
+      int classinfo = popinfo();
+      
+      if (classinfo.pointedto)
+        store();
+        adjustptr();
+
+      for (UintSize m=0; m<classinfo.member.size(); ++m)
+      {
+        if (member.isdatavar)
+          ;
+
+        if (member.isobjvar)
+          stackobj( nonpointed );
+        
+        if (member.isobjptr)
+          stackobj( pointedto )
+
+        if (member.isdataptr)
+          stackdata();
+      }
+
+      for (UintSize d=0; d<datas.size(); ++d)
+      {
+        adjustptr();
+
+        if (data.isobjvararray)
+          store( objects );
+          foreach
+            stackobj( nonpointed );
+        
+        if (data.isobjptrarray)
+          store( pointers );
+          foreach
+            stackobj( pointedto );
+
+        else
+          store();
+      }
+    }
+  }
+
+*/
   
+  /*
+  --------------------------------------------------
+  Serialization state
+  --------------------------------------------------*/
+ 
+  /*
   void SerializeManager::StateSerial::run
     (ClassPtr rcls, void **rptr)
   {
@@ -372,12 +599,12 @@ namespace GE
       }
     }
   }
-
+*/
   /*
   --------------------------------------------------
   Saving state
   --------------------------------------------------*/
-
+/*
   void SerializeManager::StateSave::run( ClassPtr rcls, void **rptr )
   {
     //Push root info to queue
@@ -442,12 +669,12 @@ namespace GE
       }
     }
   }
-  
+  */
   /*
   --------------------------------------------------
   Loading state
   --------------------------------------------------*/
-  
+  /*
   void SerializeManager::StateLoad::run( ClassPtr rcls, void **rptr )
   {
     //Push root info to queue
@@ -535,7 +762,7 @@ namespace GE
       }
     }
   }
-
+*/
   /*
   --------------------------------------------------
   Serialization start
@@ -636,142 +863,6 @@ namespace GE
     return root;
   }
 
-  /*
-  ---------------------------------------------------*/
-/*
-  void save()
-  {
-    while (!empty)
-    {
-      int classinfo = popinfo();
-
-      for (UintSize m=0; m<classinfo.member.size(); ++m)
-      {
-        if (member.isdatavar)
-          store();
-
-        if (member.isobjvar)
-          stackobj( nonpointed );
-        
-        if (member.isobjptr)
-          stackobj( pointedto )
-
-        if (member.isdataptr)
-          stackdata();
-      }
-
-      for (UintSize d=0; d<datas.size(); ++d)
-      {
-        if (data.isobjvararray)
-          foreach
-            stackobj();
-
-        if (data.isobjptrarray)
-          foreach
-            stackobj();
-
-        else
-          store();
-      }
-    }
-  }
-
-  void load()
-  {
-    while (!empty)
-    {
-      int classinfo = popinfo();
-
-      for (UintSize m=0; m<classinfo.member.size(); ++m)
-      {
-        if (member.isdatavar)
-          load();
-
-        if (member.isobjvar)
-          stackobj( nonpointed, instance );
-        
-        if (member.isobjptr)
-          newinstance();
-          adjustptr();
-          stackobj( pointedto, instance )
-
-        if (member.isdataptr)
-          stackdata();
-      }
-
-      for (UintSize d=0; d<datas.size(); ++d)
-      {
-        if (data.isobjvararray)
-          malloc( objects );
-          adjustptr();
-
-          foreach
-            newinplace();
-            stackobj( nonpointed, inplace );
-
-        if (data.isobjptrarray)
-          malloc( pointers );
-          adjustptr();
-
-          foreach
-            newinstance();
-            adjustptr();
-            stackobj( pointedto, instance );
-
-        else
-          malloc( data );
-          adjustptr();
-          load();
-      }
-    }
-  }
-
-  void serialize()
-  {
-    while (!empty)
-    {
-      int classinfo = popinfo();
-      
-      if (classinfo.pointedto)
-        store();
-        adjustptr();
-
-      for (UintSize m=0; m<classinfo.member.size(); ++m)
-      {
-        if (member.isdatavar)
-          ;
-
-        if (member.isobjvar)
-          stackobj( nonpointed );
-        
-        if (member.isobjptr)
-          stackobj( pointedto )
-
-        if (member.isdataptr)
-          stackdata();
-      }
-
-      for (UintSize d=0; d<datas.size(); ++d)
-      {
-        adjustptr();
-
-        if (data.isobjvararray)
-          store( objects );
-          foreach
-            stackobj( nonpointed );
-        
-        if (data.isobjptrarray)
-          store( pointers );
-          foreach
-            stackobj( pointedto );
-
-        else
-          store();
-      }
-    }
-  }
-
-*/
   /*
   --------------------------------------------------
   Saving start

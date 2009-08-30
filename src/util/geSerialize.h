@@ -8,24 +8,13 @@ namespace GE
   {
   private:
 
-    struct ResPtrInfo
+    struct ObjectNode
     {
-      ClassPtr   cls;        //class of the resource
-      void      *ptr;        //pointer to the resource
-      UintSize   count;      //number of variables in array
-      UintSize   offset;     //offset to the serialized resource
-      bool       isptr;      //if true its a pointer else an automatic variable
-      bool       isarray;    //if true its an array else a single object
-      bool       isptrarray; //if true its an array of pointers to objects
-      bool       isroot;     //if true its the root object (no pointer to it to adjust)
-      UintSize   ptroffset;  //offset to the serialized pointer to this resource
-    };
-    
-    struct DynPtrInfo
-    {
-      void     *ptr;        //pointer to data on the heap
-      UintSize  size;       //the size of the memory to be copied
-      UintSize  ptroffset;  //offset to the serialized pointer to this data
+      void *var;             //pointer to variable
+      ClassPtr cls;          //class of object
+      UintSize offset;       //offset to serialized object
+      UintSize ptroffset;    //offset to serialized pointer to object
+      bool pointedTo;        //if true, a serialized pointer to object exists
     };
 
     struct ClsHeader
@@ -45,20 +34,15 @@ namespace GE
     public:
       Uint8 *data;
       UintSize offset;
-      ResPtrInfo *current;
-      std::deque <ResPtrInfo> resQueue;
-      std::deque <DynPtrInfo> dynQueue;
+      std::deque <ObjectNode> objQueue;
       std::vector <ClsHeader> clsList;
       std::vector <PtrHeader> ptrList;
       SerializeManager *sm;
       bool simulate;
       
-      virtual void dataVar (void *ptr, UintSize size) = 0;
-      virtual void dataPtr (void **pptr, UintSize size) = 0;
-      virtual void objectVar (ClassPtr cls, void *ptr) = 0;
-      virtual void objectArray (ClassPtr cls, void **pptr, UintSize count) = 0;
-      virtual void objectPtr (ClassPtr cls, void **pptr) = 0;
-      virtual void objectPtrArray (ClassPtr cls, void ***pptr, UintSize count) = 0;
+      void enqueueObjVar (ClassPtr cls, void *var, UintSize offset=0);
+      void enqueueObjPtr (ClassPtr cls, void *var, UintSize ptroffset=0);
+
       virtual void run (ClassPtr rootCls, void **rootPtr) = 0;
       
       void rootPtr (ClassPtr cls, void **pptr);
