@@ -72,7 +72,6 @@ namespace GE
   class SkinTriMesh : public TriMesh
   {
     DECLARE_SERIAL_SUBCLASS( SkinTriMesh, TriMesh );
-    DECLARE_CALLBACK( ClassEvent::Serialize, serialize );
     DECLARE_END;
 
   public:
@@ -80,13 +79,6 @@ namespace GE
     Uint32 mesh2skinSize;
     Uint32 mesh2skinMap[24];
     VertexBinding <SkinVertex> binding;
-    
-    void serialize (void *sm)
-    {
-      TriMesh::serialize( sm );
-      //for (int i=0; i<24; ++i)
-        //((SM*)sm)->dataVar( &mesh2skinMap[i] );
-    }
 
     SkinTriMesh (SerializeManager *sm) : TriMesh (sm) {}
     SkinTriMesh () : mesh2skinSize(0) {}

@@ -23,7 +23,9 @@ namespace GE
   class GE_API_ENTRY MaxCharacter
   {
     DECLARE_SERIAL_CLASS (MaxCharacter)
-    DECLARE_CALLBACK (ClassEvent::Serialize, serialize);
+    DECLARE_OBJPTR( pose );
+    DECLARE_OBJPTR( mesh );
+    DECLARE_OBJVAR( anims );
     DECLARE_END;
 
   public:
@@ -32,13 +34,6 @@ namespace GE
     SkinTriMesh *mesh;
     ArrayList<SkinTriMesh*> meshes;
     ObjPtrArrayList <SkinAnim> anims;
-    
-    void serialize (void *sm)
-    {
-      ((SM*)sm)->objectPtr( &pose );
-      ((SM*)sm)->objectPtr( &mesh );
-      ((SM*)sm)->objectVar( &anims );
-    }
     
     MaxCharacter (SM *sm) : anims (sm) {}
     MaxCharacter ();

@@ -27,7 +27,10 @@ namespace GE
   template <class C> class BasicString
   {
     DECLARE_SERIAL_CLASS( BasicString );
-    DECLARE_CALLBACK( ClassEvent::Serialize, serialize );
+    DECLARE_DATAVAR( size );
+    DECLARE_MEMBER_FUNC( buf, bufInfo );
+    DECLARE_CALLBACK( ClassEvent::Loaded, deserialized );
+    DECLARE_CALLBACK( ClassEvent::Deserialized, deserialized );
     DECLARE_END;
 
     friend class File;
@@ -47,15 +50,15 @@ namespace GE
     
   public:
 
-    virtual void serialize (void *param)
-    {
-      SerializeManager *sm = (SM*)param;
-      sm->dataVar( &size );
-      sm->dataPtr( &buf, (size+1) * sizeof(CharType) );
-      if (sm->isLoading()) cap = size+1;
+    MemberInfo bufInfo () {
+      return MEMBER_DATAPTR( (size+1) * sizeof(CharType) );
     }
 
-    BasicString (SerializeManager *sm)
+    void deserialized (void *param) {
+      cap = size+1;
+    }
+
+    BasicString (SM *sm)
     {}
 
     BasicString ()

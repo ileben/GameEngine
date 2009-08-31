@@ -152,28 +152,31 @@ namespace GE
   Info templates. These can be returned by the info function.
   ------------------------------------------------------------*/
 
-  template <class T, class C> MemberInfo MEMBER_DATAVAR (T C::* ptr) {
+  template <class T, class C>
+  inline MemberInfo MEMBER_DATAVAR (T C::* ptr) {
     return MemberInfo( MemberType::DataVar, sizeof(T), NULL );
   }
 
-  template <class T, class C> MemberInfo MEMBER_DATAPTR (T C::* ptr) {
-    return MemberInfo( MemberType::DataPtr, sizeof(T), NULL );
-  }
-
-  template <class T, class C> MemberInfo MEMBER_OBJVAR (T C::* ptr) {
+  template <class T, class C>
+  inline MemberInfo MEMBER_OBJVAR (T C::* ptr) {
     return MemberInfo( MemberType::ObjVar, sizeof(T), T::GetClassPtr() );
   }
 
-  template <class T, class C> MemberInfo MEMBER_OBJPTR (T* C::* ptr) {
+  template <class T, class C>
+  inline MemberInfo MEMBER_OBJPTR (T* C::* ptr) {
     return MemberInfo( MemberType::ObjPtr, sizeof(T), T::GetClassPtr() );
   }
 
-  MemberInfo MEMBER_OBJARRAY (ClassPtr cls, UintSize sz) {
+  inline MemberInfo MEMBER_OBJARRAY (ClassPtr cls, UintSize sz) {
     return MemberInfo( MemberType::ObjArray, sz, cls );
   }
 
-  MemberInfo MEMBER_OBJPTRARRAY (ClassPtr cls, UintSize sz) {
+  inline MemberInfo MEMBER_OBJPTRARRAY (ClassPtr cls, UintSize sz) {
     return MemberInfo( MemberType::ObjPtrArray, sz, cls );
+  }
+
+  inline MemberInfo MEMBER_DATAPTR (UintSize sz) {
+    return MemberInfo( MemberType::DataPtr, sz, NULL );
   }
   
   /*
@@ -446,17 +449,17 @@ class CLASS_DLL_ACTION ClassDesc : public Interface <Name, Super > { public: \
     #define DECLARE_DATAVAR( mbr ) \
     addMember( MEMBER_DATAVAR( &ThisClass::mbr ), &ThisClass::mbr, #mbr);
 
-    #define DECLARE_DATAPTR( mbr )\
-    addMember( MEMBER_DATAPTR( &ThisClass::mbr ), &ThisClass::mbr, #mbr );
-
     #define DECLARE_OBJVAR( mbr )\
     addMember( MEMBER_OBJVAR( &ThisClass::mbr ), &ThisClass::mbr, #mbr );
 
     #define DECLARE_OBJPTR( mbr )\
-    addMember( MEMBER_OBJPTR( &ThisClass::mbr, &ThisClass::mbr, #mbr );
+    addMember( MEMBER_OBJPTR( &ThisClass::mbr ), &ThisClass::mbr, #mbr );
 
     #define DECLARE_MEMBER_DATA( mbr, data ) \
     addMember( MEMBER_DATAVAR( &ThisClass::mbr ), &ThisClass::mbr, #mbr, data );
+
+    #define DECLARE_MEMBER_FUNC( mbr, func ) \
+    addMember( MEMBER_DATAVAR( &ThisClass::mbr ), &ThisClass::mbr, #mbr, NULL, &ThisClass::func );
     
     #define DECLARE_END \
     IClass::Classify (this); \

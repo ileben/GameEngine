@@ -10,7 +10,12 @@ namespace GE
   class SkinJoint
   {
     DECLARE_SERIAL_CLASS( SkinJoint );
-    DECLARE_CALLBACK( ClassEvent::Serialize, serialize );
+    DECLARE_OBJVAR( name );
+    DECLARE_DATAVAR( numChildren );
+    DECLARE_DATAVAR( worldInv );
+    DECLARE_DATAVAR( localR );
+    DECLARE_DATAVAR( localT );
+    DECLARE_DATAVAR( localS );
     DECLARE_END;
 
   public:
@@ -24,23 +29,12 @@ namespace GE
 
     SkinJoint (SM *sm) : name(sm) {}
     SkinJoint () {}
-    
-    void serialize (void *param)
-    {
-      SerializeManager *sm = (SM*)param;
-      sm->objectVar( &name );
-      sm->dataVar( &numChildren );
-      sm->dataVar( &worldInv );
-      sm->dataVar( &localR );
-      sm->dataVar( &localT );
-      sm->dataVar( &localS );
-    }
   };
   
   class GE_API_ENTRY SkinPose
   {
     DECLARE_SERIAL_CLASS( SkinPose );
-    DECLARE_CALLBACK( ClassEvent::Serialize, serialize );
+    DECLARE_OBJVAR( joints );
     DECLARE_END;
     
   public:
@@ -49,10 +43,6 @@ namespace GE
     
     SkinPose (SM *sm) : joints (sm) {}
     SkinPose () {}
-
-    void serialize (void *sm) {
-      ((SM*)sm)->objectVar( &joints);
-    }
   };
   
 }//namespace GE

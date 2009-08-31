@@ -23,7 +23,13 @@ namespace GE
   class FormatMember
   {
     DECLARE_SERIAL_CLASS( FormatMember );
-    DECLARE_CALLBACK( ClassEvent::Serialize, serialize );
+    DECLARE_DATAVAR( data );
+    DECLARE_DATAVAR( unit );
+    DECLARE_DATAVAR( size );
+    DECLARE_DATAVAR( offset );
+    DECLARE_OBJVAR( attribName );
+    DECLARE_DATAVAR( attribUnit );
+    DECLARE_DATAVAR( attribNorm );
     DECLARE_END;
 
   public:
@@ -37,24 +43,13 @@ namespace GE
 
     FormatMember () {}
     FormatMember (SM *sm) : attribName(sm) {}
-
-    void serialize (void *p)
-    {
-      SM *sm = (SM*)p;
-      sm->dataVar( &data );
-      sm->dataVar( &unit );
-      sm->dataVar( &size );
-      sm->dataVar( &offset );
-      sm->objectVar( &attribName );
-      sm->dataVar( &attribUnit );
-      sm->dataVar( &attribNorm );
-    }
   };
 
   class VertexFormat
   {
     DECLARE_SERIAL_CLASS( VertexFormat );
-    DECLARE_CALLBACK( ClassEvent::Serialize, serialize );
+    DECLARE_DATAVAR( size );
+    DECLARE_OBJVAR( members );
     DECLARE_END;
 
   private:
@@ -63,15 +58,8 @@ namespace GE
 
   public:
 
-    VertexFormat () { size = 0; }
     VertexFormat (SM *sm) : members (sm) {}
-
-    void serialize (void *p)
-    {
-      SM *sm = (SM*)p;
-      sm->dataVar( &size );
-      sm->objectVar( &members );
-    }
+    VertexFormat () { size = 0; }
 
     UintSize getByteSize() const;
     const ObjArrayList <FormatMember> * getMembers () const;
@@ -148,7 +136,7 @@ namespace GE
         else
         {
           //Init unmatched vertex members to NULL
-          void **pmember = (void**) vmember->findIn( &prototype );
+          void **pmember = (void**) vmember->getFrom( &prototype );
           *pmember = NULL;
         }
       }
@@ -158,7 +146,7 @@ namespace GE
     {
       //Set pointer offsets to match data at given base
       for (UintSize b=0; b<bindings.size(); ++b) {
-        void **pmember = (void**) bindings[b].member->findIn( &prototype );
+        void **pmember = (void**) bindings[b].member->getFrom( &prototype );
         *pmember = Util::PtrOff( dataPtr, bindings[b].offset );
       }
 
@@ -196,7 +184,10 @@ namespace GE
   {
     friend class Renderer;
     DECLARE_SERIAL_SUBCLASS( TriMesh, Resource );
-    DECLARE_CALLBACK( ClassEvent::Serialize, serialize );
+    DECLARE_OBJVAR( format );
+    DECLARE_OBJVAR( data );
+    DECLARE_OBJVAR( indices );
+    DECLARE_OBJVAR( groups );
     DECLARE_END;
     
   public:
@@ -235,15 +226,6 @@ namespace GE
     virtual void faceFromPoly (PolyMesh::Face *polyFace);
     
   public:
-    
-    void serialize (void *p)
-    {
-      SM *sm = (SM*) p;
-      sm->objectVar( &format );
-      sm->objectVar( &data );
-      sm->objectVar( &indices );
-      sm->objectVar( &groups );
-    }
     
     TriMesh (SerializeManager *sm) : format(sm), data(sm), indices(sm), groups(sm)
     { isOnGpu = false; }

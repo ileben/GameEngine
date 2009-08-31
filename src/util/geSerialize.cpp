@@ -70,28 +70,53 @@ namespace GE
     simulate = !realRun;
   }
 
-  void SerializeManager::State::store (void *ptr, UintSize size)
+  void SerializeManager::State::store (void *from, UintSize to, UintSize size)
+  {
+    if (!simulate)
+    {
+      //Copy [size] bytes of data to buffer at given offset
+      std::memcpy( data + to, from, size );
+    }
+  }
+
+  void SerializeManager::State::store (void *from, UintSize size)
   {
     if (!simulate)
     {
       //Copy [size] bytes of data to buffer at copy offset
-      std::memcpy( data + offset, ptr, size );
+      std::memcpy( data + offset, from, size );
     }
     
     //Advance copy offset
     offset += size;
   }
 
-  void SerializeManager::State::load (void *ptr, UintSize size)
+  void SerializeManager::State::load (void *to, UintSize size)
   {
     if (!simulate)
     {
       //Copy [size] bytes of data from buffer at copy offset
-      std::memcpy( ptr, data + offset, size );
+      std::memcpy( to, data + offset, size );
     }
 
     //Advance copy offset
     offset += size;
+  }
+
+  void SerializeManager::StateSerial::adjust (UintSize ptrOffset)
+  {
+    if (!simulate)
+    {
+      //Make serialized pointer at given offset
+      //point to current store offset
+      void *pptr = data + ptrOffset;
+      Util::PtrSet (pptr, offset);
+    }
+    
+    //Add to the list of adjusted pointers
+    PtrHeader ph;
+    ph.offset = ptrOffset;
+    ptrList.push_back (ph);
   }
 
   void SerializeManager::State::enqueueObjVar
@@ -176,6 +201,8 @@ namespace GE
         }
         case MemberType::ObjArray:
         {
+          if (mbr.size == 0) break;
+
           //Walk the array of objects
           void *p = *((void**) members->at(m)->getFrom( pobj ));
           for (UintSize o=0; o<mbr.size; ++o)
@@ -190,6 +217,8 @@ namespace GE
         }
         case MemberType::ObjPtrArray:
         {
+          if (mbr.size == 0) break;
+
           //Walk the array of pointers to objects
           void **p = *((void***) members->at(m)->getFrom( pobj ));
           for (UintSize o=0; o<mbr.size; ++o)
@@ -204,6 +233,8 @@ namespace GE
         }
         case MemberType::DataPtr:
         {
+          if (mbr.size == 0) break;
+
           //Store data from the buffer
           void **pmbr = (void**) members->at(m)->getFrom( pobj );
           store( *pmbr, mbr.size );
@@ -278,6 +309,8 @@ namespace GE
         }
         case MemberType::ObjArray:
         {
+          if (mbr.size == 0) break;
+
           //Allocate an array of objects
           void **pmbr = (void**) members->at(m)->getFrom( pobj );
           *pmbr = std::malloc( mbr.size * mbr.cls->getSize() );
@@ -296,6 +329,8 @@ namespace GE
         }
         case MemberType::ObjPtrArray:
         {
+          if (mbr.size == 0) break;
+
           //Allocate an array of pointers to objects
           void ***pmbr = (void***) members->at(m)->getFrom( pobj );
           *pmbr = (void**) std::malloc( mbr.size * sizeof(void*) );
@@ -314,6 +349,8 @@ namespace GE
         }
         case MemberType::DataPtr:
         {
+          if (mbr.size == 0) break;
+
           //Allocate a buffer for data
           void **pmbr = (void**) members->at(m)->getFrom( pobj );
           *pmbr = std::malloc( mbr.size );
@@ -324,22 +361,6 @@ namespace GE
         }}
       }
     }
-  }
-
-  void SerializeManager::StateSerial::adjust (UintSize ptrOffset)
-  {
-    if (!simulate)
-    {
-      //Make serialized pointer at given offset
-      //point to current store offset
-      void *pptr = data + ptrOffset;
-      Util::PtrSet (pptr, offset);
-    }
-    
-    //Add to the list of adjusted pointers
-    PtrHeader ph;
-    ph.offset = ptrOffset;
-    ptrList.push_back (ph);
   }
 
   void SerializeManager::StateSerial::run (ClassPtr rcls, void **rptr)
@@ -366,16 +387,21 @@ namespace GE
       //Is there a pointer to it?
       if (obj.pointedTo)
       {
-        //Store object offset and adjust pointer to it
+        //Set object offset and adjust pointer to it
         obj.offset = offset;
         adjust( obj.ptroffset );
 
-        //TODO: store ClassHeader
-
         //Store object data
-        void **p = ((void**)obj.var);
         store( pobj, obj.cls->getSize() );
       }
+      else
+      {
+        //Store object data at its offset
+        store( pobj, obj.offset, obj.cls->getSize() );
+      }
+
+      //TODO: store ClassHeader
+
 
       //Walk object members
       const MTable *members = obj.cls->getMembers();
@@ -408,14 +434,14 @@ namespace GE
         }
         case MemberType::ObjArray:
         {
+          if (mbr.size == 0) break;
+
           //Walk the array of objects
           void *p = *((void**) members->at(m)->getFrom( pobj ));
           for (UintSize o=0; o<mbr.size; ++o)
           {
-            //TODO: store ClassHeader
-
-            //Store object data
-            store( p, mbr.cls->getSize() );
+            //Reserve space for serialized object
+            offset += mbr.cls->getSize();
 
             //Enqueue object with offset
             enqueueObjVar( mbr.cls, p, offset  );
@@ -427,6 +453,8 @@ namespace GE
         }
         case MemberType::ObjPtrArray:
         {
+          if (mbr.size == 0) break;
+
           //Walk the array of pointers to objects
           void **p = *((void***) members->at(m)->getFrom( pobj ));
           for (UintSize o=0; o<mbr.size; ++o)
@@ -444,6 +472,8 @@ namespace GE
         }
         case MemberType::DataPtr:
         {
+          if (mbr.size == 0) break;
+
           //Adjust pointer to the buffer
           void **pmbr = (void**) members->at(m)->getFrom( pobj );
           adjust( obj.offset + Util::PtrDist( pobj, pmbr ) );
@@ -455,53 +485,6 @@ namespace GE
       }
     }
   }
-/*
-  void serialize()
-  {
-    while (!empty)
-    {
-      int classinfo = popinfo();
-      
-      if (classinfo.pointedto)
-        store();
-        adjustptr();
-
-      for (UintSize m=0; m<classinfo.member.size(); ++m)
-      {
-        if (member.isdatavar)
-          ;
-
-        if (member.isobjvar)
-          stackobj( nonpointed );
-        
-        if (member.isobjptr)
-          stackobj( pointedto )
-
-        if (member.isdataptr)
-          stackdata();
-      }
-
-      for (UintSize d=0; d<datas.size(); ++d)
-      {
-        adjustptr();
-
-        if (data.isobjvararray)
-          store( objects );
-          foreach
-            stackobj( nonpointed );
-        
-        if (data.isobjptrarray)
-          store( pointers );
-          foreach
-            stackobj( pointedto );
-
-        else
-          store();
-      }
-    }
-  }
-
-*/
   
   /*
   --------------------------------------------------

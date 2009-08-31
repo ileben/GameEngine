@@ -18,7 +18,9 @@ namespace GE
   class GenericArrayList
   {
     DECLARE_SERIAL_CLASS( GenericArrayList );
-    DECLARE_CALLBACK( ClassEvent::Serialize, serialize );
+    DECLARE_DATAVAR( sz );
+    DECLARE_DATAVAR( eltSize );
+    DECLARE_MEMBER_FUNC( elements, elementsInfo );
     DECLARE_CALLBACK( ClassEvent::Loaded, loaded );
     DECLARE_END;
     
@@ -35,12 +37,8 @@ namespace GE
     Serialization
     ------------------------------------------------------*/
     
-    void serialize (void *param)
-    {
-      SerializeManager *sm = (SM*)param;
-      sm->dataVar( &sz );
-      sm->dataVar( &eltSize );
-      if (sz > 0) sm->dataPtr( &elements, sz * eltSize );
+    virtual MemberInfo elementsInfo () {
+      return MEMBER_DATAPTR( sz * eltSize );
     }
 
     void loaded (void *param)
@@ -412,7 +410,7 @@ namespace GE
   class GenericPtrArrayList : public GenericArrayList
   {
     DECLARE_SERIAL_CLASS( GenericPtrArrayList );
-    DECLARE_CALLBACK( ClassEvent::Serialize, serialize );
+    DECLARE_DATAVAR( eltClsID );
     DECLARE_CALLBACK( ClassEvent::Loaded, loaded );
     DECLARE_CALLBACK( ClassEvent::Deserialized, loaded );
     DECLARE_END;
@@ -422,18 +420,11 @@ namespace GE
 
   public:
 
-    void serialize (void *param)
-    {
-      SerializeManager *sm = (SM*) param;
-      sm->dataVar( &sz );
-      sm->dataVar( &eltSize );
-      sm->dataVar( &eltClsID );
-      if (sz > 0) sm->objectPtrArray(
-        IClass::FromID(eltClsID), (void***)&elements, sz );
+    virtual MemberInfo elementsInfo() {
+      return MEMBER_OBJPTRARRAY( IClass::FromID(eltClsID), sz );
     }
 
-    void loaded (void *param)
-    {
+    void loaded (void *param) {
       eltCls = IClass::FromID( eltClsID );
     }
 
@@ -463,8 +454,9 @@ namespace GE
   class GenericObjArrayList : public GenericArrayList
   {
     DECLARE_SERIAL_CLASS( GenericObjArrayList );
-    DECLARE_CALLBACK( ClassEvent::Serialize, serialize );
+    DECLARE_DATAVAR( eltClsID );
     DECLARE_CALLBACK( ClassEvent::Loaded, loaded );
+    DECLARE_CALLBACK( ClassEvent::Deserialized, loaded );
     DECLARE_END;
 
     ClassID eltClsID;
@@ -472,18 +464,11 @@ namespace GE
 
   public:
 
-    void serialize (void *param)
-    {
-      SerializeManager *sm = (SM*) param;
-      sm->dataVar( &sz );
-      sm->dataVar( &eltSize );
-      sm->dataVar( &eltClsID );
-      if (sz > 0) sm->objectArray(
-        IClass::FromID(eltClsID), (void**)&elements, sz );
+    virtual MemberInfo elementsInfo () {
+      return MEMBER_OBJARRAY( IClass::FromID(eltClsID), sz );
     };
 
-    void loaded (void *param)
-    {
+    void loaded (void *param) {
       eltCls = IClass::FromID( eltClsID );
     }
 

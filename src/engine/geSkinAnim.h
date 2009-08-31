@@ -14,20 +14,15 @@ namespace GE
   template <class Traits> class AnimTrack
   {
     DECLARE_SERIAL_CLASS( AnimTrack );
-    DECLARE_CALLBACK( ClassEvent::Serialize, serialize );
+    DECLARE_DATAVAR( totalTime );
+    DECLARE_DATAVAR( frameTime );
+    DECLARE_OBJVAR( keys );
     DECLARE_END;
     
   public:
     Float32 totalTime;
     Float32 frameTime;
     ArrayList <typename Traits::Key> keys;
-    
-    void serialize (void *sm)
-    {
-      ((SM*)sm)->dataVar( &totalTime );
-      ((SM*)sm)->dataVar( &frameTime );
-      ((SM*)sm)->objectVar( &keys );
-    }
 
     AnimTrack (SM *sm) : keys (sm) {}
     AnimTrack () : totalTime(0.0f), frameTime(0.0f) {}
@@ -130,7 +125,10 @@ namespace GE
   class SkinAnim
   {
     DECLARE_SERIAL_CLASS( SkinAnim );
-    DECLARE_CALLBACK( ClassEvent::Serialize, serialize );
+    DECLARE_OBJVAR( name );
+    DECLARE_DATAVAR( duration );
+    DECLARE_OBJVAR( tracksT );
+    DECLARE_OBJVAR( tracksR );
     DECLARE_END;
     
   public:
@@ -138,14 +136,6 @@ namespace GE
     Float duration;
     ObjPtrArrayList <Vec3AnimTrack> tracksT;
     ObjPtrArrayList <QuatAnimTrack> tracksR;
-    
-    void serialize (void *sm)
-    {
-      ((SM*)sm)->objectVar( &name );
-      ((SM*)sm)->dataVar( &duration );
-      ((SM*)sm)->objectVar( &tracksT );
-      ((SM*)sm)->objectVar( &tracksR );
-    }
     
     SkinAnim (SM *sm) : name (sm), tracksT (sm), tracksR(sm) {}
     SkinAnim () {}
