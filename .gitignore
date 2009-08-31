@@ -18,12 +18,11 @@ missing
 *.lo
 *.la
 *~
+*.exe
+*.dll
 TestSkin
 TestShadow
 TexPainter
-TexPainter_DEBUG.exe
-TexPainter_RELEASE.exe
-libGameEngine.dll
 *.lib
 *.ncb
 *.Ivan.user
