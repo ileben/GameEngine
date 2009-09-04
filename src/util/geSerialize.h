@@ -8,13 +8,13 @@ namespace GE
   {
   private:
 
-    struct ObjectNode
+    struct ObjectInfo
     {
       void *var;             //pointer to variable
       ClassPtr cls;          //class of object
       UintSize offset;       //offset to serialized object
       UintSize ptroffset;    //offset to serialized pointer to object
-      bool pointedTo;        //if true, a serialized pointer to object exists
+      bool pointedTo;        //if true, a pointer to object exists
     };
 
     struct ClsHeader
@@ -34,25 +34,52 @@ namespace GE
     public:
       Uint8 *data;
       UintSize offset;
-      std::deque <ObjectNode> objQueue;
+
+      void *pobj;
+      ObjectInfo obj;
+      MemberInfo mbr;
+
+      std::deque <ObjectInfo> objQueue;
       std::vector <ClsHeader> clsList;
       std::vector <PtrHeader> ptrList;
       SerializeManager *sm;
       bool simulate;
-      
-      void enqueueObjVar (ClassPtr cls, void *var, UintSize offset=0);
-      void enqueueObjPtr (ClassPtr cls, void *var, UintSize ptroffset=0);
 
-      virtual void run (ClassPtr rootCls, void **rootPtr) = 0;
-      
-      void rootPtr (ClassPtr cls, void **pptr);
-      void arrayMemberPtr (ClassPtr cls, void **pptr, UintSize ptroffset);
-
+      void reset (UintSize startOffset, bool realRun);
       void store (void *from, UintSize to, UintSize size);
       void store (void *from, UintSize size);
       void load (void *to, UintSize size);
 
-      void reset (UintSize startOffset, bool realRun);
+      void enqueueObjVar (ClassPtr cls, void *var);
+      void enqueueObjPtr (ClassPtr cls, void *var);
+
+      void run (ClassPtr rootCls, void **rootPtr);
+      virtual void processObject () {}
+      virtual void processDataVar (void *pmbr) {}
+      virtual void processObjVar (void *pmbr, ObjectInfo &newObj) {}
+      virtual void processObjPtr (void **pmbr, ObjectInfo &newObj) {}
+      virtual void processObjArray (void **pmbr) {}
+      virtual void processObjArrayItem (void **pmbr, ObjectInfo &newObj) {}
+      virtual void processObjPtrArray (void ***pmbr) {}
+      virtual void processObjPtrArrayItem (void **pmbr, ObjectInfo &newObj) {}
+      virtual void processDataPtr (void **pmbr) {}
+    };
+
+    class StateSave : public State
+    { public:
+      //virtual void run (ClassPtr rootCls, void **rootPtr);
+      virtual void processDataVar (void *pmbr);
+      virtual void processDataPtr (void **pmbr);
+    };
+
+    class StateLoad : public State
+    { public:
+      //virtual void run (ClassPtr rootCls, void **rootPtr);
+      virtual void processObject ();
+      virtual void processDataVar (void *pmbr);
+      virtual void processObjArray (void **pmbr);
+      virtual void processObjPtrArray (void ***pmbr);
+      virtual void processDataPtr (void **pmbr);
     };
 
     class StateSerial : public State
@@ -61,31 +88,20 @@ namespace GE
       void adjust (UintSize ptrOffset);
       
     public:
-      virtual void run (ClassPtr rootCls, void **rootPtr);
-      /*
-      virtual void dataVar (void *ptr, UintSize size);
-      virtual void dataPtr (void **pptr, UintSize size);
-      virtual void objectVar (ClassPtr cls, void *ptr);
-      virtual void objectArray (ClassPtr cls, void **pptr, UintSize count);
-      virtual void objectPtr (ClassPtr cls, void **pptr);
-      virtual void objectPtrArray (ClassPtr cls, void ***pptr, UintSize count);*/
-    };
-
-    class StateSave : public StateSerial
-    { public:
-      virtual void run (ClassPtr rootCls, void **rootPtr);
-    };
-
-    class StateLoad : public StateSerial
-    { public:
-      virtual void run (ClassPtr rootCls, void **rootPtr);
+      //virtual void run (ClassPtr rootCls, void **rootPtr);
+      virtual void processObject ();
+      virtual void processObjVar (void *pmbr, ObjectInfo &newObj);
+      virtual void processObjPtr (void **pmbr, ObjectInfo &newObj);
+      virtual void processObjArrayItem (void **pmbr, ObjectInfo &newObj);
+      virtual void processObjPtrArrayItem (void **pmbr, ObjectInfo &newObj);
+      virtual void processDataPtr (void **pmbr);
     };
     
     StateSerial stateSerial;
     StateSave stateSave;
     StateLoad stateLoad;
     State *state;
-    
+
     void copy (void *ptr, UintSize size);
     void adjust (UintSize ptrOffset);
     void run (ClassPtr rootCls, void **rootPtr);

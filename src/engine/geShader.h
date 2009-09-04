@@ -91,8 +91,6 @@ namespace GE
       Diffuse,
       Specular,
       SpecularExp,
-      Tangent,
-      Bitangent,
       Attribute
     };}
   

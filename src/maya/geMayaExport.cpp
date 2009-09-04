@@ -595,8 +595,8 @@ public:
   DECLARE_MEMBER_DATA( texcoord, new BindTarget( ShaderData::TexCoord ) );
   DECLARE_MEMBER_DATA( coord, new BindTarget( ShaderData::Coord ) );
   DECLARE_MEMBER_DATA( normal, new BindTarget( ShaderData::Normal ) );
-  DECLARE_MEMBER_DATA( tangent, new BindTarget( ShaderData::Tangent ) );
-  DECLARE_MEMBER_DATA( bitangent, new BindTarget( ShaderData::Bitangent ) );
+  DECLARE_MEMBER_DATA( tangent, new BindTarget( "Tangent" ) );
+  DECLARE_MEMBER_DATA( bitangent, new BindTarget( "Bitangent" ) );
   DECLARE_MEMBER_DATA( jointWeight, new BindTarget( "jointWeight" ) );
   DECLARE_MEMBER_DATA( jointIndex, new BindTarget( "jointIndex" ) );
   DECLARE_END;

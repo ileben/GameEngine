@@ -61,17 +61,26 @@ void INLINE postRedisplay()
 }
 
 void drag3D (int x, int y)
-{  
+{
+  if (!down3D) return;
+
   Vector2 diff = Vector2( (Float)x,(Float)y ) - lastMouse3D;
   float eyeDist = ( camRender->getEye() - center ).norm();
-  
+  lastMouse3D.set( (Float)x, (Float)y );
+
+  Vector3 side = camRender->getSide();
+  Vector3 look = Vector::Cross( Vector3(0,1,0), side );
+  light->translate( look * diff.y );
+  light->translate( side * diff.x );
+  light->lookInto( center );
+
+  /*  
   Float angleH = diff.x * (2*PI) / 400;
   Float angleV = diff.y * (2*PI) / 400;
   Float panH = -diff.x * ( eyeDist * 0.002f );
   Float panV =  diff.y * ( eyeDist * 0.002f );
   Float zoom =  diff.y * ( eyeDist * 0.01f );
-  lastMouse3D.set( (Float)x, (Float)y );
-  
+
   switch (cameraMode)
   {  
   case CameraMode::Zoom:
@@ -92,7 +101,7 @@ void drag3D (int x, int y)
     camRender->panV( panV );
     break;
   }
-  
+  */
   postRedisplay();
 }
 
@@ -104,6 +113,7 @@ void click3D (int button, int state, int x, int y)
     return;
   }
 
+  /*
   int mods = glutGetModifiers();
 
   if (mods & GLUT_ACTIVE_ALT)
@@ -120,25 +130,27 @@ void click3D (int button, int state, int x, int y)
     cameraMode = CameraMode::Pan;
   }
   else return;
-  
+  */
+
   lastMouse3D.set( (Float)x, (Float)y );
   down3D = true;
 }
 
 void click (int button, int state, int x, int y)
 {
-  ctrl->mouseClick( button, state, x, y );
-  return;
-
-  click3D( button, state, x, y );
+  if (button == GLUT_LEFT_BUTTON)
+    ctrl->mouseClick( button, state, x, y );
+  
+  else if (button == GLUT_RIGHT_BUTTON)
+    click3D( button, state, x, y );
 }
 
 void drag (int x, int y)
 {
-  ctrl->mouseMove( x, y );
-  return;
+  //if (button == GLUT_LEFT_BUTTON)
+    ctrl->mouseMove( x, y );
 
-  if (down3D)
+  //else if (button == GLUT_RIGHT_BUTTON)
     drag3D( x, y );
 }
 
@@ -463,6 +475,52 @@ bool loadPackage (const CharString &fileName)
   return true;
 }
 
+StandardMaterial* loadMaterial (
+  const CharString &diffFileName="",
+  const CharString &normFileName="" )
+{
+  Image *imgDiff=NULL, *imgNorm=NULL;
+  Texture *texDiff=NULL, *texNorm=NULL;
+
+  if (diffFileName != "")
+  {
+    imgDiff = new Image;
+    imgDiff->readFile( diffFileName, "" );
+
+    texDiff = new Texture;
+    texDiff->fromImage( imgDiff );
+  }
+
+  if (normFileName != "")
+  {
+    imgNorm = new Image;
+    imgNorm->readFile( normFileName, "" );
+
+    texNorm = new Texture;
+    texNorm->fromImage( imgNorm );
+  }
+
+  if (texNorm != NULL)
+  {
+    NormalTexMat *mat = new NormalTexMat;
+    if (texDiff != NULL)
+      mat->setDiffuseTexture( texDiff );
+    mat->setNormalTexture( texNorm );
+    mat->setSpecularity( 0.5 );
+    return mat;
+  }
+
+  if (texDiff != NULL)
+  {
+    DiffuseTexMat *mat = new DiffuseTexMat;
+    mat->setDiffuseTexture( texDiff );
+    return mat;
+  }
+
+  StandardMaterial *mat = new StandardMaterial;
+  return mat;
+}
+
 Actor* loadActor (const CharString &meshFileName,
                   const CharString &texFileName="",
                   const CharString &normTexFileName="")
@@ -565,7 +623,7 @@ int main (int argc, char **argv)
 
   //Setup 3D scene
   scene = new Scene;
-
+/*
   if (argc < 4)
   {
     //Get input filename and load it
@@ -608,7 +666,7 @@ int main (int argc, char **argv)
   ((StandardMaterial*)actorRender->getMaterial())->setSpecularity(1.0f);
   ((StandardMaterial*)actorRender->getMaterial())->setGlossiness(0.5f);
   //((StandardMaterial*)actorRender->getMaterial())->setCellShaded( true );
-
+*/
 /*
   loadActor( "trex.pak", "rex.jpg", "rex_normal.jpg" );
   ((StandardMaterial*)actorRender->getMaterial())->setCullBack( false );
@@ -621,6 +679,22 @@ int main (int argc, char **argv)
   scene->addChild( actorRender );
 */
   
+  MultiMaterial *mm = new MultiMaterial;
+  mm->setNumSubMaterials( 3 );
+  mm->setSubMaterial( 0, loadMaterial() );
+  mm->setSubMaterial( 1, loadMaterial("Housing_Brick_Dark.jpg", "Housing_Brick_Dark_NORM.png") );
+  mm->setSubMaterial( 2, loadMaterial("MetalPlating.jpg", "MetalPlating_NORM.png") );
+  
+  Actor* house = loadActor( "CityTest.pak" );
+  house->setMaterial( mm );
+  scene->addChild( house );
+  
+/*
+  Actor *test = loadActor( "xNormalTest.pak" );
+  test->setMaterial( loadMaterial( "", "xNormalTest.PNG" ) );
+  scene->addChild( test );
+*/
+  /*
   //Create floor cube
   StandardMaterial *matBox = new StandardMaterial;
   matBox->setSpecularity( 0.5 );
@@ -633,15 +707,16 @@ int main (int argc, char **argv)
   cube->scale( 300, 10, 300 );
   cube->translate( 0, -100, 0 );
   scene->addChild( cube );
-
+  */
+/*
   //Create axes
   StandardMaterial axesMat;
   axesMat.setUseLighting( false );
   AxisActor *axes = new AxisActor;
   axes->scale( 100 );
   axes->setMaterial( &axesMat );
+*/
   //scene->addChild( axes );
-
   //Create lights
   light = new SpotLight( Vector3(-200,300,-200), Vector3(), 60, 0 );
   //light = new SpotLight( Vector3(-200,150,200), Vector3(), 60, 0 );

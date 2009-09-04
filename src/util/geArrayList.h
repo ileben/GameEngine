@@ -409,7 +409,7 @@ namespace GE
 
   class GenericPtrArrayList : public GenericArrayList
   {
-    DECLARE_SERIAL_CLASS( GenericPtrArrayList );
+    DECLARE_SERIAL_SUBCLASS( GenericPtrArrayList, GenericArrayList );
     DECLARE_DATAVAR( eltClsID );
     DECLARE_CALLBACK( ClassEvent::Loaded, loaded );
     DECLARE_CALLBACK( ClassEvent::Deserialized, loaded );
@@ -453,7 +453,7 @@ namespace GE
 
   class GenericObjArrayList : public GenericArrayList
   {
-    DECLARE_SERIAL_CLASS( GenericObjArrayList );
+    DECLARE_SERIAL_SUBCLASS( GenericObjArrayList, GenericArrayList );
     DECLARE_DATAVAR( eltClsID );
     DECLARE_CALLBACK( ClassEvent::Loaded, loaded );
     DECLARE_CALLBACK( ClassEvent::Deserialized, loaded );

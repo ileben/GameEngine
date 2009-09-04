@@ -501,6 +501,7 @@ namespace GE
   DiffuseTexMat::DiffuseTexMat()
   {
     texDiffuse = NULL;
+    gotUniforms = false;
   }
 
   void DiffuseTexMat::setDiffuseTexture (Texture *tex) {
@@ -515,7 +516,7 @@ namespace GE
   {
     StandardMaterial::composeShader( shader );
 
-    uDiffSampler = shader->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "diffSampler" );
+    shader->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "diffSampler" );
 
     shader->composeNodeNew( ShaderType::Fragment );
     shader->composeNodeSocket( SocketFlow::In, ShaderData::TexCoord, DataSource::BuiltIn, 0 );
@@ -531,7 +532,7 @@ namespace GE
     Shader *shader = Kernel::GetInstance()->getRenderer()->getCurrentShader();
     if (!gotUniforms)
     {
-      uDiffSampler = shader->getUniformID( "uDiffSampler" );
+      uDiffSampler = shader->getUniformID( "diffSampler" );
       gotUniforms = true;
     }
 
@@ -565,6 +566,7 @@ namespace GE
   NormalTexMat::NormalTexMat()
   {
     texNormal = NULL;
+    gotUniforms = false;
   }
 
   void NormalTexMat::setNormalTexture (Texture *tex) {
@@ -577,48 +579,54 @@ namespace GE
 
   void NormalTexMat::composeShader (Shader *shader)
   {
-    StandardMaterial::composeShader( shader );
-    //DiffuseTexMaterial::composeShader( shader );
+    //StandardMaterial::composeShader( shader );
+    DiffuseTexMat::composeShader( shader );
 
-    uNormSampler = shader->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "normSampler" );
+    shader->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "normSampler" );
 
     shader->composeNodeNew( ShaderType::Vertex );
-    shader->composeNodeSocket( SocketFlow::In, ShaderData::Tangent, DataSource::Attribute );
-    shader->composeNodeSocket( SocketFlow::Out, ShaderData::Tangent, DataSource::Attribute );
+    shader->composeNodeSocket( SocketFlow::In, ShaderData::Attribute, DataSource::Attribute, DataUnit::Vec3, "Tangent" );
+    shader->composeNodeSocket( SocketFlow::Out, ShaderData::Attribute, DataSource::Attribute, DataUnit::Vec3, "Tangent" );
     shader->composeNodeCode( "outTangent = normalize( gl_NormalMatrix * inTangent );\n" );
     shader->composeNodeEnd();
 
     shader->composeNodeNew( ShaderType::Vertex );
-    shader->composeNodeSocket( SocketFlow::In, ShaderData::Bitangent, DataSource::Attribute );
-    shader->composeNodeSocket( SocketFlow::Out, ShaderData::Bitangent, DataSource::Attribute );
+    shader->composeNodeSocket( SocketFlow::In, ShaderData::Attribute, DataSource::Attribute, DataUnit::Vec3, "Bitangent" );
+    shader->composeNodeSocket( SocketFlow::Out, ShaderData::Attribute, DataSource::Attribute, DataUnit::Vec3, "Bitangent" );
     shader->composeNodeCode( "outBitangent = normalize( gl_NormalMatrix * inBitangent );\n" );
     shader->composeNodeEnd();
 
     shader->composeNodeNew( ShaderType::Fragment );
+    shader->composeNodeSocket( SocketFlow::In, ShaderData::Attribute, DataSource::Attribute, DataUnit::Vec3, "Tangent" );
+    shader->composeNodeSocket( SocketFlow::In, ShaderData::Attribute, DataSource::Attribute, DataUnit::Vec3, "Bitangent" );
     shader->composeNodeSocket( SocketFlow::In, ShaderData::TexCoord, DataSource::BuiltIn, 0 );
-    shader->composeNodeSocket( SocketFlow::In, ShaderData::Tangent, DataSource::Attribute );
-    shader->composeNodeSocket( SocketFlow::In, ShaderData::Bitangent, DataSource::Attribute );
     shader->composeNodeSocket( SocketFlow::In, ShaderData::Normal );
+    //shader->composeNodeSocket( SocketFlow::Out, ShaderData::Diffuse );
     shader->composeNodeSocket( SocketFlow::Out, ShaderData::Normal );
     shader->composeNodeCode(
       "mat3 normMatrix = mat3( inTangent, inBitangent, inNormal);\n"
-      //"mat3 normMatrix = mat3( inBitangent, inTangent, inNormal);\n"
-      "vec3 normTexel = texture2D( normSampler, inTexCoord0.xy ).yxz;\n"
-      "normTexel.y = -normTexel.y;\n"
-      "normTexel.x = -normTexel.x;\n"
-      "normTexel.z = -normTexel.z;\n"
-      "outNormal = normMatrix * ((normTexel * 2.0) - vec3(1.0,1.0,1.0));\n" );
+      "vec3 normTexel = texture2D( normSampler, inTexCoord0.xy ).xyz;\n"
+      "vec3 localNormal = ((normTexel * 2.0) - vec3(1.0,1.0,1.0));\n"
+      "localNormal.x = -localNormal.x;\n"
+      "localNormal.y = -localNormal.y;\n"
+      "vec3 worldNormal = normMatrix * localNormal;\n"
+      //"vec3 worldNormal = ((normTexel * 2.0) - vec3(1.0,1.0,1.0));\n"
+      //"outDiffuse = vec4( (worldNormal* 0.5) + vec3(0.5,0.5,0.5), 1.0 );\n"
+      //"outDiffuse = vec4( worldNormal, 1.0 );\n"
+      "outNormal = worldNormal;\n"
+      );
     shader->composeNodeEnd();
   }
 
   void NormalTexMat::begin()
   {
+    //StandardMaterial::begin();
     DiffuseTexMat::begin();
 
     Shader *shader = Kernel::GetInstance()->getRenderer()->getCurrentShader();
     if (!gotUniforms)
     {
-      uNormSampler = shader->getUniformID( "uNormSampler" );
+      uNormSampler = shader->getUniformID( "normSampler" );
       gotUniforms = true;
     }
     
@@ -633,6 +641,7 @@ namespace GE
 
   void NormalTexMat::end()
   {
+    //StandardMaterial::end();
     DiffuseTexMat::end();
 
     if (texNormal != NULL)

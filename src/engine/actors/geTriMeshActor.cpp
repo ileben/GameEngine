@@ -78,6 +78,7 @@ namespace GE
 
       //Check if attribute is to be normalized
       GLboolean glnormalize = (member.attribNorm ? GL_TRUE : GL_FALSE);
+      Int32 attIndex = attributeIDs[ m ];
 
       //Pass the data pointer to OpenGL
       switch (member.data)
@@ -97,6 +98,7 @@ namespace GE
       case ShaderData::Attribute:
         if (shader == NULL) break;
         Int32 glattrib = shader->getVertexAttribID( attributeIDs[ m ] );
+        if (glattrib == -1) break;
         glVertexAttribPointer( glattrib, member.unit.count, gltype, glnormalize, (GLsizei) stride, memberData );
         glEnableVertexAttribArray( glattrib );
         break;
@@ -123,6 +125,7 @@ namespace GE
       case ShaderData::Attribute:
         if (shader == NULL) break;
         Int32 glattrib = shader->getVertexAttribID( attributeIDs[ m ] );
+        if (glattrib == -1) break;
         glDisableVertexAttribArray( glattrib );
         break;
       }

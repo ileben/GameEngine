@@ -130,6 +130,7 @@ namespace GE
 
     virtual void* getFrom (void* obj) = 0;
     virtual MemberInfo getInfo (void *obj) = 0;
+    virtual bool hasInfoFunc () = 0;
   };
 
   template <class T, class C> class Member : public IMember
@@ -144,6 +145,10 @@ namespace GE
 
     MemberInfo getInfo (void* obj) {
       return infofunc ? (((C*)obj)->*infofunc)() : info;
+    }
+
+    bool hasInfoFunc () {
+      return infofunc != NULL;
     }
   };
 
@@ -210,10 +215,9 @@ namespace GE
   {
     enum Enum
     {
-      Serialize      = 0,
-      Loaded         = 1,
-      Deserialized   = 2,
-      Num            = 3
+      Loaded         = 0,
+      Deserialized   = 1,
+      Num            = 2
     };
   }
   

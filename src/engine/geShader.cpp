@@ -258,14 +258,6 @@ namespace GE
       builtInAccess[ ShaderType::Vertex ] = true;
       builtInAccess[ ShaderType::Fragment ] = true;
       break;
-    case ShaderData::Tangent:
-      name = "Tangent";
-      unit = DataUnit::Vec3;
-      break;
-    case ShaderData::Bitangent:
-      name = "Bitangent";
-      unit = DataUnit::Vec3;
-      break;
     default:
       break;
     }
@@ -640,12 +632,12 @@ namespace GE
     vertShaderNodes.clear();
     fragShaderNodes.clear();
     
-    /*
+    
     printf( "-----------------------\nVertexShader:\n-----------------------\n");
     printf( "%s\n", vertShaderStr.buffer() );
     printf( "-----------------------\nFragmentShader:\n-----------------------\n");
     printf( "%s\n", fragShaderStr.buffer() );
-    */
+    
 
     return fromString( vertShaderStr, fragShaderStr );
   }
