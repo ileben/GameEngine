@@ -6,7 +6,8 @@
 
 #include "util/geUtil.h"
 #include "math/geMath.h"
-#include "geResource.h"
+#include "engine/geKernel.h"
+#include "engine/geResource.h"
 
 namespace GE
 {
@@ -40,113 +41,24 @@ namespace GE
   
   ============================================*/
   
-  class GE_API_ENTRY Material : public Resource
+  class Material : public Resource
   {
-    DECLARE_SUBABSTRACT (Material, Resource); DECLARE_END;
+    DECLARE_SUBABSTRACT( Material, Resource );
+    DECLARE_END;
+
     friend class Renderer;
     friend class MultiMaterial;
     
-  protected: //user subclasses
-    
-    /*
-    ============================================
-    
-    Property - material property interface
-    
-    ============================================*/
-      
-    class UniformProperty
-    {
-      //DECLARE_SUBABSTRACT (UniformProperty, Property);
-    protected:
-      CharString name;
-      
-    public:
-      const CharString& getName ();
-      virtual ~UniformProperty ();
-      virtual void set (void *value) = 0;
-      virtual void begin () = 0;
-      virtual void end () {}
-    };
-    
-    /*
-    =================================================
-    
-    UniformVecProperty - material property that
-    sets up vector uniform variables of the shader
-    
-    =================================================*/
-    
-    template <class T>
-    class UniformVecProperty : public UniformProperty
-    {
-      //DECLARE_SUBCLASS (UniformVecProperty, UniformProperty);
-      
-    private:
-      T          *val;
-      int         count;
-      GLProgram  *program;
-      void freeval ();
-      
-    public:
-      UniformVecProperty () {};
-      virtual ~UniformVecProperty ();
-      UniformVecProperty (GLProgram *program,
-                          const String &name,
-                          int count);
-      
-      virtual void set (void *value);
-      virtual void begin ();
-      virtual void end ();
-    };
-    
-    /*
-    ============================================================
-    
-    UniformTexProperty - material property that passes current
-    texture unit to a shader's sampler uniform variable and
-    sets up GL texturing state.
-    
-    ============================================================*/
-    
-    class UniformTexProperty : public UniformProperty
-    {
-      //DECLARE_SUBCLASS (UniformTexProperty, UniformProperty);
-      
-    private:
-      Texture    *val;
-      int         texunit;
-      GLProgram  *program;
-      
-    public:
-      UniformTexProperty () {}
-      UniformTexProperty (GLProgram *program,
-                          const String &name,
-                          int texture);
-      
-      virtual void set (void *value);
-      virtual void begin ();
-      virtual void end ();
-    };
-    
-  private: //internal classes
-    
-    ArrayList <UniformProperty*> uniformProps;
-    void freeUniformProps ();
-    
-  public: //user
+  public:
 
     virtual ClassPtr getShaderComposingClass() { return Class(Material); }
     virtual void composeShader( Shader *shader ) {}
     
-    Material ();
-    virtual ~Material ();
+    Material () {}
+    virtual ~Material () {}
     
-    void setShader (Shader *newShader); //obsolete
-    void setProperty (const String &name, void *value); //obsolete
-    
-    virtual void begin ();
-    virtual void end ();
+    virtual void begin () {}
+    virtual void end () {}
     
     static void BeginDefault ();
     static void EndDefault ();
@@ -160,9 +72,21 @@ namespace GE
   
   ============================================*/
   
-  class GE_API_ENTRY StandardMaterial : public Material
+  class StandardMaterial : public Material
   {
-    DECLARE_SUBCLASS (StandardMaterial, Material); DECLARE_END;
+    DECLARE_SERIAL_SUBCLASS( StandardMaterial, Material );
+    DECLARE_DATAVAR( diffuseColor );
+    DECLARE_DATAVAR( ambientColor );
+    DECLARE_DATAVAR( specularColor );
+    DECLARE_DATAVAR( specularity );
+    DECLARE_DATAVAR( glossiness );
+    DECLARE_DATAVAR( opacity );
+    DECLARE_DATAVAR( luminosity );
+    DECLARE_DATAVAR( lighting );
+    DECLARE_DATAVAR( culling );
+    DECLARE_DATAVAR( cell );
+    DECLARE_END;
+
     friend class Renderer;
     
   protected:
@@ -188,7 +112,8 @@ namespace GE
     virtual ClassPtr getShaderComposingClass() { return Class(StandardMaterial); }
     virtual void composeShader( Shader *shader );
     
-    StandardMaterial();
+    StandardMaterial (SM *sm);
+    StandardMaterial ();
     
     void setDiffuseColor (const Vector3 &color);
     const Vector3& getDiffuseColor ();
@@ -232,23 +157,26 @@ namespace GE
 
   class DiffuseTexMat : public StandardMaterial
   {
-    DECLARE_SUBCLASS (DiffuseTexMat, StandardMaterial);
+    DECLARE_SERIAL_SUBCLASS( DiffuseTexMat, StandardMaterial );
+    DECLARE_OBJVAR( texDiffuse );
     DECLARE_END;
 
   private:
 
-    Texture *texDiffuse;
+    TextureRef texDiffuse;
     Int32 uDiffSampler;
     bool gotUniforms;
 
   public:
 
     virtual ClassPtr getShaderComposingClass() { return Class(DiffuseTexMat); }
-    virtual void composeShader( Shader *shader );
+    virtual void composeShader (Shader *shader);
 
-    DiffuseTexMat();
+    DiffuseTexMat (SM *sm);
+    DiffuseTexMat ();
 
     void setDiffuseTexture (Texture *tex);
+    void setDiffuseTexture (const CharString &name);
     Texture *getDiffuseTexture ();
 
     virtual void begin();
@@ -257,12 +185,13 @@ namespace GE
 
   class NormalTexMat : public DiffuseTexMat
   {
-    DECLARE_SUBCLASS (NormalTexMat, StandardMaterial);
+    DECLARE_SERIAL_SUBCLASS (NormalTexMat, DiffuseTexMat);
+    DECLARE_OBJVAR( texNormal );
     DECLARE_END;
 
   private:
 
-    Texture *texNormal;
+    TextureRef texNormal;
     Int32 uNormSampler;
     bool gotUniforms;
 
@@ -271,29 +200,15 @@ namespace GE
     virtual ClassPtr getShaderComposingClass() { return Class(NormalTexMat); }
     virtual void composeShader( Shader *shader );
 
-    NormalTexMat();
+    NormalTexMat (SM *sm);
+    NormalTexMat ();
 
     void setNormalTexture (Texture *tex);
+    void setNormalTexture (const CharString &name);
     Texture *getNormalTexture ();
 
     virtual void begin();
     virtual void end();
-  };
-
-  /*
-  =======================================================
-  
-  DeferredMaterial should be used with deferred renderer
-  //Hmm... or not
-  
-  =======================================================*/
-
-  class DeferredMaterial : public StandardMaterial
-  {
-    DECLARE_SUBCLASS (DeferredMaterial, StandardMaterial); DECLARE_END;
-
-  public:
-    virtual void begin();
   };
   
   /*
@@ -304,18 +219,23 @@ namespace GE
   
   ==================================================*/
   
-  class GE_API_ENTRY MultiMaterial : public Material
+  class MultiMaterial : public Material
   {
-    DECLARE_SUBCLASS (MultiMaterial, Material); DECLARE_END;
+    DECLARE_SERIAL_SUBCLASS (MultiMaterial, Material);
+    DECLARE_OBJVAR (subMaterials);
+    DECLARE_END;
     friend class Renderer;
     
   private:
     UintSize selectedID;
-    ArrayList<Material*> subMaterials;
+    ObjPtrArrayList <Material> subMaterials;
     bool selectSubMaterial( MaterialID id );
     bool selectionValid();
     
   public:
+    MultiMaterial (SM *sm);
+    MultiMaterial ();
+
     void setNumSubMaterials( UintSize n );
     void setSubMaterial( MaterialID id, Material *m );
     Material* getSubMaterial( MaterialID id );
@@ -323,36 +243,6 @@ namespace GE
     
     virtual void begin ();
     virtual void end ();
-  };
-  
-  /*
-  ============================================
-  
-  Per-pixel phong-shaded material
-  
-  ============================================*/
-  
-  class GE_API_ENTRY PhongMaterial : public StandardMaterial
-  {
-    DECLARE_SUBCLASS (PhongMaterial, StandardMaterial);
-    DECLARE_END;
-    
-  private:
-    
-    Texture *texDiffuse;
-    Texture *texSpecularity;
-    
-  public:
-    
-    PhongMaterial ();
-    
-    void setDiffuseTexture (Texture *tex);
-    Texture *getDiffuseTexture ();
-    
-    void setSpecularityTexture (Texture *tex);
-    Texture *getSpecularityTexture ();
-    
-    virtual void begin ();
   };
   
   

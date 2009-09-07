@@ -7,7 +7,7 @@
 
 namespace GE
 {
-  class AxisActor : public Actor
+  class AxisActor : public Actor3D
   {
     virtual void render (MaterialID materialID);
   };

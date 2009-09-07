@@ -54,7 +54,7 @@ namespace GE
       void enqueueObjPtr (ClassPtr cls, void *var);
 
       void run (ClassPtr rootCls, void **rootPtr);
-      virtual void processObject () {}
+      virtual bool processObject () { return true; }
       virtual void processDataVar (void *pmbr) {}
       virtual void processObjVar (void *pmbr, ObjectInfo &newObj) {}
       virtual void processObjPtr (void **pmbr, ObjectInfo &newObj) {}
@@ -68,6 +68,7 @@ namespace GE
     class StateSave : public State
     { public:
       //virtual void run (ClassPtr rootCls, void **rootPtr);
+      virtual bool processObject ();
       virtual void processDataVar (void *pmbr);
       virtual void processDataPtr (void **pmbr);
     };
@@ -75,7 +76,7 @@ namespace GE
     class StateLoad : public State
     { public:
       //virtual void run (ClassPtr rootCls, void **rootPtr);
-      virtual void processObject ();
+      virtual bool processObject ();
       virtual void processDataVar (void *pmbr);
       virtual void processObjArray (void **pmbr);
       virtual void processObjPtrArray (void ***pmbr);
@@ -89,7 +90,7 @@ namespace GE
       
     public:
       //virtual void run (ClassPtr rootCls, void **rootPtr);
-      virtual void processObject ();
+      virtual bool processObject ();
       virtual void processObjVar (void *pmbr, ObjectInfo &newObj);
       virtual void processObjPtr (void **pmbr, ObjectInfo &newObj);
       virtual void processObjArrayItem (void **pmbr, ObjectInfo &newObj);
@@ -97,14 +98,14 @@ namespace GE
       virtual void processDataPtr (void **pmbr);
     };
     
+    //States
     StateSerial stateSerial;
     StateSave stateSave;
     StateLoad stateLoad;
     State *state;
 
-    void copy (void *ptr, UintSize size);
-    void adjust (UintSize ptrOffset);
-    void run (ClassPtr rootCls, void **rootPtr);
+    //Statistics
+    std::vector <ObjectPtr> allObjects;
 
   public:
 
@@ -128,6 +129,9 @@ namespace GE
     const void* getSignature ();
     UintSize getSignatureSize ();
     bool checkSignature (const void *data);
+
+    typedef std::vector <ObjectPtr> ObjectList;
+    const ObjectList & getObjects () { return allObjects; }
   };
   
   typedef SerializeManager SM;

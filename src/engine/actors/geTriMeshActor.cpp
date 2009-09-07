@@ -8,7 +8,7 @@
 
 namespace GE
 {
-  DEFINE_CLASS (TriMeshActor);
+  DEFINE_SERIAL_CLASS (TriMeshActor, ClassID( 0x94263b78u, 0xc1e9, 0x4e4a, 0x9f89fd667eadc891ull ));
   
   TriMeshActor::TriMeshActor()
   {
@@ -19,6 +19,10 @@ namespace GE
   {
     if (mesh != NULL)
       mesh->dereference();
+  }
+
+  void TriMeshActor::setMesh (const CharString &name) {
+    mesh = name;
   }
 
   void TriMeshActor::setMesh (TriMesh *newMesh)

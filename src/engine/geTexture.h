@@ -9,9 +9,11 @@ namespace GE
 {
   class Renderer;
 
-  class GE_API_ENTRY Texture : public Resource
+  class Texture : public Resource
   {
-    DECLARE_SUBCLASS (Texture, Resource); DECLARE_END;
+    DECLARE_SUBCLASS (Texture, Resource);
+    DECLARE_END;
+
     friend class Renderer;
     friend class Material;
 

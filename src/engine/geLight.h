@@ -9,9 +9,9 @@
 namespace GE
 {
 
-  class Light : public Actor
+  class Light : public Actor3D
   {
-    DECLARE_SUBCLASS( Light, Actor ); DECLARE_END;
+    DECLARE_SUBCLASS( Light, Actor3D ); DECLARE_END;
     
   protected:
     bool shadowsOn;

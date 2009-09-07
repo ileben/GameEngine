@@ -125,8 +125,8 @@ namespace GE
     Byte* getData() const;
     ColorFormat getFormat() const;
 
-    ImageErrorCode readFile( const String &filename, const String &typeHint );
-    ImageErrorCode readData( const Byte *data, int size, const String &typeHint );
+    ImageErrorCode readFile( const String &filename, const String &typeHint="" );
+    ImageErrorCode readData( const Byte *data, int size, const String &typeHint="" );
     ImageErrorCode writeFile( const String &filename, void *params, const String &type );
     ImageErrorCode create( int width, int height, ColorFormat format, const Color &color );
     ImageErrorCode copy( Image *dst, ColorFormat newFormat );

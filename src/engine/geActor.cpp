@@ -4,44 +4,49 @@
 
 namespace GE
 {
-  DEFINE_CLASS (Actor);
+  #define CLSID_ACTOR3D ClassID (0x040e6a35u, 0x9b4f, 0x48c8, 0xa52ef1169cc2a229ull)
+  DEFINE_SERIAL_CLASS( Actor3D, CLSID_ACTOR3D );
 
-  Actor::Actor()
+  Actor3D::Actor3D (SM *sm) : Actor (sm)
   {
-    parent = NULL;
+    material = NULL;
+  }
+
+  Actor3D::Actor3D ()
+  {
     material = NULL;
     renderable = true;
   }
 
-  Actor::~Actor ()
+  Actor3D::~Actor3D ()
   {
     if (material != NULL)
       material->dereference();
   }
   
-  void Actor::onMatrixChanged ()
+  void Actor3D::onMatrixChanged ()
   {
   }
   
-  void Actor::mulMatrixLeft (const Matrix4x4 &m)
+  void Actor3D::mulMatrixLeft (const Matrix4x4 &m)
   {
-    actor2world = m * actor2world;
+    mat = m * mat;
     onMatrixChanged();
   }
   
-  void Actor::mulMatrixRight (const Matrix4x4 &m)
+  void Actor3D::mulMatrixRight (const Matrix4x4 &m)
   {
-    actor2world *= m;
+    mat *= m;
     onMatrixChanged();
   }
 
-  void Actor::setMatrix (const Matrix4x4 &m)
+  void Actor3D::setMatrix (const Matrix4x4 &m)
   {
-    actor2world = m;
+    mat = m;
     onMatrixChanged();
   }
 
-  void Actor::lookAt (const Vector3 &look, Vector3 up)
+  void Actor3D::lookAt (const Vector3 &look, Vector3 up)
   {
     //Avoid up vector that matches the look vector
     if (Vector::Cross( up, look ).norm() == 0.0 ) {
@@ -53,66 +58,52 @@ namespace GE
     //Assume look is to be the zAxis in world space
     Vector3 xAxis = Vector::Cross( up, look ).normalize();
     Vector3 yAxis = Vector::Cross( look, xAxis ).normalize();
-    actor2world.setColumn( 0, xAxis.xyz(0.0f) );
-    actor2world.setColumn( 1, yAxis.xyz(0.0f) );
-    actor2world.setColumn( 2, look.xyz(0.0f) );
-    actor2world.affineNormalize();
+    mat.setColumn( 0, xAxis.xyz(0.0f) );
+    mat.setColumn( 1, yAxis.xyz(0.0f) );
+    mat.setColumn( 2, look.xyz(0.0f) );
+    mat.affineNormalize();
     onMatrixChanged();
   }
 
-  void Actor::lookInto (const Vector3 &point, Vector3 up)
+  void Actor3D::lookInto (const Vector3 &point, Vector3 up)
   {
-    Vector3 center = actor2world.getColumn(3).xyz();
+    Vector3 center = mat.getColumn(3).xyz();
     lookAt( point - center, up );
   }
-
-  Matrix4x4 Actor::getWorldMatrix ()
-  {
-    Actor *p = parent;
-    Matrix4x4 world = getMatrix();
-    
-    while (p != NULL)
-    {
-      world = p->getMatrix() * world;
-      p = p->getParent();
-    }
-    
-    return world;
-  }
   
-  void Actor::translate (Float x, Float y, Float z)
+  void Actor3D::translate (Float x, Float y, Float z)
   {
     Matrix4x4 m;
     m.setTranslation( x,y,z );
     mulMatrixLeft( m );
   }
 
-  void Actor::translate (const Vector3 &t) {
+  void Actor3D::translate (const Vector3 &t) {
     translate( t.x, t.y, t.z );
   }
 
-  void Actor::scale (Float x, Float y, Float z)
+  void Actor3D::scale (Float x, Float y, Float z)
   {
     Matrix4x4 m;
     m.setScale( x,y,z );
     mulMatrixLeft( m );
   }
 
-  void Actor::scale (Float k)
+  void Actor3D::scale (Float k)
   {
     Matrix4x4 m;
     m.setScale( k );
     mulMatrixLeft( m );
   }
 
-  void Actor::rotate (const Vector3 &axis, Float angle)
+  void Actor3D::rotate (const Vector3 &axis, Float angle)
   {
     Matrix4x4 m;
     m.fromAxisAngle( axis, angle );
     mulMatrixLeft( m );
   }
 
-  void Actor::setMaterial(Material *mat)
+  void Actor3D::setMaterial (Material *mat)
   {
     if (material != NULL)
       material->dereference();
@@ -121,72 +112,28 @@ namespace GE
     material->reference();
   }
   
-  Material* Actor::getMaterial() {
+  Material* Actor3D::getMaterial() {
     return material;
   }
   
-  void Actor::addChild (Actor* o)
-  {
-    if (o->parent != NULL)
-      o->parent->removeChild( o );
-    
-    children.pushBack( o );
-    o->parent = this;
-
-    Scene *scene = getScene();
-    if (scene != NULL) scene->markChanged();
-  }
-  
-  void Actor::removeChild (Actor* o)
-  {
-    children.remove( o );
-    o->parent = NULL;
-
-    Scene *scene = getScene();
-    if (scene != NULL) scene->markChanged();
-  }
-  
-  const ArrayList<Actor*>* Actor::getChildren() {
-    return &children;
-  }
-
-  Actor* Actor::getParent()
-  {
-    return parent;
-  }
-
-  Scene* Actor::getScene()
-  {
-    Actor *a = this;
-
-    while (a != NULL)
-    {
-      Scene *s = SafeCast( Scene, a );
-      if (s != NULL) return s;
-      a = a->getParent();
-    }
-
-    return NULL;
-  }
-
-  void Actor::setIsRenderable (bool r)
+  void Actor3D::setIsRenderable (bool r)
   {
     renderable = r;
   }
 
-  bool Actor::isRenderable ()
+  bool Actor3D::isRenderable ()
   {
     return renderable;
   }
 
-  void Actor::begin ()
+  void Actor3D::begin ()
   {
     glMatrixMode( GL_MODELVIEW );
     glPushMatrix();
     glMultMatrixf( (GLfloat*) getMatrix().m );
   }
   
-  void Actor::end ()
+  void Actor3D::end ()
   {
     glMatrixMode( GL_MODELVIEW );
     glPopMatrix();

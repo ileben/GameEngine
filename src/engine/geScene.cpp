@@ -3,26 +3,18 @@
 
 namespace GE
 {
-  DEFINE_CLASS (Scene);
+  DEFINE_CLASS (Scene3D);
 
-  Scene::Scene()
+  Scene3D::Scene3D()
   {
-    changed = false;
     cam = NULL;
   }
-
-  bool Scene::hasChanged()
+  
+  void Scene3D::updateChanges()
   {
-    return changed;
-  }
+    Scene::updateChanges();
+    if (getRoot() == NULL) return;
 
-  void Scene::markChanged()
-  {
-    changed = true;
-  }
-
-  void Scene::updateChanges()
-  {
     //Init stack based on last size
     ArrayList< TravNode > stack( traversal.size() );
 
@@ -31,12 +23,12 @@ namespace GE
     traversal.clear();
     
     //Walk the scene tree and store traversal order
-    stack.pushBack( TravNode( this, TravEvent::Begin ));
+    stack.pushBack( TravNode( (Actor3D*) getRoot(), TravEvent::Begin ));
     while (!stack.empty())
     {
       //Take last node off the stack
       TravNode node = stack.last();
-      Actor *a = node.actor;
+      Actor3D *a = node.actor;
       stack.popBack();
       
       //Store data
@@ -50,19 +42,19 @@ namespace GE
       
       //Put children actors onto the stack
       stack.pushBack( TravNode( a, TravEvent::End ));
-      for (int c=(int)a->getChildren()->size()-1; c >= 0; --c)
-        stack.pushBack( TravNode( a->getChildren()->at(c), TravEvent::Begin ));
+      for (int c=(int)a->getChildren().size()-1; c >= 0; --c)
+      {
+        Actor3D *child = (Actor3D*) a->getChildren().at(c);
+        stack.pushBack( TravNode( child, TravEvent::Begin ));
+      }
     }
-
-    //Un-mark changed
-    changed = false;
   }
 
-  void Scene::setAmbientColor (const Vector3 &color) {
+  void Scene3D::setAmbientColor (const Vector3 &color) {
     ambientColor = color;
   }
 
-  const Vector3& Scene::getAmbientColor () {
+  const Vector3& Scene3D::getAmbientColor () {
     return ambientColor;
   }
 }

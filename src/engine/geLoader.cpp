@@ -49,10 +49,10 @@ namespace GE
    * Recursively deletes the scene tree
    *------------------------------------*/
 
-  void Loader::deleteObject(Actor *obj)
+  void Loader::deleteObject(Actor3D *obj)
   {
     //delete children if any
-    const ArrayList<Actor*> *children = obj->getChildren();
+    const ArrayList<Actor3D*> *children = obj->getChildren();
     for( UintSize c=0; c<children->size(); ++c )
       deleteObject( children->at(c) );
     
@@ -79,7 +79,7 @@ namespace GE
    * of given type or NULL if none found
    *-------------------------------------*/
 
-  Actor* Loader::getFirstObject (ClassPtr type)
+  Actor3D* Loader::getFirstObject (ClassPtr type)
   {
     //Search for first object of given type
     for( UintSize o=0; o<objects.size(); ++o )
@@ -104,7 +104,7 @@ namespace GE
    * not destroyed along with Loader class
    *--------------------------------------------*/
 
-  void Loader::retainObject( Actor *obj )
+  void Loader::retainObject( Actor3D *obj )
   {
     //TODO: hmmmmm.......
   }

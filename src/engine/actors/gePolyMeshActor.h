@@ -22,11 +22,11 @@ namespace GE
    * rendered.
    *----------------------------------------------*/
 
-  class GE_API_ENTRY PolyMeshActor : public Actor
+  class GE_API_ENTRY PolyMeshActor : public Actor3D
   {
     friend class Renderer;
     friend class SaverObj;
-    DECLARE_SUBCLASS (PolyMeshActor, Actor);
+    DECLARE_SUBCLASS (PolyMeshActor, Actor3D);
     DECLARE_END;
 
   protected:

@@ -85,6 +85,7 @@ namespace GE
 
   void SerializeManager::State::reset (UintSize startOffset, bool realRun)
   {
+    sm->allObjects.clear();
     objQueue.clear ();
     ptrList.clear ();
     clsList.clear ();
@@ -146,6 +147,31 @@ namespace GE
   Saving state
   --------------------------------------------------*/
 
+  bool SerializeManager::StateSave::processObject ()
+  {
+    if (obj.pointedTo)
+    {
+      //Check for NULL pointer
+      void **pmbr = (void**)obj.var;
+      if (*pmbr == NULL)
+      {
+        //Store 0 class ID
+        ClassID clsid( 0,0,0,0 );
+        store( &clsid, sizeof(ClassID) );
+        return false;
+      }
+
+      //Find actual class ID
+      obj.cls = obj.cls->getFinalClass( *pmbr );
+
+      //Store class ID
+      ClassID clsid = obj.cls->getID();
+      store( &clsid, sizeof(ClassID) );
+    }
+
+    return true;
+  }
+
   void SerializeManager::StateSave::processDataVar
     (void *pmbr)
   {
@@ -165,13 +191,26 @@ namespace GE
   Loading state
   --------------------------------------------------*/
 
-  void SerializeManager::StateLoad::processObject ()
+  bool SerializeManager::StateLoad::processObject ()
   {
     //Is there a pointer to it?
     if (obj.pointedTo)
     {
-      //Construct new object instance and adjust pointer to it
+      //Load actual class ID
+      ClassID clsid;
+      load( &clsid, sizeof(ClassID) );
+      obj.cls = IClass::FromID( clsid );
+
+      //Check for NULL pointer
       void **pmbr = (void**)obj.var;
+      if (obj.cls == NULL)
+      {
+        //Set pointer to NULL
+        *pmbr = NULL;
+        return false;
+      }
+
+      //Construct new object instance and adjust pointer to it
       *pmbr = obj.cls->newSerialInstance( sm );
     }
     else
@@ -179,6 +218,8 @@ namespace GE
       //Construct new object in-place
       obj.cls->newSerialInPlace( obj.var, sm );
     }
+
+    return true;
   }
 
   void SerializeManager::StateLoad::processDataVar
@@ -186,6 +227,7 @@ namespace GE
   {
     //Load data into variable
     load( pmbr, mbr.size );
+    int *a = (int*)pmbr;
   }
 
   void SerializeManager::StateLoad::processObjArray
@@ -217,22 +259,35 @@ namespace GE
   Serialization state
   --------------------------------------------------*/
 
-  void SerializeManager::StateSerial::processObject ()
+  bool SerializeManager::StateSerial::processObject ()
   {
     //Is there a pointer to it?
     if (obj.pointedTo)
     {
+      //Check for NULL pointer
+      void **pmbr = (void**)obj.var;
+      if (*pmbr == NULL)
+      {
+        //Set serialized pointer to NULL
+        void *pnull = NULL;
+        store( &pnull, obj.ptroffset, sizeof(void*) );
+        return false;
+      }
+
       //Set object offset and adjust pointer to it
       obj.offset = offset;
       adjust( obj.ptroffset );
 
+      //Find actual class ID
+      obj.cls = obj.cls->getFinalClass( *pmbr );
+
       //Store object data
-      store( pobj, obj.cls->getSize() );
+      store( *pmbr, obj.cls->getSize() );
     }
     else
     {
       //Store object data at its offset
-      store( pobj, obj.offset, obj.cls->getSize() );
+      store( obj.var, obj.offset, obj.cls->getSize() );
     }
 
     //Store class header for deserialization
@@ -240,6 +295,7 @@ namespace GE
     clsHeader.id = obj.cls->getID();
     clsHeader.offset = obj.offset;
     clsHeader.count = 1;
+    return true;
   }
 
   void SerializeManager::StateSerial::processObjVar
@@ -259,21 +315,21 @@ namespace GE
   void SerializeManager::StateSerial::processObjArrayItem
     (void **pmbr, ObjectInfo &newObj)
   {
-    //Reserve space for serialized object
-    offset += mbr.cls->getSize();
-
     //Set offset to the new object
     newObj.offset = offset;
+
+    //Reserve space for serialized object
+    offset += mbr.cls->getSize();
   }
 
   void SerializeManager::StateSerial::processObjPtrArrayItem
     (void **pmbr, ObjectInfo &newObj)
   {
-    //Reserve space for serialized pointer
-    offset += sizeof(void*);
-
     //Set offset to pointer to the new object
     newObj.ptroffset = offset;
+
+    //Reserve space for serialized pointer
+    offset += sizeof(void*);
   }
 
   void SerializeManager::StateSerial::processDataPtr
@@ -306,28 +362,12 @@ namespace GE
       objQueue.pop_front();
 
       //Process object
-      processObject();
+      if (!processObject()) continue;
       pobj = obj.pointedTo ? *((void**)obj.var) : obj.var;
 
       //Get all the object members
-      ClassPtr cls = obj.cls;
       members.clear();
-      while (true)
-      {
-        //Walk class members
-        const MTable *mtable = cls->getMembers();
-        for (UintSize m=0; m<mtable->size(); ++m)
-        {
-          //Enqueue members with info function last
-          if (mtable->at(m)->hasInfoFunc())
-            members.push_back( mtable->at( m ) );
-          else members.push_front( mtable->at( m ) );
-        }
-
-        //Go to parent class
-        if (cls->getSuper() == cls) break;
-        cls = cls->getSuper();
-      }
+      obj.cls->getAllMembers( members );
 
       //Walk object members
       while (!members.empty())
@@ -421,6 +461,9 @@ namespace GE
       //Notify class
       if (sm->isLoading())
         obj.cls->invokeCallback( ClassEvent::Loaded, pobj, sm );
+
+      //Store for statistics
+      sm->allObjects.push_back( ObjectPtr( obj.cls, pobj ) );
 
     }//Process objects
   }

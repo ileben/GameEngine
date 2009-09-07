@@ -33,6 +33,7 @@ namespace GE
 
   class IMember;
   class IClass;
+  class Object;
   class Property;
   class SerializeManager;
   
@@ -201,7 +202,7 @@ namespace GE
     void *obj;
     
     ObjectPtr () {}
-    ObjectPtr (ClassPtr c, void *o) {cls=c; o=o;}
+    ObjectPtr (ClassPtr c, void *o) {cls=c; obj=o;}
     ObjectPtr (const ObjectPtr &p) {cls=p.cls; obj=p.obj;}
     template <class T> ObjectPtr (T *o) {cls=o->GetInstanceClassPtr(); obj=o;}
   };
@@ -244,11 +245,13 @@ namespace GE
     const ClassID&  getID ();
     const char *    getString ();
     const MTable *  getMembers ();
+    void            getAllMembers (std::deque<IMember*> &members);
     PTable *        getProperties ();
     
     //Layer-2 (IClass2)
     virtual UintSize  getSize() = 0;
     virtual ClassPtr  getSuper() = 0;
+    virtual ClassPtr  getFinalClass (void *obj) = 0;
     virtual void      invokeCallback (ClassEvent::Enum e, void *obj, void *param) = 0;
     
     //Layer-3 (IAbstract, IReal, ISerial)
@@ -321,6 +324,11 @@ namespace GE
       //If not found search in superclass
       else if (getSuper() != this)
         getSuper()->invokeCallback (e, obj, param);
+    }
+
+    ClassPtr getFinalClass (void *obj)
+    {
+      return ((Name*)obj)->GetInstanceClassPtr();
     }
 
     //Generic templates for adding members of any type    
@@ -418,7 +426,6 @@ namespace GE
   
 }//namespace GE
 #endif //__GECLASS_H
-
 
 /*
 ----------------------------------------------------------------
@@ -551,6 +558,7 @@ namespace GE
   #define CLSID_QUATANIMTRACK        ClassID (0x8ff2d758u, 0xa624, 0x445a, 0x87197d3e14bb22c5ull)
   #define CLSID_VEC3ANIMTRACK        ClassID (0xd4b943cdu, 0x5cce, 0x4b50, 0x8cb7f4f2806c8637ull)
   #define CLSID_MAXCHARACTER         ClassID (0xc0db7169u, 0x65dd, 0x4375, 0xa4b2d9a505703db8ull)
+
 
 }//namespace GE
 #endif//__GECLASS_H_TWO

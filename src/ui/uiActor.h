@@ -1,17 +1,17 @@
+#ifndef __UIACTOR_H
+#define __UIACTOR_H
+
 #include "util/geUtil.h"
 #include "math/geMath.h"
 
 namespace GE
 {
-namespace UI
-{
-
   /*
   ----------------------------------------------
   Forward declarations
   ----------------------------------------------*/
-  class Widget;
-  class Window;
+  class Actor;
+  class Scene;
   class Stage;
 
 
@@ -22,27 +22,19 @@ namespace UI
 
   class Pin
   {
-    friend class Stage;
-
   private:
     Uint id;
-    ArrayList <Widget*> targets;
+    ArrayList <Actor*> targets; 
 
-    virtual void pin (Widget *w) {};
-    virtual void unpin (Widget *w) {};
-    virtual void repin (Widget *w) {};
+    virtual void otherPin (Actor *w) {};
+    virtual void thisPin (Actor *w) {};
+    virtual void bothPins (Actor *w) {};
 
   public:
-    virtual void drop (Widget *w);
-    virtual void lift ();
-  };
-
-  struct Pinhole
-  {
-    bool oldHole;
-    bool newHole;
-
-    Pinhole() : oldHole (false), newHole (false) {}
+    void drop (Actor *w);
+    void lift ();
+    
+    Actor* intersect (const Pin &p);
   };
 
   /*
@@ -56,10 +48,10 @@ namespace UI
     DECLARE_END;
 
   private:
-    Widget *target;
+    Actor *target;
 
   public:
-    void trigger (Widget *w, bool bubbleUp=false);
+    void trigger (Actor *w, bool bubbleUp=false);
   };
 
   /*
@@ -69,6 +61,8 @@ namespace UI
 
   class Stage
   {
+    friend class Actor;
+
   private:
     static Stage *instance;
 
@@ -76,40 +70,41 @@ namespace UI
     static Stage* GetInstance() { return instance; }
 
   private:
-    ArrayList <Pin*> pins;
-    ArrayList <Widget*> invalidWidgets;
+    ArrayList <Actor*> invalidActors;
   
   public:
     Stage();
-    void registerPin (Pin *p);
-    ArrayList <Pin*> & getPins () { return pins; }
     void clearInvalid ();
   };
 
   /*
   ----------------------------------------------
-  Widget
+  Actor
   ----------------------------------------------*/
 
-  class Widget
+  class Actor
   {
-    DECLARE_CLASS( Widget );
+    friend class Scene;
+    DECLARE_SERIAL_CLASS( Actor );
+    DECLARE_OBJVAR( children );
+    DECLARE_DATAVAR( mat );
     DECLARE_END;
-    friend class Pin;
+
+  private:
+    bool valid;
+    Scene *scene;
+    Actor *parent;
 
   protected:
     Vector2 loc;
     Vector2 box;
     Matrix4x4 mat;
-
-    Widget *parent;
-    ArrayList<Widget*> children;
-    ArrayList<Pinhole> pinholes;
-    bool valid;
+    ObjPtrArrayList <Actor> children;
 
   public:
-    Widget ();
-    virtual ~Widget() {}
+    Actor (SM *sm); 
+    Actor ();
+    virtual ~Actor() {}
 
     void destroy ();
     bool isValid () { return valid; }
@@ -138,14 +133,15 @@ namespace UI
     virtual bool hitTest (float x, float y);
 
     //Structure
-    void addChild (Widget* c);
-    void removeChild (Widget* c);
-    void setParent (Widget* c);
-    void getAncestors (ArrayList<Widget*> &list);
-    const ArrayList<Widget*> & getChildren () { return children; }
+    void addChild (Actor* c);
+    void removeChild (Actor* c);
+    void setParent (Actor* c);
+    void getAncestors (ArrayList<Actor*> &list);
+    const ObjPtrArrayList<Actor> & getChildren () { return children; }
 
-    Widget* getParent () { return parent; }
-    Window* getWindow();
+    bool isRoot () { return scene != NULL; }
+    Actor* getParent () { return parent; }
+    Scene* getScene();
 
     //Events
     virtual void onEvent (Event *e) {}
@@ -153,56 +149,60 @@ namespace UI
 
   /*
   ----------------------------------------------
-  Window
+  Scene
   ----------------------------------------------*/
 
-  class Window : public Widget
+  class Scene
   {
-    DECLARE_SUBCLASS( Window, Widget );
+    DECLARE_CLASS( Scene);
     DECLARE_END;
 
   private:
     bool changed;
-    ArrayList <Widget*> traversal;
+    Actor* root;
+    ArrayList <Actor*> traversal;
 
   public:
-    Window();
+    Scene();
+
+    void setRoot (Actor *actor);
+    Actor* getRoot () { return root; }
 
     void updateChanges ();
     void markChanged ();
     bool hasChanged () { return changed; }
 
-    Widget* findTopWidgetAt (float x, float y);
-    const ArrayList<Widget*> & getTraversal () { return traversal; }
+    Actor* findTopActorAt (float x, float y);
+    const ArrayList<Actor*> & getTraversal () { return traversal; }
   };
 
   /*
   Inlines
   -----------------------------------------------*/
 
-  Float Widget::getLeft ()
+  Float Actor::getLeft ()
     { return loc.x; }
   
-  Float Widget::getRight ()
+  Float Actor::getRight ()
     { return loc.x + box.x; }
   
-  Float Widget::getTop ()
+  Float Actor::getTop ()
     { return loc.y; }
   
-  Float Widget::getBottom ()
+  Float Actor::getBottom ()
     { return loc.y + box.y; }
 
-  Vector2 Widget::getTopLeft ()
+  Vector2 Actor::getTopLeft ()
     { return Vector2( getLeft(), getTop() ); }
   
-  Vector2 Widget::getTopRight ()
+  Vector2 Actor::getTopRight ()
     { return Vector2( getRight(), getTop() ); }
   
-  Vector2 Widget::getBottomLeft ()
+  Vector2 Actor::getBottomLeft ()
     { return Vector2( getLeft(), getBottom() ); }
 
-  Vector2 Widget::getBottomRight ()
+  Vector2 Actor::getBottomRight ()
     { return Vector2( getRight(), getBottom() ); }
 
-}//namespace UI
 }//namespace GE
+#endif//__UIACTOR_H

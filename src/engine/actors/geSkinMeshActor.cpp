@@ -23,11 +23,17 @@ namespace GE
     skinNormals = NULL;
     boneRotations = NULL;
     boneTranslations = NULL;
+    animEndFunc = NULL;
   }
 
   SkinMeshActor::~SkinMeshActor()
   {
     freeAnimData();
+  }
+
+  void SkinMeshActor::setAnimEndCallback (AnimCallbackFunc func)
+  {
+    animEndFunc = func;
   }
 
   void SkinMeshActor::setMesh (MaxCharacter *c)
@@ -272,15 +278,25 @@ namespace GE
       {
         if (animIsLooping)
         {
-          //Wrap the animation time if looping
-          while (animTime > anim->duration)
-            animTime -= anim->duration;
+          //Reset to zero if single frame animation
+          if (anim->duration == 0.0)
+            animTime = 0.0;
+          else
+          {
+            //Wrap the animation time if looping
+            while (animTime > anim->duration)
+              animTime -= anim->duration;
+          }
         }
         else
         {
           //Clip and stop non-looping animation
           animTime = anim->duration;
           animIsPlaying = false;
+
+          //Invoke callback
+          if (animEndFunc)
+            animEndFunc( this );
         }
       }
 

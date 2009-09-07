@@ -16,6 +16,12 @@ namespace GE
   -------------------------------------*/
   class Renderer;
   class Kernel;
+  class Resource;
+  class Texture;
+  class TriMesh;
+  class Character;
+  class ResourceRef;
+  class Scene3D;
   
   /*
   -------------------------------------
@@ -42,6 +48,9 @@ namespace GE
   Kernel interface (singleton!)
   --------------------------------------------*/
   
+  typedef std::map <std::string, Resource*> ResourceMap;
+  typedef ResourceMap::iterator ResourceIter;
+
   class GE_API_ENTRY Kernel
   {
     DECLARE_CLASS (Kernel); DECLARE_END;
@@ -72,6 +81,8 @@ namespace GE
     
     ArrayList<ObjectPtr> objects;
     ArraySet<KernelBuffer*> buffers;
+
+    std::map< std::string, Resource* > resources;
     Renderer *renderer;
 
     bool timeInit;
@@ -94,9 +105,56 @@ namespace GE
     Float getTime ();
     Float getInterval ();
 
-    static Kernel* GetInstance ();
+    static Kernel* GetInstance ()
+    { return Kernel::Instance; }
+
     Renderer* getRenderer ();
+
+    void cacheResource (Resource *res, const CharString &name);
+    Resource* getResource (const CharString &name);
+    Scene3D* loadSceneFile (const CharString &filename);
+    Scene3D* loadSceneData (void *data);
   };
+
+  /*
+  ---------------------------------------
+  Reference to resources
+  ---------------------------------------*/
+
+  class ResourceRef
+  {
+    DECLARE_SERIAL_CLASS( ResourceRef );
+    DECLARE_OBJVAR( name );
+    DECLARE_END;
+
+  public:
+
+    void *ptr;
+    CharString name;
+
+    ResourceRef (SM *sm) : name(sm)
+    { ptr = NULL; }
+
+    ResourceRef ()
+    { ptr = NULL; }
+  };
+
+  template <class T> class TResourceRef : public ResourceRef
+  {
+  public:
+    TResourceRef () {}
+    TResourceRef (SM *sm) : ResourceRef (sm) {}
+    T* operator-> () { return (T*) ptr; }
+    T& operator* () { return *( operator->() ); }
+    void operator= (T *t) { ptr = t; name = (t != NULL) ? t->getResourceName() : ""; }
+    void operator= (const CharString &n) { ptr = NULL; name = n; }
+    bool operator== (T *t) { return (T*)ptr == t; }
+    operator T* () { return (T*) ptr; }
+  };
+
+  typedef TResourceRef<Texture> TextureRef;
+  typedef TResourceRef<TriMesh> MeshRef;
+  typedef TResourceRef<Character> CharRef;
 }
 
 #pragma warning(pop)

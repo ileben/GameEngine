@@ -20,4 +20,9 @@ namespace GE
   int Resource::getRefCount() {
     return refcount;
   }
+
+  void Resource::setResourceName (const CharString &n)
+  {
+    name = n;
+  }
 }

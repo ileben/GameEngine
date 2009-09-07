@@ -103,7 +103,7 @@ class ClickPin : public UI::Pin
 public:
   ClickEvent eClick;
 
-  void repin (UI::Widget *w)
+  void bothPins (UI::Widget *w)
   {
     eClick.trigger( w );
   };
@@ -115,12 +115,12 @@ public:
   MouseEnterEvent eEnter;
   MouseLeaveEvent eLeave;
 
-  void pin (UI::Widget *w)
+  void thisPin (UI::Widget *w)
   {
     eEnter.trigger( w );
   }
 
-  void unpin (UI::Widget *w)
+  void otherPin (UI::Widget *w)
   {
     eLeave.trigger( w );
   }
@@ -128,17 +128,20 @@ public:
 
 class UICtrl
 {
-  ClickPin pMouseClick;
-  MouseFocusPin pMouseFocus;
+  ClickPin pMouseClick[2];
+  bool mouseDown;
+
+  MouseFocusPin pMouseFocus[2];
+  Int iMouseFocus;
 
 public:
-  
+
   UICtrl()
   {
-    UI::Stage::GetInstance()->registerPin( &pMouseClick );
-    UI::Stage::GetInstance()->registerPin( &pMouseFocus );
+    iMouseFocus = 0;
+    mouseDown = false;
   }
-
+  
   void mouseClick (int button, int state, int x, int y)
   {
     if (button != GLUT_LEFT_BUTTON) return;
@@ -146,23 +149,37 @@ public:
     UI::Widget *top = window->findTopWidgetAt( x, y );
 
     if (state == GLUT_DOWN)
-      pMouseClick.drop( top );
+    {
+      pMouseClick[0].drop( top );
+      mouseDown = true;
+    }
 
     if (state == GLUT_UP)
     {
-      pMouseClick.eClick.button = button;
-      pMouseClick.eClick.state = state;
-      pMouseClick.eClick.x = x;
-      pMouseClick.eClick.y = y;
-      pMouseClick.drop( top );
-      pMouseClick.lift();
+      pMouseClick[1].eClick.button = button;
+      pMouseClick[1].eClick.state = state;
+      pMouseClick[1].eClick.x = x;
+      pMouseClick[1].eClick.y = y;
+
+      pMouseClick[1].drop( top );
+      pMouseClick[1].intersect( pMouseClick[0] );
+
+      mouseDown = false;
+      mouseMove( x, y );
     }
   }
 
   void mouseMove (int x, int y)
   {
-    UI::Widget *top = window->findTopWidgetAt( x, y );
-    pMouseFocus.drop( top );
+    if (!mouseDown)
+    {
+      UI::Widget *top = window->findTopWidgetAt( x, y );
+      
+      int iNew = (iMouseFocus+1) % 2;
+      pMouseFocus[ iNew ].drop( top );
+      pMouseFocus[ iNew ].intersect( pMouseFocus[ iMouseFocus ] );
+      iMouseFocus = iNew;
+    }
   }
 };
 
@@ -379,13 +396,13 @@ void INLINE postRedisplay()
 
 void click (int button, int state, int x, int y)
 {
-  ctrl->mouseClick( button, state, x, y );
+  //ctrl->mouseClick( button, state, x, y );
   uictrl->mouseClick( button, state, x, y );
 }
 
 void drag (int x, int y)
 {
-  ctrl->mouseMove( x, y );
+  //ctrl->mouseMove( x, y );
   uictrl->mouseMove( x, y );
 }
 
@@ -945,7 +962,7 @@ int main (int argc, char **argv)
   s1->next = s2;
 
   ConvoBranch *s2branch = new ConvoBranch;
-  s2branch->duration = 4;
+  s2branch->duration = 100;
   s2->next = s2branch;
 
   ConvoSpeach *s3 = new ConvoSpeach;

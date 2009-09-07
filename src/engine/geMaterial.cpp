@@ -7,186 +7,11 @@
 
 namespace GE
 {
-  DEFINE_CLASS (Material);
-  DEFINE_CLASS (StandardMaterial);
-  DEFINE_CLASS (DeferredMaterial);
-  DEFINE_CLASS (MultiMaterial);
-  DEFINE_CLASS (PhongMaterial);
-  DEFINE_CLASS (DiffuseTexMat);
-  DEFINE_CLASS (NormalTexMat);
-  
-  /*
-  ============================================
-  
-  Property - material property interface
-  
-  ============================================*/
-  
-  const CharString& Material::UniformProperty::getName()
-  {
-    return name;
-  }
-  
-  Material::UniformProperty::~UniformProperty ()
-  {
-  }
-  
-  /*
-  =================================================
-  
-  UniformVecProperty - material property that
-  sets up vector uniform variables of the shader
-  
-  =================================================*/
-  
-  template <class T>
-  Material::UniformVecProperty<T>::UniformVecProperty (GLProgram *program,
-                                                       const String &name,
-                                                       int count)
-  {
-    this->program = program;
-    this->name = name;
-    this->count = count;
-    
-    if (this->count <= 0)
-      this->count = 1;
-    
-    val = NULL;
-  }
-  
-  template <class T>
-  Material::UniformVecProperty<T>::~UniformVecProperty ()
-  {
-    freeval ();
-  }
-  
-  template <class T>
-  void Material::UniformVecProperty<T>::freeval ()
-  {
-    if (val != NULL) {
-      delete[] val;
-      val = NULL;
-    }
-  }
-  
-  template <class T>  
-  void Material::UniformVecProperty<T>::set (void *value)
-  {
-    freeval ();
-    val = new T [count];
-    memcpy (val, value, count * sizeof (T));
-  }
-  
-  template <class T>
-  void Material::UniformVecProperty<T>::begin ()
-  {
-  }
-  
-  template <class T>
-  void Material::UniformVecProperty<T>::end ()
-  {
-  }
-  
-  /*
-  ===============================================
-  
-  UniformVecProperty - integer specializations
-  
-  ===============================================*/
-  
-  template <>
-  void Material::UniformVecProperty<Int32>::begin ()
-  {
-    //Obtain address of the variable in the shader program
-    GLint propaddr = program->getUniform (getName().toCSTR().buffer());
-    
-    //Don't pass if not set
-    if (val == NULL)
-      return;
-    
-    //Pass integers into vector
-    switch (count) {
-    case 1: glUniform1i (propaddr, val[0]); break;
-    case 2: glUniform2i (propaddr, val[0], val[1]); break;
-    case 3: glUniform3i (propaddr, val[0], val[1], val[2]); break;
-    case 4: glUniform4i (propaddr, val[0], val[1], val[2], val[3]); break;
-    }
-  }
-  
-  /*
-  ===============================================
-  
-  UniformVecProperty - float specializations
-  
-  ===============================================*/
-  
-  template <>
-  void Material::UniformVecProperty<Float32>::begin ()
-  {
-    //Obtain address of the variable in the shader program
-    GLint propaddr = program->getUniform (name.toCSTR().buffer());
-    
-    //Don't pass if not set
-    if (val == NULL)
-      return;
-    
-    //Pass integers into vector
-    switch (count) {
-    case 1: glUniform1f (propaddr, val[0]); break;
-    case 2: glUniform2f (propaddr, val[0], val[1]); break;
-    case 3: glUniform3f (propaddr, val[0], val[1], val[2]); break;
-    case 4: glUniform4f (propaddr, val[0], val[1], val[2], val[3]); break;
-    }
-  }
-  
-  /*
-  ============================================================
-  
-  UniformTexProperty - material property that passes current
-  texture unit to a shader's sampler uniform variable and
-  sets up GL texturing state.
-  
-  ============================================================*/
-  
-  Material::UniformTexProperty::UniformTexProperty (GLProgram *program,
-                                                    const String &name,
-                                                    int textureUnit)
-  {
-    this->program = program;
-    this->name = name;
-    this->texunit = textureUnit;
-    val = NULL;
-  }
-  
-  void Material::UniformTexProperty::set (void *value)
-  {
-    val = (Texture*)value;
-  }
-  
-  void Material::UniformTexProperty::begin ()
-  {
-    //Obtain address of the variable in the shader program
-    GLint propaddr = program->getUniform (name.toCSTR().buffer());
-    
-    //Don't pass if not set
-    if (val == NULL)
-      return;
-    
-    //Tell sampler which texture unit to use
-    glUniform1f (propaddr, texunit);
-    
-    //Bind texture to given texture unit and enable
-    glActiveTexture (GL_TEXTURE0 + texunit);
-    glBindTexture (GL_TEXTURE_2D, val->getHandle());
-    glEnable (GL_TEXTURE_2D);
-  }
-  
-  void Material::UniformTexProperty::end ()
-  {
-    //Disable texture for our texture unit
-    glActiveTexture (GL_TEXTURE0 + texunit);
-    glDisable (GL_TEXTURE_2D);
-  }
+  DEFINE_SERIAL_CLASS( Material,         ClassID( 0xc3598aadu, 0x4bca, 0x455d, 0x99c9d3f6b15e4948ull ));
+  DEFINE_SERIAL_CLASS( StandardMaterial, ClassID( 0x619518d9u, 0x5540, 0x4e9e, 0x85dedc0cbb70b480ull ));
+  DEFINE_SERIAL_CLASS( MultiMaterial,    ClassID( 0x53fe780du, 0x23ea, 0x4fdb, 0x844d901a4ac5be39ull ));
+  DEFINE_SERIAL_CLASS( DiffuseTexMat,    ClassID( 0x2cbb66fdu, 0x4ce1, 0x4e01, 0x8b6765c546c5bbccull ));
+  DEFINE_SERIAL_CLASS( NormalTexMat,     ClassID( 0xdc2c8562u, 0xfe36, 0x4903, 0x9c494f8976323411ull ));
   
   /*
   ============================================
@@ -194,98 +19,6 @@ namespace GE
   Material base
   
   ============================================*/
-  
-  Material::Material ()
-  {
-  }
-  
-  Material::~Material ()
-  {
-    freeUniformProps ();
-  }
-  
-  /*
-  Removes and frees uniform props */
-  
-  void Material::freeUniformProps ()
-  {
-    for( UintSize p=0; p<uniformProps.size(); ++p )
-      delete uniformProps[ p ];
-    
-    uniformProps.clear ();
-  }
-  
-  void Material::setShader (Shader *shader)
-  {
-    //Free shader-related props
-    freeUniformProps ();
-    
-    //Shader must exist and be loaded
-    if (shader == NULL)
-      return;
-    
-    if (shader->program == NULL)
-      return;
-    
-    //Add uniform properties to material for each uniform found in shader
-    int texUnit = 0;
-    
-    for (UintSize u=0; u < shader->getUniformCount(); ++u)
-    {
-      Shader::Uniform &uni = shader->getUniform (u);
-      switch (uni.unit.type)
-      {
-      case DataType::Int:
-        uniformProps.pushBack (new UniformVecProperty<Int32>
-                               (shader->program,
-                                uni.name, uni.unit.count));
-        break;
-        
-      case DataType::Float:
-        uniformProps.pushBack (new UniformVecProperty<Float>
-                               (shader->program,
-                                uni.name, uni.unit.count));
-        break;
-        
-      case DataType::Matrix:
-        //TODO
-        break;
-        
-      case DataType::Sampler2D:
-        uniformProps.pushBack (new UniformTexProperty
-                               (shader->program,
-                                uni.name, texUnit++));
-        break;
-      }
-    }
-  }
-  
-  void Material::setProperty( const String &name, void *value )
-  {
-    //Find property with given name
-    for( UintSize p=0; p<uniformProps.size(); ++p )
-    {
-      //Set its value
-      if( uniformProps[p]->getName() == name ){
-        uniformProps[p]->set( value );
-        return;
-      }
-    }
-  }
-  
-  void Material::begin()
-  {    
-    //Begin properties
-    for( UintSize p=0; p<uniformProps.size(); ++p )
-      uniformProps[ p ]->begin();
-  }
-  
-  void Material::end()
-  {
-    //Unwind properties
-    for( UintSize p=0; p<uniformProps.size(); ++p )
-      uniformProps[ p ]->end();
-  }
   
   void Material::BeginDefault()
   {
@@ -327,6 +60,12 @@ namespace GE
     lighting = true;
     culling = true;
     cell = false;
+
+    gotUniforms = false;
+  }
+
+  StandardMaterial::StandardMaterial (SM *sm)
+  {
     gotUniforms = false;
   }
 
@@ -480,6 +219,7 @@ namespace GE
 
     //Back-face culling
     if(culling) {
+    //if (false) {
       glEnable (GL_CULL_FACE);
     }else glDisable (GL_CULL_FACE);
     
@@ -498,14 +238,24 @@ namespace GE
   
   ============================================*/
 
-  DiffuseTexMat::DiffuseTexMat()
+  DiffuseTexMat::DiffuseTexMat ()
   {
     texDiffuse = NULL;
     gotUniforms = false;
   }
 
+  DiffuseTexMat::DiffuseTexMat (SM *sm)
+    : StandardMaterial (sm), texDiffuse (sm)
+  {
+    gotUniforms = false;
+  }
+
   void DiffuseTexMat::setDiffuseTexture (Texture *tex) {
     texDiffuse = tex;
+  }
+
+  void DiffuseTexMat::setDiffuseTexture (const CharString &name) {
+    texDiffuse = name;
   }
 
   Texture* DiffuseTexMat::getDiffuseTexture () {
@@ -569,8 +319,18 @@ namespace GE
     gotUniforms = false;
   }
 
+  NormalTexMat::NormalTexMat (SM *sm)
+    : DiffuseTexMat(sm), texNormal (sm)
+  {
+    gotUniforms = false;
+  }
+
   void NormalTexMat::setNormalTexture (Texture *tex) {
     texNormal = tex;
+  }
+
+  void NormalTexMat::setNormalTexture (const CharString &name) {
+    texNormal = name;
   }
 
   Texture* NormalTexMat::getNormalTexture () {
@@ -650,17 +410,6 @@ namespace GE
       glDisable( GL_TEXTURE_2D );
     }
   }
-
-  /*
-  ===============================================
-  
-  DeferredMaterial - used with deferred renderer
-  
-  ===============================================*/
-
-  void DeferredMaterial::begin()
-  {
-  }
   
   
   /*
@@ -670,6 +419,16 @@ namespace GE
   
   ============================================*/
   
+  MultiMaterial::MultiMaterial ()
+  {
+    selectedID = 0;
+  }
+
+  MultiMaterial::MultiMaterial (SM *sm)
+  {
+    selectedID = 0;
+  }
+
   /*
   -----------------------------------------------
   Extends or shrinks sub-material array
@@ -758,80 +517,6 @@ namespace GE
       subMaterials[ selectedID ]->end();
     else
       Material::EndDefault();
-  }
-  
-  /*
-  ============================================
-  
-  Per-pixel phong-shaded material
-  
-  ============================================*/
-  
-  PhongMaterial::PhongMaterial() : StandardMaterial()
-  {
-    //Setup the shader object
-    Shader *specShader = new Shader;
-    specShader->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "textures[0]" );
-    specShader->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "textures[1]" );
-    specShader->registerUniform( ShaderType::Fragment, DataUnit::Int, "useTextures[0]" );
-    specShader->registerUniform( ShaderType::Fragment, DataUnit::Int, "useTextures[1]" );
-    specShader->fromFile( "specularity.vertex.c", "specularity.fragment.c" );
-    
-    //Assign shader
-    setShader( specShader );
-    
-    //Init other properties
-    texDiffuse = NULL;
-    texSpecularity = NULL;
-  }
-  
-  void PhongMaterial::setDiffuseTexture (Texture *tex)
-  {
-    if (texDiffuse != NULL)
-      texDiffuse->dereference();
-    
-    texDiffuse = tex;
-    texDiffuse->reference();
-    
-    int use = (tex == NULL) ? 0 : 1;
-    setProperty ("useTextures[0]", &use);
-    setProperty ("textures[0]", tex);
-  }
-  
-  Texture* PhongMaterial::getDiffuseTexture ()
-  {
-    return texDiffuse;
-  }
-  
-  void PhongMaterial::setSpecularityTexture (Texture *tex)
-  {
-    if (texSpecularity != NULL)
-      texSpecularity->dereference();
-
-    texSpecularity = tex;
-    texSpecularity->reference();
-    
-    int use = (tex = NULL) ? 0 : 1;
-    setProperty ("useTextures[1]", &use);
-    setProperty ("textures[1]", tex);
-  }
-
-  Texture* PhongMaterial::getSpecularityTexture()
-  {
-    return texSpecularity;
-  }
-  
-  void PhongMaterial::begin()
-  {
-    StandardMaterial::begin();
-    
-    if (texDiffuse != NULL) {
-      if (texDiffuse->getFormat() == COLOR_FORMAT_GRAY_ALPHA ||
-          texDiffuse->getFormat() == COLOR_FORMAT_RGB_ALPHA) {
-        
-        glEnable (GL_BLEND);
-        glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-      }}
   }
 
   

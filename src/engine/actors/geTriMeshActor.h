@@ -21,15 +21,17 @@ namespace GE
   An actor that draws a TriMesh
   ----------------------------------------------*/
   
-  class GE_API_ENTRY TriMeshActor : public Actor
+  class TriMeshActor : public Actor3D
   {
-    friend class Renderer;
-    friend class SaverObj;
-    DECLARE_SUBCLASS (TriMeshActor, Actor);
+    DECLARE_SERIAL_SUBCLASS( TriMeshActor, Actor3D );
+    DECLARE_OBJVAR( mesh );
     DECLARE_END;
 
+    friend class Renderer;
+    friend class SaverObj;
+
   protected:
-    TriMesh *mesh;
+    MeshRef mesh;
     ArrayList<Int32> attributeIDs;
     
     void beginVertexData (Shader *shader, VertexFormat *format, void *data);
@@ -39,10 +41,12 @@ namespace GE
     virtual ClassPtr getShaderComposingClass() { return Class(TriMeshActor); }
     virtual void composeShader( Shader *shader );
 
-    TriMeshActor();
+    TriMeshActor (SM *sm) : Actor3D(sm), mesh(sm) {}
+    TriMeshActor ();
     virtual ~TriMeshActor();
 
     void setMesh (TriMesh *mesh);
+    void setMesh (const CharString &name);
     TriMesh* getMesh();
     
     virtual void render (MaterialID materialID);

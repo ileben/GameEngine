@@ -2,19 +2,6 @@
 #include <iostream>
 using namespace GE;
 
-class C
-{
-  DECLARE_SERIAL_CLASS( C );
-  DECLARE_DATAVAR( data );
-  DECLARE_END;
-
-public:
-  int data;
-
-  C() { std::cout << "C::ctor()" << std::endl; }
-  C(SM *sm) { std::cout << "C::ctor(SM*)" << std::endl; }
-};
-
 class B
 {
   DECLARE_SERIAL_CLASS( B );
@@ -28,6 +15,19 @@ public:
   B(SM *sm) { std::cout << "B::ctor(SM*)" << std::endl; }
 };
 
+class C : public B
+{
+  DECLARE_SERIAL_SUBCLASS( C, B );
+  DECLARE_DATAVAR( data2 );
+  DECLARE_END;
+
+public:
+  int data2;
+
+  C() { std::cout << "C::ctor()" << std::endl; }
+  C(SM *sm) { std::cout << "C::ctor(SM*)" << std::endl; }
+};
+
 class A
 {
   DECLARE_SERIAL_CLASS( A );
@@ -39,7 +39,7 @@ class A
 public:
   int data;
   B b;
-  C *c;
+  B *c;
 
   A() { std::cout << "A::ctor()" << std::endl; }
   A(SM *sm) : b(sm) { std::cout << "A::ctor(SM*)" << std::endl; }
@@ -58,6 +58,7 @@ bool test1()
   a->b.data = 2;
   a->c = new C;
   a->c->data = 3;
+  ((C*)a->c)->data2 = 4;
 
   std::cout << "Saving..." << std::endl;
   
@@ -85,6 +86,10 @@ bool test1()
     std::cout << "FAILED! a2 data C != a data C" << std::endl;
     return false;
   }
+  if (((C*)a2->c)->data2 != ((C*)a->c)->data2) {
+    std::cout << "FAILED! a2 data2 C != a data2 C" << std::endl;
+    return false;
+  }
 
   std::cout << "\nPASS" << std::endl;
   return true;
@@ -101,6 +106,7 @@ bool test2()
     a.b.data = (int) i*10;
     a.c = new C;
     a.c->data = (int) i*100;
+    ((C*)a.c)->data2 = (int) i*1000;
     ar->pushBack( a );
   }
 
@@ -135,6 +141,10 @@ bool test2()
     }
     if (ar2->at(i).c->data != ar->at(i).c->data) {
       std::cout << "FAILED! ar2 data C != ar data C" << std::endl;
+      return false;
+    }
+    if (((C*)ar2->at(i).c)->data2 != ((C*)ar->at(i).c)->data2) {
+      std::cout << "FAILED! ar2 data2 C != ar data2 C" << std::endl;
       return false;
     }
   }

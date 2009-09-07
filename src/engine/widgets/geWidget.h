@@ -8,9 +8,9 @@
 namespace GE
 {
 
-  class UIWidget : public UI::Widget
+  class Widget : public Actor
   {
-    DECLARE_ABSTRACT (UIWidget);
+    DECLARE_ABSTRACT (Widget);
     DECLARE_END;
     friend class Renderer;
     

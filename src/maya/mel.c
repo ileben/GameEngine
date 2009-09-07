@@ -37,6 +37,7 @@ global proc GCmdOpen()
     setParent GColPose; 
     separator -height 10 -style "none"; 
     button -label "Export" -align "center" -command "GCmdExport"; 
+    button -label "Export All" -align "center" -command "GCmdExportAll";
     
   setParent GColMain; 
   frameLayout -label "New Animation" -bv true -bs "etchedIn" -mh 10 -mw 10 -collapsable true; 

@@ -19,7 +19,7 @@ namespace CameraMode
 CharString animName;
 Float animSpeed = 1.0f;
 
-UI::Window *window = NULL;
+Scene *window = NULL;
 FpsLabel *lblFps = NULL;
 
 ByteString data;
@@ -27,12 +27,12 @@ TriMesh *mesh = NULL;
 MaxCharacter *character = NULL;
 TriMeshActor *triMeshActor = NULL;
 SkinMeshActor *skinMeshActor = NULL;
-Actor *actorRender = NULL;
+Actor3D *actorRender = NULL;
 
 Light *light = NULL;
 
-Scene *scene = NULL;
-Scene *sceneRender = NULL;
+Scene3D *scene = NULL;
+Scene3D *sceneRender = NULL;
 
 CameraMode::Enum cameraMode;
 Camera2D *cam2D = NULL;
@@ -162,7 +162,7 @@ void keyDown (unsigned char key, int x, int y)
   switch (key)
   {
   case 9://tab
-    light->setCastShadows( !light->getCastShadows() );
+    renderer->setIsDofEnabled( !renderer->getIsDofEnabled() );
     break;
 
   case 8://backspace
@@ -552,7 +552,7 @@ Actor* loadActor (const CharString &meshFileName,
   }
 
   //Center in the scene
-  findBounds( meshRender, actorRender->getWorldMatrix() );
+  findBounds( meshRender, actorRender->getGlobalMatrix() );
   Vector3 trans = center * -1;
   actorRender->translate( trans.x, trans.y, trans.z );
 
@@ -561,7 +561,7 @@ Actor* loadActor (const CharString &meshFileName,
   Float sizemax = Util::Max( Util::Max( size.x, size.y), size.z );
   Float scale = 100.0f / sizemax;
   actorRender->scale( scale );
-  findBounds( meshRender, actorRender->getWorldMatrix() );
+  findBounds( meshRender, actorRender->getGlobalMatrix() );
 
   if (normTexFileName != "")
   {
@@ -618,12 +618,21 @@ int main (int argc, char **argv)
   printf( "Kernel loaded\n" );
 
   //Setup depth-of-field
-  renderer->setDofParams( 50, 50, 150, 150 );
-  renderer->setIsDofEnabled( false );
+  //renderer->setDofParams( 50, 50, 150, 150 );
+  renderer->setDofParams( 120, 20, 50, 50 );
+  renderer->setIsDofEnabled( true );
 
   //Setup 3D scene
-  scene = new Scene;
-/*
+  scene = kernel.loadSceneFile( "export.pak" );
+  Actor3D* root = (Actor3D*) scene->getRoot();
+  scene->setRoot( new Actor3D );
+  root->setParent( scene->getRoot() );
+  root->scale( 5 );
+
+  /*
+  scene = new Scene3D;
+  scene->setRoot( new Actor3D() );
+
   if (argc < 4)
   {
     //Get input filename and load it
@@ -659,7 +668,7 @@ int main (int argc, char **argv)
     }
   }
 
-  scene->addChild( actorRender );
+  scene->getRoot()->addChild( actorRender );
   ((StandardMaterial*)actorRender->getMaterial())->setCullBack(false);
   ((StandardMaterial*)actorRender->getMaterial())->setLuminosity(0.2f);
   ((StandardMaterial*)actorRender->getMaterial())->setDiffuseColor(Vector3(.7,.7,.7));
@@ -678,7 +687,7 @@ int main (int argc, char **argv)
   actorRender->translate(0,-50,0);
   scene->addChild( actorRender );
 */
-  
+  /*
   MultiMaterial *mm = new MultiMaterial;
   mm->setNumSubMaterials( 3 );
   mm->setSubMaterial( 0, loadMaterial() );
@@ -688,7 +697,7 @@ int main (int argc, char **argv)
   Actor* house = loadActor( "CityTest.pak" );
   house->setMaterial( mm );
   scene->addChild( house );
-  
+  */
 /*
   Actor *test = loadActor( "xNormalTest.pak" );
   test->setMaterial( loadMaterial( "", "xNormalTest.PNG" ) );
@@ -725,35 +734,37 @@ int main (int argc, char **argv)
   light->setDiffuseColor( Vector3(1) );
   light->setSpecularColor( Vector3(5) );
   light->lookInto( center );
-  scene->addChild( light );
-/*
+  scene->getRoot()->addChild( light );
+
   Light *light2 = new SpotLight( Vector3(300,300,50), Vector3(), 60, 0 );
   light2->lookInto( center );
-  light2->setDiffuseColor( Vector3(.5,.5,1) );
-  light2->setCastShadows( true );
-  scene->addChild( light2);
+  //light2->setDiffuseColor( Vector3(.5,.5,1) );
+  light2->setCastShadows( false );
+  scene->getRoot()->addChild( light2 );
 
   Light *light3 = new SpotLight( Vector3(-200,150,200), Vector3(), 60, 0 );
   light3->lookInto( center );
-  light3->setDiffuseColor( Vector3(.5) );
-  light3->setCastShadows( true );
-  scene->addChild( light3);
-*/
+  //light3->setDiffuseColor( Vector3(.5) );
+  light3->setCastShadows( false );
+  scene->getRoot()->addChild( light3 );
+
   cam3D = new Camera3D;
   cam3D->setCenter( center );
-  cam3D->translate( 0, 0, -300 );
-  cam3D->orbitV( Util::DegToRad( 25 ) );
+  cam3D->orbitV( Util::DegToRad( 10 ) );
+  cam3D->orbitH( Util::DegToRad( -25 ) );
+  cam3D->translate( 50, 60, -40 );
   cam3D->setNearClipPlane( 1.0f );
   cam3D->setFarClipPlane( 3000.0f );
 
   //Setup 2D overlay
-  UI::Stage *stage = new UI::Stage;
-  window = new UI::Window;
+  Stage *stage = new Stage;
+  window = new Scene;
+  window->setRoot( new Actor );
 
   lblFps = new FpsLabel;
   lblFps->setLoc( Vector2( 0.0f, (Float)resY ));
   lblFps->setColor( Vector3( 1.0f, 1.0f, 1.0f ));
-  lblFps->setParent( window );
+  lblFps->setParent( window->getRoot() );
 
   cam2D = new Camera2D;
 
@@ -764,7 +775,7 @@ int main (int argc, char **argv)
   //Assign controller
   ctrl = new FpsController;
   ctrl->attachCamera( cam3D );
-  ctrl->setMoveSpeed( 200 );
+  ctrl->setMoveSpeed( 50 );
 
   //Run application
   atexit( cleanup );

@@ -17,10 +17,10 @@ namespace GE
 
   void Camera::onMatrixChanged ()
   {
-    Actor::onMatrixChanged ();
+    Actor3D::onMatrixChanged ();
     
     //Normalize the matrix so the precision errors don't accumulate
-    actor2world.affineNormalize();
+    mat.affineNormalize();
     
     //Camera vectors are first three columns of its transform matrix
     const Matrix4x4 &cam2world = getMatrix();

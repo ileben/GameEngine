@@ -2,6 +2,6 @@
 
 namespace GE
 {
-  DEFINE_CLASS (UIWidget);
+  DEFINE_CLASS (Widget);
 
 }//namespace GE

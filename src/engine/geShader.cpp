@@ -632,12 +632,12 @@ namespace GE
     vertShaderNodes.clear();
     fragShaderNodes.clear();
     
-    
+    /*
     printf( "-----------------------\nVertexShader:\n-----------------------\n");
     printf( "%s\n", vertShaderStr.buffer() );
     printf( "-----------------------\nFragmentShader:\n-----------------------\n");
     printf( "%s\n", fragShaderStr.buffer() );
-    
+    */
 
     return fromString( vertShaderStr, fragShaderStr );
   }

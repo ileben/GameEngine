@@ -33,8 +33,10 @@ void setStatus (const CharString &msg);
 void clearStatus ();
 
 bool findNodeInSelection (MFn::Type type, MObject &pick);
-void exportNoSkin (void **outData, UintSize *outSize, bool tangents);
-void exportWithSkin (void **outData, UintSize *outSize, bool tangents);
+void exportNoSkin (const MObject &meshNode, bool tangents, void **outData, UintSize *outSize);
+void exportWithSkin (const MObject &meshNode, bool tangents, void **outData, UintSize *outSize);
 SkinAnim* exportAnimation (int start, int end, int fps);
+Material* exportMaterial (const MObject &meshNode);
+Matrix4x4 exportMatrix (const MMatrix &m);
 
 #endif//__GEMAYA_H

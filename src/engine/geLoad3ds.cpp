@@ -310,7 +310,7 @@ namespace GE
     pushChunk( mainChunk );
 
     //Create root object node
-    root = new Actor();
+    root = new Actor3D();
 
     //Process sub-chunks
     while( !isChunkDone() )

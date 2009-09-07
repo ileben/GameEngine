@@ -10,7 +10,7 @@ namespace GE
   Forward declarations
   ----------------------------------------------------*/
 
-  class Actor;
+  class Actor3D;
   class Resource;
 
   /*
@@ -34,9 +34,9 @@ namespace GE
     ArrayList<Resource*> resources;
     
     //Scene tree
-    Actor *root;
-    ArrayList<Actor*> objects;
-    void deleteObject( Actor *obj );
+    Actor3D *root;
+    ArrayList<Actor3D*> objects;
+    void deleteObject( Actor3D *obj );
 
     //Specific file type loaders. These can call
     //each other in case additional resources are
@@ -62,12 +62,12 @@ namespace GE
     virtual bool loadFile( const String &filename );
     
     //Getters for loaded stuff
-    Actor* getRoot();
-    Actor* getFirstObject(ClassPtr type);
+    Actor3D* getRoot();
+    Actor3D* getFirstObject(ClassPtr type);
     Resource* getFirstResource(ClassPtr type);
     const ArrayList <Resource*> * getResources();
     
-    void retainObject(Actor *obj);
+    void retainObject(Actor3D *obj);
   };
 
 #pragma warning(pop)

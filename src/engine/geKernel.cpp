@@ -1,5 +1,11 @@
-#include "geKernel.h"
-#include "geRenderer.h"
+#include <iostream>
+#include "io/geFile.h"
+#include "image/geImage.h"
+#include "engine/geTexture.h"
+#include "engine/geTriMesh.h"
+#include "engine/geKernel.h"
+#include "engine/geRenderer.h"
+#include "engine/geScene.h"
 
 #define GE_NO_EXTENSION_ROUTING
 #include "geGLHeaders.h"
@@ -135,7 +141,8 @@ GE_PFGLSWAPINTERVAL glSwapInterval = NULL;
 
 namespace GE
 {
-  DEFINE_CLASS (Kernel);
+  DEFINE_CLASS( Kernel );
+  DEFINE_SERIAL_CLASS( ResourceRef, ClassID( 0x3436e0f8, 0xb564, 0x408e, 0x83a76fea87f15c6dull ));
 
   /*
   -------------------------------------
@@ -143,9 +150,6 @@ namespace GE
   -------------------------------------*/
 
   Kernel* Kernel::Instance = NULL;
-  Kernel* Kernel::GetInstance () {
-    return Kernel::Instance;
-  }
 
   /*
   -------------------------------------
@@ -657,6 +661,155 @@ namespace GE
   Float Kernel::getInterval()
   {
     return dtime;
+  }
+
+  
+  /*
+  --------------------------------------------------
+  Scene handling
+  --------------------------------------------------*/
+
+  bool loadPackageFile (ByteString &data, const CharString &filename)
+  {
+    //Open the file
+    File file( filename );
+    if (!file.open("rb")) {
+      std::cout << "Failed opening file " << filename.buffer() << "!" << std::endl;
+      return false; }
+
+    //Check the file signature
+    SerializeManager sm;
+    if (file.getSize() < sm.getSignatureSize()) {
+      file.close(); std::cout << "Invalid file " << filename.buffer() << "!" << std::endl;
+      return false; }
+
+    ByteString sig = file.read( sm.getSignatureSize() );
+    if ((UintSize) sig.length() < sm.getSignatureSize()) {
+      file.close(); std::cout << "Invalid file " << filename.buffer() << "!" << std::endl;
+      return false; }
+
+    if ( ! sm.checkSignature( sig.buffer() )) {
+      file.close(); std::cout << "Invalid file " << filename.buffer() << "!" << std::endl;
+      return false; }
+
+    //Read the rest of the file
+    file.read( data, file.getSize() - sm.getSignatureSize() );
+    if (data.length() == 0) {
+      file.close(); std::cout << "Invalid file " << filename.buffer() << "!" << std::endl;
+      return false; }
+
+    //Close the file
+    file.close();
+    return true;
+  }
+
+  void Kernel::cacheResource (Resource *res, const CharString &name)
+  {
+    resources[ name.buffer() ] = res;
+    res->setResourceName( name );
+  }
+  
+  Resource* Kernel::getResource (const CharString &name)
+  {
+    ResourceIter iter = resources.find( name.buffer() );
+    if (iter != resources.end())
+      return iter->second;
+
+    if (name.right(3) == "jpg" ||
+        name.right(3) == "png")
+    {
+      //Load image
+      Image img;
+      if (img.readFile( "Textures\\" + name ) != IMAGE_NO_ERROR)
+        return NULL;
+
+      //Create texture resource
+      Texture *tex = new Texture;
+      tex->fromImage( &img );
+
+      //Store resource in cache
+      cacheResource( tex, name );
+      return tex;
+    }
+    else
+    {
+      //Load file
+      ByteString data;
+      if (!loadPackageFile( data, "Meshes\\" + name ))
+        return NULL;
+
+      //Deserialize resource
+      ClassPtr cls;
+      SerializeManager sm;
+      Resource *res = (Resource*) sm.load( data.buffer(), &cls );
+
+      //Send meshes to GPU
+      TriMesh *mesh = SafeCast( TriMesh, res );
+      if (mesh != NULL) mesh->sendToGpu();
+
+      //Store resource in cache
+      cacheResource( res, name );
+      return res;
+    }
+  }
+
+  Scene3D* Kernel::loadSceneData (void *data)
+  {
+    //Deserialize actors
+    ClassPtr cls;
+    SerializeManager sm;
+    Actor3D *root = (Actor3D*) sm.load( data, &cls );
+    if (cls != Class( Actor3D )) {
+      std::cout << "Invalid file content!" << std::endl;
+      return NULL;
+    }
+
+    //Load required resources
+    std::deque <MemberPtr> members;
+    const SM::ObjectList &objects = sm.getObjects();
+    for (UintSize o=0; o<objects.size(); ++o)
+    {
+      ClassPtr cls = objects.at(o).cls;
+      void *obj = objects.at(o).obj;
+
+      //Actor3D* actor = (Actor3D*) IClass::Safecast( Class(Actor3D), cls, obj );
+      //if (actor != NULL) actor->setMaterial( new StandardMaterial() );
+
+      //Walk class members
+      cls->getAllMembers( members );
+      while (!members.empty())
+      {
+        //Pop first
+        MemberPtr member = members.front();
+        members.pop_front();
+
+        //Check if it's a resource reference
+        MemberInfo info = member->getInfo( obj );
+        if (info.cls == Class(ResourceRef))
+        {
+          //Load resource
+          ResourceRef *ref = (ResourceRef*) member->getFrom( obj );
+          ref->ptr = getResource( ref->name );
+        }
+      }
+    }
+
+    //Compose the scene
+    Scene3D *scene = new Scene3D;
+    scene->setRoot( root );
+    scene->updateChanges();
+    return scene;
+  }
+
+  Scene3D* Kernel::loadSceneFile (const CharString &filename)
+  {
+    //Load from file
+    ByteString data;
+    if (!loadPackageFile( data, filename ))
+      return NULL;
+    
+    //Process data
+    return loadSceneData( (void*) data.buffer() );
   }
 
 }//namespace GE

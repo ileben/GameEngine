@@ -13,11 +13,11 @@ namespace GE
   Forward declaractions
   ------------------------------------------*/
   
-  class Actor;
+  class Actor3D;
   class Camera;
   class Light;
   class Widget;
-  class Scene;
+  class Scene3D;
   class Shader;
   class Material;
 
@@ -198,12 +198,12 @@ namespace GE
     void initTexture (Uint *texID, Uint format, Uint attachment, bool gen=false, int W=-1, int H=-1);
     void initBuffers ();
 
-    void traverseSceneNoMats (Scene *scene);
-    void traverseSceneWithMats (Scene *scene);
-    void renderShadowMap (Light *light, Scene *scene);
+    void traverseSceneNoMats (Scene3D *scene);
+    void traverseSceneWithMats (Scene3D *scene);
+    void renderShadowMap (Light *light, Scene3D *scene);
     Shader* findShaderByKey (const ShaderKey &key);
     Shader* composeShader (RenderTarget::Enum target,
-                           Actor *geometry,
+                           Actor3D *geometry,
                            Material *material);
 
     void doToon (Uint32 sourceTex, Uint32 targetFB, Uint32 targetAtch);
@@ -225,12 +225,12 @@ namespace GE
     Material* getCurrentMaterial();
 
     void beginFrame ();
-    void renderScene (Scene *scene);
-    void renderWindow (UI::Window *w);
+    void renderScene (Scene3D *scene);
+    void renderWindow (Scene *w);
     void endFrame ();
 
     void beginDeferred();
-    void renderSceneDeferred (Scene *scene);
+    void renderSceneDeferred (Scene3D *scene);
     void endDeferred();
 
     void setAvgLuminance (Float l);

@@ -45,10 +45,6 @@
 
 //Loading & rendering
 #include "geRenderer.h"
-#include "geLoader.h"
-#include "geLoad3ds.h"
-#include "geLoadObj.h"
-#include "geSaveObj.h"
 #include "geShaders.h"
 #include "geKernel.h"
 

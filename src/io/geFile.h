@@ -1,6 +1,8 @@
 #ifndef _FILE_SYSTEM_INCLUDED
 #define _FILE_SYSTEM_INCLUDED
 
+#include "util/geUtil.h"
+
 namespace GE
 {
   class File

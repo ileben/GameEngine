@@ -238,34 +238,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\engine\geLoad3ds.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\engine\geLoad3ds.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\engine\geLoader.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\engine\geLoader.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\engine\geLoadObj.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\engine\geLoadObj.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\engine\geLoadTex.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\src\engine\geMaterial.cpp"
 				>
 			</File>
@@ -323,14 +295,6 @@
 			</File>
 			<File
 				RelativePath="..\..\src\engine\geResource.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\engine\geSaveObj.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\engine\geSaveObj.h"
 				>
 			</File>
 			<File
@@ -629,10 +593,6 @@
 						/>
 					</FileConfiguration>
 				</File>
-			</Filter>
-			<Filter
-				Name="ui"
-				>
 			</Filter>
 		</Filter>
 	</Files>

@@ -9,18 +9,25 @@
 
 namespace GE
 {
-  class GE_API_ENTRY Resource : public Object
+  class Resource
   {
-    DECLARE_SUBCLASS (Resource, Object); DECLARE_END;
+    DECLARE_CLASS( Resource );
+    DECLARE_OBJVAR( name );
+    DECLARE_END;
     
   protected:
+    CharString name;
     int refcount;
     
   public:
-    Resource();
+    Resource ();
+
     int reference();
     int dereference();
     int getRefCount();
+
+    const CharString& getResourceName() { return name; }
+    void setResourceName (const CharString &name);
   };
   
 }//namespace GE

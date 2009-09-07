@@ -1,5 +1,7 @@
 #include "geMaya.h"
 #include <maya/MFloatVectorArray.h>
+#include <maya/MFnLambertShader.h>
+#include <maya/MFnPhongShader.h>
 
 /*
 ----------------------------------------------------------
@@ -75,6 +77,11 @@ Quat exportQuat (const MQuaternion &q)
   return Quat( (Float) q.x, (Float) q.y, (Float) -q.z, (Float) -q.w );
 }
 
+Vector3 exportColor (const MColor &c)
+{
+  return Vector3( c.r, c.g, c.b );
+}
+
 /*
 ----------------------------------------------------
 These functions decompose a transformation matrix
@@ -135,52 +142,150 @@ void exportTransformJoint (const MObject &o, Quat &R, Vector3 &T, Matrix4x4 &S)
 
 /*
 ------------------------------------------------
-Outputs the material ID / texture filename map
+Exports the material of a mesh node
 ------------------------------------------------*/
 
-void outputShaderFilename (int id, const MObject &shader)
+bool findTextureFileName (MPlug &plug, CharString &outFileName)
 {
   MStatus status;
-  bool anyTexture = false;
 
-  //Find the surface shader plug on this node
-  MFnDependencyNode shaderDepNode( shader );
-  MPlug surfShaderPlug = shaderDepNode.findPlug( "surfaceShader", &status );
-  if (status != MStatus::kSuccess) {
-    trace( "Material #" + CharString::FInt(id) + ": no texture" );
-    return;
-  }
-
-  //Walk all the surface shaders connected to this plug as destination
-  MPlugArray surfShaderPlugs;
-  surfShaderPlug.connectedTo( surfShaderPlugs, true, false );
-  for (Uint p=0; p<surfShaderPlugs.length(); ++p)
+  //Walk the dep graph upstream and search for file textures
+  MItDependencyGraph depIt( plug, MFn::kFileTexture, MItDependencyGraph::kUpstream );
+  for ( ; !depIt.isDone(); depIt.next())
   {
-    //Walk the dep graph upstream and search for file textures
-    MItDependencyGraph depIt( surfShaderPlugs[p],
-      MFn::kFileTexture, MItDependencyGraph::kUpstream );
-    for ( ; !depIt.isDone(); depIt.next())
+    //Find the "fileTextureName" plug on the node
+    MFnDependencyNode depNode( depIt.thisNode() );
+    MPlug fileNamePlug = depNode.findPlug( "fileTextureName", &status);
+    if (status == MStatus::kSuccess)
     {
-      //Find the filename plug on the texture object
-      MFnDependencyNode texDepNode( depIt.thisNode() );
-      MPlug texFileNamePlug = texDepNode.findPlug( "fileTextureName", &status );
-      if (status != MStatus::kSuccess) {
-        trace( "Material #" + CharString::FInt(id) + ": no texture" );
-        continue;
-      }
+      //Get the string value
+      MString fileName;
+      fileNamePlug.getValue( fileName );
 
-      //Output the filename
-      MString texFileName;
-      texFileNamePlug.getValue( texFileName );
-      trace( "Material #" + CharString::FInt(id) + ": texture '" + texFileName.asChar() + "'" );
-      anyTexture = true;
+      //Get the file name without folders
+      File file( fileName.asChar() );
+      outFileName = file.getName();
+      return true;
     }
   }
 
-  //Report if no textures found
-  if (!anyTexture)
-    trace( "Material #" + CharString::FInt(id) + ": no texture" );
+  return false;
 }
+
+Material* exportShader (const MObject &shader)
+{
+  MStatus status;
+
+  StandardMaterial *mat;
+  bool diffTexUsed = false;
+  CharString diffTexName;
+  bool normTexUsed = false;
+  CharString normTexName;
+
+  //Find the "surfaceShader" plug on this node
+  MFnDependencyNode shaderDepNode( shader );
+  MPlug surfShaderPlug = shaderDepNode.findPlug( "surfaceShader", &status );
+  if (status != MStatus::kSuccess)
+    return NULL;
+
+  //Get all the surface shaders connected to this plug as destination
+  MPlugArray surfShaderSrcPlugs;
+  surfShaderPlug.connectedTo( surfShaderSrcPlugs, true, false );
+  if (surfShaderSrcPlugs.length() == 0)
+    return NULL;
+
+  //Take the first one
+  MObject surfShader = surfShaderSrcPlugs[0].node();
+  MFnDependencyNode surfShaderDepNode( surfShader );
+
+  //Only Lambert shading models supported
+  if (! surfShader.hasFn( MFn::kLambert ))
+    return NULL;
+
+  //Find the "color" plug on the surface shader
+  MPlug colorPlug = surfShaderDepNode.findPlug( "color", &status );
+  if (status == MStatus::kSuccess)
+    if (findTextureFileName( colorPlug, diffTexName ))
+      diffTexUsed = true;
+
+  //Find the "normalCamera" plug on the surface shader
+  MPlug camNormalPlug = surfShaderDepNode.findPlug( "normalCamera", &status );
+  if (status == MStatus::kSuccess)
+    if (findTextureFileName( camNormalPlug, normTexName ))
+      normTexUsed = true;
+
+  //Create the proper material type
+  if (normTexUsed)
+    mat = new NormalTexMat;
+  else if (diffTexUsed)
+    mat = new DiffuseTexMat;
+  else
+    mat = new StandardMaterial;
+
+  //Export Lambert params
+  MFnLambertShader lambert( surfShader );
+  mat->setAmbientColor( exportColor( lambert.ambientColor() ));
+  mat->setDiffuseColor( exportColor( lambert.color() ));
+
+  //Export Phong params
+  if (surfShader.hasFn( MFn::kPhong ))
+  {
+    MFnPhongShader phong( surfShader );
+    mat->setSpecularColor( exportColor( phong.specularColor() ));
+    mat->setGlossiness( phong.cosPower() / 128.0f );
+    mat->setSpecularity( 1.0f );
+  }
+
+  //Export diffuse texture
+  if (diffTexUsed)
+    ((DiffuseTexMat*) mat)->setDiffuseTexture( diffTexName );
+
+  //Export normal texture
+  if (normTexUsed)
+    ((NormalTexMat*) mat)->setNormalTexture( normTexName );
+
+  return mat;
+}
+
+Material* exportMaterial (const MObject &meshNode)
+{
+  MStatus status;
+
+  //Check if it's really a mesh
+  MFnMesh mesh( meshNode, &status );
+  if (status != MStatus::kSuccess)
+    return NULL;
+
+  //Get shaders connected to this mesh
+  MDagPath meshDagPath;
+  MIntArray materialIDs;
+  MObjectArray meshShaders;
+  mesh.getPath( meshDagPath );
+  mesh.getConnectedShaders( meshDagPath.instanceNumber(), meshShaders, materialIDs );
+  if (meshShaders.length() == 0) return NULL;
+
+  //Is there more than one shader assigned?
+  if (meshShaders.length() > 1)
+  {
+    //Group them into a multi-material
+    MultiMaterial *mm = new MultiMaterial;
+    mm->setNumSubMaterials( meshShaders.length() );
+    for (Uint s=0; s<meshShaders.length(); ++s)
+    {
+      //Export each shader
+      Material *mat = exportShader( meshShaders[ s ] );
+      mm->setSubMaterial( s, mat );
+    }
+    return mm;
+  }
+  else
+  {
+    //Export single material
+    Material *mat = exportShader( meshShaders[ 0 ] );
+    return mat;
+  }
+}
+
 
 /*
 -----------------------------------------------
@@ -249,9 +354,11 @@ void MeshExporter::exportMesh (const MObject &meshNode)
   int invalidEdges = 0;
   int invalidFaces = 0;
 
-  //Get mesh points (in world space if possible)
+  //Get mesh points
   MFnMesh mesh( meshNode, &status );
-
+  meshPointSpace = MSpace::kObject;
+  mesh.getPoints( meshPoints, meshPointSpace );
+/*
   meshPointSpace = MSpace::kWorld;
   status = mesh.getPoints( meshPoints, meshPointSpace );
   if (status == MStatus::kInvalidParameter)
@@ -263,7 +370,7 @@ void MeshExporter::exportMesh (const MObject &meshNode)
       meshPointSpace = MSpace::kObject;
       status = mesh.getPoints( meshPoints, meshPointSpace );
     }}
-
+*/
   //Get mesh normals and tangents
   mesh.getNormals( meshNormals, meshPointSpace );
   mesh.getTangents( meshTangents, meshPointSpace );
@@ -280,10 +387,6 @@ void MeshExporter::exportMesh (const MObject &meshNode)
   MFnDagNode meshDagNode( meshNode );
   meshDagNode.getPath( meshDagPath );
   mesh.getConnectedShaders( meshDagPath.instanceNumber(), meshShaders, meshFaceShaderIds );
-
-  //Walk the shader objects
-  for (Uint s=0; s<meshShaders.length(); ++s)
-    outputShaderFilename( s, meshShaders[ s ] );
 
   //Numbers
   meshNumPoints = meshPoints.length();
@@ -1409,20 +1512,14 @@ void exportAnimKeys (const ArrayList<MObject> &nodeTree,
 Export mesh with skin
 --------------------------------------------------------*/
 
-void exportWithSkin (void **outData, UintSize *outSize, bool tangents)
+void exportWithSkin (const MObject &meshNode, bool tangents, void **outData, UintSize *outSize)
 {
   ArrayList<MObject> nodeTree;
   ArrayList<SkinJoint> jointTree;
   ArrayList<Uint32> skinToTreeMap;
-  MObject meshNode;
   MObject skinNode;
   MObject skinMesh;
   MObject jointRoot;
-  
-  if (!findNodeInSelection( MFn::kMesh, meshNode )) {
-    setStatus( "Please select a mesh node!" );
-    return;
-  }
 
   if (!findSkinForMesh( meshNode, skinNode )) {
     setStatus( "Please select a mesh with skin!" );
@@ -1441,26 +1538,6 @@ void exportWithSkin (void **outData, UintSize *outSize, bool tangents)
   buildJointTree( jointRoot, nodeTree, jointTree );
   buildSkinToTreeMap( skinNode, nodeTree, skinToTreeMap );
   exportSkinPose( skinNode, jointTree, skinToTreeMap );
-
-/*
-  //Export pose mesh
-  SPolyMesh *outPolyMesh = new SPolyMesh;
-  TexMesh *outTexMesh = new TexMesh;
-  PolyMeshExporter meshExporter( outPolyMesh, outTexMesh );
-  meshExporter.exportMesh( skinMesh );
-  outPolyMesh->updateNormals( SmoothMetric::Edge );
-
-  //Export skin weights
-  PolyWeightExporter weightExporter( outPolyMesh );
-  weightExporter.exportSkinWeights( skinNode, meshNode, skinToTreeMap );
-
-  //Convert polygons to triangles
-  SkinTriMesh *outTriMesh = new SkinTriMesh;
-  outTriMesh->fromPoly( outPolyMesh, outTexMesh );
-
-  delete outPolyMesh;
-  delete outTexMesh;
-*/
 
   //Prepare vertex format
   VertexFormat format;
@@ -1517,30 +1594,8 @@ void exportWithSkin (void **outData, UintSize *outSize, bool tangents)
 Export static mesh
 --------------------------------------------------------*/
 
-void exportNoSkin (void **outData, UintSize *outSize, bool tangents)
+void exportNoSkin (const MObject &meshNode, bool tangents, void **outData, UintSize *outSize)
 {
-  MObject meshNode;
-  if (!findNodeInSelection( MFn::kMesh, meshNode )) {
-    setStatus( "Please select a mesh node!" );
-    return;
-  }
-
-  /*
-  //Export mesh data
-  SPolyMesh *outPolyMesh = new SPolyMesh;
-  TexMesh *outTexMesh = new TexMesh;
-  PolyMeshExporter meshExporter( outPolyMesh, outTexMesh );
-  meshExporter.exportMesh( meshNode );
-  outPolyMesh->updateNormals( SmoothMetric::Edge );
-
-  //Convert polygons to triangles
-  TriMesh *outTriMesh = new TriMesh;
-  outTriMesh->fromPoly( outPolyMesh, outTexMesh );
-
-  delete outPolyMesh;
-  delete outTexMesh;
-  */
-
   //Prepare vertex format
   VertexFormat format;
   format.addMember( ShaderData::TexCoord, DataUnit::Vec2, sizeof(Vector2) );

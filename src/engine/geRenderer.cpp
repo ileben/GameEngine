@@ -134,13 +134,13 @@ namespace GE
   }
 
   Shader* Renderer::composeShader (RenderTarget::Enum target,
-                                   Actor *geometry,
+                                   Actor3D *geometry,
                                    Material *material)
   {
     ShaderKey key;
     key.target = target;
     
-    if (geometry == NULL) key.geomClass = Class(Actor);
+    if (geometry == NULL) key.geomClass = Class(Actor3D);
     else key.geomClass = geometry->getShaderComposingClass();
     
     if (material == NULL) key.matClass = Class(Material);
@@ -506,7 +506,7 @@ namespace GE
     buffersInit = true;
   }
 
-  void Renderer::renderShadowMap (Light *light, Scene *scene)
+  void Renderer::renderShadowMap (Light *light, Scene3D *scene)
   {
     const Uint32 S = 2048;
 
@@ -638,7 +638,7 @@ namespace GE
     glClear( GL_COLOR_BUFFER_BIT );
   }
 
-  void Renderer::renderSceneDeferred (Scene *scene)
+  void Renderer::renderSceneDeferred (Scene3D *scene)
   {
     //Update scene
     if (scene->hasChanged())
@@ -737,7 +737,8 @@ namespace GE
       camera->updateView();
 
       //Enable the light
-      Matrix4x4 worldCtm = light->getWorldMatrix();
+      Matrix4x4 worldCtm = light->getGlobalMatrix();
+      worldCtm.affineNormalize();
       glMatrixMode( GL_MODELVIEW );
       glMultMatrixf( (GLfloat*) worldCtm.m );
 
@@ -808,7 +809,8 @@ namespace GE
       camera->updateView();
 
       //Enable the light
-      Matrix4x4 worldCtm = light->getWorldMatrix();
+      Matrix4x4 worldCtm = light->getGlobalMatrix();
+      worldCtm.affineNormalize();
       glMatrixMode( GL_MODELVIEW );
       glMultMatrixf( (GLfloat*) worldCtm.m );
       light->enable( 0 );
@@ -1348,7 +1350,7 @@ namespace GE
     glDisable( GL_TEXTURE_2D );
   }
 
-  void Renderer::renderScene (Scene *scene)
+  void Renderer::renderScene (Scene3D *scene)
   {
     //Update scene
     if (scene->hasChanged())
@@ -1389,7 +1391,8 @@ namespace GE
       Light *light = scene->getLights()->at( l );
 
       //Setup transformation matrix
-      Matrix4x4 worldCtm = light->getWorldMatrix();
+      Matrix4x4 worldCtm = light->getGlobalMatrix();
+      worldCtm.affineNormalize();
       glMatrixMode( GL_MODELVIEW );
       glPushMatrix();
       glMultMatrixf( (GLfloat*) worldCtm.m );
@@ -1417,7 +1420,7 @@ namespace GE
   shading programs) might not be desired.
   ------------------------------------------------------*/
 
-  void Renderer::traverseSceneNoMats (Scene *scene)
+  void Renderer::traverseSceneNoMats (Scene3D *scene)
   {
     for (UintSize t=0; t<scene->getTraversal()->size(); ++t)
     {
@@ -1449,7 +1452,7 @@ namespace GE
     }
   }
 
-  void Renderer::traverseSceneWithMats (Scene *scene)
+  void Renderer::traverseSceneWithMats (Scene3D *scene)
   {
     for (UintSize t=0; t<scene->getTraversal()->size(); ++t)
     {
@@ -1513,7 +1516,7 @@ namespace GE
     }
   }
   
-  void Renderer::renderWindow( UI::Window *w )
+  void Renderer::renderWindow( Scene *s )
   {
     //Setup GL state
     GLProgram::UseFixed();
@@ -1533,13 +1536,13 @@ namespace GE
     }
     
     //Update widget traversal
-    if (w->hasChanged()) w->updateChanges();
-    const ArrayList <UI::Widget*> &traversal = w->getTraversal();
+    if (s->hasChanged()) s->updateChanges();
+    const ArrayList <Actor*> &traversal = s->getTraversal();
 
     //Render the widgets
     for (UintSize t=0; t<traversal.size(); ++t)
     {
-      UIWidget *widget = SafeCast( UIWidget, traversal[t] );
+      Widget *widget = SafeCast( Widget, traversal[t] );
       if (widget == NULL) continue;
 
       Matrix4x4 g = widget->getGlobalMatrix();

@@ -2,11 +2,10 @@
 
 namespace GE
 {
-namespace UI
-{
+  #define CLSID_ACTOR ClassID (0x0acdcd40u, 0x9da9, 0x4dac, 0xac7bccbada6e4ee5ull)
+  DEFINE_SERIAL_CLASS( Actor, CLSID_ACTOR  );
+  DEFINE_CLASS( Scene );
   DEFINE_CLASS( Event );
-  DEFINE_CLASS( Widget );
-  DEFINE_CLASS( Window );
 
   Stage* Stage::instance = NULL;
 
@@ -16,74 +15,53 @@ namespace UI
     Stage::instance = this;
   }
 
-  void Stage::registerPin (Pin *p)
-  {
-    p->id = (Uint) pins.size();
-    pins.pushBack( p );
-  }
-
-  Widget::Widget()
+  Actor::Actor (SM *sm) : children (sm)
   {
     valid = true;
     parent = NULL;
-
-    //Get stage instance
-    Stage *stage = Stage::GetInstance();
-    assert( stage != NULL );
-    
-    //Init pinholes for every registered pin
-    ArrayList <Pin*> &pins = stage->getPins();
-    for (UintSize p=0; p<pins.size(); ++p)
-      pinholes.pushBack( Pinhole() );
+    scene = NULL;
   }
 
-  void Widget::destroy()
+  Actor::Actor()
+  {
+    valid = true;
+    parent = NULL;
+    scene = NULL;
+  }
+
+  void Actor::destroy()
   {
     for (UintSize c=0; c<children.size(); ++c)
       children[c]->destroy();
 
     setParent( NULL );
     valid = false;
+
+    Stage *stage = Stage::GetInstance();
+    stage->invalidActors.pushBack( this );
   }
 
-  Window* Widget::getWindow()
+  Scene* Actor::getScene()
   {
-    Widget *parent = this;
+    Actor *parent = this;
     while (parent != NULL)
     {
-      Window *w = SafeCast( Window, parent );
-      if (w != NULL) return w;
+      if (parent->scene != NULL)
+        return parent->scene;
+      
       parent = parent->getParent();
     }
-
+    
     return NULL;
   }
 
-  void Widget::addChild (Widget* c)
+  void Actor::setParent (Actor* p)
   {
-    if (c->parent != NULL) {
-      c->parent->children.remove( this );
-      c->parent = NULL;
+    if (scene != NULL) {
+      scene->setRoot( NULL );
+      scene = NULL;
     }
-    
-    children.pushBack( c );
-    c->parent = this;
 
-    Window *w = getWindow();
-    if (w != NULL) w->markChanged();
-  }
-  
-  void Widget::removeChild (Widget* c)
-  {
-    children.remove( c );
-    c->parent = NULL;
-
-    Window *w = getWindow();
-    if (w != NULL) w->markChanged();
-  }
-
-  void Widget::setParent (Widget* p)
-  {
     if (parent != NULL) {
       parent->children.remove( this );
       parent = NULL;
@@ -94,13 +72,41 @@ namespace UI
       parent = p;
     }
 
-    Window *w = getWindow();
+    Scene *w = getScene();
     if (w != NULL) w->markChanged();
   }
 
-  void Widget::getAncestors (ArrayList<Widget*> &list)
+  void Actor::addChild (Actor* c)
   {
-    Widget *parent = getParent();
+    if (c->scene != NULL) {
+      c->scene->setRoot( NULL );
+      c->scene = NULL;
+    }
+
+    if (c->parent != NULL) {
+      c->parent->children.remove( this );
+      c->parent = NULL;
+    }
+    
+    children.pushBack( c );
+    c->parent = this;
+
+    Scene *w = getScene();
+    if (w != NULL) w->markChanged();
+  }
+  
+  void Actor::removeChild (Actor* c)
+  {
+    children.remove( c );
+    c->parent = NULL;
+
+    Scene *w = getScene();
+    if (w != NULL) w->markChanged();
+  }
+
+  void Actor::getAncestors (ArrayList<Actor*> &list)
+  {
+    Actor *parent = getParent();
     while (parent != NULL)
     {
       list.pushBack( parent );
@@ -108,104 +114,102 @@ namespace UI
     }
   }
 
-  Window::Window()
+  Scene::Scene()
   {
     changed = false;
+    root = NULL;
   }
 
-  void Window::markChanged()
+  void Scene::markChanged()
   {
     changed = true;
   }
 
-  void Window::updateChanges()
+  void Scene::updateChanges()
   {
-    ArrayList <Widget*> stack;
-    stack.pushBack( this );
+    //Clear old data
     traversal.clear();
+    if (root == NULL) return;
 
+    //Push root onto stack
+    ArrayList <Actor*> stack;
+    stack.pushBack( root );
     while (!stack.empty())
     {
       //Pop top
-      Widget* parent = stack.last();
+      Actor* parent = stack.last();
       stack.popBack();
 
       //Add to traversal
       traversal.pushBack( parent );
 
-      //Push children to stack
-      const ArrayList<Widget*> & children = parent->getChildren();
+      //Push children onto stack
+      const ObjPtrArrayList <Actor> & children = parent->getChildren();
       for (UintSize c=0; c<children.size(); ++c)
         stack.pushBack( children[c] );
     }
   }
 
-  void Pin::drop (Widget *w)
+  void Scene::setRoot (Actor *actor)
   {
-    //Find new pin targets
-    ArrayList<Widget*> newTargets;
+    if (root != NULL)
+      root->scene = NULL;
+
+    root = actor;
+    root->scene = this;
+  }
+
+  void Pin::drop (Actor *w)
+  {
+    targets.clear();
     if (w != NULL)
     {
-      newTargets.pushBack( w );
-      w->getAncestors( newTargets );
-    }
-
-    //Mark new holes
-    for (UintSize t=0; t<newTargets.size(); ++t)
-      newTargets[t]->pinholes[ id ].newHole = true;
-
-    //Unpin old targets
-    for (UintSize t=0; t<targets.size(); ++t)
-    {
-      //Make sure its still valid
-      Widget *target = targets[t];
-      if (! target->isValid() ) continue;
-
-      //Unpin if not a new target
-      if (! target->pinholes[ id ].newHole) {
-        target->pinholes[ id ].oldHole = false;
-        unpin( target);
-      }
-    }
-
-    //Clear old targets
-    targets.clear();
-
-    //Pin/Re-pin new targets
-    for (UintSize t=0; t<newTargets.size(); ++t)
-    {
-      //Make sure its still valid
-      Widget *newTarget = newTargets[t];
-      if (! newTarget->isValid() ) continue;
-
-      //Pin if not an old target, re-pin otherwise
-      if (! newTarget->pinholes[ id ].oldHole) {
-        newTarget->pinholes[ id ].oldHole = true;
-        pin( newTarget );
-      } else repin( newTarget);
-
-      //Mark as old target
-      newTarget->pinholes[ id ].newHole = false;
-      targets.pushBack( newTargets[t] );
+      targets.pushBack( w );
+      w->getAncestors( targets );
     }
   }
 
   void Pin::lift ()
   {
-    //Unpin old targets
-    for (UintSize t=0; t<targets.size(); ++t)
-    {
-      Widget *target = targets[t];
-      if (! target->isValid() ) continue;
-      target->pinholes[ id ].oldHole = false;
-      unpin( target );
-    }
-
-    //Clear old targets
     targets.clear();
   }
 
-  void Event::trigger (Widget *w, bool bubbleUp)
+  Actor* Pin::intersect (const Pin &p)
+  {
+    Actor *top = NULL;
+    Int i = (Int) targets.size()-1;
+    Int pi = (Int) p.targets.size()-1;
+
+    //Walk both target lists parent-to-child
+    for (; i>=0 && pi>=0; --i, --pi)
+    {
+      //Stop when the targets don't match
+      if (targets[i] != p.targets[pi])
+        break;
+
+      //Remember last common target
+      top = targets[i];
+    }
+
+    //Walk other targets child-to-parent until first common
+    for (Int pj=0; pj<=pi; ++pj )
+      if (p.targets[pj]->isValid())
+        otherPin( p.targets[pj] );
+
+    //Walk these targets child-to-parent until first common
+    for (Int j=0; j<=i; ++j)
+      if (targets[j]->isValid())
+        thisPin( targets[j] );
+
+    //Walk the rest of the targets child-to-parent
+    for (Int b=i+1; b<(Int)targets.size(); ++b)
+      bothPins( targets[b] );
+
+    //Return highest common target
+    return top;
+  }
+
+  void Event::trigger (Actor *w, bool bubbleUp)
   {
     //Trigget event on top widget
     this->target = w;
@@ -214,7 +218,7 @@ namespace UI
     if (bubbleUp)
     {
       //Get all parents
-      ArrayList<Widget*> ancestors;
+      ArrayList<Actor*> ancestors;
       w->getAncestors( ancestors );
 
       //Triget event on ancestors
@@ -226,27 +230,27 @@ namespace UI
 
   //--------------------------------------------------------------
 
-  void Widget::setLoc (float x, float y) {
+  void Actor::setLoc (float x, float y) {
     loc.set( x, y );
   }
 
-  void Widget::setLoc (const Vector2 &l) {
+  void Actor::setLoc (const Vector2 &l) {
     setLoc( l.x, l.y );
   }
   
-  void Widget::setSize (float w, float h) {
+  void Actor::setSize (float w, float h) {
     box.set( w, h );
   }
 
-  void Widget::setSize (const Vector2 &s) {
+  void Actor::setSize (const Vector2 &s) {
     setSize( s.x, s.y );
   }
 
-  Matrix4x4 Widget::getGlobalMatrix()
+  Matrix4x4 Actor::getGlobalMatrix()
   {
     Matrix4x4 g = mat;
     
-    Widget *p = getParent();
+    Actor *p = getParent();
     while (p != NULL)
     {
       g = p->getMatrix() * g;
@@ -256,7 +260,7 @@ namespace UI
     return g;
   }
 
-  bool Widget::hitTest (float x, float y)
+  bool Actor::hitTest (float x, float y)
   {
     Matrix4x4 invg = getGlobalMatrix().affineInverse();
     Vector3 hit = invg * Vector3( x,y,0 );
@@ -267,11 +271,11 @@ namespace UI
     return true;
   }
 
-  Widget* Window::findTopWidgetAt (float x, float y)
+  Actor* Scene::findTopActorAt (float x, float y)
   {
     //Traverse backwards
     for (int t=(int)traversal.size()-1; t>=0; --t) {
-      Widget* w = traversal[t];
+      Actor* w = traversal[t];
 
       //Check for hit
       if (w->hitTest(x, y))
@@ -280,5 +284,4 @@ namespace UI
 
     return NULL;
   }
-}
 }

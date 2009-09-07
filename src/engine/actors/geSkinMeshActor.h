@@ -16,11 +16,14 @@ namespace GE
   class MaxCharacter;
   class SkinAnim;
   class SkinTriMesh;
+  class SkinMeshActor;
 
   /*
   ------------------------------------------------
   This actor animates and renders a skinned mesh
   ------------------------------------------------*/
+
+  typedef void (*AnimCallbackFunc) (SkinMeshActor *actor);
 
   class SkinMeshActor : public TriMeshActor
   {
@@ -54,6 +57,8 @@ namespace GE
     Int32 boneIndexAttrib;
     Int32 boneWeightAttrib;
 
+    AnimCallbackFunc animEndFunc;
+
   public:
     virtual ClassPtr getShaderComposingClass() { return Class(SkinMeshActor); }
     virtual void composeShader( Shader *shader );
@@ -77,6 +82,8 @@ namespace GE
     Float getAnimationSpeed ();
     bool isAnimationPlaying ();
     bool isAnimationPaused ();
+
+    void setAnimEndCallback (AnimCallbackFunc func);
   };
 
 

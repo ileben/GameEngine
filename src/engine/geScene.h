@@ -28,10 +28,10 @@ namespace GE
   
   class TravNode
   {public:
-    Actor *actor;
+    Actor3D *actor;
     TravEvent::Enum event;
     TravNode () {}
-    TravNode( Actor *actor, TravEvent::Enum event )
+    TravNode( Actor3D *actor, TravEvent::Enum event )
       { this->actor = actor; this->event = event; }
   };
 
@@ -40,40 +40,35 @@ namespace GE
   A renderable scene - root for object tree
   ----------------------------------------------*/
 
-  class GE_API_ENTRY Scene : public Actor
+  class Scene3D : public Scene
   {
-    DECLARE_SUBCLASS (Scene, Actor); DECLARE_END;
+    DECLARE_SUBCLASS (Scene3D, Scene); DECLARE_END;
     friend class Renderer;
 
   private:
-    bool changed;
-    
     Camera *cam;
     ArrayList< Light* > lights;
     ArrayList< TravNode > traversal;
-    
     Vector3 ambientColor;
 
-  protected:
-    bool hasChanged();
-    void updateChanges();
-
   public:
-    Scene();
-    void markChanged();
+    Scene3D();
+
     void bindCamera( Camera *cam );
     inline const ArrayList< TravNode >* getTraversal();
     inline const ArrayList< Light* >* getLights();
 
     void setAmbientColor (const Vector3 &color);
     const Vector3& getAmbientColor ();
+
+    virtual void updateChanges();
   };
 
-  const ArrayList< TravNode >* Scene::getTraversal() {
+  const ArrayList< TravNode >* Scene3D::getTraversal() {
     return &traversal;
   }
 
-  const ArrayList< Light* >* Scene::getLights() {
+  const ArrayList< Light* >* Scene3D::getLights() {
     return &lights;
   }
 }

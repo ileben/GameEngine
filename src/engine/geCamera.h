@@ -17,9 +17,9 @@ namespace GE
    *  Point-of-view for rendering
    *------------------------------------------*/
 
-  class GE_API_ENTRY Camera : public Actor
+  class GE_API_ENTRY Camera : public Actor3D
   {
-    DECLARE_SUBABSTRACT (Camera, Actor); DECLARE_END;
+    DECLARE_SUBABSTRACT (Camera, Actor3D); DECLARE_END;
     friend class Renderer;
     
   protected:

@@ -271,11 +271,18 @@ public:
       setStatus( "Output file missing!\\nAborted." );
       return MStatus::kFailure;
     }
+
+    //Make sure a mesh node was selected
+    MObject meshNode;
+    if (!findNodeInSelection( MFn::kMesh, meshNode )) {
+      setStatus( "Please select a mesh node!" );
+      return MStatus::kFailure;
+    }
     
     //Export skin pose or static mesh
     if (g_chkExportSkin)
-      exportWithSkin( &outData, &outSize, g_chkExportTangents );
-    else exportNoSkin( &outData, &outSize, g_chkExportTangents );
+      exportWithSkin( meshNode, g_chkExportTangents, &outData, &outSize);
+    else exportNoSkin( meshNode, g_chkExportTangents, &outData, &outSize );
 
     //Make sure something was actually exported
     if (outSize == 0) {
@@ -297,6 +304,126 @@ public:
     outFile.write( sm.getSignature(), sm.getSignatureSize() );
     outFile.write( outData, (int)outSize );
     outFile.close();
+
+    setStatus( "Done." );
+    trace( "Export: done" );
+    return MStatus::kSuccess;
+  }
+};
+
+/*
+---------------------------------------
+Command for the ExportAll button
+---------------------------------------*/
+
+class CmdExportAll : public MPxCommand
+{
+public:
+  static void* creator () { return new CmdExportAll(); }
+
+  bool writePackageFile (void *data, UintSize size, File &file)
+  {
+    //Open output file for writing
+    if (!file.open( "wb" )) {
+      trace( "Export: failed opening output file for writing!" );
+      return false;
+    }
+    
+    //Write data
+    SerializeManager sm;
+    file.write( sm.getSignature(), sm.getSignatureSize() );
+    file.write( data, (int)size );
+    file.close();
+    return true;
+  }
+
+  virtual MStatus doIt (const MArgList &args)
+  {
+    clearStatus();
+    setStatus( "Exporting..." );
+    trace( "\\nExport: starting..." );
+
+    //Make sure an output file was picked
+    CharString outFileName = getTextFieldText( "GTxtFile" );
+    if (outFileName.length() == 0) {
+      setStatus( "Output file missing!\\nAborted." );
+      return MStatus::kFailure;
+    }
+    File outFile( outFileName );
+
+    //Create root actor
+    Actor3D *root = new Actor3D;
+    int meshID = 0;
+
+    //Walk the whole scene graph
+    MItDag dagIt( MItDag::kBreadthFirst );
+    for ( ; !dagIt.isDone(); dagIt.next())
+    {
+      //Get path to the node
+      MDagPath dagPath;
+      dagIt.getPath( dagPath );
+
+      //Skip intermediate objects
+      MFnDagNode dagNode( dagPath );
+      if (dagNode.isIntermediateObject()) continue;
+      if (dagPath.hasFn( MFn::kTransform )) continue;
+
+      //Check if mesh found
+      if (dagPath.hasFn( MFn::kMesh ))
+      {
+        //Export mesh data
+        void *outData = NULL;
+        UintSize outSize = 0;
+        exportNoSkin( dagPath.node(), true, &outData, &outSize );
+
+        //Write to file
+        CharString meshFileName = "mesh" + CharString::FInt( meshID++ );
+        File meshFile = outFile.getRelativeFile( meshFileName );
+        if (!writePackageFile( outData, outSize, meshFile )) {
+          std::free( outData );
+          continue;
+        }
+    
+        //Free mesh data
+        std::free( outData );
+
+        //Find first transform node above it
+        MObject xformObj = dagPath.transform();
+        MFnDagNode xformNode( xformObj );
+
+        //Get transform matrix
+        MMatrix xform = xformNode.transformationMatrix();
+        Matrix4x4 matrix = exportMatrix( xform );
+
+        //Export material
+        Material *material = exportMaterial( dagPath.node() );
+
+        //Create a new actor for this mesh
+        TriMeshActor *actor = new TriMeshActor;
+        actor->setMesh( meshFileName );
+        actor->setMatrix( matrix );
+        actor->setMaterial( material );
+        actor->setParent( root );
+      }
+
+      /*
+      //Output the node path and api type
+      CharString apiStr = dagPath.node().apiTypeStr();
+      trace( CharString("findNodeInSelection: ")
+             + dagPath.fullPathName().asChar()
+             + " (" + apiStr + ")" );
+      */
+    }
+
+    //Export actor data
+    void *outData = NULL;
+    UintSize outSize = 0;
+    SerializeManager sm;
+    sm.save( root, &outData, &outSize );
+
+    //Write to file
+    writePackageFile( outData, outSize, outFile );
+    std::free( outData );
 
     setStatus( "Done." );
     trace( "Export: done" );
@@ -669,6 +796,7 @@ MStatus initializePlugin ( MObject obj )
   //Init plugin
 	MFnPlugin plugin( obj, "RedPill Studios", "0.1", "Any");
   plugin.registerCommand( "GCmdExport", CmdExport::creator );
+  plugin.registerCommand( "GCmdExportAll", CmdExportAll::creator );
   plugin.registerCommand( "GCmdRestoreGui", CmdRestoreGui::creator );
   plugin.registerCommand( "GCmdSkinOn", CmdSkinOn::creator );
   plugin.registerCommand( "GCmdSkinOff", CmdSkinOff::creator );
@@ -714,6 +842,7 @@ MStatus uninitializePlugin( MObject obj)
   //Deinit plugin
   MFnPlugin plugin( obj );
   plugin.deregisterCommand( "GCmdExport" );
+  plugin.deregisterCommand( "GCmdExportAll" );
   plugin.deregisterCommand( "GCmdRestoreGui" );
   plugin.deregisterCommand( "GCmdSkinOn" );
   plugin.deregisterCommand( "GCmdSkinOff" );

@@ -11,9 +11,9 @@
 
 namespace GE
 {
-  class GE_API_ENTRY Label : public UIWidget
+  class GE_API_ENTRY Label : public Widget
   {
-    DECLARE_SUBCLASS (Label, UIWidget);
+    DECLARE_SUBCLASS (Label, Widget);
     DECLARE_END;
     
   protected:

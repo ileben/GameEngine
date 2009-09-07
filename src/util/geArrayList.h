@@ -425,6 +425,7 @@ namespace GE
     }
 
     void loaded (void *param) {
+      GenericArrayList::loaded( param );
       eltCls = IClass::FromID( eltClsID );
     }
 
@@ -469,6 +470,7 @@ namespace GE
     };
 
     void loaded (void *param) {
+      GenericArrayList::loaded( param );
       eltCls = IClass::FromID( eltClsID );
     }
 
@@ -617,6 +619,9 @@ namespace GE
     {
       destruct( this->elements, this->sz );
     }
+
+    T& operator[]( UintSize index ) const
+    { return ((T*)elements)[ index ]; }
     
     virtual void construct( void *dst, UintSize n )
     {
@@ -662,7 +667,7 @@ namespace GE
     
     ObjArrayList (UintSize newCap)
       : TArrayList <T,GenericObjArrayList> (newCap, Class(T)) {}
-    };
+  };
 
   
   /*

@@ -30,6 +30,27 @@ namespace GE
   {
     return &members;
   }
+
+  void IClass::getAllMembers (std::deque<IMember*> &members)
+  {
+    ClassPtr cls = this;
+    while (true)
+    {
+      //Walk class members
+      const MTable *mtable = cls->getMembers();
+      for (UintSize m=0; m<mtable->size(); ++m)
+      {
+        //Enqueue members with info function last
+        if (mtable->at(m)->hasInfoFunc())
+          members.push_back( mtable->at( m ) );
+        else members.push_front( mtable->at( m ) );
+      }
+
+      //Go to parent class
+      if (cls->getSuper() == cls) break;
+      cls = cls->getSuper();
+    }
+  }
   
   void IClass::Classify (ClassPtr cls)
   {

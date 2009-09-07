@@ -4,6 +4,7 @@
 #include "util/geUtil.h"
 #include "math/geVectors.h"
 #include "math/geMatrix.h"
+#include "ui/uiActor.h"
 #include "geObject.h"
 #include "geMaterial.h"
 
@@ -14,23 +15,26 @@ namespace GE
   Forward declarations
   -----------------------------------------*/
 
-  class Material;
-  class Scene;
+  class Scene3D;
   class Kernel;
   class Renderer;
+  class Material;
 
   /*
   -------------------------------------------------
-  Actor represents a single node to be placed
+  Actor3D represents a single node to be placed
   in the scene tree. It can be a shape, camera
   or any other kind of actor (derived from the
   base). Transformation matrix allows for
   additional transformation of the object content
   -------------------------------------------------*/
   
-  class GE_API_ENTRY Actor : public Object
+  class GE_API_ENTRY Actor3D : public Actor
   {
-    DECLARE_SUBCLASS (Actor, Object); DECLARE_END;
+    DECLARE_SERIAL_SUBCLASS( Actor3D, Actor );
+    DECLARE_DATAVAR( renderable );
+    DECLARE_OBJPTR( material );
+    DECLARE_END;
     
     friend class Kernel;
     friend class Renderer;
@@ -38,27 +42,22 @@ namespace GE
   private:
 
     Material *material;
-    ArrayList<Actor*> children;
     
   protected:
 
-    Matrix4x4 actor2world;
-    Actor *parent;
-    Float mass;
     bool renderable;
 
   public:
 
-    Actor();
-    virtual ~Actor();
+    Actor3D (SM *sm);
+    Actor3D ();
+    virtual ~Actor3D ();
     
     //Transform matrix manipulation
     virtual void onMatrixChanged ();
     void mulMatrixLeft (const Matrix4x4 &m);
     void mulMatrixRight (const Matrix4x4 &m);
     void setMatrix (const Matrix4x4 &m);
-    const Matrix4x4& getMatrix () { return actor2world; }
-    Matrix4x4 getWorldMatrix ();
     
     //Transform helpers
     void translate (Float x, Float y, Float z);
@@ -74,16 +73,11 @@ namespace GE
     Material* getMaterial();
     
     //Scene tree handling
-    void addChild (Actor* o);
-    void removeChild (Actor* o);
-    const ArrayList<Actor*>* getChildren ();
-    Actor* getParent ();
-    Scene* getScene();
     void setIsRenderable (bool renderable);
     bool isRenderable ();
 
     //Shader composing
-    virtual ClassPtr getShaderComposingClass() { return Class(Actor); }
+    virtual ClassPtr getShaderComposingClass() { return Class(Actor3D); }
     virtual void composeShader( Shader *shader ) {}
     
     //Rendering steps (as invoked by Renderer):
