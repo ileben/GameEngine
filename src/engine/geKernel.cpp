@@ -673,7 +673,7 @@ namespace GE
   {
     //Open the file
     File file( filename );
-    if (!file.open("rb")) {
+    if (!file.open( FileAccess::Read, FileCondition::MustExist )) {
       std::cout << "Failed opening file " << filename.buffer() << "!" << std::endl;
       return false; }
 

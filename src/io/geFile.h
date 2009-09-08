@@ -5,15 +5,51 @@
 
 namespace GE
 {
+  namespace FileAccess {
+    enum Enum {
+      Read,
+      Write,
+      ReadWrite
+    };
+  }
+
+  namespace FileCondition {
+    enum Enum {
+      None               = (0     ),
+      MustExist          = (1     ),
+      MustNotExist       = (1 << 1),
+      Truncate           = (1 << 2)
+    };
+  }
+
+  namespace FileSeekOrigin {
+    enum Enum {
+      Start,
+      Current,
+      End
+    };
+  }
+
   class File
   {
   protected:
     bool lilend;
     String name;
     String path;
-    FILE *handle;
     void findEndian();
+
+  #if defined(WIN32)
+    HANDLE handle;
+    #define GE_INVALID_FILE_HANDLE  INVALID_HANDLE_VALUE
+  #else
+    FILE* handle;
+    #define GE_INVALID_FILE_HANDLE  NULL
+  #endif
     
+    bool isPathAbs (const String &path);
+    String makePathNative (const String &path);
+    bool createDirectory (const String &p);
+
   public:
     File();
     File( const File &f );
@@ -21,29 +57,36 @@ namespace GE
     ~File();
     
     File& operator=( const File &f );
+
+    #if defined(WIN32)
+    HANDLE getHandle() { return handle; }
+    #else
+    FILE* getHandle() { return handle; }
+    #endif
     
-    String& getName();
+    String getName(bool withExtension=true);
     String getPath();
     String getPathName();
-    FILE* getHandle();
+    String getExtension();
     UintSize getSize();
-    bool isDirectory();
-    bool isOpen();
-    bool exists();
-    
-    bool isRoot();
     String getRelationTo( const File &f );
     File getRelativeFile( const String &relation );
     File getSuperFile();
     void getSubFiles( ArrayList<File> *outFiles );
-    
+
+    bool isRoot();
+    bool isOpen();
+    bool isDirectory();
+    bool exists();
     bool remove();
     bool rename( const String &fullpath );
-    bool open( const String &mode );
+
+    bool createPath();
+    bool open (FileAccess::Enum access, FileCondition::Enum condition);
     void close();
-    
-    UintSize read( void *data, UintSize size, int count );
-    UintSize write( const void *data, UintSize size, int count );
+
+    bool setPointer (FileSeekOrigin::Enum origin, UintSize distance);
+    UintSize getPointer ();
     
     UintSize read( void *data, UintSize size );
     UintSize write( const void *data, UintSize size );
@@ -52,15 +95,6 @@ namespace GE
     UintSize read( ByteString &str, UintSize size );
     UintSize write( const ByteString &str );
     
-    UintSize readLE( void *data, UintSize size );
-    UintSize readBE( void *data, UintSize size );
-    UintSize writeLE( const void *data, UintSize size );
-    UintSize writeBE( const void *data, UintSize size );
-    
-    bool seek( int offset, int whence );
-    int tell();
-    
-    //statics
     static File GetModule();
     static File GetHome();
   };

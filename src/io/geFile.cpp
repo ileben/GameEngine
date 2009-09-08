@@ -32,261 +32,100 @@ namespace GE
     }
   }
 
-  void File::findEndian()
+#if defined(WIN32)
+
+  bool File::isPathAbs (const String &p)
   {
-    unsigned int a = 1;
-    lilend = ( ((unsigned char*)&a)[0] == 1 );
-  }
-  
-  File::File() : handle(NULL) {
-    findEndian();
+    return (p.sub(1,2) != ":/");
   }
 
-  File::File( const File &f )
+  String File::makePathNative (const String &p)
   {
-    lilend = f.lilend;
-    name = f.name;
-    path = f.path;
-    handle = f.handle;
+    return p.sub(1).findReplace("/", "\\");
   }
 
-  File& File::operator=( const File &f )
-  {
-    lilend = f.lilend;
-    name = f.name;
-    path = f.path;
-    handle = f.handle;
-    return *this;
-  }
-  
-  File::File( const String &newPath ) : handle(NULL)
-  {
-    findEndian();
-
-    ArrayList<String> pathNames;
-    ArrayList<String> truePath;
-
-    //Make all forward-slashes
-    String SLASH = "/";
-    path = newPath;
-    path.findReplace( "\\", SLASH );
-
-
-    //Break the folder/file names apart
-    //-------------------------------------
-    #if defined( WIN32 )
-    if( path.left(1) != SLASH && path.sub(1,2) != ":/" )
-    #else
-    if( path.left(1) != SLASH )
-    #endif
-    {
-      //Try fiding current working directory
-      char *cwd = getcwd( NULL, 0 );
-      if( cwd == NULL )
-        { path=""; name=""; return; }
-
-      String strCwd = cwd;
-      free( cwd );
-      
-      //Tokenize working dir names
-      strCwd.findReplace( "\\", SLASH );
-      strCwd.tokenize( SLASH, &pathNames );
-    }
-    
-    //Tokenize given path names
-    path.tokenize( SLASH, &pathNames );
-    
-
-    //Resolve '..'s and '.'s
-    //-----------------------------------
-    for( UintSize s=0; s<pathNames.size(); s++ )
-    {
-      String &name = pathNames[ s ];
-      
-      //remove previous dir on ".."
-      if( name == ".." ){
-        if( truePath.size() > 0 )
-          truePath.popBack();
-        continue;
-      }
-      
-      //add dir if not "."
-      if( name != "." && name != "" )
-        truePath.pushBack( name );
-    }
-    
-    //Compose final path and name
-    //---------------------------------
-    if( truePath.size() == 0 ){
-      
-      path = "";
-      name = "/";
-      
-    }else{
-      
-      path = "/";
-      for( UintSize t=0; t<truePath.size()-1; t++ )
-        path += truePath[ t ] + "/";
-      name = truePath.last();
-    }
-  }
-  
-  File::~File()
-  {
-  }
-  
-  String& File::getName()
-  {
-    return name;
-  }
-  
-  String File::getPath()
-  {
-    #if defined(WIN32)
-    return path.sub(1).findReplace("/", "\\");
-    #else
-    return path;
-    #endif
-  }
-  
-  String File::getPathName()
-  {
-    return getPath() + getName();
-  }
-  
-  FILE* File::getHandle()
-  {
-    return handle;
-  }
-  
   UintSize File::getSize()
   {
-    String pathname = getPathName();
+    if (!isOpen()) return 0;
+
+    LARGE_INTEGER size;
+    GetFileSizeEx( handle, &size );
     
-    struct stat fs;
-    if (stat(pathname.toCSTR().buffer(), &fs) == 0)
-      return fs.st_size;
-    else
-      return -1;
+    return (UintSize) size.QuadPart;
   }
-  
-  bool File::isDirectory()
-  {
-    String pathname = getPathName();
-    
-    struct stat fs;
-    if (stat(pathname.toCSTR().buffer(), &fs) == 0)
-      return (fs.st_mode & S_IFDIR) != 0;
-    else
-      return false;
-  }
-  
-  bool File::isOpen()
-  {
-    return (handle != NULL);
-  }
-  
+
   bool File::exists()
   {
-    #if defined( WIN32 )
-    return false;
-    #else
-    String pathname = getPathName();
-    return access(pathname.toCSTR().buffer(), F_OK) == 0;
-    #endif
+    CharString longpath = "\\\\?\\" + getPathName();
+    DWORD atts = GetFileAttributes( longpath.buffer() );
+    return atts != INVALID_FILE_ATTRIBUTES;
   }
-  
-  bool File::isRoot()
+
+  bool File::isDirectory()
   {
-    return name == (String)"/";
+    CharString longpath = "\\\\?\\" + getPathName();
+    DWORD atts = GetFileAttributes( longpath.buffer() );
+    return (atts & FILE_ATTRIBUTE_DIRECTORY) != 0;
   }
-  
-  String File::getRelationTo( const File &f )
+
+  bool File::createDirectory (const String &p)
   {
-    int x = 0, y = 0;
-    String out;
-    
-    //get "/" after last common dir
-    while (true) {
-      
-      int newx = f.path.find("/", x+1);
-      if (newx == -1) break;
-      String namex = f.path.sub(x+1, newx-x-1);
-      
-      int newy = path.find("/", y+1);
-      if (newy == -1) break;
-      String namey = path.sub(y+1, newy-y-1);
-      
-      if (namex != namey) break;
-      x = newx; y = newy;
+    CharString longpath = "\\\\?\\" + p;
+    return (CreateDirectory( longpath.buffer(), NULL ) == TRUE);
+  }
+
+  bool File::open (FileAccess::Enum access, FileCondition::Enum condition)
+  {
+    DWORD winAccess = 0;
+    DWORD winCondition = 0;
+
+    //Setup access permissions
+    switch (access) {
+    case FileAccess::Read:
+      winAccess = GENERIC_READ;
+      break;
+    case FileAccess::Write:    
+      winAccess = GENERIC_WRITE;
+      break;
+    case FileAccess::ReadWrite:
+      winAccess = GENERIC_READ | GENERIC_WRITE;
+      break;
     }
-    
-    //add "../" for each different dir of [f]
-    while (true) {
-      
-      int newx = f.path.find("/", x+1);
-      if (newx == -1) break;
-      out += "../";
-      x = newx;
+
+    //Setup creation disposition
+    if (condition & FileCondition::MustNotExist) {
+      winCondition = CREATE_NEW;
     }
-          
-    //add names for each different dir of [this]
-    out += path.sub(y+1);
-    out += name;
-    
-    #if defined( WIN32 )
-    out.findReplace( "/", "\\" );
-    #endif
-    
-    return out;
+    else if (condition & FileCondition::MustExist) {
+      if (condition & FileCondition::Truncate)
+        winCondition = TRUNCATE_EXISTING;
+      else winCondition = OPEN_EXISTING;
+    }
+    else {
+      if (condition & FileCondition::Truncate)
+        winCondition = CREATE_ALWAYS;
+      else winCondition = OPEN_ALWAYS;
+    }
+
+    //Create the file
+    CharString longpath = "\\\\?\\" + getPathName();
+    handle = CreateFile( longpath.buffer(), winAccess, 0, NULL, winCondition, 0, NULL );
+    return (handle != INVALID_HANDLE_VALUE);
   }
-  
-  File File::getRelativeFile( const String &relation )
+
+  void File::close()
   {
-    String unixrel = relation;
-    unixrel.findReplace( "\\", "/" );
-    
-    #if defined(WIN32)
-    bool isAbsolute = unixrel.sub( 1,2 ) == ":/";
-    #else
-    bool isAbsolute = unixrel.left( 1 ) == "/";
-    #endif
-    
-    if (isAbsolute)
-      return File( relation );
-    else
-      return File( getPath() + relation );
-  }
-  
-  File File::getSuperFile()
-  {
-    //Check if current file is root
-    if( name == (String)"/" )
-      return File( "/" );
-    
-    //Check if parent folder is root
-    if( path == (String)"/" ){
-      
-      //Root directory has no name but "/"
-      return File( "/" );
-      
-    }else{
-      
-      //Skip root slash on windows to get native path
-      #if defined(WIN32)
-      return File( path.sub(1) );
-      #else
-      return File( path );
-      #endif
+    if (handle != INVALID_HANDLE_VALUE) {
+      CloseHandle( handle );
+      handle = INVALID_HANDLE_VALUE;
     }
   }
-  
+
   void File::getSubFiles( ArrayList<File> *outFiles )
   {
     String SLASH = "/";		
     String pathname = path+name;
     
-    #if defined(WIN32)
     //Windows doesn't have a unique API
     //for searching root "disk" files
     //and regular files!
@@ -371,8 +210,153 @@ namespace GE
       //close FindData handle
       FindClose( findHandle );
     }
+  }
+
+  bool File::remove()
+  {
+    CharString longpath = "\\\\?\\" + getPathName();
     
-    #else
+    if (isDirectory())
+      return (RemoveDirectory( longpath.buffer() ) == TRUE);
+    else
+      return (DeleteFile( longpath.buffer() ) == TRUE);
+  }
+  
+  bool File::rename (const String &name)
+  {
+    File newfile( name );
+    CharString oldlongpath = "\\\\?\\" + getPathName();
+    CharString newlongpath = "\\\\?\\" + newfile.getPathName();
+    return (MoveFile( oldlongpath.buffer(), newlongpath.buffer() ) == TRUE);
+  }
+	
+  UintSize File::read (void *data, UintSize size)
+  {
+    DWORD numRead = 0;
+    ReadFile( handle, data, (DWORD) size, &numRead, NULL );
+    return (UintSize) numRead;
+  }
+  
+  UintSize File::write (const void *data, UintSize size)
+  {
+    DWORD numWritten = 0;
+    WriteFile( handle, data, (DWORD) size, &numWritten, NULL );
+    return (UintSize) numWritten;
+  }
+
+  bool File::setPointer (FileSeekOrigin::Enum origin, UintSize distance)
+  {
+    DWORD winOrigin = 0;
+    
+    switch (origin) {
+    case FileSeekOrigin::Start: winOrigin = FILE_BEGIN; break;
+    case FileSeekOrigin::Current: winOrigin = FILE_CURRENT; break;
+    case FileSeekOrigin::End: winOrigin = FILE_END; break;
+    }
+
+    LARGE_INTEGER winDist;
+    winDist.QuadPart = (LONGLONG) distance;
+    return (SetFilePointerEx( handle, winDist, NULL, winOrigin ) == TRUE);
+  }
+  
+  UintSize File::getPointer()
+  {
+    LARGE_INTEGER winPos;
+    LARGE_INTEGER winDist;
+    winDist.QuadPart = 0;
+    SetFilePointerEx( handle, winDist, &winPos, FILE_CURRENT );
+    return (UintSize) winPos.QuadPart;
+  }
+  
+
+#else
+
+  bool File::isPathAbs (const String &p)
+  {
+    return (p.left(1) != "/")
+  }
+
+  String File::makePathNative (const String &p)
+  {
+    return p;
+  }
+
+  UintSize File::getSize();
+  {
+    if (!isOpen()) return 0;
+
+    struct stat fs;
+    CharString pathname = getPathName();
+    if (stat(pathname.buffer(), &fs) == 0)
+      return fs.st_size;
+    else return 0;
+  }
+
+  bool File::isDirectory()
+  {
+    struct stat fs;
+    CharString pathname = getPathName();
+    if (stat(pathname.buffer(), &fs) == 0)
+      return (fs.st_mode & S_IFDIR) != 0;
+    else return false;
+  }
+
+  bool File::exists()
+  {
+    CharString pathname = getPathName();
+    return access( pathname.buffer(), F_OK ) == 0;
+  }
+
+  bool File::createDirectory (const String &p)
+  {
+    return (mkdir( p.toCSTR().buffer(), 0x0777 ) != 0)
+  }
+
+  bool File::open (FileAccess::Enum access, FileCondition::Enum condition)
+  {
+    CharString unixAccess;
+
+    switch (access)
+    {
+    case FileAccess::Read:
+      unixAccess = "rb";
+      break;
+
+    case FileAccess::Write:
+      
+      if (condition & FileCondition::Truncate
+        unixAccess = "wb";
+      else
+        unixAccess = "ab";
+      break;
+
+    case FileAccess::ReadWrite:
+      
+      if (condition & FileCondition::Truncate)
+        unixAccess = "wb+";
+      else
+        unixAccess = "ab+";
+      break;
+    }
+
+    CharString pathname = getPathName();
+    handle = fopen( pathname.buffer(), unixAccess.buffer() );
+    return (handle != NULL);
+  }
+
+  
+  void File::close()
+  {
+    if (handle != NULL) {
+      fclose(handle);
+      handle = NULL;
+    }
+  }
+
+  void File::getSubFiles( ArrayList<File> *outFiles )
+  {
+    String SLASH = "/";		
+    String pathname = path+name;
     
     //open searching directory
     DIR *newDir = opendir( pathname.toCSTR().buffer() );
@@ -409,55 +393,20 @@ namespace GE
     
     //close searching directory
     closedir( newDir );
-    #endif
   }
-  
+
   bool File::remove()
   {
-    if (::remove(getPathName().toCSTR().buffer()) == 0)
-      return true;
-    else
-      return false;
+    CharString pathname = getPathName();
+    return (::remove( pathname.buffer() ) == 0)
   }
   
   bool File::rename(const String &name)
   {
-    File fnew(name); 
-    if (::rename(getPathName().toCSTR().buffer(),
-                 fnew.getPathName().toCSTR().buffer()) == 0)
-        return true;
-    else
-      return false;
-  }
-	
-  bool File::open(const String &mode)
-  {
-    String f = getPathName();
-    handle = fopen(f.toCSTR().buffer(),
-                   mode.toCSTR().buffer());
-    
-    if (handle == NULL)
-      return false;
-    else
-      return true;
-  }
-  
-  void File::close()
-  {
-    if (handle != NULL) {
-      fclose(handle);
-      handle = NULL;
-    }
-  }
-  
-  UintSize File::read (void *data, UintSize size, int count)
-  {
-    return fread( data, size, count, handle );
-  }
-  
-  UintSize File::write (const void *data, UintSize size, int count)
-  {
-    return fwrite( data, size, count, handle );
+    File newFile(name);
+    CharString oldName = getPathName();
+    CharString newName = newFile.getPathName();
+    return (::rename( oldName.buffer(), newName.buffer() ) == 0)
   }
   
   UintSize File::read (void *data, UintSize size)
@@ -469,11 +418,253 @@ namespace GE
   {
     return fwrite( data, 1, size, handle );
   }
+
+  bool File::setPointer (FileSeekOrigin::Enum origin, UintSize distance)
+  {
+    int unixOrigin = 0;
+    
+    switch (origin) {
+    case FileSeekOrigin::Start: unixOrigin = SEEK_SET; break;
+    case FileSeekOrigin::Current: unixOrigin = SEEK_CUR; break;
+    case FileSeekOrigin::End: unixOrigin = SEEK_END; break;
+    }
+
+    return (fseek( handle, (long int)offset, unixOrigin) == 0);
+  }
+  
+  UintSize File::getPointer()
+  {
+    return (UintSize) ftell( handle );
+  }
+
+#endif
+
+
+  void File::findEndian()
+  {
+    unsigned int a = 1;
+    lilend = ( ((unsigned char*)&a)[0] == 1 );
+  }
+  
+  File::File()
+  {
+    handle = GE_INVALID_FILE_HANDLE;
+    findEndian();
+  }
+
+  File::File( const File &f )
+  {
+    lilend = f.lilend;
+    name = f.name;
+    path = f.path;
+    handle = f.handle;
+  }
+
+  File& File::operator=( const File &f )
+  {
+    lilend = f.lilend;
+    name = f.name;
+    path = f.path;
+    handle = f.handle;
+    return *this;
+  }
+  
+  File::File( const String &newPath )
+  {
+    handle = GE_INVALID_FILE_HANDLE;
+    findEndian();
+
+    ArrayList<String> pathNames;
+    ArrayList<String> truePath;
+
+    //Make all forward-slashes
+    String SLASH = "/";
+    path = newPath;
+    path.findReplace( "\\", SLASH );
+
+    //Break the folder/file names apart
+    //-------------------------------------
+    if (isPathAbs( path ))
+    {
+      //Try finding current working directory
+      char *cwd = getcwd( NULL, 0 );
+      if( cwd == NULL )
+        { path=""; name=""; return; }
+
+      String strCwd = cwd;
+      free( cwd );
+      
+      //Tokenize working dir names
+      strCwd.findReplace( "\\", SLASH );
+      strCwd.tokenize( SLASH, &pathNames );
+    }
+    
+    //Tokenize given path names
+    path.tokenize( SLASH, &pathNames );
+    
+
+    //Resolve '..'s and '.'s
+    //-----------------------------------
+    for( UintSize s=0; s<pathNames.size(); s++ )
+    {
+      String &name = pathNames[ s ];
+      
+      //remove previous dir on ".."
+      if( name == ".." ){
+        if( truePath.size() > 0 )
+          truePath.popBack();
+        continue;
+      }
+      
+      //add dir if not "."
+      if( name != "." && name != "" )
+        truePath.pushBack( name );
+    }
+    
+    //Compose final path and name
+    //---------------------------------
+    if( truePath.size() == 0 ){
+      
+      path = "";
+      name = "/";
+      
+    }else{
+      
+      path = "/";
+      for( UintSize t=0; t<truePath.size()-1; t++ )
+        path += truePath[ t ] + "/";
+      name = truePath.last();
+    }
+  }
+  
+  File::~File()
+  {
+  }
+
+  String File::getPath()
+  {
+    return makePathNative( path );
+  }
+  
+  String File::getName (bool withExtension)
+  {
+    if (withExtension) return name;
+    int dot = name.findRev( "." );
+    if (dot == -1) return name;
+    return name.left( dot );
+  }
+
+  String File::getExtension ()
+  {
+    int dot = name.findRev( "." );
+    if (dot == -1) return "";
+    return name.sub( dot );
+  }
+  
+  String File::getPathName()
+  {
+    return getPath() + getName();
+  }
+
+  bool File::isOpen()
+  {
+    return (handle != GE_INVALID_FILE_HANDLE);
+  }
+  
+  bool File::isRoot()
+  {
+    return name == (String)"/";
+  }
+  
+  String File::getRelationTo( const File &f )
+  {
+    int x = 0, y = 0;
+    String out;
+    
+    //get "/" after last common dir
+    while (true) {
+      
+      int newx = f.path.find("/", x+1);
+      if (newx == -1) break;
+      String namex = f.path.sub(x+1, newx-x-1);
+      
+      int newy = path.find("/", y+1);
+      if (newy == -1) break;
+      String namey = path.sub(y+1, newy-y-1);
+      
+      if (namex != namey) break;
+      x = newx; y = newy;
+    }
+    
+    //add "../" for each different dir of [f]
+    while (true) {
+      
+      int newx = f.path.find("/", x+1);
+      if (newx == -1) break;
+      out += "../";
+      x = newx;
+    }
+          
+    //add names for each different dir of [this]
+    out += path.sub(y+1);
+    out += name;
+    
+    #if defined( WIN32 )
+    out.findReplace( "/", "\\" );
+    #endif
+    
+    return out;
+  }
+  
+  File File::getRelativeFile( const String &relation )
+  {
+    String unixrel = relation;
+    unixrel.findReplace( "\\", "/" );
+    
+    if (isPathAbs( unixrel ))
+      return File( relation );
+    else return File( getPath() + relation );
+  }
+  
+  File File::getSuperFile()
+  {
+    //Check if current file is root
+    if (isRoot())
+      return File( "/" );
+    
+    //Check if parent folder is root
+    if (path == "/")
+      return File( "/" );
+    
+    //Take only path and use it as full name
+    return File( makePathNative( path ) );
+  }
+
+  bool File::createPath()
+  {
+    //Find first existing directory in the path
+    ArrayList<String> dirs;
+    File dir( getPath() );
+    while (!dir.exists())
+    {
+      //Stop if root reached
+      if (dir.isRoot()) return false;
+      dirs.pushBack( dir.getPathName() );
+      dir = dir.getSuperFile();
+    }
+
+    //Create all the missing directories
+    for (UintSize d=0; d<dirs.size(); ++d)
+      if (!createDirectory( dirs[d] ))
+        return false;
+
+    return true;
+  }
   
   ByteString File::read (UintSize size)
   {
     ByteString out( (int)size );
-    UintSize r = fread( out.buf, 1, size, handle );
+    UintSize r = read( out.buf, size );
     out.size = (int) r;
     return out;
   }
@@ -481,58 +672,16 @@ namespace GE
   UintSize File::read (ByteString &str, UintSize size)
   {
     str.reserveAndCopy( str.length() + (int)size );
-    UintSize r = fread( str.buf, 1, size, handle );
+    UintSize r = read( str.buf, size );
     str.size += (int) size;
     return r;
   }
   
   UintSize File::write (const ByteString &str)
   {
-    return fwrite( str.buf, 1, str.size, handle );
+    return write( str.buf, str.size );
   }
   
-  UintSize File::readLE (void *data, UintSize size)
-  {
-    UintSize r = fread( data, 1, size, handle );
-    if (!lilend) flipBytes( data, (int)size );
-    return r;
-  }
-
-  UintSize File::readBE (void *data, UintSize size)
-  {
-    UintSize r = (UintSize) fread( data, 1, size, handle );
-    if (lilend) flipBytes( data, (int)size );
-    return r;
-  }
-
-  UintSize File::writeLE (const void *data, UintSize size)
-  {
-    char *temp = new char[size];
-    memcpy(temp, data, size);
-    if (!lilend) flipBytes( temp, (int)size );
-    return fwrite( temp, 1, size, handle );
-  }
-
-  UintSize File::writeBE (const void *data, UintSize size)
-  {
-    char *temp = new char[size];
-    memcpy(temp, data, size);
-    if (lilend) flipBytes( temp, (int)size );
-    return fwrite( temp, 1, size, handle );
-  }
-  
-  bool File::seek(int offset, int whence)
-  {
-    return (fseek(handle, offset, whence) == 0 ? true : false);
-  }
-  
-  int File::tell()
-  {
-    return ftell(handle);
-  }
-    
-  //statics
-  /////////////////////////////////////////////////////////////////
   File File::GetModule()
   {
     #if defined(WIN32)

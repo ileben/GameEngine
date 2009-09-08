@@ -293,7 +293,7 @@ public:
 
     //Open output file for writing
     File outFile( outFileName );
-    if (!outFile.open( "wb" )) {
+    if (!outFile.open( FileAccess::Write, FileCondition::Truncate )) {
       setStatus( "Failed writing to file." );
       trace( "Export: failed opening output file for writing!" );
       return MStatus::kFailure;
@@ -323,8 +323,12 @@ public:
 
   bool writePackageFile (void *data, UintSize size, File &file)
   {
+    //Create missing directories
+    if (!file.createPath())
+      return false;
+
     //Open output file for writing
-    if (!file.open( "wb" )) {
+    if (!file.open( FileAccess::Write, FileCondition::Truncate )) {
       trace( "Export: failed opening output file for writing!" );
       return false;
     }
@@ -377,8 +381,8 @@ public:
         exportNoSkin( dagPath.node(), true, &outData, &outSize );
 
         //Write to file
-        CharString meshFileName = "mesh" + CharString::FInt( meshID++ );
-        File meshFile = outFile.getRelativeFile( meshFileName );
+        CharString meshName = outFile.getName(false) + "_mesh" + CharString::FInt( meshID++ );
+        File meshFile = outFile.getRelativeFile( "Meshes/" + meshName );
         if (!writePackageFile( outData, outSize, meshFile )) {
           std::free( outData );
           continue;
@@ -400,7 +404,7 @@ public:
 
         //Create a new actor for this mesh
         TriMeshActor *actor = new TriMeshActor;
-        actor->setMesh( meshFileName );
+        actor->setMesh( meshName );
         actor->setMatrix( matrix );
         actor->setMaterial( material );
         actor->setParent( root );
@@ -558,7 +562,7 @@ class CmdBrowseSkinFile : public MPxCommand
 
     //Open the file
     File file( result.asChar() );
-    if (!file.open("rb")) {
+    if (!file.open( FileAccess::Read, FileCondition::MustExist )) {
       setStatus( "Failed opening file!" );
       return MStatus::kFailure; }
 
@@ -719,7 +723,7 @@ class CmdSaveChar : public MPxCommand
 
     //Open output file for writing
     File outFile( g_skinFileName );
-    if (!outFile.open( "wb" )) {
+    if (!outFile.open( FileAccess::Write, FileCondition::Truncate )) {
       setStatus( "Failed writing to file." );
       trace( "Export: failed opening output file for writing!" );
       return MStatus::kFailure;

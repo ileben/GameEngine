@@ -390,7 +390,7 @@ bool loadPackage (const CharString &fileName)
 {
   //Read the file
   File file( fileName );
-  if( !file.open( "rb" )) {
+  if( !file.open( FileAccess::Read, FileCondition::MustExist )) {
     printf( "Failed opening file '%s'!\n", fileName.buffer() );
     return false;
   }
@@ -620,7 +620,7 @@ int main (int argc, char **argv)
   //Setup depth-of-field
   //renderer->setDofParams( 50, 50, 150, 150 );
   renderer->setDofParams( 120, 20, 50, 50 );
-  renderer->setIsDofEnabled( true );
+  //renderer->setIsDofEnabled( true );
 
   //Setup 3D scene
   scene = kernel.loadSceneFile( "export.pak" );
@@ -750,9 +750,9 @@ int main (int argc, char **argv)
 
   cam3D = new Camera3D;
   cam3D->setCenter( center );
-  cam3D->orbitV( Util::DegToRad( 10 ) );
-  cam3D->orbitH( Util::DegToRad( -25 ) );
-  cam3D->translate( 50, 60, -40 );
+  cam3D->orbitV( Util::DegToRad( 35 ) );
+  cam3D->orbitH( Util::DegToRad( -40 ) );
+  cam3D->translate( 80, 80, -80 );
   cam3D->setNearClipPlane( 1.0f );
   cam3D->setFarClipPlane( 3000.0f );
 

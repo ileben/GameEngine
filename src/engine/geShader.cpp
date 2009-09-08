@@ -147,7 +147,7 @@ namespace GE
   {
     //Open the vertex file
     File fileVertex( fileNameVertex );
-    if (!fileVertex.open( "rb" )) {
+    if (!fileVertex.open( FileAccess::Read, FileCondition::MustExist )) {
       printf( "Failed loading vertex shader from '%s'\n",
         fileNameVertex.toCSTR().buffer() );
       return false;
@@ -155,7 +155,7 @@ namespace GE
 
     //Open the fragment file
     File fileFragment( fileNameFragment );
-    if (!fileFragment.open( "rb" )) {
+    if (!fileFragment.open( FileAccess::Read, FileCondition::MustExist )) {
       printf( "Failed loading vertex shader from '%s'\n",
         fileNameVertex.toCSTR().buffer() );
       return false;
