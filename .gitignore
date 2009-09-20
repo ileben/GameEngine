@@ -32,4 +32,6 @@ projects/visualc8/Debug_2008
 projects/visualc8/Release_2008
 projects/visualc8/Debug_2009
 projects/visualc8/Release_2009
+projects/visualc9/Debug
+projects/visualc9/Release
 *.embedded
