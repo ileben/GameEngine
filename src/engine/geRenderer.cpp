@@ -1077,7 +1077,7 @@ namespace GE
     glDrawBuffer( GL_COLOR_ATTACHMENT1 );
 
     shaderDofDown->use();
-    glUniform2f( uDofDownPixelSize, 1.0/winW, 1.0/winH );
+    glUniform2f( uDofDownPixelSize, 1.0f/winW, 1.0f/winH );
     glUniform4f( uDofDownDofParams, focusZ, focusW, farW, nearW );
 
     glUniform1i( uDofDownColorSampler, 0 );
@@ -1129,7 +1129,7 @@ namespace GE
     glColorMask( GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE );
 
     shaderDofBlurNear->use();
-    glUniform2f( uDofBlurNearPixelSize, 1.0/blurW, 1.0/blurH);
+    glUniform2f( uDofBlurNearPixelSize, 1.0f/blurW, 1.0f/blurH);
     glUniform2f( uDofBlurNearDirection, 1.0, 0.0 );
     glUniform1i( uDofBlurNearRadius, maxBlurRadius );
 
@@ -1192,7 +1192,7 @@ namespace GE
 
     shaderDofBlur->use();
     glUniform1i( uDofBlurRadius, maxBlurRadius );
-    glUniform2f( uDofBlurPixelSize, 1.0/blurW, 1.0/blurH);
+    glUniform2f( uDofBlurPixelSize, 1.0f/blurW, 1.0f/blurH);
     glUniform4f( uDofBlurDofParams, focusZ, focusW, farW, nearW );
 
     glUniform1i( uDofBlurColorSampler, 0 );
@@ -1251,7 +1251,7 @@ namespace GE
     shaderBloomDown->use();
     glUniform1f( uBloomDownAvgLuminance, avgLuminance );
     glUniform1f( uBloomDownMaxLuminance, maxLuminance );
-    glUniform2f( uBloomDownPixelSize, 1.0/winW, 1.0/winH );
+    glUniform2f( uBloomDownPixelSize, 1.0f/winW, 1.0f/winH );
 
     glUniform1i( uBloomDownColorSampler, 0 );
     glActiveTexture( GL_TEXTURE0 );
@@ -1266,7 +1266,7 @@ namespace GE
     glDrawBuffer( GL_COLOR_ATTACHMENT5 );
 
     shaderBloomBlur->use();
-    glUniform2f( uBloomBlurPixelSize, 1.0/blurW, 1.0/blurH);
+    glUniform2f( uBloomBlurPixelSize, 1.0f/blurW, 1.0f/blurH);
     glUniform2f( uBloomBlurDirection, 1.0, 0.0 );
     glUniform1i( uBloomBlurRadius, bloomBlurRadius );
 

@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<VisualStudioToolFile
+	Name="Embedit Files"
+	Version="8.00"
+	>
+	<Rules>
+		<CustomBuildRule
+			Name="Embedit"
+			DisplayName="Embedit"
+			CommandLine="&quot;$(SolutionDir)Release\bin\embedit.exe&quot; &quot;$(InputPath)&quot; &quot;$(InputDir)$(InputName).embedded&quot; [Preprocess]"
+			Outputs="$(InputDir)$(InputName).embedded"
+			FileExtensions="*.embedit"
+			ExecutionDescription="Embedding $(InputFileName) ..."
+			>
+			<Properties>
+				<BooleanProperty
+					Name="Preprocess"
+					DisplayName="Preprocess"
+					PropertyPageName="Preprocessing"
+					Description="The data blocks between &apos;#begin [arrayName]&apos; and &apos;#end&apos; markers are preprocessed into multiple arrays "
+					Switch="--preprocess"
+				/>
+			</Properties>
+		</CustomBuildRule>
+	</Rules>
+</VisualStudioToolFile>

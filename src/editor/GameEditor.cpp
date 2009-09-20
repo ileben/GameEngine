@@ -628,6 +628,11 @@ int main (int argc, char **argv)
 
   //Setup 3D scene
   scene = kernel.loadSceneFile( "export.pak" );
+  if (scene == NULL) {
+    std::cout << "Failed loading scene file!" << std::endl;
+    std::getchar();
+    return EXIT_FAILURE;
+  }
 
   /*
   scene = new Scene3D;
