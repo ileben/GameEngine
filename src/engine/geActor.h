@@ -5,7 +5,6 @@
 #include "math/geVectors.h"
 #include "math/geMatrix.h"
 #include "ui/uiActor.h"
-#include "geObject.h"
 #include "geMaterial.h"
 
 namespace GE
@@ -29,7 +28,7 @@ namespace GE
   additional transformation of the object content
   -------------------------------------------------*/
   
-  class GE_API_ENTRY Actor3D : public Actor
+  class Actor3D : public Actor
   {
     DECLARE_SERIAL_SUBCLASS( Actor3D, Actor );
     DECLARE_DATAVAR( renderable );

@@ -10,8 +10,9 @@ namespace GE
 
     struct ObjectInfo
     {
-      void *var;             //pointer to variable
-      ClassPtr cls;          //class of object
+      Uint id;               //unique ID
+      Object *ptr;           //pointer to object
+      //ClassPtr cls;          //class of object
       UintSize offset;       //offset to serialized object
       UintSize ptroffset;    //offset to serialized pointer to object
       bool pointedTo;        //if true, a pointer to object exists
@@ -35,13 +36,13 @@ namespace GE
       Uint8 *data;
       UintSize offset;
 
-      void *pobj;
       ObjectInfo obj;
       MemberInfo mbr;
 
       std::deque <ObjectInfo> objQueue;
       std::vector <ClsHeader> clsList;
       std::vector <PtrHeader> ptrList;
+      std::vector <Object**> refList;
       SerializeManager *sm;
       bool simulate;
 
@@ -50,37 +51,38 @@ namespace GE
       void store (void *from, UintSize size);
       void load (void *to, UintSize size);
 
-      void enqueueObjVar (ClassPtr cls, void *var);
-      void enqueueObjPtr (ClassPtr cls, void *var);
+      void enqueueObjVar (Object *ptr);
+      void enqueueObjPtr (Object *ptr);
 
-      void run (ClassPtr rootCls, void **rootPtr);
+      void run (Object **rootPtr);
       virtual bool processObject () { return true; }
       virtual void processDataVar (void *pmbr) {}
-      virtual void processObjVar (void *pmbr, ObjectInfo &newObj) {}
-      virtual void processObjPtr (void **pmbr, ObjectInfo &newObj) {}
-      virtual void processObjArray (void **pmbr) {}
-      virtual void processObjArrayItem (void **pmbr, ObjectInfo &newObj) {}
-      virtual void processObjPtrArray (void ***pmbr) {}
-      virtual void processObjPtrArrayItem (void **pmbr, ObjectInfo &newObj) {}
+      virtual void processObjVar (Object *pmbr, ObjectInfo &newObj) {}
+      virtual void processObjPtr (Object **pmbr, ObjectInfo &newObj) {}
+      virtual void processObjRef (Object **pmbr) {}
+      virtual void processObjArray (Object **pmbr) {}
+      virtual void processObjArrayItem (Object *pmbr, ObjectInfo &newObj) {}
+      virtual void processObjPtrArray (Object ***pmbr) {}
+      virtual void processObjPtrArrayItem (Object **pmbr, ObjectInfo &newObj) {}
       virtual void processDataPtr (void **pmbr) {}
     };
 
     class StateSave : public State
     { public:
-      //virtual void run (ClassPtr rootCls, void **rootPtr);
       virtual bool processObject ();
       virtual void processDataVar (void *pmbr);
       virtual void processDataPtr (void **pmbr);
+      virtual void processObjRef (Object **pmbr);
     };
 
     class StateLoad : public State
     { public:
-      //virtual void run (ClassPtr rootCls, void **rootPtr);
       virtual bool processObject ();
       virtual void processDataVar (void *pmbr);
-      virtual void processObjArray (void **pmbr);
-      virtual void processObjPtrArray (void ***pmbr);
       virtual void processDataPtr (void **pmbr);
+      virtual void processObjRef (Object **pmbr);
+      virtual void processObjArray (Object **pmbr);
+      virtual void processObjPtrArray (Object ***pmbr);
     };
 
     class StateSerial : public State
@@ -89,12 +91,11 @@ namespace GE
       void adjust (UintSize ptrOffset);
       
     public:
-      //virtual void run (ClassPtr rootCls, void **rootPtr);
       virtual bool processObject ();
-      virtual void processObjVar (void *pmbr, ObjectInfo &newObj);
-      virtual void processObjPtr (void **pmbr, ObjectInfo &newObj);
-      virtual void processObjArrayItem (void **pmbr, ObjectInfo &newObj);
-      virtual void processObjPtrArrayItem (void **pmbr, ObjectInfo &newObj);
+      virtual void processObjVar (Object *pmbr, ObjectInfo &newObj);
+      virtual void processObjPtr (Object **pmbr, ObjectInfo &newObj);
+      virtual void processObjArrayItem (Object *pmbr, ObjectInfo &newObj);
+      virtual void processObjPtrArrayItem (Object **pmbr, ObjectInfo &newObj);
       virtual void processDataPtr (void **pmbr);
     };
     
@@ -105,7 +106,7 @@ namespace GE
     State *state;
 
     //Statistics
-    std::vector <ObjectPtr> allObjects;
+    std::vector <Object*> allObjects;
 
   public:
 
@@ -114,23 +115,17 @@ namespace GE
     bool isSaving ();
     bool isLoading ();
     
-    void serialize (ClassPtr cls, void *root, void **outData, UintSize *outSize);
-    void save (ClassPtr cls, void *root, void **outData, UintSize *outSize);
+    void serialize (Object *root, void **outData, UintSize *outSize);
+    void save (Object *root, void **outData, UintSize *outSize);
 
-    template <class TR> void serialize (TR *root, void **outData, UintSize *outSize)
-      { serialize (Class(TR), root, outData, outSize); }
-
-    template <class TR> void save (TR *root, void **outData, UintSize *outSize)
-      { save (Class(TR), root, outData, outSize); }
-    
-    void* deserialize (const void *data, ClassPtr *outCls=NULL);
-    void* load (const void *data, ClassPtr *outCls=NULL);
+    Object* deserialize (const void *data, ClassPtr *outCls=NULL);
+    Object* load (const void *data, ClassPtr *outCls=NULL);
 
     const void* getSignature ();
     UintSize getSignatureSize ();
     bool checkSignature (const void *data);
 
-    typedef std::vector <ObjectPtr> ObjectList;
+    typedef std::vector <Object*> ObjectList;
     const ObjectList & getObjects () { return allObjects; }
   };
   

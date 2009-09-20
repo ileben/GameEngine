@@ -106,6 +106,7 @@ namespace GE
       DataPtr,
       ObjVar,
       ObjPtr,
+      ObjRef,
       ObjArray,
       ObjPtrArray
     };
@@ -173,6 +174,11 @@ namespace GE
     return MemberInfo( MemberType::ObjPtr, sizeof(T), T::GetClassPtr() );
   }
 
+  template <class T, class C>
+  inline MemberInfo MEMBER_OBJREF (T* C::* ptr) {
+    return MemberInfo( MemberType::ObjRef, sizeof(T), T::GetClassPtr() );
+  }
+
   inline MemberInfo MEMBER_OBJARRAY (ClassPtr cls, UintSize sz) {
     return MemberInfo( MemberType::ObjArray, sz, cls );
   }
@@ -184,28 +190,6 @@ namespace GE
   inline MemberInfo MEMBER_DATAPTR (UintSize sz) {
     return MemberInfo( MemberType::DataPtr, sz, NULL );
   }
-  
-  /*
-  --------------------------------------------------------
-  A generic reference to an object, holding a pointer to
-  its class descriptor and a pointer to an instance.
-  This is a workaround for not using any specific base
-  such as "Object". It allows for third-party classes or
-  their custom subclasses to have the class interface
-  attached to them.
-  --------------------------------------------------------*/
-  
-  class ObjectPtr
-  {
-  public:
-    ClassPtr cls;
-    void *obj;
-    
-    ObjectPtr () {}
-    ObjectPtr (ClassPtr c, void *o) {cls=c; obj=o;}
-    ObjectPtr (const ObjectPtr &p) {cls=p.cls; obj=p.obj;}
-    template <class T> ObjectPtr (T *o) {cls=o->GetInstanceClassPtr(); obj=o;}
-  };
   
   /*
   --------------------------------------------------------------
@@ -222,7 +206,7 @@ namespace GE
     };
   }
   
-  class GE_API_ENTRY IClass
+  class IClass
   {
   private:
 
@@ -251,7 +235,6 @@ namespace GE
     //Layer-2 (IClass2)
     virtual UintSize  getSize() = 0;
     virtual ClassPtr  getSuper() = 0;
-    virtual ClassPtr  getFinalClass (void *obj) = 0;
     virtual void      invokeCallback (ClassEvent::Enum e, void *obj, void *param) = 0;
     
     //Layer-3 (IAbstract, IReal, ISerial)
@@ -324,11 +307,6 @@ namespace GE
       //If not found search in superclass
       else if (getSuper() != this)
         getSuper()->invokeCallback (e, obj, param);
-    }
-
-    ClassPtr getFinalClass (void *obj)
-    {
-      return ((Name*)obj)->GetInstanceClassPtr();
     }
 
     //Generic templates for adding members of any type    
@@ -466,6 +444,9 @@ class CLASS_DLL_ACTION ClassDesc : public Interface <Name, Super > { public: \
     #define DECLARE_OBJPTR( mbr )\
     addMember( MEMBER_OBJPTR( &ThisClass::mbr ), &ThisClass::mbr, #mbr );
 
+    #define DECLARE_OBJREF( mbr )\
+    addMember( MEMBER_OBJREF( &ThisClass::mbr ), &ThisClass::mbr, #mbr );
+
     #define DECLARE_MEMBER_DATA( mbr, data ) \
     addMember( MEMBER_DATAVAR( &ThisClass::mbr ), &ThisClass::mbr, #mbr, data );
 
@@ -509,6 +490,18 @@ private:
 #define __GECLASS_H_TWO
 namespace GE
 {
+  class Object
+  {
+    DECLARE_SERIAL_CLASS( Object );
+    DECLARE_END;
+
+  public:
+    UintSize serialID;
+    Object (SerializeManager *sm) : serialID(0) {}
+    Object () : serialID(0) {}
+    virtual ~Object() {}
+  };
+
   /*
   --------------------------------------------------------------
   End-user macros to beautify class management
@@ -542,6 +535,7 @@ namespace GE
   --------------------------------------------------------*/
 
   #define CLSID_SIGNATURE            ClassID (0xbbfb896eu, 0x3c7e, 0x4a83, 0xb99d110bc4a7c6d0ull)
+  #define CLSID_OBJECT               ClassID (0x6dcd04eeu, 0x5e7b, 0x4194, 0xa09a3ce4a2986f3full)
   #define CLSID_CHARSTRING           ClassID (0xd7f2841bu, 0xadbc, 0x4d81, 0xbc5889e771dd4496ull)
   #define CLSID_BYTESTRING           ClassID (0xf7bca47cu, 0x4089, 0x4d7f, 0xb22d9bab68d87c42ull)
   #define CLSID_UNICODESTRING        ClassID (0xf54b6286u, 0xaebb, 0x48fb, 0x84cf8ffaca844ed8ull)

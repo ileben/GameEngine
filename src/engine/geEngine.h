@@ -7,9 +7,6 @@
 #include "image/geImage.h"
 #include "math/geMath.h"
 
-//Miscelaneous
-#include "geObject.h"
-
 //Resources
 #include "geProperty.h"
 #include "geResource.h"

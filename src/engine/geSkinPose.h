@@ -7,9 +7,9 @@
 
 namespace GE
 {
-  class SkinJoint
+  class SkinJoint : public Object
   {
-    DECLARE_SERIAL_CLASS( SkinJoint );
+    DECLARE_SERIAL_SUBCLASS( SkinJoint, Object );
     DECLARE_OBJVAR( name );
     DECLARE_DATAVAR( numChildren );
     DECLARE_DATAVAR( worldInv );
@@ -31,9 +31,9 @@ namespace GE
     SkinJoint () {}
   };
   
-  class GE_API_ENTRY SkinPose
+  class SkinPose : public Object
   {
-    DECLARE_SERIAL_CLASS( SkinPose );
+    DECLARE_SERIAL_SUBCLASS( SkinPose, Object );
     DECLARE_OBJVAR( joints );
     DECLARE_END;
     

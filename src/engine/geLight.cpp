@@ -3,10 +3,10 @@
 
 namespace GE
 {
-  DEFINE_CLASS( Light );
+  DEFINE_SERIAL_CLASS( Light,     ClassID( 0x89f9d379u, 0x0ed5, 0x4294, 0xa9c06ea3a38efcdbull ));
   DEFINE_CLASS( DirLight );
   DEFINE_CLASS( PointLight );
-  DEFINE_CLASS( SpotLight );
+  DEFINE_SERIAL_CLASS( SpotLight, ClassID( 0xcce8f0fbu, 0xbac0, 0x4596, 0xa2db479d83cdb273ull ));
   DEFINE_CLASS( HeadLight );
 
   Light::Light()
@@ -15,13 +15,28 @@ namespace GE
     diffuseColor.set( .9f, .9f, .9f );
     shadowColor.set( .2f, .2f, .2f );
     specularColor.set( 1, 1, 1);
-    setIsRenderable( false );
-    volumeDLinit = false;
     attenuationEnd = 1000.0f;
+
+    volumeDLinit = false;
+    volumeChanged = true;
+    setIsRenderable( false );
+  }
+
+  Light::Light(SM *sm)
+  {
+    volumeDLinit = false;
+    volumeChanged = true;
+    setIsRenderable( false );
   }
 
   void Light::renderVolume()
   {
+    if (volumeChanged)
+    {
+      updateVolume();
+      volumeChanged = false;
+    }
+
     glCallList( volumeDL );
   }
 
@@ -89,12 +104,20 @@ namespace GE
   void Light::setAttenuationEnd (Float end)
   {
     attenuationEnd = end;
-    updateVolume();
+    volumeChanged = true;
   }
 
   Float Light::getAttenuationEnd ()
   {
     return attenuationEnd;
+  }
+
+  Matrix4x4 Light::getGlobalMatrix (bool inclusive)
+  {
+    //Need orthonormal matrix for fast inverse
+    Matrix4x4 m = Actor::getGlobalMatrix( inclusive );
+    m.affineNormalize();
+    return m;
   }
   
   DirLight::DirLight (const Vector3 &dir)
@@ -113,14 +136,14 @@ namespace GE
     setPosition( pos );
     setDirection( dir );
     setAngle( outerAngle, innerAngle );
-    updateVolume();
+    volumeChanged = true;
   }
   
   void SpotLight::setAngle (Float outer, Float inner)
   {
     angleOuter = outer;
     angleInner = inner;
-    updateVolume();
+    volumeChanged = true;
   }
   
   void Light::enable (int index)
@@ -199,11 +222,12 @@ namespace GE
 
   bool SpotLight::isPointInVolume (const Vector3 &p, Float threshold)
   {
-    Matrix4x4 worldToLight = getMatrix().affineInverse();
+    //Transform point to light space
+    Matrix4x4 worldToLight = getGlobalMatrix().affineInverse();
     Vector3 lightP = worldToLight * p;
 
-    //Check whether point close enough
-    if (lightP.z > attenuationEnd)
+    //Check whether point in range
+    if (lightP.z < 0.0 || lightP.z > attenuationEnd)
       return false;
 
     //Check whether point inside the cone

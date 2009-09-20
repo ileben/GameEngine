@@ -15,9 +15,9 @@ namespace GE
 
   };
 
-  class GenericArrayList
+  class GenericArrayList : public Object
   {
-    DECLARE_SERIAL_CLASS( GenericArrayList );
+    DECLARE_SERIAL_SUBCLASS( GenericArrayList, Object );
     DECLARE_DATAVAR( sz );
     DECLARE_DATAVAR( eltSize );
     DECLARE_MEMBER_FUNC( elements, elementsInfo );

@@ -51,9 +51,11 @@ namespace GE
   typedef std::map <std::string, Resource*> ResourceMap;
   typedef ResourceMap::iterator ResourceIter;
 
-  class GE_API_ENTRY Kernel
+  class Kernel : public Object
   {
-    DECLARE_CLASS (Kernel); DECLARE_END;
+    DECLARE_SUBCLASS( Kernel, Object );
+    DECLARE_END;
+
     friend class Renderer;
     friend class TriMesh;
     
@@ -79,7 +81,7 @@ namespace GE
     int maxElementsVertices;
     void loadExtensions ();
     
-    ArrayList<ObjectPtr> objects;
+    ArrayList<Object*> objects;
     ArraySet<KernelBuffer*> buffers;
 
     std::map< std::string, Resource* > resources;
@@ -121,9 +123,9 @@ namespace GE
   Reference to resources
   ---------------------------------------*/
 
-  class ResourceRef
+  class ResourceRef : public Object
   {
-    DECLARE_SERIAL_CLASS( ResourceRef );
+    DECLARE_SERIAL_SUBCLASS( ResourceRef, Object );
     DECLARE_OBJVAR( name );
     DECLARE_END;
 

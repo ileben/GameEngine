@@ -51,7 +51,7 @@ namespace GE
   Tri mesh with skin data
   ==========================================================*/
 
-  class SkinVertex
+  class SkinVertex : public Object
   {
   public:
     Vector2 *texcoord;
@@ -60,7 +60,7 @@ namespace GE
     Uint32 *jointIndex;
     Float32 *jointWeight;
 
-    DECLARE_CLASS( SkinVertex );
+    DECLARE_SUBCLASS( SkinVertex, Object );
     DECLARE_MEMBER_DATA( texcoord, new BindTarget( ShaderData::TexCoord ) );
     DECLARE_MEMBER_DATA( normal, new BindTarget( ShaderData::Normal ) );
     DECLARE_MEMBER_DATA( coord, new BindTarget( ShaderData::Coord ) );

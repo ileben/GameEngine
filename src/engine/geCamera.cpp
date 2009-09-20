@@ -3,47 +3,51 @@
 
 namespace GE
 {
-  DEFINE_CLASS (Camera);
-  DEFINE_CLASS (Camera3D);
+  DEFINE_SERIAL_CLASS (Camera,   ClassID( 0x45278919u, 0x6c8c, 0x4bcc, 0x82471ea1180a6142ull ));
+  DEFINE_SERIAL_CLASS (Camera3D, ClassID( 0x8c63ffd7u, 0xdbb4, 0x41a4, 0x870babda1565b1eeull ));
   DEFINE_CLASS (Camera2D);
 
-  Camera::Camera()
+  Camera::Camera ()
   {
-    eye .set (0,0,0);
-    side.set (1,0,0);
-    up  .set (0,1,0);
-    look.set (0,0,1);
+    nearClip = 0.1f;
+    farClip = 300.0f;
+    setIsRenderable( false );
   }
+
+  Camera::Camera (SM *sm) : Actor3D (sm)
+  {
+  }
+
+  /*
+  Normalize the matrix so the precision errors don't accumulate */
 
   void Camera::onMatrixChanged ()
   {
     Actor3D::onMatrixChanged ();
-    
-    //Normalize the matrix so the precision errors don't accumulate
     mat.affineNormalize();
-    
-    //Camera vectors are first three columns of its transform matrix
-    const Matrix4x4 &cam2world = getMatrix();
-    side.set ( cam2world.m [0][0],  cam2world.m [0][1],  cam2world.m [0][2]);
-    up  .set ( cam2world.m [1][0],  cam2world.m [1][1],  cam2world.m [1][2]);
-    look.set ( cam2world.m [2][0],  cam2world.m [2][1],  cam2world.m [2][2]);
-    eye .set ( cam2world.m [3][0],  cam2world.m [3][1],  cam2world.m [3][2]);
   }
 
-  const Vector3& Camera::getEye() {
-    return eye;
+  /*
+  Camera vectors are the columns of its transform matrix */
+
+  Vector3 Camera::getSide() {
+    const Matrix4x4 &m = getMatrix();
+    return Vector3( m.m[0][0], m.m[0][1], m.m[0][2] );
   }
 
-  const Vector3& Camera::getSide() {
-    return side;
+  Vector3 Camera::getUp() {
+    const Matrix4x4 &m = getMatrix();
+    return Vector3( m.m[1][0], m.m[1][1], m.m[1][2] );
   }
 
-  const Vector3& Camera::getLook() {
-    return look;
+  Vector3 Camera::getLook() {
+    const Matrix4x4 &m = getMatrix();
+    return Vector3( m.m[2][0], m.m[2][1], m.m[2][2] );
   }
 
-  const Vector3& Camera::getUp() {
-    return up;
+  Vector3 Camera::getEye() {
+    const Matrix4x4 &m = getMatrix();
+    return Vector3( m.m[3][0], m.m[3][1], m.m[3][2] );
   }
 
   void Camera::setFarClipPlane(Float farClip) {
@@ -72,76 +76,78 @@ namespace GE
   Camera3D::Camera3D()
   {
     fov = 45.0f;
-    nearClip = 0.1f;
-    farClip = 300.0f;
   }
 
-  void Camera3D::setFov(Float fieldOfView) {
+  Camera3D::Camera3D (SM *sm) : Camera (sm)
+  {
+  }
+
+  void Camera3D::setFov (Float fieldOfView) {
     fov = fieldOfView;
   }
 
-  Float Camera3D::getFov() {
+  Float Camera3D::getFov () {
     return fov;
   }
 
-  void Camera3D::setCenter(const Vector3 &center) {
+  void Camera3D::setCenter (const Vector3 &center) {
     this->center = center;
-    cPlus.setTranslation (center.x, center.y, center.z);
-    cMinus.setTranslation (-center.x, -center.y, -center.z);
+    cPlus.setTranslation( center.x, center.y, center.z );
+    cMinus.setTranslation( -center.x, -center.y, -center.z );
   }
 
-  const Vector3& Camera3D::getCenter() {
+  const Vector3& Camera3D::getCenter () {
     return center;
   }
 
-  void Camera3D::roll(Float radang)
+  void Camera3D::roll (Float radang)
   {
     Matrix4x4 mroll;
-    mroll.fromAxisAngle (look, radang);
-    mulMatrixLeft (mroll);
+    mroll.fromAxisAngle( getLook(), radang );
+    mulMatrixLeft( mroll );
   }
 
-  void Camera3D::orbitH(Float radang, bool useCenter)
+  void Camera3D::orbitH (Float radang, bool useCenter)
   {
     Matrix4x4 oH;
-    oH.setRotationY (radang);
+    oH.setRotationY( radang );
     
     if (useCenter)
       oH = cPlus * oH * cMinus;
     
-    mulMatrixLeft (oH);
+    mulMatrixLeft( oH );
   }
 
-  void Camera3D::orbitV(Float radang, bool useCenter)
+  void Camera3D::orbitV (Float radang, bool useCenter)
   {
     Matrix4x4 oV;
-    oV.fromAxisAngle (side, radang);
+    oV.fromAxisAngle( getSide(), radang );
     
     if (useCenter)
       oV = cPlus * oV * cMinus;
     
-    mulMatrixLeft (oV);
+    mulMatrixLeft( oV );
   }
 
-  void Camera3D::panH(Float dist)
+  void Camera3D::panH (Float dist)
   {
     Matrix4x4 mpan;
-    mpan.setTranslation (side * dist);
-    mulMatrixLeft (mpan);
+    mpan.setTranslation( getSide() * dist );
+    mulMatrixLeft( mpan );
   }
 
-  void Camera3D::panV(Float dist)
+  void Camera3D::panV (Float dist)
   {
     Matrix4x4 mpan;
-    mpan.setTranslation (up * dist);
-    mulMatrixLeft (mpan);
+    mpan.setTranslation( getUp() * dist );
+    mulMatrixLeft( mpan );
   }
 
-  void Camera3D::zoom(Float dist)
+  void Camera3D::zoom (Float dist)
   {
     Matrix4x4 mzoom;
-    mzoom.setTranslation (look * dist);
-    mulMatrixLeft (mzoom);
+    mzoom.setTranslation( getLook() * dist );
+    mulMatrixLeft( mzoom );
   }
 
   /*
@@ -172,10 +178,18 @@ namespace GE
   
   void Camera3D::updateView()
   {
-    Matrix4x4 world2cam = getMatrix().affineInverse();
+    Matrix4x4 world2cam = getGlobalMatrix().affineInverse();
 
     glMatrixMode(GL_MODELVIEW);
     glLoadMatrixf ((GLfloat*) world2cam.m);
+  }
+
+  Matrix4x4 Camera3D::getGlobalMatrix (bool inclusive)
+  {
+    //Need orthonormal matrix for fast inverse
+    Matrix4x4 m = Actor::getGlobalMatrix( inclusive );
+    m.affineNormalize();
+    return m;
   }
 
   /*======================================

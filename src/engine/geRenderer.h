@@ -66,9 +66,10 @@ namespace GE
   Performs scene traversal and rendering
   -----------------------------------------*/
 
-  class GE_API_ENTRY Renderer
+  class Renderer : public Object
   {
-    DECLARE_CLASS (Renderer); DECLARE_END;
+    DECLARE_SUBCLASS( Renderer, Object );
+    DECLARE_END;
     
   private:
 

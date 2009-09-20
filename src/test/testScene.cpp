@@ -61,7 +61,7 @@ int main (int argc, char **argv)
   SerializeManager sm;
   sm.save( root, &data, &size );
 
-  kernel->loadScene( data );
+  kernel->loadSceneData( data );
 
   return EXIT_SUCCESS;
 }

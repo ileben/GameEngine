@@ -61,22 +61,20 @@ namespace GE
   State utilities
   ---------------------------------------------------------*/
 
-  void SerializeManager::State::enqueueObjVar (ClassPtr cls, void *var)
+  void SerializeManager::State::enqueueObjVar (Object *ptr)
   {
     ObjectInfo o;
-    o.cls = cls;
-    o.var = var;
+    o.ptr = ptr;
     o.offset = 0;
     o.ptroffset = 0;
     o.pointedTo = false;
     objQueue.push_back( o );
   }
 
-  void SerializeManager::State::enqueueObjPtr (ClassPtr cls, void *var)
+  void SerializeManager::State::enqueueObjPtr (Object *ptr)
   {
     ObjectInfo o;
-    o.cls = cls;
-    o.var = var;
+    o.ptr = ptr;
     o.offset = 0;
     o.ptroffset = 0;
     o.pointedTo = true;
@@ -89,6 +87,7 @@ namespace GE
     objQueue.clear ();
     ptrList.clear ();
     clsList.clear ();
+    refList.clear ();
     offset = startOffset;
     simulate = !realRun;
   }
@@ -149,27 +148,22 @@ namespace GE
 
   bool SerializeManager::StateSave::processObject ()
   {
-    if (obj.pointedTo)
+    //Check for NULL pointer
+    if (obj.ptr == NULL)
     {
-      //Check for NULL pointer
-      void **pmbr = (void**)obj.var;
-      if (*pmbr == NULL)
-      {
-        //Store 0 class ID
-        ClassID clsid( 0,0,0,0 );
-        store( &clsid, sizeof(ClassID) );
-        return false;
-      }
-
-      //Find actual class ID
-      obj.cls = obj.cls->getFinalClass( *pmbr );
-
-      //Store class ID
-      ClassID clsid = obj.cls->getID();
+      //Store invalid class ID
+      ClassID clsid(0,0,0,0);
       store( &clsid, sizeof(ClassID) );
+      return false;
     }
-
-    return true;
+    else
+    {
+      //Store class ID
+      ClassPtr cls = obj.ptr->GetInstanceClassPtr();
+      ClassID clsid = cls->getID();
+      store( &clsid, sizeof(ClassID) );
+      return true;
+    }
   }
 
   void SerializeManager::StateSave::processDataVar
@@ -186,6 +180,23 @@ namespace GE
     store( *pmbr, mbr.size );
   }
 
+  void SerializeManager::StateSave::processObjRef (Object **pmbr)
+  {
+    //Check for NULL pointer
+    if (*pmbr == NULL)
+    {
+      //Store invalid object ID
+      UintSize id = 0;
+      store( &id, sizeof(UintSize) );
+    }
+    else
+    {
+      //Store object ID
+      UintSize id = (*pmbr)->serialID;
+      store( &id, sizeof(UintSize) );
+    }
+  }
+
   /*
   --------------------------------------------------
   Loading state
@@ -193,32 +204,16 @@ namespace GE
 
   bool SerializeManager::StateLoad::processObject ()
   {
-    //Is there a pointer to it?
+    //Load class ID
+    ClassID clsid;
+    load( &clsid, sizeof(ClassID) );
+    ClassPtr cls = IClass::FromID( clsid );
+    if (cls == NULL) return false;
+    
+    //Construct new object
     if (obj.pointedTo)
-    {
-      //Load actual class ID
-      ClassID clsid;
-      load( &clsid, sizeof(ClassID) );
-      obj.cls = IClass::FromID( clsid );
-
-      //Check for NULL pointer
-      void **pmbr = (void**)obj.var;
-      if (obj.cls == NULL)
-      {
-        //Set pointer to NULL
-        *pmbr = NULL;
-        return false;
-      }
-
-      //Construct new object instance and adjust pointer to it
-      *pmbr = obj.cls->newSerialInstance( sm );
-    }
-    else
-    {
-      //Construct new object in-place
-      obj.cls->newSerialInPlace( obj.var, sm );
-    }
-
+      obj.ptr = (Object*) cls->newSerialInstance( sm );
+    else cls->newSerialInPlace( obj.ptr, sm );
     return true;
   }
 
@@ -231,17 +226,17 @@ namespace GE
   }
 
   void SerializeManager::StateLoad::processObjArray
-    (void **pmbr)
+    (Object **pmbr)
   {
     //Allocate an array of objects
-    *pmbr = std::malloc( mbr.size * mbr.cls->getSize() );
+    *pmbr = (Object*) std::malloc( mbr.size * mbr.cls->getSize() );
   }
 
   void SerializeManager::StateLoad::processObjPtrArray
-    (void ***pmbr)
+    (Object ***pmbr)
   {
     //Allocate an array of pointers to objects
-    *pmbr = (void**) std::malloc( mbr.size * sizeof(void*) );
+    *pmbr = (Object**) std::malloc( mbr.size * sizeof(Object*) );
   }
 
   void SerializeManager::StateLoad::processDataPtr
@@ -254,6 +249,18 @@ namespace GE
     load( *pmbr, mbr.size );
   }
 
+  void SerializeManager::StateLoad::processObjRef (Object **pmbr)
+  {
+    //Load object ID
+    UintSize id = 0;
+    load( &id, sizeof(UintSize) );
+
+    //Check for NULL pointer
+    if (id == 0) *pmbr = NULL;
+    else if (id-1 >= sm->allObjects.size()) *pmbr = NULL;
+    else *pmbr = sm->allObjects[ id-1 ];
+  }
+
   /*
   --------------------------------------------------
   Serialization state
@@ -261,59 +268,52 @@ namespace GE
 
   bool SerializeManager::StateSerial::processObject ()
   {
+    //Check for NULL pointer
+    if (obj.ptr == NULL)
+      return false;
+
+    //Store class header
+    ClassPtr cls = obj.ptr->GetInstanceClassPtr();
+    ClsHeader clsHeader;
+    clsHeader.id = cls->getID();
+    clsHeader.offset = obj.offset;
+    clsHeader.count = 1;
+
     //Is there a pointer to it?
     if (obj.pointedTo)
     {
-      //Check for NULL pointer
-      void **pmbr = (void**)obj.var;
-      if (*pmbr == NULL)
-      {
-        //Set serialized pointer to NULL
-        void *pnull = NULL;
-        store( &pnull, obj.ptroffset, sizeof(void*) );
-        return false;
-      }
-
       //Set object offset and adjust pointer to it
       obj.offset = offset;
       adjust( obj.ptroffset );
 
-      //Find actual class ID
-      obj.cls = obj.cls->getFinalClass( *pmbr );
-
       //Store object data
-      store( *pmbr, obj.cls->getSize() );
+      store( obj.ptr, cls->getSize() );
     }
     else
     {
       //Store object data at its offset
-      store( obj.var, obj.offset, obj.cls->getSize() );
+      store( obj.ptr, obj.offset, cls->getSize() );
     }
 
-    //Store class header for deserialization
-    ClsHeader clsHeader;
-    clsHeader.id = obj.cls->getID();
-    clsHeader.offset = obj.offset;
-    clsHeader.count = 1;
     return true;
   }
 
   void SerializeManager::StateSerial::processObjVar
-    (void *pmbr, ObjectInfo &newObj)
+    (Object *pmbr, ObjectInfo &newObj)
   {
     //Set offset to the new object
-    newObj.offset = obj.offset + Util::PtrDist( pobj, pmbr );
+    newObj.offset = obj.offset + Util::PtrDist( obj.ptr, pmbr );
   }
 
   void SerializeManager::StateSerial::processObjPtr
-    (void **pmbr, ObjectInfo &newObj)
+    (Object **pmbr, ObjectInfo &newObj)
   {
     //Set offset to pointer to the new object
-    newObj.ptroffset = obj.offset + Util::PtrDist( pobj, pmbr );
+    newObj.ptroffset = obj.offset + Util::PtrDist( obj.ptr, pmbr );
   }
 
   void SerializeManager::StateSerial::processObjArrayItem
-    (void **pmbr, ObjectInfo &newObj)
+    (Object *pmbr, ObjectInfo &newObj)
   {
     //Set offset to the new object
     newObj.offset = offset;
@@ -323,7 +323,7 @@ namespace GE
   }
 
   void SerializeManager::StateSerial::processObjPtrArrayItem
-    (void **pmbr, ObjectInfo &newObj)
+    (Object **pmbr, ObjectInfo &newObj)
   {
     //Set offset to pointer to the new object
     newObj.ptroffset = offset;
@@ -336,7 +336,7 @@ namespace GE
     (void **pmbr)
   {
     //Adjust pointer to the buffer
-    adjust( obj.offset + Util::PtrDist( pobj, pmbr ) );
+    adjust( obj.offset + Util::PtrDist( obj.ptr, pmbr ) );
     
     //Store data from the buffer
     store( *pmbr, mbr.size );
@@ -347,12 +347,13 @@ namespace GE
   Generic serialization routine
   ----------------------------------------------------*/
 
-  void SerializeManager::State::run (ClassPtr rcls, void **rptr)
+  void SerializeManager::State::run (Object **root)
   {
     std::deque<MemberPtr> members;
 
     //Push root object on queue
-    enqueueObjPtr( rcls, rptr );
+    enqueueObjPtr( *root );
+    refList.push_back( root );
 
     //Process objects in queue
     while (!objQueue.empty())
@@ -362,12 +363,17 @@ namespace GE
       objQueue.pop_front();
 
       //Process object
-      if (!processObject()) continue;
-      pobj = obj.pointedTo ? *((void**)obj.var) : obj.var;
+      if (!processObject())
+        continue;
+
+      //Assign unique ID to object
+      ClassPtr objcls = obj.ptr->GetInstanceClassPtr();
+      obj.ptr->serialID = sm->allObjects.size() + 1;
+      sm->allObjects.push_back( obj.ptr );
 
       //Get all the object members
       members.clear();
-      obj.cls->getAllMembers( members );
+      objcls->getAllMembers( members );
 
       //Walk object members
       while (!members.empty())
@@ -377,30 +383,40 @@ namespace GE
         members.pop_front();
 
         //Get member info
-        mbr = member->getInfo( pobj );
+        mbr = member->getInfo( obj.ptr );
         switch (mbr.type)
         {
         case MemberType::DataVar:
         {
           //Process data variable
-          void *pmbr = member->getFrom( pobj );
+          void *pmbr = member->getFrom( obj.ptr );
           processDataVar( pmbr );
           break;
         }
         case MemberType::ObjVar:
         {
           //Enqueue and process object
-          void *pmbr = member->getFrom( pobj );
-          enqueueObjVar( mbr.cls, pmbr );
+          Object *pmbr = (Object*) member->getFrom( obj.ptr );
+          enqueueObjVar( pmbr );
           processObjVar( pmbr, objQueue.back() );
           break;
         }
         case MemberType::ObjPtr:
         {
+          //Store the reference
+          Object **pmbr = (Object**) member->getFrom( obj.ptr );
+          refList.push_back( pmbr );
+
           //Enqueue and process pointer to object
-          void **pmbr = (void**) member->getFrom( pobj );
-          enqueueObjPtr( mbr.cls, pmbr );
+          enqueueObjPtr( *pmbr );
           processObjPtr( pmbr, objQueue.back() );
+          break;
+        }
+        case MemberType::ObjRef:
+        {
+          //Store the reference
+          Object **pmbr = (Object**) member->getFrom( obj.ptr );
+          refList.push_back( pmbr );
           break;
         }
         case MemberType::ObjArray:
@@ -408,15 +424,15 @@ namespace GE
           if (mbr.size == 0) break;
 
           //Process array of objects
-          void **pmbr = (void**) member->getFrom( pobj );
+          Object **pmbr = (Object**) member->getFrom( obj.ptr );
           processObjArray( pmbr );
 
           //Walk the array of objects
-          void *p = *pmbr;
+          Object *p = *pmbr;
           for (UintSize o=0; o<mbr.size; ++o)
           {
             //Enqueue and process each object
-            enqueueObjVar( mbr.cls, p );
+            enqueueObjVar( p );
             processObjVar( p, objQueue.back() );
 
             //Next object in the array
@@ -429,19 +445,22 @@ namespace GE
           if (mbr.size == 0) break;
 
           //Process array of pointers to objects
-          void ***pmbr = (void***) member->getFrom( pobj );
+          Object ***pmbr = (Object***) member->getFrom( obj.ptr );
           processObjPtrArray( pmbr );
 
           //Walk the array of pointers to objects
-          void **p = *pmbr;
+          Object **p = *pmbr;
           for (UintSize o=0; o<mbr.size; ++o)
           {
+            //Store the reference
+            refList.push_back( p );
+
             //Enqueue and processs each pointer to object
-            enqueueObjPtr( mbr.cls, p );
+            enqueueObjPtr( *p );
             processObjPtr( p, objQueue.back() );
 
             //Next pointer in the array
-            Util::PtrAdd( &p, sizeof(void*) );
+            Util::PtrAdd( &p, sizeof(Object*) );
           }
           break;
         }
@@ -450,22 +469,82 @@ namespace GE
           if (mbr.size == 0) break;
 
           //Process data buffer
-          void **pmbr = (void**) member->getFrom( pobj );
+          void **pmbr = (void**) member->getFrom( obj.ptr );
           processDataPtr( pmbr );
 
           break;
         }}
-
-      }//Process members
+      }
 
       //Notify class
       if (sm->isLoading())
-        obj.cls->invokeCallback( ClassEvent::Loaded, pobj, sm );
+        objcls->invokeCallback( ClassEvent::Loaded, obj.ptr, sm );
+    }
 
-      //Store for statistics
-      sm->allObjects.push_back( ObjectPtr( obj.cls, pobj ) );
+    //Process references
+    for (UintSize r=0; r<refList.size(); ++r)
+      processObjRef( refList[r] );
+  }
 
-    }//Process objects
+  /*
+  --------------------------------------------------
+  Saving start
+  --------------------------------------------------*/
+
+  void SerializeManager::save (Object *root, void **outData, UintSize *outSize)
+  {
+    //Enter saving state
+    state = &stateSave;
+    state->sm = this;
+    
+    //Simulation run
+    state->reset( 0, false );
+    state->run( &root );
+    
+    //Allocate data
+    UintSize dataSize = sizeof (ClassID) + state->offset;
+    state->data = (Uint8*) std::malloc( dataSize );
+    *outData = state->data;
+    *outSize = dataSize;
+    
+    //Real run
+    ClassID rootID = root->GetInstanceClassPtr()->getID();
+    state->reset( 0, true );
+    state->store( &rootID, sizeof(ClassID) );
+    state->run( &root );
+  }
+
+  /*
+  --------------------------------------------------
+  Loading start
+  --------------------------------------------------*/
+  
+  Object* SerializeManager::load (const void *data, ClassPtr *outClass)
+  {
+    //Enter loading state
+    state = &stateLoad;
+    state->sm = this;
+    state->data = (Uint8*) data;
+
+    //Load root class ID
+    ClassID rootID;
+    state->reset( 0, true );
+    state->load( &rootID, sizeof(ClassID) );
+    
+    //Get root class and check if valid
+    ClassPtr rootCls;
+    rootCls = IClass::FromID( rootID );
+    if (rootCls == NULL) return NULL;
+    
+    //Run
+    Object *rootPtr = NULL;
+    state->run( &rootPtr );
+
+    //Output
+    if (outClass != NULL)
+      *outClass = rootCls;
+
+    return rootPtr;
   }
 
   /*
@@ -473,8 +552,7 @@ namespace GE
   Serialization start
   --------------------------------------------------*/
   
-  void SerializeManager::serialize( ClassPtr cls, void *root,
-                                    void **outData, UintSize *outSize )
+  void SerializeManager::serialize( Object *root, void **outData, UintSize *outSize )
   {
     //Enter serialization state
     state = &stateSerial;
@@ -482,7 +560,7 @@ namespace GE
     
     //Simulation run
     state->reset( 0, false );
-    state->run( cls, &root );
+    state->run( &root );
     
     //Calculate the size of pointer and class table
     UintSize introSize =
@@ -499,7 +577,7 @@ namespace GE
     
     //Real run
     state->reset( introSize, true );
-    state->run( cls, &root );
+    state->run( &root );
     
     //Back to start of data
     state->offset = 0;
@@ -517,11 +595,11 @@ namespace GE
                   state->clsList.size() * sizeof(ClsHeader) );
   }
   
-  void* SerializeManager::deserialize( const void *data, ClassPtr *outClass )
+  Object* SerializeManager::deserialize( const void *data, ClassPtr *outClass )
   {
     state = NULL;
     void *root = NULL;
-    ClassPtr rootCls;
+    ClassPtr rootCls = NULL;
     
     //Get the number of pointers
     UintSize *numPointers = (UintSize*) (data);
@@ -565,68 +643,7 @@ namespace GE
     if (outClass != NULL)
       *outClass = rootCls;
 
-    return root;
-  }
-
-  /*
-  --------------------------------------------------
-  Saving start
-  --------------------------------------------------*/
-
-  void SerializeManager::save (ClassPtr cls, void *root, void **outData, UintSize *outSize)
-  {
-    //Enter saving state
-    state = &stateSave;
-    state->sm = this;
-    
-    //Simulation run
-    state->reset( 0, false );
-    state->run( cls, &root );
-    
-    //Allocate data
-    UintSize dataSize = sizeof (ClassID) + state->offset;
-    state->data = (Uint8*) std::malloc( dataSize );
-    *outData = state->data;
-    *outSize = dataSize;
-    
-    //Real run
-    ClassID rootID = cls->getID();
-    state->reset( 0, true );
-    state->store( &rootID, sizeof(ClassID) );
-    state->run( cls, &root );
-  }
-
-  /*
-  --------------------------------------------------
-  Loading start
-  --------------------------------------------------*/
-  
-  void* SerializeManager::load (const void *data, ClassPtr *outClass)
-  {
-    //Enter loading state
-    state = &stateLoad;
-    state->sm = this;
-    state->data = (Uint8*) data;
-
-    //Load root class ID
-    ClassID rootID;
-    state->reset( 0, true );
-    state->load( &rootID, sizeof(ClassID) );
-    
-    //Get root class and check if valid
-    ClassPtr rootCls;
-    rootCls = IClass::FromID( rootID );
-    if (rootCls == NULL) return NULL;
-    
-    //Run
-    void *rootPtr = NULL;
-    state->run( rootCls, &rootPtr );
-
-    //Output
-    if (outClass != NULL)
-      *outClass = rootCls;
-
-    return rootPtr;
+    return (Object*) root;
   }
 
   const void* SerializeManager::getSignature ()

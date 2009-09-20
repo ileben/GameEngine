@@ -125,8 +125,16 @@ namespace GE
     changed = true;
   }
 
+  bool Scene::hasChanged ()
+  {
+    return changed;
+  }
+
   void Scene::updateChanges()
   {
+    //Check if changed at all
+    if (!changed) return;
+    
     //Clear old data
     traversal.clear();
     if (root == NULL) return;
@@ -246,9 +254,11 @@ namespace GE
     setSize( s.x, s.y );
   }
 
-  Matrix4x4 Actor::getGlobalMatrix()
+  Matrix4x4 Actor::getGlobalMatrix (bool inclusive)
   {
-    Matrix4x4 g = mat;
+    Matrix4x4 g;
+    if (inclusive)
+      g = getMatrix();
     
     Actor *p = getParent();
     while (p != NULL)

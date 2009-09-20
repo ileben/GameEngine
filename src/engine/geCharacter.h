@@ -20,9 +20,9 @@ namespace GE
   Forward declarations
   ----------------------------------------*/
 
-  class GE_API_ENTRY MaxCharacter
+  class MaxCharacter : public Object
   {
-    DECLARE_SERIAL_CLASS (MaxCharacter)
+    DECLARE_SERIAL_SUBCLASS( MaxCharacter, Object )
     DECLARE_OBJPTR( pose );
     DECLARE_OBJPTR( mesh );
     DECLARE_OBJVAR( anims );

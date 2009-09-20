@@ -1,6 +1,7 @@
 
 #include "geMaya.h"
 #include <maya/MFnPlugin.h> //Must only be included once!
+#include <maya/MBoundingBox.h>
 
 //This MEL script links the C++ code and the GUI.
 #include "mel.embedded"
@@ -357,7 +358,33 @@ public:
 
     //Create root actor
     Actor3D *root = new Actor3D;
+    Float worldScale = 1.0;
     int meshID = 0;
+
+    //Walk the scene graph, searching for the scale ref dummy
+    MItDag dagScaleIt( MItDag::kBreadthFirst );
+    for ( ; !dagScaleIt.isDone(); dagScaleIt.next() )
+    {
+      //Get path to the node
+      MDagPath dagPath;
+      dagScaleIt.getPath( dagPath );
+
+      //Check the name
+      MFnDagNode dagNode( dagPath );
+      CharString name = dagNode.name().asChar();
+      if (name == "ScaleReference")
+      {
+        //Find the height of its bounding box
+        MMatrix mworld = dagPath.inclusiveMatrix();
+        MBoundingBox box = dagNode.boundingBox();
+        box.transformUsing( mworld );
+        Float h = (Float) box.height();
+
+        //Adjust the exporting scale so that it matches 180 units
+        worldScale = 180.0f / h;
+        break;
+      }
+    }
 
     //Walk the whole scene graph
     MItDag dagIt( MItDag::kBreadthFirst );
@@ -372,35 +399,49 @@ public:
       if (dagNode.isIntermediateObject()) continue;
       if (dagPath.hasFn( MFn::kTransform )) continue;
 
+      //Get the name of the node and skip scale reference dummy
+      //(A better method would be to have the dummy hidden and ignore hidden
+      //objects but haven't figured out how to find out if one is hidden yet)
+      CharString name = dagNode.name().asChar();
+      if (name == "ScaleReference") {
+        dagIt.prune();
+        continue;
+      }
+
       //Check if mesh found
       if (dagPath.hasFn( MFn::kMesh ))
       {
-        //Export mesh data
-        void *outData = NULL;
-        UintSize outSize = 0;
-        exportNoSkin( dagPath.node(), true, &outData, &outSize );
+        //Add extension and remove the namespace prefix
+        CharString meshName = name + ".pak";
+        int colon = meshName.findRev( ":" );
+        if (colon != -1) meshName = meshName.sub( colon+1 );
 
-        //Write to file
-        CharString meshName = outFile.getName(false) + "_mesh" + CharString::FInt( meshID++ );
-        File meshFile = outFile.getRelativeFile( "Meshes/" + meshName );
-        if (!writePackageFile( outData, outSize, meshFile )) {
-          std::free( outData );
-          continue;
-        }
+        //Only export mesh if not a file reference
+        if (! dagNode.isFromReferencedFile())
+        {
+          //Export mesh data
+          void *outData = NULL;
+          UintSize outSize = 0;
+          exportNoSkin( dagPath.node(), true, &outData, &outSize );
+
+          //Write to file
+          CharString meshName = name + ".pak";
+          File meshFile = outFile.getRelativeFile( "Meshes/" + meshName );
+          if (!writePackageFile( outData, outSize, meshFile )) {
+            std::free( outData );
+            continue;
+          }
     
-        //Free mesh data
-        std::free( outData );
-
-        //Find first transform node above it
-        MObject xformObj = dagPath.transform();
-        MFnDagNode xformNode( xformObj );
-
-        //Get transform matrix
-        MMatrix xform = xformNode.transformationMatrix();
-        Matrix4x4 matrix = exportMatrix( xform );
+          //Free mesh data
+          std::free( outData );
+        }
 
         //Export material
         Material *material = exportMaterial( dagPath.node() );
+        if (material == NULL) continue;
+
+        //Get transform matrix
+        Matrix4x4 matrix = exportMatrix( dagPath.inclusiveMatrix() );
 
         //Create a new actor for this mesh
         TriMeshActor *actor = new TriMeshActor;
@@ -408,6 +449,30 @@ public:
         actor->setMatrix( matrix );
         actor->setMaterial( material );
         actor->setParent( root );
+        actor->scale( worldScale );
+      }
+      else if (dagPath.hasFn( MFn::kLight ))
+      {
+        //Export light
+        Light *light = exportLight( dagPath );
+        if (light == NULL) continue;
+        light->setParent( root );
+        light->scale( worldScale );
+      }
+      else if (dagPath.hasFn( MFn::kCamera ))
+      {
+        //Skip "startup cameras" (front, side, top, persp)
+        int isStartup = 0;
+        CharString pname = dagPath.fullPathName().asChar();
+        CharString cmd = "camera -query -startupCamera " + pname;
+        MGlobal::executeCommand( cmd.buffer(), isStartup );
+        if (isStartup != 0) continue;
+
+        //Export camera
+        Camera *cam = exportCamera( dagPath );
+        if (cam == NULL) continue;
+        cam->setParent( root );
+        cam->scale( worldScale );
       }
 
       /*

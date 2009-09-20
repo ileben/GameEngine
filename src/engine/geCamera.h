@@ -17,31 +17,31 @@ namespace GE
    *  Point-of-view for rendering
    *------------------------------------------*/
 
-  class GE_API_ENTRY Camera : public Actor3D
+  class Camera : public Actor3D
   {
-    DECLARE_SUBABSTRACT (Camera, Actor3D); DECLARE_END;
+    DECLARE_SERIAL_SUBCLASS( Camera, Actor3D );
+    DECLARE_DATAVAR( farClip );
+    DECLARE_DATAVAR( nearClip );
+    DECLARE_END;
     friend class Renderer;
     
   protected:
-    Vector3 eye;
-    Vector3 look;
-    Vector3 side;
-    Vector3 up;
     Float farClip;
     Float nearClip;
 
     virtual void onMatrixChanged ();
-    virtual void updateProjection(int w, int h) = 0;
-    virtual void updateView() = 0;
+    virtual void updateProjection(int w, int h) {}
+    virtual void updateView() {}
 
   public:
-    Camera();
+    Camera ();
+    Camera (SM *sm);
     virtual ~Camera() {};
 
-    const Vector3& getEye();
-    const Vector3& getSide();
-    const Vector3& getLook();
-    const Vector3& getUp();
+    Vector3 getEye();
+    Vector3 getSide();
+    Vector3 getLook();
+    Vector3 getUp();
 
     void setFarClipPlane(Float farClip);
     Float getFarClipPlane();
@@ -54,14 +54,18 @@ namespace GE
    * Camera to specify a 3D projection
    *------------------------------------------*/
 
-  class GE_API_ENTRY Camera3D : public Camera
+  class Camera3D : public Camera
   {
-    DECLARE_SUBCLASS (Camera3D, Camera); DECLARE_END;
+    DECLARE_SERIAL_SUBCLASS (Camera3D, Camera);
+    DECLARE_DATAVAR( fov );
+    DECLARE_DATAVAR( center );
+    DECLARE_DATAVAR( cPlus );
+    DECLARE_DATAVAR( cMinus );
+    DECLARE_END;
     friend class Renderer;
 
   private:
     Float fov;
-
     Vector3 center;
     Matrix4x4 cPlus;
     Matrix4x4 cMinus;
@@ -71,7 +75,9 @@ namespace GE
 
   public:
 
-    Camera3D();
+    Camera3D ();
+    Camera3D (SM *sm);
+    void onDeserialized (void *param);
     
     void setFov(Float fieldOfView);
     Float getFov();
@@ -85,13 +91,15 @@ namespace GE
     void panH(Float distance);
     void panV(Float distance);
     void zoom(Float distance);
+
+    virtual Matrix4x4 getGlobalMatrix (bool inclusive = true);
   };
 
   /*--------------------------------------------
    * Camera for 2D overlays
    *--------------------------------------------*/
 
-  class GE_API_ENTRY Camera2D : public Camera
+  class Camera2D : public Camera
   {
     DECLARE_SUBCLASS (Camera2D, Camera); DECLARE_END;
     friend class Renderer;

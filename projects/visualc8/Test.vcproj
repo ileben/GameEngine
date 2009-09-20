@@ -191,6 +191,13 @@
 			<File
 				RelativePath="..\..\src\test\testScene.cpp"
 				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\src\test\testSerial.cpp"

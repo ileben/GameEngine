@@ -261,9 +261,9 @@ class ConvoOpt;
 class ConvoSpeaker;
 
 
-class ConvoNode
+class ConvoNode : public Object
 {
-  DECLARE_CLASS( ConvoNode );
+  DECLARE_SUBCLASS( ConvoNode, Object );
   DECLARE_END;
 
 public:
@@ -643,7 +643,7 @@ bool loadPackage (const CharString &fileName)
 {
   //Read the file
   File file( fileName );
-  if( !file.open( "rb" )) {
+  if( !file.open( FileAccess::Read, FileCondition::MustExist )) {
     printf( "Failed opening file '%s'!\n", fileName.buffer() );
     return false;
   }
@@ -916,37 +916,55 @@ int main (int argc, char **argv)
   ((StandardMaterial*)zac->getMaterial())->setGlossiness(0.5f);
   ((StandardMaterial*)zac->getMaterial())->setCellShaded( true );
 
+  Float lightScale = 1.0;
+
+  Actor3D *lightRoot = new Actor3D;
+  //lightRoot->scale( 0.2 );
+  scene->getRoot()->addChild( lightRoot );
+  ((Actor3D*)scene->getRoot())->scale( 2 );
+
   //Create lights
   light = new SpotLight( Vector3(0,320,-120), Vector3(0.5,-1,0), 70, 0 );
   light->setCastShadows( true );
   light->setDiffuseColor( Vector3(1) );
-  scene->getRoot()->addChild( light );
+  light->scale( lightScale );
+  //scene->getRoot()->addChild( light );
+  lightRoot->addChild( light );
 
   Light *light2 = new SpotLight( Vector3(-200,400,-120), Vector3(-0.5,-1,0), 70, 0 );
   light2->setDiffuseColor( Vector3(1) );
   light2->setCastShadows( true );
-  scene->getRoot()->addChild( light2 );
+  light2->scale( lightScale );
+  //scene->getRoot()->addChild( light2 );
+  lightRoot->addChild( light2 );
 
   Light *light5 = new SpotLight( Vector3(-100,400,-120), Vector3(0,-1,0), 70, 0 );
   light5->setDiffuseColor( Vector3(1) );
   light5->setCastShadows( true );
-  scene->getRoot()->addChild( light5 );
+  light5->scale( lightScale );
+  //scene->getRoot()->addChild( light5 );
+  lightRoot->addChild( light5 );
 
   Light *light3 = new SpotLight( Vector3(400,300,-100), Vector3(0,-1,0), 60, 0 );
   light3->setDiffuseColor( Vector3(1) );
   light3->setCastShadows( true );
-  scene->getRoot()->addChild( light3 );
+  light3->scale( lightScale );
+  //scene->getRoot()->addChild( light3 );
+  lightRoot->addChild( light3 );
 
   Light *light4 = new SpotLight( Vector3(-100,250,300), Vector3(0,-1,0), 100, 0 );
   light4->setDiffuseColor( Vector3(1) );
   light4->setCastShadows( true );
-  scene->getRoot()->addChild( light4 );
+  light4->scale( lightScale );
+  //scene->getRoot()->addChild( light4 );
+  lightRoot->addChild( light4 );
 
   Light *light6 = new SpotLight( Vector3(150,300,200), Vector3(0,-1,0), 60, 0 );
   light6->setDiffuseColor( Vector3(1) );
   light6->setCastShadows( true );
-  scene->getRoot()->addChild( light6 );
-
+  light6->scale( lightScale );
+  //scene->getRoot()->addChild( light6 );
+  lightRoot->addChild( light6 );
 
   //Setup 3D camera
   camSky = new Camera3D;

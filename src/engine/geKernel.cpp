@@ -621,8 +621,8 @@ namespace GE
   */
   void* Kernel::spawn (ClassPtr cn)
   {
-    void *obj = New (cn);
-    objects.pushBack (ObjectPtr (cn,obj));
+    void *obj = New( cn );
+    objects.pushBack( (Object*) cn );
     return obj;
   }
   
@@ -769,28 +769,11 @@ namespace GE
     const SM::ObjectList &objects = sm.getObjects();
     for (UintSize o=0; o<objects.size(); ++o)
     {
-      ClassPtr cls = objects.at(o).cls;
-      void *obj = objects.at(o).obj;
-
-      //Actor3D* actor = (Actor3D*) IClass::Safecast( Class(Actor3D), cls, obj );
-      //if (actor != NULL) actor->setMaterial( new StandardMaterial() );
-
-      //Walk class members
-      cls->getAllMembers( members );
-      while (!members.empty())
+      Object *obj = objects.at(o);
+      if (ClassOf(obj) == Class(ResourceRef))
       {
-        //Pop first
-        MemberPtr member = members.front();
-        members.pop_front();
-
-        //Check if it's a resource reference
-        MemberInfo info = member->getInfo( obj );
-        if (info.cls == Class(ResourceRef))
-        {
-          //Load resource
-          ResourceRef *ref = (ResourceRef*) member->getFrom( obj );
-          ref->ptr = getResource( ref->name );
-        }
+        ResourceRef *ref = (ResourceRef*) obj;
+        ref->ptr = getResource( ref->name );
       }
     }
 

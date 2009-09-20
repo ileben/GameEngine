@@ -10,7 +10,7 @@ namespace GE
 
   class Widget : public Actor
   {
-    DECLARE_ABSTRACT (Widget);
+    DECLARE_SUBABSTRACT( Widget, Actor );
     DECLARE_END;
     friend class Renderer;
     

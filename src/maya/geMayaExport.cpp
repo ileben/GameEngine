@@ -2,6 +2,9 @@
 #include <maya/MFloatVectorArray.h>
 #include <maya/MFnLambertShader.h>
 #include <maya/MFnPhongShader.h>
+#include <maya/MFnBlinnShader.h>
+#include <maya/MFnLight.h>
+#include <maya/MFnSpotLight.h>
 
 /*
 ----------------------------------------------------------
@@ -235,6 +238,12 @@ Material* exportShader (const MObject &shader)
     mat->setGlossiness( phong.cosPower() / 128.0f );
     mat->setSpecularity( 1.0f );
   }
+  else if (surfShader.hasFn( MFn::kBlinn ))
+  {
+    MFnBlinnShader blinn( surfShader );
+    mat->setSpecularColor( exportColor( blinn.specularColor() ) * blinn.specularRollOff() );
+    mat->setGlossiness( 1.0f - blinn.eccentricity() * 0.5f );
+  }
 
   //Export diffuse texture
   if (diffTexUsed)
@@ -284,6 +293,42 @@ Material* exportMaterial (const MObject &meshNode)
     Material *mat = exportShader( meshShaders[ 0 ] );
     return mat;
   }
+}
+
+Light* exportLight (const MDagPath &lightDagPath)
+{
+  MStatus status;
+  Light *outLight;
+
+  if (lightDagPath.hasFn( MFn::kSpotLight ))
+  {
+    MFnSpotLight spotLight( lightDagPath );
+    Float a1 = (Float) spotLight.coneAngle();
+    Float a2 = (Float) Util::Max(
+      spotLight.coneAngle() * 0.5 +
+      spotLight.penumbraAngle(),
+      0.0 );
+
+    a1 = Util::RadToDeg( a1 );
+    a2 = Util::RadToDeg( a2 );
+
+    SpotLight *outSpotLight = new SpotLight;
+    outSpotLight->setAngle( Util::Max( a1,a2 ), Util::Min( a1,a2) );
+    outLight = outSpotLight;
+  }
+  else return NULL;
+
+  MFnLight light( lightDagPath );
+  outLight->setDiffuseColor( exportColor( light.color() ) * light.intensity() );
+  outLight->setMatrix( exportMatrix( lightDagPath.inclusiveMatrix() ));
+  return outLight;
+}
+
+Camera* exportCamera (const MDagPath &camDagPath)
+{
+  Camera3D *outCam = new Camera3D;
+  outCam->setMatrix( exportMatrix( camDagPath.inclusiveMatrix() ));
+  return outCam;
 }
 
 
@@ -683,7 +728,7 @@ public:
   }
 };
 
-class OmniVertex
+class OmniVertex : public Object
 {
 public:
   Vector2 *texcoord;
@@ -694,7 +739,7 @@ public:
   Float32 *jointWeight;
   Float32 *jointIndex;
 
-  DECLARE_CLASS( OmniVertex );
+  DECLARE_SUBCLASS( OmniVertex, Object );
   DECLARE_MEMBER_DATA( texcoord, new BindTarget( ShaderData::TexCoord ) );
   DECLARE_MEMBER_DATA( coord, new BindTarget( ShaderData::Coord ) );
   DECLARE_MEMBER_DATA( normal, new BindTarget( ShaderData::Normal ) );
@@ -1622,7 +1667,7 @@ void exportNoSkin (const MObject &meshNode, bool tangents, void **outData, UintS
 
   //Serialize
   SerializeManager sm;
-  sm.save( ClassOf(outTriMesh), outTriMesh, outData, outSize );
+  sm.save( outTriMesh, outData, outSize );
 
   //Cleanup
   delete outTriMesh;

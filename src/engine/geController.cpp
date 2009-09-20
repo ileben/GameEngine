@@ -113,14 +113,16 @@ namespace GE
   void FpsController::tick()
   {
     Float interval = Kernel::GetInstance()->getInterval();
+    cam->getScene()->updateChanges();
+    Matrix4x4 mat = cam->getGlobalMatrix( false );
 
     if (moveDir != 0) {
-      Vector3 look = cam->getLook();
+      Vector3 look = mat.transformVector( cam->getLook() );
       cam->translate( look * moveSpeed * (Float)moveDir * interval );
     }
 
     if (strafeDir != 0) {
-      Vector3 side = cam->getSide();
+      Vector3 side = mat.transformVector( cam->getSide() );
       cam->translate( side * strafeSpeed * (Float)strafeDir * interval );
     }
 

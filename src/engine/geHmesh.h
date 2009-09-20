@@ -34,9 +34,10 @@ namespace GE
     Vertex class
     ------------------------------------------*/
 
-    class GE_API_ENTRY Vertex
+    class Vertex : public Object
     {
-      DECLARE_CLASS (Vertex); DECLARE_END;
+      DECLARE_SUBCLASS (Vertex, Object);
+      DECLARE_END;
 
     public:
       ItemTag tag;
@@ -59,9 +60,10 @@ namespace GE
     HalfEdge class
     ------------------------------------------*/
 
-    class GE_API_ENTRY HalfEdge
+    class HalfEdge : public Object
     {
-      DECLARE_CLASS (HalfEdge); DECLARE_END;
+      DECLARE_SUBCLASS (HalfEdge, Object);
+      DECLARE_END;
 
     public:
       ItemTag tag;
@@ -98,9 +100,10 @@ namespace GE
     Edge class
     ------------------------------------------*/
     
-    class GE_API_ENTRY Edge
+    class Edge : public Object
     {
-      DECLARE_CLASS (Edge); DECLARE_END;
+      DECLARE_SUBCLASS (Edge, Object);
+      DECLARE_END;
 
     public:
       ItemTag tag;
@@ -123,9 +126,10 @@ namespace GE
     Face class
     ------------------------------------------*/
 
-    class GE_API_ENTRY Face
+    class Face
     {
-      DECLARE_CLASS (Face); DECLARE_END;
+      DECLARE_SUBCLASS( Face, Object );
+      DECLARE_END;
       
     public:
       ItemTag tag;
@@ -149,9 +153,10 @@ namespace GE
   Half-edge mesh class
   ------------------------------------------*/
 
-  class GE_API_ENTRY HMesh : public Resource
+  class HMesh : public Resource
   {
-    DECLARE_SUBCLASS (HMesh, Resource); DECLARE_END;
+    DECLARE_SUBCLASS( HMesh, Resource );
+    DECLARE_END;
     
   public:
 

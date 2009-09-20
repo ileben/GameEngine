@@ -24,9 +24,9 @@ namespace GE
   Base template class
   ----------------------------------------*/
 
-  template <class C> class BasicString
+  template <class C> class BasicString : public Object
   {
-    DECLARE_SERIAL_CLASS( BasicString );
+    DECLARE_SERIAL_SUBCLASS( BasicString, Object );
     DECLARE_DATAVAR( size );
     DECLARE_MEMBER_FUNC( buf, bufInfo );
     DECLARE_CALLBACK( ClassEvent::Loaded, deserialized );

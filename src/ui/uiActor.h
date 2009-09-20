@@ -42,9 +42,9 @@ namespace GE
   Event
   ----------------------------------------------*/
 
-  class Event
+  class Event : public Object
   {
-    DECLARE_CLASS( Event );
+    DECLARE_SUBCLASS( Event, Object );
     DECLARE_END;
 
   private:
@@ -82,10 +82,11 @@ namespace GE
   Actor
   ----------------------------------------------*/
 
-  class Actor
+  class Actor : public Object
   {
     friend class Scene;
-    DECLARE_SERIAL_CLASS( Actor );
+    DECLARE_SERIAL_SUBCLASS( Actor, Object );
+    DECLARE_OBJREF( parent );
     DECLARE_OBJVAR( children );
     DECLARE_DATAVAR( mat );
     DECLARE_END;
@@ -111,7 +112,7 @@ namespace GE
 
     //Location
     Matrix4x4& getMatrix() { return mat; }
-    Matrix4x4 getGlobalMatrix();
+    virtual Matrix4x4 getGlobalMatrix (bool inclusive = true);
 
     void setLoc (float x, float y);
     void setLoc (const Vector2 &loc);
@@ -152,9 +153,9 @@ namespace GE
   Scene
   ----------------------------------------------*/
 
-  class Scene
+  class Scene : public Object
   {
-    DECLARE_CLASS( Scene);
+    DECLARE_SUBCLASS( Scene, Object );
     DECLARE_END;
 
   private:
@@ -170,7 +171,7 @@ namespace GE
 
     void updateChanges ();
     void markChanged ();
-    bool hasChanged () { return changed; }
+    bool hasChanged ();
 
     Actor* findTopActorAt (float x, float y);
     const ArrayList<Actor*> & getTraversal () { return traversal; }

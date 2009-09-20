@@ -68,11 +68,15 @@ void drag3D (int x, int y)
   float eyeDist = ( camRender->getEye() - center ).norm();
   lastMouse3D.set( (Float)x, (Float)y );
 
-  Vector3 side = camRender->getSide();
-  Vector3 look = Vector::Cross( Vector3(0,1,0), side );
-  light->translate( look * diff.y );
-  light->translate( side * diff.x );
-  light->lookInto( center );
+
+  if (light != NULL)
+  {
+    Vector3 side = camRender->getGlobalMatrix( false ).transformVector( camRender->getSide() );
+    Vector3 look = Vector::Cross( Vector3(0,1,0), side );
+    light->translate( look * diff.y );
+    light->translate( side * diff.x );
+    light->lookInto( center );
+  }
 
   /*  
   Float angleH = diff.x * (2*PI) / 400;
@@ -565,7 +569,7 @@ Actor* loadActor (const CharString &meshFileName,
 
   if (normTexFileName != "")
   {
-    //Assing normal-texture material
+    //Assign normal-texture material
     Image *imgDiff = new Image;
     imgDiff->readFile( texFileName, "jpeg" );
 
@@ -586,7 +590,7 @@ Actor* loadActor (const CharString &meshFileName,
   }
   else if (texFileName != "")
   {
-    //Assing diffuse-texture material
+    //Assign diffuse-texture material
     Image *img = new Image;
     img->readFile( texFileName, "jpeg" );
 
@@ -619,15 +623,11 @@ int main (int argc, char **argv)
 
   //Setup depth-of-field
   //renderer->setDofParams( 50, 50, 150, 150 );
-  renderer->setDofParams( 120, 20, 50, 50 );
-  //renderer->setIsDofEnabled( true );
+  renderer->setDofParams( 400, 200, 100, 300 );
+  renderer->setIsDofEnabled( true );
 
   //Setup 3D scene
   scene = kernel.loadSceneFile( "export.pak" );
-  Actor3D* root = (Actor3D*) scene->getRoot();
-  scene->setRoot( new Actor3D );
-  root->setParent( scene->getRoot() );
-  root->scale( 5 );
 
   /*
   scene = new Scene3D;
@@ -676,33 +676,7 @@ int main (int argc, char **argv)
   ((StandardMaterial*)actorRender->getMaterial())->setGlossiness(0.5f);
   //((StandardMaterial*)actorRender->getMaterial())->setCellShaded( true );
 */
-/*
-  loadActor( "trex.pak", "rex.jpg", "rex_normal.jpg" );
-  ((StandardMaterial*)actorRender->getMaterial())->setCullBack( false );
-  ((StandardMaterial*)actorRender->getMaterial())->setDiffuseColor(Vector3(0,.5,0));
-  ((StandardMaterial*)actorRender->getMaterial())->setSpecularity(0.9f);
-  ((StandardMaterial*)actorRender->getMaterial())->setGlossiness(0.05f);
-  //((StandardMaterial*)actorRender->getMaterial())->setCellShaded( true );
-  actorRender->scale(1,-1,-1);
-  actorRender->translate(0,-50,0);
-  scene->addChild( actorRender );
-*/
-  /*
-  MultiMaterial *mm = new MultiMaterial;
-  mm->setNumSubMaterials( 3 );
-  mm->setSubMaterial( 0, loadMaterial() );
-  mm->setSubMaterial( 1, loadMaterial("Housing_Brick_Dark.jpg", "Housing_Brick_Dark_NORM.png") );
-  mm->setSubMaterial( 2, loadMaterial("MetalPlating.jpg", "MetalPlating_NORM.png") );
-  
-  Actor* house = loadActor( "CityTest.pak" );
-  house->setMaterial( mm );
-  scene->addChild( house );
-  */
-/*
-  Actor *test = loadActor( "xNormalTest.pak" );
-  test->setMaterial( loadMaterial( "", "xNormalTest.PNG" ) );
-  scene->addChild( test );
-*/
+
   /*
   //Create floor cube
   StandardMaterial *matBox = new StandardMaterial;
@@ -724,35 +698,32 @@ int main (int argc, char **argv)
   AxisActor *axes = new AxisActor;
   axes->scale( 100 );
   axes->setMaterial( &axesMat );
-*/
   //scene->addChild( axes );
-  //Create lights
-  light = new SpotLight( Vector3(-200,300,-200), Vector3(), 60, 0 );
-  //light = new SpotLight( Vector3(-200,150,200), Vector3(), 60, 0 );
-  //light = new SpotLight( Vector3(300,300,50), Vector3(), 60, 0 );
-  light->setCastShadows( true );
-  light->setDiffuseColor( Vector3(1) );
-  light->setSpecularColor( Vector3(5) );
-  light->lookInto( center );
-  scene->getRoot()->addChild( light );
+*/
 
-  Light *light2 = new SpotLight( Vector3(300,300,50), Vector3(), 60, 0 );
-  light2->lookInto( center );
-  //light2->setDiffuseColor( Vector3(.5,.5,1) );
-  light2->setCastShadows( false );
-  scene->getRoot()->addChild( light2 );
+  //Find first camera in the scene
+  const ArrayList<TravNode> *traversal = scene->getTraversal();
+  for (UintSize t=0; t<traversal->size(); ++t)
+  {
+    TravNode &node = traversal->at( t );
+    Camera3D *camera = SafeCast( Camera3D, node.actor );
+    if (camera != NULL) {
+      cam3D = camera;
+      break;
+    }
+  }
 
-  Light *light3 = new SpotLight( Vector3(-200,150,200), Vector3(), 60, 0 );
-  light3->lookInto( center );
-  //light3->setDiffuseColor( Vector3(.5) );
-  light3->setCastShadows( false );
-  scene->getRoot()->addChild( light3 );
+  //Create a new camera if missing
+  if (cam3D == NULL)
+  {
+    cam3D = new Camera3D;
+    cam3D->orbitV( Util::DegToRad( 35 ) );
+    cam3D->orbitH( Util::DegToRad( -40 ) );
+    cam3D->translate( 80, 80, -80 );
+  }
 
-  cam3D = new Camera3D;
+  //Setup camera properties
   cam3D->setCenter( center );
-  cam3D->orbitV( Util::DegToRad( 35 ) );
-  cam3D->orbitH( Util::DegToRad( -40 ) );
-  cam3D->translate( 80, 80, -80 );
   cam3D->setNearClipPlane( 1.0f );
   cam3D->setFarClipPlane( 3000.0f );
 
@@ -775,7 +746,7 @@ int main (int argc, char **argv)
   //Assign controller
   ctrl = new FpsController;
   ctrl->attachCamera( cam3D );
-  ctrl->setMoveSpeed( 50 );
+  ctrl->setMoveSpeed( 400 );
 
   //Run application
   atexit( cleanup );

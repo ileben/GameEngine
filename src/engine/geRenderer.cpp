@@ -556,7 +556,7 @@ namespace GE
     glMatrixMode( GL_PROJECTION );
     glLoadMatrixf( (GLfloat*) lightProj.m );
     
-    Matrix4x4 lightView = light->getMatrix().affineInverse();
+    Matrix4x4 lightView = light->getGlobalMatrix().affineInverse();
     glMatrixMode( GL_MODELVIEW );
     glLoadMatrixf( (GLfloat*) lightView.m );
 
@@ -738,12 +738,12 @@ namespace GE
 
       //Enable the light
       Matrix4x4 worldCtm = light->getGlobalMatrix();
-      worldCtm.affineNormalize();
       glMatrixMode( GL_MODELVIEW );
       glMultMatrixf( (GLfloat*) worldCtm.m );
 
       //Avoid front faces being clipped by the camera near plane
-      if (light->isPointInVolume( camera->getEye(), camera->getNearClipPlane()*2 ))
+      Vector3 worldEye = camera->getGlobalMatrix() * Vector3(0,0,0);
+      if (light->isPointInVolume( worldEye, camera->getNearClipPlane()*2 ))
       {
         //Pass for pixels in front of light volume back
         glDepthFunc( GL_GEQUAL );
@@ -810,7 +810,6 @@ namespace GE
 
       //Enable the light
       Matrix4x4 worldCtm = light->getGlobalMatrix();
-      worldCtm.affineNormalize();
       glMatrixMode( GL_MODELVIEW );
       glMultMatrixf( (GLfloat*) worldCtm.m );
       light->enable( 0 );
@@ -831,7 +830,8 @@ namespace GE
       glClear( GL_STENCIL_BUFFER_BIT );
 
       //Avoid front faces being clipped by the camera near plane
-      if (light->isPointInVolume( camera->getEye(), camera->getNearClipPlane()*2 ))
+      Vector3 worldEye = camera->getGlobalMatrix() * Vector3(0,0,0);
+      if (light->isPointInVolume( worldEye, camera->getNearClipPlane()*2 ))
       {
         //Pass for pixels in front of light volume back and incr stencil
         glDepthFunc( GL_GEQUAL );
@@ -840,9 +840,7 @@ namespace GE
 
         //Render light volume back faces
         glCullFace( GL_FRONT );
-        //glBeginQuery( GL_SAMPLES_PASSED, lightQueries[l] );
         light->renderVolume();
-        //glEndQuery( GL_SAMPLES_PASSED );
 
         //Pass for pixels in front of light volume back
         glDepthFunc( GL_LESS );
@@ -867,9 +865,7 @@ namespace GE
 
         //Render light volume front faces
         glCullFace( GL_BACK );
-        //glBeginQuery( GL_SAMPLES_PASSED, lightQueries[l] );
         light->renderVolume();
-        //glEndQuery( GL_SAMPLES_PASSED );
 
         //Pass for pixels inside the light volume
         glStencilFunc( GL_EQUAL, 0x2, 0xFF );
@@ -893,13 +889,12 @@ namespace GE
       if (light->getCastShadows())
         renderShadowMap( light, scene );
 
-      //Setup view and projection
+      //Re-Setup view and projection
       glViewport( viewX, viewY, viewW, viewH );
       camera->updateProjection( viewW, viewH );
       camera->updateView();
 
-      //Enable the light
-      //Matrix4x4 worldCtm = light->getWorldMatrix();
+      //Re-Enable the light
       glMatrixMode( GL_MODELVIEW );
       glMultMatrixf( (GLfloat*) worldCtm.m );
       light->enable( 0 );
@@ -939,9 +934,9 @@ namespace GE
       }
 
       //Setup camera-eye to light-clip matrix
-      Matrix4x4 cam = camera->getMatrix();
+      Matrix4x4 cam = camera->getGlobalMatrix();
       Matrix4x4 lightProj = light->getProjection( 1.0f, 1000.0f );
-      Matrix4x4 lightInv = light->getMatrix().affineInverse();
+      Matrix4x4 lightInv = light->getGlobalMatrix().affineInverse();
       Matrix4x4 tex = lightProj * lightInv * cam;
       glActiveTexture( GL_TEXTURE0 );
       glMatrixMode( GL_TEXTURE );
@@ -965,11 +960,12 @@ namespace GE
       glDisable( GL_STENCIL_TEST );
       glCullFace( GL_BACK );
       
-      /*
+      /*      
       //Draw light volume
       glUseProgram( 0 );
       glDisable( GL_DEPTH_TEST );
       glEnable( GL_CULL_FACE );
+      //glDisable( GL_CULL_FACE );
       glDisable( GL_BLEND );
       glDisable( GL_LIGHTING );
       glEnable( GL_COLOR_MATERIAL );
@@ -1373,9 +1369,9 @@ namespace GE
     {
       Light *l = scene->getLights()->first();
       
-      Matrix4x4 cam = camera->getMatrix();
+      Matrix4x4 cam = camera->getGlobalMatrix();
       Matrix4x4 lightProj = l->getProjection( 1.0f, 1000.0f );
-      Matrix4x4 lightInv = l->getMatrix().affineInverse();
+      Matrix4x4 lightInv = l->getGlobalMatrix().affineInverse();
       Matrix4x4 tex = lightProj * lightInv * cam;
       
       glMatrixMode( GL_TEXTURE );
@@ -1392,7 +1388,7 @@ namespace GE
 
       //Setup transformation matrix
       Matrix4x4 worldCtm = light->getGlobalMatrix();
-      worldCtm.affineNormalize();
+      //worldCtm.affineNormalize();
       glMatrixMode( GL_MODELVIEW );
       glPushMatrix();
       glMultMatrixf( (GLfloat*) worldCtm.m );

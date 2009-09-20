@@ -2,9 +2,14 @@
 #include <iostream>
 using namespace GE;
 
-class B
+class A;
+class B;
+class C;
+
+
+class B : public Object
 {
-  DECLARE_SERIAL_CLASS( B );
+  DECLARE_SERIAL_SUBCLASS( B, Object );
   DECLARE_DATAVAR( data );
   DECLARE_END;
 
@@ -19,18 +24,20 @@ class C : public B
 {
   DECLARE_SERIAL_SUBCLASS( C, B );
   DECLARE_DATAVAR( data2 );
+  DECLARE_OBJREF( ptr );
   DECLARE_END;
 
 public:
   int data2;
+  A* ptr;
 
   C() { std::cout << "C::ctor()" << std::endl; }
   C(SM *sm) { std::cout << "C::ctor(SM*)" << std::endl; }
 };
 
-class A
+class A : public Object
 {
-  DECLARE_SERIAL_CLASS( A );
+  DECLARE_SERIAL_SUBCLASS( A, Object );
   DECLARE_DATAVAR( data );
   DECLARE_OBJVAR( b );
   DECLARE_OBJPTR( c );
@@ -59,6 +66,7 @@ bool test1()
   a->c = new C;
   a->c->data = 3;
   ((C*)a->c)->data2 = 4;
+  ((C*)a->c)->ptr = a;
 
   std::cout << "Saving..." << std::endl;
   
@@ -90,6 +98,10 @@ bool test1()
     std::cout << "FAILED! a2 data2 C != a data2 C" << std::endl;
     return false;
   }
+  if (((C*)a2->c)->ptr != a2) {
+    std::cout << "FAILED! a2->c->ptr != a2" << std::endl;
+    return false;
+  }
 
   std::cout << "\nPASS" << std::endl;
   return true;
@@ -107,6 +119,7 @@ bool test2()
     a.c = new C;
     a.c->data = (int) i*100;
     ((C*)a.c)->data2 = (int) i*1000;
+    ((C*)a.c)->ptr = NULL;
     ar->pushBack( a );
   }
 
@@ -153,10 +166,45 @@ bool test2()
   return true;
 }
 
+class D : public Object
+{
+  DECLARE_SERIAL_SUBCLASS( D, Object );
+  DECLARE_OBJVAR( str );
+  DECLARE_END;
+
+public:
+  CharString str;
+
+  D() {}
+  D(SM *sm) : str(sm) {}
+};
+
+DEFINE_SERIAL_CLASS( D, ClassID( 0,0,0,4 ));
+
+void test3()
+{
+  D *d = new D;
+  d->str = "test";
+
+  void *data; UintSize size;
+  SerializeManager sm;
+  sm.save( d, &data, &size );
+  D *d2 = (D*) sm.load( data );
+
+  const SM::ObjectList &objects = sm.getObjects();
+  for (UintSize o=0; o<objects.size(); ++o)
+  {
+    Object *obj = objects[o];
+    ClassPtr cls = ClassOf( obj );
+    int zomg = 0;
+  }
+}
+
 int main (int argc, char **argv)
 {
   test1();
   test2();
+  test3();
 
   return EXIT_SUCCESS;
 }

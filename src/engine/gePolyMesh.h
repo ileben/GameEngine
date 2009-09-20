@@ -52,7 +52,7 @@ namespace GE
     Vertex holds the point in 3D space
     -----------------------------------------------------------*/
 
-    class GE_API_ENTRY Vertex : public VertexBase <PolyMeshTraits,HMesh> {
+    class Vertex : public VertexBase <PolyMeshTraits,HMesh> {
       DECLARE_SUBCLASS (Vertex, HMesh::Vertex); DECLARE_END;
     public:
       Vector3 point;
@@ -64,7 +64,7 @@ namespace GE
     for edge-based normal calculation.
     ----------------------------------------------------------*/
 
-    class GE_API_ENTRY Edge : public EdgeBase <PolyMeshTraits,HMesh> {
+    class Edge : public EdgeBase <PolyMeshTraits,HMesh> {
       DECLARE_SUBCLASS (Edge, HMesh::Edge); DECLARE_END;
     public:
       bool isSmooth;
@@ -80,7 +80,7 @@ namespace GE
     two faces are not in the same smoothing group
     -------------------------------------------------------*/
 
-    class GE_API_ENTRY HalfEdge : public HalfEdgeBase <PolyMeshTraits,HMesh> {
+    class HalfEdge : public HalfEdgeBase <PolyMeshTraits,HMesh> {
       DECLARE_SUBCLASS (HalfEdge, HMesh::HalfEdge); DECLARE_END;
     public:
       VertexNormal *vnormal;
@@ -97,7 +97,7 @@ namespace GE
     is an index into material's sub-material array.
     -------------------------------------------------*/
 
-    class GE_API_ENTRY Face : public FaceBase <PolyMeshTraits,HMesh> {
+    class Face : public FaceBase <PolyMeshTraits,HMesh> {
       DECLARE_SUBCLASS (Face, HMesh::Face); DECLARE_END;
       friend class PolyMesh;
 
@@ -116,8 +116,10 @@ namespace GE
       Face() { smoothGroups = 0; matId = 0; triangle = NULL; }
     };
 
-    class Triangle {
-      DECLARE_CLASS( Triangle ); DECLARE_END;
+    class Triangle : public Object {
+      DECLARE_SUBCLASS( Triangle, Object );
+      DECLARE_END;
+
     public:
       Triangle* next;
       HalfEdge* hedges[3];
@@ -168,12 +170,12 @@ namespace GE
   complex mesh operations.
   =============================================================*/
 
-  class GE_API_ENTRY PolyMesh : public MeshBase <PolyMeshTraits,HMesh>
+  class PolyMesh : public MeshBase <PolyMeshTraits,HMesh>
   {
     friend class TriMesh;
     friend class LoaderObj;
     friend class Renderer;
-    DECLARE_SUBCLASS (PolyMesh, HMesh);
+    DECLARE_SUBCLASS( PolyMesh, HMesh );
     DECLARE_END;
     
   public:

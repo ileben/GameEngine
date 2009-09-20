@@ -11,21 +11,30 @@ namespace GE
 
   class Light : public Actor3D
   {
-    DECLARE_SUBCLASS( Light, Actor3D ); DECLARE_END;
+    DECLARE_SERIAL_SUBCLASS( Light, Actor3D );
+    DECLARE_DATAVAR( shadowsOn );
+    DECLARE_DATAVAR( diffuseColor );
+    DECLARE_DATAVAR( specularColor );
+    DECLARE_DATAVAR( shadowColor );
+    DECLARE_DATAVAR( attenuationEnd );
+    DECLARE_END;
     
   protected:
     bool shadowsOn;
     Vector3 diffuseColor;
     Vector3 specularColor;
     Vector3 shadowColor;
-
     Float attenuationEnd;
+
     bool volumeDLinit;
+    bool volumeChanged;
     Uint32 volumeDL;
     virtual void updateVolume() {};
     
   public:
-    Light();
+    Light ();
+    Light (SM *sm);
+    virtual ~Light() {};
     
     void setCastShadows (bool cast);
     bool getCastShadows ();
@@ -51,11 +60,14 @@ namespace GE
     virtual Matrix4x4 getProjection (Float nearClip, Float farClip);
     virtual bool isPointInVolume (const Vector3 &p, Float threshold=0.0f) { return false; }
     void renderVolume ();
+
+    virtual Matrix4x4 getGlobalMatrix (bool inclusive=true);
   };
   
   class DirLight : public Light
   {
-    DECLARE_SUBCLASS( DirLight, Light ); DECLARE_END;
+    DECLARE_SUBCLASS( DirLight, Light );
+    DECLARE_END;
 
   public:
     DirLight () {}
@@ -65,7 +77,8 @@ namespace GE
   
   class PointLight : public Light
   {
-    DECLARE_SUBCLASS( PointLight, Light ); DECLARE_END;
+    DECLARE_SUBCLASS( PointLight, Light );
+    DECLARE_END;
 
   public:
     PointLight () {}
@@ -75,7 +88,10 @@ namespace GE
   
   class SpotLight : public Light
   {
-    DECLARE_SUBCLASS( SpotLight, Light ); DECLARE_END;
+    DECLARE_SERIAL_SUBCLASS( SpotLight, Light );
+    DECLARE_DATAVAR( angleInner );
+    DECLARE_DATAVAR( angleOuter );
+    DECLARE_END;
 
   protected:
     Float angleInner;
@@ -83,6 +99,7 @@ namespace GE
     virtual void updateVolume ();
 
   public:
+    SpotLight (SM *sm) : Light(sm) {}
     SpotLight () : angleOuter( 30.0f ), angleInner( -1.0f ) {}
     SpotLight (const Vector3 &pos,
                const Vector3 &dir,
@@ -97,7 +114,8 @@ namespace GE
   
   class HeadLight : public PointLight
   {
-    DECLARE_SUBCLASS( HeadLight, Light ); DECLARE_END;
+    DECLARE_SUBCLASS( HeadLight, Light );
+    DECLARE_END;
 
   public:
     HeadLight () {}

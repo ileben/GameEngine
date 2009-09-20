@@ -2,16 +2,15 @@
 #define __GERESOURCE_H
 
 #include "util/geUtil.h"
-#include "geObject.h"
 
 #pragma warning(push)
 #pragma warning(disable:4251)
 
 namespace GE
 {
-  class Resource
+  class Resource : public Object
   {
-    DECLARE_CLASS( Resource );
+    DECLARE_SUBCLASS( Resource, Object );
     DECLARE_OBJVAR( name );
     DECLARE_END;
     

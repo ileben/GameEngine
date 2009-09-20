@@ -246,14 +246,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\engine\geObject.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\engine\geObject.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\src\engine\gePolyMesh.cpp"
 				>
 			</File>

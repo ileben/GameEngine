@@ -22,6 +22,7 @@
 #include <maya/MQuaternion.h>
 #include <maya/MFnSingleIndexedComponent.h>
 #include <maya/MAnimControl.h>
+#include <maya/MFnCamera.h>
 
 #include <util/geUtil.h>
 #include <engine/geEngine.h>
@@ -38,5 +39,7 @@ void exportWithSkin (const MObject &meshNode, bool tangents, void **outData, Uin
 SkinAnim* exportAnimation (int start, int end, int fps);
 Material* exportMaterial (const MObject &meshNode);
 Matrix4x4 exportMatrix (const MMatrix &m);
+Light* exportLight (const MDagPath &lightDagPath);
+Camera* exportCamera (const MDagPath &camDagPath);
 
 #endif//__GEMAYA_H

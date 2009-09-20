@@ -233,9 +233,9 @@ class ConvoOpt;
 class ConvoSpeaker;
 
 
-class ConvoNode
+class ConvoNode : public Object
 {
-  DECLARE_CLASS( ConvoNode );
+  DECLARE_SUBCLASS( ConvoNode, Object );
   DECLARE_END;
 
 public:

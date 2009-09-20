@@ -20,9 +20,9 @@ namespace GE
   within the vertex structure
   --------------------------------------------------------*/
 
-  class FormatMember
+  class FormatMember : public Object
   {
-    DECLARE_SERIAL_CLASS( FormatMember );
+    DECLARE_SERIAL_SUBCLASS( FormatMember, Object );
     DECLARE_DATAVAR( data );
     DECLARE_DATAVAR( unit );
     DECLARE_DATAVAR( size );
@@ -45,9 +45,9 @@ namespace GE
     FormatMember (SM *sm) : attribName(sm) {}
   };
 
-  class VertexFormat
+  class VertexFormat : public Object
   {
-    DECLARE_SERIAL_CLASS( VertexFormat );
+    DECLARE_SERIAL_SUBCLASS( VertexFormat, Object );
     DECLARE_DATAVAR( size );
     DECLARE_OBJVAR( members );
     DECLARE_END;
@@ -165,7 +165,7 @@ namespace GE
   
   typedef Uint32 VertexID;
 
-  class TriVertex
+  class TriVertex : public Object
   {
   public:
 
@@ -173,7 +173,7 @@ namespace GE
     Vector3 *normal;
     Vector3 *coord;
 
-    DECLARE_CLASS( TriVertex );
+    DECLARE_SUBCLASS( TriVertex, Object );
     DECLARE_MEMBER_DATA( texcoord, new BindTarget( ShaderData::TexCoord ) );
     DECLARE_MEMBER_DATA( normal, new BindTarget( ShaderData::Normal ) );
     DECLARE_MEMBER_DATA( coord, new BindTarget( ShaderData::Coord ) );

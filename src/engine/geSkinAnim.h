@@ -11,9 +11,9 @@ namespace GE
   Track is a set of keys
   -----------------------------------*/
   
-  template <class Traits> class AnimTrack
+  template <class Traits> class AnimTrack : public Object
   {
-    DECLARE_SERIAL_CLASS( AnimTrack );
+    DECLARE_SERIAL_SUBCLASS( AnimTrack, Object );
     DECLARE_DATAVAR( totalTime );
     DECLARE_DATAVAR( frameTime );
     DECLARE_OBJVAR( keys );
@@ -122,9 +122,9 @@ namespace GE
   Animation is a set of tracks
   -----------------------------------*/
   
-  class SkinAnim
+  class SkinAnim : public Object
   {
-    DECLARE_SERIAL_CLASS( SkinAnim );
+    DECLARE_SERIAL_SUBCLASS( SkinAnim, Object );
     DECLARE_OBJVAR( name );
     DECLARE_DATAVAR( duration );
     DECLARE_OBJVAR( tracksT );
