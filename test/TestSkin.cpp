@@ -22,7 +22,7 @@ namespace CameraMode
 }
 
 ByteString data;
-MaxCharacter *character;
+Character *character;
 TriMesh *mshLogo;
 TriMeshActor *actLogo;
 SkinMeshActor *skinActor;
@@ -341,7 +341,7 @@ void loadPackage (String fileName)
   
   //Load character data
   SerializeManager sm;
-  character = (MaxCharacter*) sm.load( (void*)data.buffer() );
+  character = (Character*) sm.load( (void*)data.buffer() );
   
   printf ("Imported %d verts, %d faces, %d animations\n",
           character->mesh->getVertexCount(),

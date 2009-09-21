@@ -20,6 +20,7 @@ namespace GE
     
   public:
     Resource ();
+    Resource (SM *sm) {}
 
     int reference();
     int dereference();

@@ -227,7 +227,7 @@ namespace GE
     
   public:
     
-    TriMesh (SerializeManager *sm) : format(sm), data(sm), indices(sm), groups(sm)
+    TriMesh (SerializeManager *sm) : Resource(sm), format(sm), data(sm), indices(sm), groups(sm)
     { isOnGpu = false; }
 
     TriMesh (const VertexFormat &f) : data(f.getByteSize())

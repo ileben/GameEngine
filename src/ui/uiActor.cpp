@@ -134,7 +134,8 @@ namespace GE
   {
     //Check if changed at all
     if (!changed) return;
-    
+    changed = false;
+
     //Clear old data
     traversal.clear();
     if (root == NULL) return;
@@ -165,6 +166,7 @@ namespace GE
 
     root = actor;
     root->scene = this;
+    markChanged();
   }
 
   void Pin::drop (Actor *w)
@@ -293,5 +295,23 @@ namespace GE
     }
 
     return NULL;
+  }
+
+  Actor* Scene::findFirstActorByClass (ClassPtr cls)
+  {
+    for (UintSize t=0; t<traversal.size(); ++t) {
+      Actor* a = (Actor*) SafeCastPtr( cls, traversal[t] );
+      if (a != NULL) return a;
+    }
+
+    return NULL;
+  }
+
+  void Scene::findActorsByClass (ClassPtr cls, ArrayList<Actor*> &outActors)
+  {
+    for (UintSize t=0; t<traversal.size(); ++t) {
+      Actor* a = (Actor*) SafeCastPtr( cls, traversal[t] );
+      if (a != NULL) outActors.pushBack( a );
+    }
   }
 }

@@ -26,7 +26,7 @@ FpsLabel *lblFps = NULL;
 
 ByteString data;
 TriMesh *mesh = NULL;
-MaxCharacter *character = NULL;
+Character *character = NULL;
 TriMeshActor *triMeshActor = NULL;
 SkinMeshActor *skinMeshActor = NULL;
 Actor *actorRender = NULL;
@@ -645,9 +645,9 @@ bool loadPackage (const CharString &fileName)
             mesh->getVertexCount(),
             mesh->getFaceCount());
   }
-  else if (cls == Class(MaxCharacter))
+  else if (cls == Class(Character))
   {
-    character = (MaxCharacter*) object;
+    character = (Character*) object;
     
     //Mesh report
     printf ("Character: %d verts, %d faces, %d animations\n",

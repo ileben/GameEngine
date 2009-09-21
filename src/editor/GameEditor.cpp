@@ -24,7 +24,7 @@ FpsLabel *lblFps = NULL;
 
 ByteString data;
 TriMesh *mesh = NULL;
-MaxCharacter *character = NULL;
+Character *character = NULL;
 TriMeshActor *triMeshActor = NULL;
 SkinMeshActor *skinMeshActor = NULL;
 Actor3D *actorRender = NULL;
@@ -176,27 +176,28 @@ void keyDown (unsigned char key, int x, int y)
 
   case 13://return
     if (skinMeshActor == NULL) return;
-    skinMeshActor->playAnimation( animName, animSpeed );
+    skinMeshActor->loadAnimation( animName );
+    skinMeshActor->getAnimController()->play();
     break;
 
   case ' ':
     if (skinMeshActor == NULL) return;
-    if (!skinMeshActor->isAnimationPlaying())
-      skinMeshActor->loopAnimation( animName, animSpeed );
-    else skinMeshActor->pauseAnimation();
+    //if (!skinMeshActor->isAnimationPlaying())
+      //skinMeshActor->loopAnimation( animName, animSpeed );
+    //else skinMeshActor->pauseAnimation();
     break;
 
   case '+':
     if (skinMeshActor == NULL) return;
     animSpeed += 0.1f;
-    skinMeshActor->setAnimationSpeed( animSpeed );
+    skinMeshActor->getAnimController()->setSpeed( animSpeed );
     printf ("Animation speed: %f\n", animSpeed );
     break;
 
   case '-':
     if (skinMeshActor == NULL) return;
     if (animSpeed > 0.11f) animSpeed -= 0.1f;
-    skinMeshActor->setAnimationSpeed( animSpeed );
+    skinMeshActor->getAnimController()->setSpeed( animSpeed );
     printf ("Animation speed: %f\n", animSpeed );
     break;
 
@@ -303,7 +304,7 @@ void findBounds (TriMesh *mesh, const Matrix4x4 xform)
   }
   
   if (mesh->getVertexCount() > 0)
-    center /= mesh->getVertexCount();
+    center /= (Float) mesh->getVertexCount();
 }
 
 void cleanup()
@@ -434,15 +435,9 @@ bool loadPackage (const CharString &fileName)
             mesh->getVertexCount(),
             mesh->getFaceCount());
   }
-  else if (cls == Class(MaxCharacter))
+  else if (cls == Class(Character))
   {
-    character = (MaxCharacter*) object;
-    
-    //Mesh report
-    printf ("Character: %d verts, %d faces, %d animations\n",
-            character->mesh->getVertexCount(),
-            character->mesh->getFaceCount(),
-            character->anims.size());
+    character = (Character*) object;
     
     //Animations report
     for (UintSize a=0; a<character->anims.size(); ++a)
@@ -462,7 +457,7 @@ bool loadPackage (const CharString &fileName)
       }
       animName = character->anims[ animIndex ]->name;
     }
-
+/*
     //Split into 24-bone sub meshes
     SkinSuperToSubMesh splitter( character->mesh );
     splitter.splitByBoneLimit( 24 );
@@ -473,6 +468,11 @@ bool loadPackage (const CharString &fileName)
       SkinTriMesh *mesh = (SkinTriMesh*) splitter.getSubMesh(m);
       character->meshes.pushBack( mesh );
       mesh->sendToGpu();
+    }
+    */
+    for (UintSize m=0; m<character->meshes.size(); ++m)
+    {
+      character->meshes[m]->sendToGpu();
     }
   }
 
@@ -525,7 +525,7 @@ StandardMaterial* loadMaterial (
   return mat;
 }
 
-Actor* loadActor (const CharString &meshFileName,
+Actor3D* loadActor (const CharString &meshFileName,
                   const CharString &texFileName="",
                   const CharString &normTexFileName="")
 {
@@ -550,11 +550,11 @@ Actor* loadActor (const CharString &meshFileName,
   if (character != NULL)
   {
     skinMeshActor = new SkinMeshActor;
-    skinMeshActor->setMesh( character );
-    meshRender = character->mesh;
+    skinMeshActor->setCharacter( character );
+    //meshRender = character->mesh;
     actorRender = skinMeshActor;
   }
-
+/*
   //Center in the scene
   findBounds( meshRender, actorRender->getGlobalMatrix() );
   Vector3 trans = center * -1;
@@ -566,7 +566,7 @@ Actor* loadActor (const CharString &meshFileName,
   Float scale = 100.0f / sizemax;
   actorRender->scale( scale );
   findBounds( meshRender, actorRender->getGlobalMatrix() );
-
+*/
   if (normTexFileName != "")
   {
     //Assign normal-texture material
@@ -633,6 +633,11 @@ int main (int argc, char **argv)
     std::getchar();
     return EXIT_FAILURE;
   }
+
+  //Actor3D *zac = loadActor( "Zac.pak" );
+  //zac->setParent( scene->getRoot() );
+  //zac->scale( 20 );
+  //zac->translate( 0, 150, 0 );
 
   /*
   scene = new Scene3D;
@@ -706,17 +711,27 @@ int main (int argc, char **argv)
   //scene->addChild( axes );
 */
 
-  //Find first camera in the scene
-  const ArrayList<TravNode> *traversal = scene->getTraversal();
-  for (UintSize t=0; t<traversal->size(); ++t)
+  //Find lights
+  ArrayList<Actor*> lights;
+  scene->findActorsByClass( Class(Light), lights );
+  for (UintSize l=0; l<lights.size(); ++l) {
+    Light* light = (Light*) lights[l];
+    light->setAttenuationEnd( 10000.0f );
+  }
+
+  //Find first skin actor
+  skinMeshActor = (SkinMeshActor*) scene->findFirstActorByClass( Class(SkinMeshActor) );
+  if (skinMeshActor != NULL)
   {
-    TravNode &node = traversal->at( t );
-    Camera3D *camera = SafeCast( Camera3D, node.actor );
-    if (camera != NULL) {
-      cam3D = camera;
-      break;
+    //Find the name of the first animation
+    if (!skinMeshActor->getCharacter()->anims.empty()) {
+      SkinAnim *anim = skinMeshActor->getCharacter()->anims.first();
+      animName = anim->name;
     }
   }
+
+  //Find first camera in the scene
+  cam3D = (Camera3D*) scene->findFirstActorByClass( Class(Camera3D) );
 
   //Create a new camera if missing
   if (cam3D == NULL)
@@ -725,12 +740,14 @@ int main (int argc, char **argv)
     cam3D->orbitV( Util::DegToRad( 35 ) );
     cam3D->orbitH( Util::DegToRad( -40 ) );
     cam3D->translate( 80, 80, -80 );
+    cam3D->setParent( scene->getRoot() );
   }
 
   //Setup camera properties
   cam3D->setCenter( center );
   cam3D->setNearClipPlane( 1.0f );
-  cam3D->setFarClipPlane( 3000.0f );
+  cam3D->setFarClipPlane( 20000.0f );
+  //cam3D->setFarClipPlane( 3000.0f );
 
   //Setup 2D overlay
   Stage *stage = new Stage;

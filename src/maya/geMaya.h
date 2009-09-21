@@ -33,13 +33,25 @@ void trace( const CharString &s);
 void setStatus (const CharString &msg);
 void clearStatus ();
 
-bool findNodeInSelection (MFn::Type type, MObject &pick);
-void exportNoSkin (const MObject &meshNode, bool tangents, void **outData, UintSize *outSize);
-void exportWithSkin (const MObject &meshNode, bool tangents, void **outData, UintSize *outSize);
+Matrix4x4 exportMatrix (const MMatrix &m);
+Vector3 exportPoint (const MFloatPoint &p);
+Vector3 exportVector (const MVector &v);
+Vector2 exportUV (double u, double v);
+Quat exportQuat (const MQuaternion &q);
+Matrix4x4 exportScale (double s[3]);
+Vector3 exportColor (const MColor &c);
+
 SkinAnim* exportAnimation (int start, int end, int fps);
 Material* exportMaterial (const MObject &meshNode);
 Matrix4x4 exportMatrix (const MMatrix &m);
 Light* exportLight (const MDagPath &lightDagPath);
 Camera* exportCamera (const MDagPath &camDagPath);
+
+bool findNodeInSelection (MFn::Type type, MObject &pick);
+bool findSkinForMesh (const MObject &meshNode, MObject &skinNode);
+bool findSkinJointRoot (const MObject &skinNode, MObject &rootJoint);
+
+void exportNoSkin (const MObject &meshNode, bool tangents, void **outData, UintSize *outSize);
+void exportWithSkin (const MObject &meshNode, bool tangents, void **outData, UintSize *outSize);
 
 #endif//__GEMAYA_H

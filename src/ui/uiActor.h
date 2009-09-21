@@ -175,6 +175,9 @@ namespace GE
 
     Actor* findTopActorAt (float x, float y);
     const ArrayList<Actor*> & getTraversal () { return traversal; }
+    
+    Actor* findFirstActorByClass (ClassPtr cls);
+    void findActorsByClass (ClassPtr cls, ArrayList< Actor* > &outActors);
   };
 
   /*

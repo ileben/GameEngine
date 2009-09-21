@@ -552,7 +552,7 @@ namespace GE
     //Setup view from the lights perspective
     glViewport( 0, 0, S, S );
 
-    Matrix4x4 lightProj = light->getProjection( 1.0f, 1000.0f );
+    Matrix4x4 lightProj = light->getProjection( 1.0f, light->getAttenuationEnd() );
     glMatrixMode( GL_PROJECTION );
     glLoadMatrixf( (GLfloat*) lightProj.m );
     
@@ -935,7 +935,7 @@ namespace GE
 
       //Setup camera-eye to light-clip matrix
       Matrix4x4 cam = camera->getGlobalMatrix();
-      Matrix4x4 lightProj = light->getProjection( 1.0f, 1000.0f );
+      Matrix4x4 lightProj = light->getProjection( 1.0f, light->getAttenuationEnd() );
       Matrix4x4 lightInv = light->getGlobalMatrix().affineInverse();
       Matrix4x4 tex = lightProj * lightInv * cam;
       glActiveTexture( GL_TEXTURE0 );
@@ -1370,7 +1370,7 @@ namespace GE
       Light *l = scene->getLights()->first();
       
       Matrix4x4 cam = camera->getGlobalMatrix();
-      Matrix4x4 lightProj = l->getProjection( 1.0f, 1000.0f );
+      Matrix4x4 lightProj = l->getProjection( 1.0f, l->getAttenuationEnd() );
       Matrix4x4 lightInv = l->getGlobalMatrix().affineInverse();
       Matrix4x4 tex = lightProj * lightInv * cam;
       

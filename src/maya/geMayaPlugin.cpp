@@ -11,7 +11,7 @@ bool g_chkExportTangents = false;
 CharString g_outFileName;
 CharString g_skinFileName;
 CharString g_statusText;
-MaxCharacter *g_character = NULL;
+Character *g_character = NULL;
 SkinAnim *g_animation = NULL;
 
 /*
@@ -416,22 +416,25 @@ public:
         int colon = meshName.findRev( ":" );
         if (colon != -1) meshName = meshName.sub( colon+1 );
 
+        //Check if it's a mesh with skin
+        MObject skin; bool hasSkin = false;
+        if (findSkinForMesh( dagPath.node(), skin ))
+          hasSkin = true;
+
         //Only export mesh if not a file reference
         if (! dagNode.isFromReferencedFile())
         {
           //Export mesh data
           void *outData = NULL;
           UintSize outSize = 0;
-          exportNoSkin( dagPath.node(), true, &outData, &outSize );
+          if (hasSkin) exportWithSkin( dagPath.node(), true, &outData, &outSize );
+          else exportNoSkin( dagPath.node(), true, &outData, &outSize );
 
           //Write to file
           CharString meshName = name + ".pak";
           File meshFile = outFile.getRelativeFile( "Meshes/" + meshName );
-          if (!writePackageFile( outData, outSize, meshFile )) {
-            std::free( outData );
-            continue;
-          }
-    
+          writePackageFile( outData, outSize, meshFile );
+          
           //Free mesh data
           std::free( outData );
         }
@@ -443,13 +446,41 @@ public:
         //Get transform matrix
         Matrix4x4 matrix = exportMatrix( dagPath.inclusiveMatrix() );
 
-        //Create a new actor for this mesh
-        TriMeshActor *actor = new TriMeshActor;
-        actor->setMesh( meshName );
-        actor->setMatrix( matrix );
-        actor->setMaterial( material );
-        actor->setParent( root );
-        actor->scale( worldScale );
+        if (hasSkin)
+        {
+          //Create a new actor for this mesh
+          SkinMeshActor *actor = new SkinMeshActor;
+          actor->setCharacter( meshName );
+          actor->setMatrix( matrix );
+          actor->setMaterial( material );
+          actor->setParent( root );
+          actor->scale( worldScale );
+
+          //It is common to apply additional transformation to the root joint
+          //via various constraints rather than the mesh object itself so grab that
+          MObject rootJoint;
+          if (findSkinJointRoot( skin, rootJoint ))
+          {
+            //Find the path to the root joint
+            MDagPath jointPath;
+            MFnIkJoint joint( rootJoint );
+            joint.getPath( jointPath );
+
+            //Add its world transform to the actor
+            Matrix4x4 mjoint = exportMatrix( jointPath.inclusiveMatrix() );
+            actor->mulMatrixRight( mjoint );
+          }
+        }
+        else
+        {
+          //Create a new actor for this mesh
+          TriMeshActor *actor = new TriMeshActor;
+          actor->setMesh( meshName );
+          actor->setMatrix( matrix );
+          actor->setMaterial( material );
+          actor->setParent( root );
+          actor->scale( worldScale );
+        }
       }
       else if (dagPath.hasFn( MFn::kLight ))
       {
@@ -474,14 +505,6 @@ public:
         cam->setParent( root );
         cam->scale( worldScale );
       }
-
-      /*
-      //Output the node path and api type
-      CharString apiStr = dagPath.node().apiTypeStr();
-      trace( CharString("findNodeInSelection: ")
-             + dagPath.fullPathName().asChar()
-             + " (" + apiStr + ")" );
-      */
     }
 
     //Export actor data
@@ -657,8 +680,8 @@ class CmdBrowseSkinFile : public MPxCommand
 
     //Load the character data
     ClassPtr newCls;
-    MaxCharacter *newChar = (MaxCharacter*) sm.load( data.buffer(), &newCls );
-    if (newCls != Class(MaxCharacter) || newChar == NULL) {
+    Character *newChar = (Character*) sm.load( data.buffer(), &newCls );
+    if (newCls != Class(Character) || newChar == NULL) {
       setStatus( "Invalid file!" );
       return MStatus::kFailure; }
 

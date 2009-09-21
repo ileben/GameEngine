@@ -6,27 +6,26 @@
 namespace GE
 {
   
-  DEFINE_SERIAL_CLASS (MaxCharacter, CLSID_MAXCHARACTER);
+  DEFINE_SERIAL_CLASS (Character, CLSID_CHARACTER);
 
-  MaxCharacter::MaxCharacter()
+  Character::Character()
   {
-    mesh = NULL;
     pose = NULL;
   }
 
-  MaxCharacter::~MaxCharacter ()
+  Character::~Character ()
   {
-    if (mesh != NULL)
-      delete mesh;
-
     if (pose != NULL)
       delete pose;
-    
+
+    for (UintSize m=0; m<meshes.size(); ++m)
+      delete meshes[ m ];
+
     for (UintSize a=0; a<anims.size(); ++a)
       delete anims[ a ];
   }
 
-  SkinAnim* MaxCharacter::findAnimByName (const CharString &name)
+  SkinAnim* Character::findAnimByName (const CharString &name)
   {
     for (UintSize a=0; a < anims.size(); ++a)
       if (anims[ a ]->name == name)

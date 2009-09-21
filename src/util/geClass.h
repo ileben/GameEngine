@@ -248,7 +248,7 @@ namespace GE
     //Utilities
     static ClassPtr FromString (const char *name);
     static ClassPtr FromID (ClassID id);
-    static void* Safecast (ClassPtr to, ClassPtr from, void *instance);
+    static void* Safecast (ClassPtr to, Object *instance);
     /*
     static void SaveText (const ObjectPtr &ptr, ByteString &buf);
     static void SaveBinary (const ObjectPtr &ptr, ByteString &buf);
@@ -523,10 +523,11 @@ namespace GE
   #define New( iclass ) iclass->newInstance()
 
   //safecasting an instance pointer to another type
-  #define SafeCastName( name, instance ) \
-  (void*) IClass::Safecast (name, ClassOf(instance), instance)
+  #define SafeCastPtr( classPtr, instance ) \
+  (void*) IClass::Safecast( classPtr , instance )
+  
   #define SafeCast( Name, instance ) \
-  (Name*) IClass::Safecast (Class(Name), ClassOf(instance), instance)
+  (Name*) IClass::Safecast( Class(Name), instance )
 
 
   /*
@@ -551,7 +552,7 @@ namespace GE
   #define CLSID_SKINANIM             ClassID (0xf8b465a8u, 0x8729, 0x4406, 0x973c8a80f8950480ull)
   #define CLSID_QUATANIMTRACK        ClassID (0x8ff2d758u, 0xa624, 0x445a, 0x87197d3e14bb22c5ull)
   #define CLSID_VEC3ANIMTRACK        ClassID (0xd4b943cdu, 0x5cce, 0x4b50, 0x8cb7f4f2806c8637ull)
-  #define CLSID_MAXCHARACTER         ClassID (0xc0db7169u, 0x65dd, 0x4375, 0xa4b2d9a505703db8ull)
+  #define CLSID_CHARACTER            ClassID (0xc0db7169u, 0x65dd, 0x4375, 0xa4b2d9a505703db8ull)
 
 
 }//namespace GE

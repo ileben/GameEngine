@@ -87,6 +87,9 @@ namespace GE
     //- material end
     //- recurse to children
     virtual void end ();
+
+    //Invoked when loading after referenced resources are loaded
+    virtual void onResourcesLoaded() {}
     
     //Physics
     //====================================

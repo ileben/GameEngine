@@ -72,6 +72,8 @@ namespace GE
   class SkinTriMesh : public TriMesh
   {
     DECLARE_SERIAL_SUBCLASS( SkinTriMesh, TriMesh );
+    DECLARE_DATAVAR( mesh2skinMap );
+    DECLARE_DATAVAR( mesh2skinSize );
     DECLARE_END;
 
   public:

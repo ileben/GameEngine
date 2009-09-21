@@ -13,7 +13,7 @@
 namespace GE
 {
 
-  DEFINE_CLASS( SkinMeshActor );
+  DEFINE_SERIAL_CLASS( SkinMeshActor, ClassID( 0x208f56c3u, 0x4ce3, 0x4dee, 0xaafe9c235e6d42f3ull ));
 
 
   SkinMeshActor::SkinMeshActor()
@@ -23,7 +23,20 @@ namespace GE
     skinNormals = NULL;
     boneRotations = NULL;
     boneTranslations = NULL;
-    animEndFunc = NULL;
+  }
+
+  SkinMeshActor::SkinMeshActor(SM *sm)
+    : TriMeshActor(sm), character(sm)
+  {
+    skinVertices = NULL;
+    skinNormals = NULL;
+    boneRotations = NULL;
+    boneTranslations = NULL;
+  }
+
+  void SkinMeshActor::onResourcesLoaded()
+  {
+    setCharacter( character );
   }
 
   SkinMeshActor::~SkinMeshActor()
@@ -31,51 +44,38 @@ namespace GE
     freeAnimData();
   }
 
-  void SkinMeshActor::setAnimEndCallback (AnimCallbackFunc func)
+  void SkinMeshActor::setCharacter (const CharString &name)
   {
-    animEndFunc = func;
+    character = name;
   }
 
-  void SkinMeshActor::setMesh (MaxCharacter *c)
+  void SkinMeshActor::setCharacter (Character *c)
   {
+    TriMeshActor::setMesh( c->meshes.first() );
+    vertexBinding.init( c->meshes.first()->getFormat() );
     character = c;
-    TriMeshActor::setMesh( character->mesh );
-    vertexBinding.init( character->mesh->getFormat() );
 
     freeAnimData();
     initAnimData();
-    loadPoseRotations();
-    applySkin();
+    loadPose();
   }
 
-  MaxCharacter* SkinMeshActor::getMesh()
+  Character* SkinMeshActor::getCharacter()
   {
     return character;
-  }
-
-  void SkinMeshActor::freeAnimData()
-  {
-    if (skinVertices != NULL)
-      delete [] skinVertices;
-    if (skinNormals != NULL)
-      delete [] skinNormals;
-    if (boneRotations != NULL)
-      delete [] boneRotations;
-    if (boneTranslations != NULL)
-      delete [] boneTranslations;
   }
 
   void SkinMeshActor::initAnimData()
   {
     if (character == NULL) return;
 
-    SkinTriMesh *mesh = character->mesh;
+    /*
+    //Init vertex and normal coordinates
     SkinVertex vert;
+    SkinTriMesh *mesh = character->mesh;
 
     skinVertices = new Vector3[ mesh->data.size() ];
     skinNormals = new Vector3[ mesh->data.size() ];
-    boneRotations = new Quat[ character->pose->joints.size() ];
-    boneTranslations = new Vector3[ character->pose->joints.size() ];
 
     for (UintSize v=0; v < mesh->data.size(); ++v)
     {
@@ -83,12 +83,34 @@ namespace GE
       skinVertices[ v ] = *vert.coord;
       skinNormals[ v ] = *vert.normal;
     }
+    */
 
-    anim = NULL;
-    animSpeed = 1.0f;
-    animIsPlaying = false;
-    animIsLooping = false;
-    animIsPaused = false;
+    //Init bone rotations and translations
+    boneRotations = new Quat[ character->pose->joints.size() ];
+    boneTranslations = new Vector3[ character->pose->joints.size() ];
+  }
+
+  void SkinMeshActor::freeAnimData()
+  {
+    if (skinVertices != NULL) {
+      delete [] skinVertices;
+      skinVertices = NULL;
+    }
+
+    if (skinNormals != NULL) {
+      delete [] skinNormals;
+      skinNormals = NULL;
+    }
+
+    if (boneRotations != NULL) {
+      delete [] boneRotations;
+      boneRotations = NULL;
+    }
+
+    if (boneTranslations != NULL) {
+      delete [] boneTranslations;
+      boneTranslations = NULL;
+    }
   }
 
   void SkinMeshActor::loadPoseRotations()
@@ -101,6 +123,8 @@ namespace GE
 
   void SkinMeshActor::loadAnimRotations()
   {
+    Float animTime = animCtrl.getTime();
+
     for (UintSize b=0; b < anim->tracksR.size(); ++b)
       boneRotations[ b ] = anim->tracksR[ b ]->evalAt( animTime );
 
@@ -144,8 +168,8 @@ namespace GE
       }
     }
 
-    //Apply rotations to vertices
     /*
+    //Apply rotations to vertices
     SkinTriMesh *mesh = character->mesh;
     int vindex = 0; int nindex = 0;
     
@@ -202,104 +226,31 @@ namespace GE
   {
     if (character == NULL) return;
 
-    stopAnimation();
+    anim = NULL;
+    animCtrl.stop();
     loadPoseRotations();
     applySkin();
   }
 
-  void SkinMeshActor::playAnimation (const CharString &name, Float speed)
+  void SkinMeshActor::loadAnimation (const CharString &name)
   {
     if (character == NULL) return;
+    
     SkinAnim *newAnim = character->findAnimByName( name );
     if (newAnim == NULL) return;
-    
+
     anim = newAnim;
-    animStart = Kernel::GetInstance()->getTime();
-    animTime = 0.0f;
-    animSpeed = speed;
-    animIsPlaying = true;
-    animIsLooping = false;
-  }
-
-  void SkinMeshActor::loopAnimation (const CharString &name, Float speed)
-  {
-    if (character == NULL) return;
-    SkinAnim *newAnim = character->findAnimByName( name );
-    if (newAnim == NULL) return;
-    
-    anim = newAnim;
-    animStart = Kernel::GetInstance()->getTime();
-    animTime = 0.0f;
-    animSpeed = speed;
-    animIsPlaying = true;
-    animIsLooping = true;
-    animIsPaused = false;
-  }
-
-  void SkinMeshActor::stopAnimation ()
-  {
-    anim = NULL;
-    animIsPlaying = false;
-    animIsLooping = false;
-    animIsPaused = false;
-  }
-
-  void SkinMeshActor::pauseAnimation ()
-  {
-    if (animIsPlaying)
-      animIsPaused = !animIsPaused;
-  }
-
-  void SkinMeshActor::setAnimationSpeed (Float speed) {
-    animSpeed = speed;
-  }
-
-  Float SkinMeshActor::getAnimationSpeed () {
-    return animSpeed;
-  }
-
-  bool SkinMeshActor::isAnimationPlaying () {
-    return animIsPlaying;
-  }
-
-  bool SkinMeshActor::isAnimationPaused () {
-    return animIsPaused;
+    animCtrl.stop();
+    animCtrl.setLength( anim->duration );
+    loadAnimRotations();
+    applySkin();
   }
 
   void SkinMeshActor::tick ()
   {
-    if (animIsPlaying && !animIsPaused)
+    animCtrl.tick();
+    if (animCtrl.isPlaying())
     {
-      //Update animation time
-      animTime += Kernel::GetInstance()->getInterval() * animSpeed;
-      
-      //Check if animation has ended
-      if (animTime > anim->duration)
-      {
-        if (animIsLooping)
-        {
-          //Reset to zero if single frame animation
-          if (anim->duration == 0.0)
-            animTime = 0.0;
-          else
-          {
-            //Wrap the animation time if looping
-            while (animTime > anim->duration)
-              animTime -= anim->duration;
-          }
-        }
-        else
-        {
-          //Clip and stop non-looping animation
-          animTime = anim->duration;
-          animIsPlaying = false;
-
-          //Invoke callback
-          if (animEndFunc)
-            animEndFunc( this );
-        }
-      }
-
       //Update model
       loadAnimRotations();
       applySkin();

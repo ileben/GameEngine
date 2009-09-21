@@ -171,6 +171,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\engine\geAnimation.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\engine\geAnimation.h"
 				>
 			</File>

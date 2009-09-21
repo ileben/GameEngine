@@ -33,7 +33,12 @@ int main (int argc, char **argv)
   Kernel *kernel = new Kernel;
 
   CubeMesh *mesh = new CubeMesh;
-  kernel->cacheResource( mesh, "testmesh" );
+  kernel->cacheResource( mesh, "testMesh" );
+
+  Character *character = new Character;
+  character->pose = new SkinPose;
+  character->meshes[ 0 ] = new SkinTriMesh;
+  kernel->cacheResource( character, "testChar" );
 
   Actor3D *root = new Actor3D;
 
@@ -55,11 +60,16 @@ int main (int argc, char **argv)
   actor2->setMesh( mesh );
   actor2->setParent( root );
 
+  SkinMeshActor *actor3 = new SkinMeshActor;
+  actor3->setCharacter( character );
+  actor3->setParent( root );
 
   void *data; UintSize size;
   
   SerializeManager sm;
-  sm.save( root, &data, &size );
+  //sm.save( root, &data, &size );
+  sm.save( character, &data, &size );
+  sm.load( data );
 
   kernel->loadSceneData( data );
 

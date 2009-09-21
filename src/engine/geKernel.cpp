@@ -3,6 +3,9 @@
 #include "image/geImage.h"
 #include "engine/geTexture.h"
 #include "engine/geTriMesh.h"
+#include "engine/geSkinMesh.h"
+#include "engine/geSkinPose.h"
+#include "engine/geCharacter.h"
 #include "engine/geKernel.h"
 #include "engine/geRenderer.h"
 #include "engine/geScene.h"
@@ -720,8 +723,10 @@ namespace GE
     {
       //Load image
       Image img;
-      if (img.readFile( "Textures\\" + name ) != IMAGE_NO_ERROR)
+      if (img.readFile( "Textures\\" + name ) != IMAGE_NO_ERROR) {
+        std::cout << "Failed loading texture '" << name.buffer() << "'!" << std::endl;
         return NULL;
+      }
 
       //Create texture resource
       Texture *tex = new Texture;
@@ -742,10 +747,17 @@ namespace GE
       ClassPtr cls;
       SerializeManager sm;
       Resource *res = (Resource*) sm.load( data.buffer(), &cls );
+      ClassPtr ccls = res->GetInstanceClassPtr();
 
       //Send meshes to GPU
       TriMesh *mesh = SafeCast( TriMesh, res );
       if (mesh != NULL) mesh->sendToGpu();
+
+      Character *character = SafeCast( Character, res );
+      if (character != NULL) {
+        for (UintSize m=0; m<character->meshes.size(); ++m)
+          character->meshes[ m ]->sendToGpu();
+      }
 
       //Store resource in cache
       cacheResource( res, name );
@@ -765,7 +777,6 @@ namespace GE
     }
 
     //Load required resources
-    std::deque <MemberPtr> members;
     const SM::ObjectList &objects = sm.getObjects();
     for (UintSize o=0; o<objects.size(); ++o)
     {
@@ -775,6 +786,12 @@ namespace GE
         ResourceRef *ref = (ResourceRef*) obj;
         ref->ptr = getResource( ref->name );
       }
+    }
+
+    //Invoke loaded events
+    for (UintSize o=0; o<objects.size(); ++o) {
+      Actor3D *actor = SafeCast( Actor3D, objects.at(o) );
+      if (actor != NULL) actor->onResourcesLoaded();
     }
 
     //Compose the scene

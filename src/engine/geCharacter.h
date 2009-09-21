@@ -2,6 +2,7 @@
 #define __GECHARACTER_H
 
 #include "util/geUtil.h"
+#include "engine/geResource.h"
 
 namespace GE
 {
@@ -20,24 +21,23 @@ namespace GE
   Forward declarations
   ----------------------------------------*/
 
-  class MaxCharacter : public Object
+  class Character : public Resource
   {
-    DECLARE_SERIAL_SUBCLASS( MaxCharacter, Object )
+    DECLARE_SERIAL_SUBCLASS( Character, Resource )
     DECLARE_OBJPTR( pose );
-    DECLARE_OBJPTR( mesh );
+    DECLARE_OBJVAR( meshes );
     DECLARE_OBJVAR( anims );
     DECLARE_END;
 
   public:
     
     SkinPose *pose;
-    SkinTriMesh *mesh;
-    ArrayList<SkinTriMesh*> meshes;
+    ObjPtrArrayList <SkinTriMesh> meshes;
     ObjPtrArrayList <SkinAnim> anims;
     
-    MaxCharacter (SM *sm) : anims (sm) {}
-    MaxCharacter ();
-    ~MaxCharacter ();
+    Character (SM *sm) : Resource(sm), meshes(sm), anims(sm) {}
+    Character ();
+    ~Character ();
 
     SkinAnim* findAnimByName (const CharString &name);
   };

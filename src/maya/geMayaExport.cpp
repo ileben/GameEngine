@@ -5,6 +5,7 @@
 #include <maya/MFnBlinnShader.h>
 #include <maya/MFnLight.h>
 #include <maya/MFnSpotLight.h>
+#include <maya/MFnNonExtendedLight.h>
 
 /*
 ----------------------------------------------------------
@@ -80,6 +81,15 @@ Quat exportQuat (const MQuaternion &q)
   return Quat( (Float) q.x, (Float) q.y, (Float) -q.z, (Float) -q.w );
 }
 
+Matrix4x4 exportScale (double s[3])
+{
+  MMatrix m = MMatrix::identity;
+  m.matrix[0][0] = s[0];
+  m.matrix[1][1] = s[1];
+  m.matrix[2][2] = s[2];
+  return exportMatrix( m );
+}
+
 Vector3 exportColor (const MColor &c)
 {
   return Vector3( c.r, c.g, c.b );
@@ -123,7 +133,7 @@ void exportTransformJoint (const MObject &o, Quat &R, Vector3 &T, Matrix4x4 &S)
   MFnIkJoint joint( o );
   MQuaternion jointSO, jointR, jointO;
   MVector jointT;
-
+  
   joint.getScaleOrientation( jointSO );
   joint.getRotation( jointR );
   joint.getOrientation( jointO );
@@ -300,8 +310,10 @@ Light* exportLight (const MDagPath &lightDagPath)
   MStatus status;
   Light *outLight;
 
+  //Only SpotLights supported for now
   if (lightDagPath.hasFn( MFn::kSpotLight ))
   {
+    //Find the inner and out angles
     MFnSpotLight spotLight( lightDagPath );
     Float a1 = (Float) spotLight.coneAngle();
     Float a2 = (Float) Util::Max(
@@ -309,15 +321,25 @@ Light* exportLight (const MDagPath &lightDagPath)
       spotLight.penumbraAngle(),
       0.0 );
 
+    //Convert to degrees
     a1 = Util::RadToDeg( a1 );
     a2 = Util::RadToDeg( a2 );
 
+    //Set larger angle as outer, smaller as inner
     SpotLight *outSpotLight = new SpotLight;
     outSpotLight->setAngle( Util::Max( a1,a2 ), Util::Min( a1,a2) );
     outLight = outSpotLight;
   }
   else return NULL;
 
+  //Get shadow parameters
+  if (lightDagPath.hasFn( MFn::kNonExtendedLight ))
+  {
+    MFnNonExtendedLight nextLight( lightDagPath );
+    outLight->setCastShadows( nextLight.useDepthMapShadows() );
+  }
+
+  //Set other light properties
   MFnLight light( lightDagPath );
   outLight->setDiffuseColor( exportColor( light.color() ) * light.intensity() );
   outLight->setMatrix( exportMatrix( lightDagPath.inclusiveMatrix() ));
@@ -1617,14 +1639,26 @@ void exportWithSkin (const MObject &meshNode, bool tangents, void **outData, Uin
   //Export skin weights
   TriWeightExporter weightExporter( outTriMesh, vertToVariantMap );
   weightExporter.exportSkinWeights( skinNode, meshNode, skinToTreeMap );
-  
-  //Construct character
-  SkinPose *outPose = new SkinPose;
-  outPose->joints.pushListBack( &jointTree );
 
-  MaxCharacter *character = new MaxCharacter;
-  character->pose = outPose;
-  character->mesh = outTriMesh;
+  //Construct character
+  Character *character = new Character;
+  character->pose = new SkinPose;
+  character->pose->joints.pushListBack( &jointTree );
+
+  //Split into 24-bone sub meshes
+  trace( "exportWithSkin: Splitting by bone limit..." );
+
+  SkinSuperToSubMesh splitter( outTriMesh );
+  splitter.splitByBoneLimit( 24 );
+
+  UintSize numMeshes = splitter.getSubMeshCount();
+  for (UintSize m=0; m<numMeshes; ++m)
+  {
+    SkinTriMesh *mesh = (SkinTriMesh*) splitter.getSubMesh(m);
+    character->meshes.pushBack( mesh );
+  }
+
+  trace( "exportWithSkin: Generated " + CharString::FInt( (int)numMeshes ) + " sub-meshes." );
 
   //Serialize
   SerializeManager sm;

@@ -156,7 +156,7 @@ namespace GE
 
   typedef TResourceRef<Texture> TextureRef;
   typedef TResourceRef<TriMesh> MeshRef;
-  typedef TResourceRef<Character> CharRef;
+  typedef TResourceRef<Character> CharacterRef;
 }
 
 #pragma warning(pop)

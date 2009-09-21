@@ -23,7 +23,7 @@ FpsLabel *lblFps = NULL;
 
 ByteString data;
 TriMesh *mesh = NULL;
-MaxCharacter *character = NULL;
+Character *character = NULL;
 TriMeshActor *triMeshActor = NULL;
 SkinMeshActor *skinMeshActor = NULL;
 Actor *actorRender = NULL;
@@ -441,9 +441,9 @@ bool loadPackage (const CharString &fileName)
             mesh->getVertexCount(),
             mesh->getFaceCount());
   }
-  else if (cls == Class(MaxCharacter))
+  else if (cls == Class(Character))
   {
-    character = (MaxCharacter*) object;
+    character = (Character*) object;
     
     //Mesh report
     printf ("Character: %d verts, %d faces, %d animations\n",
@@ -510,9 +510,9 @@ Actor* loadActor (const CharString &meshFileName, const CharString &texFileName=
     skinMeshActor = new SkinMeshActor;
     skinMeshActor->setMesh( character );
     actorRender = skinMeshActor;
-    meshRender = character->mesh;
+    //meshRender = character->mesh;
   }
-
+/*
   //Center in the scene
   findBounds( meshRender, actorRender->getWorldMatrix() );
   Vector3 trans = center * -1;
@@ -524,7 +524,7 @@ Actor* loadActor (const CharString &meshFileName, const CharString &texFileName=
   Float scale = 100.0f / sizemax;
   actorRender->scale( scale );
   findBounds( meshRender, actorRender->getWorldMatrix() );
-
+*/
   if (texFileName == "")
   {
     //Assign solid color material

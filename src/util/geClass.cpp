@@ -108,28 +108,25 @@ namespace GE
     return it->second;
   }
 
-  void*
-  IClass::Safecast (ClassPtr to, ClassPtr from, void *instance)
+  void* IClass::Safecast (ClassPtr to, Object *instance)
   {
-    ClassPtr super = from;
-    
     //Return early if same class
-    if (to == from)
-      return instance;
-    
-    do
+    ClassPtr from = instance->GetInstanceClassPtr();
+    if (from == to) return instance;
+
+    //Walk up the class hierarchy until base reached
+    ClassPtr prev = NULL;
+    while (from != prev)
     {
       //Move one level higher
-      from = super;
-      super = SuperOf (from);
+      prev = from;
+      from = SuperOf( from );
       
       //Check whether [to] is [from]'s superclass
-      if (super == to) return instance;
+      if (from == to) return instance;
     }
-    //Stop if we hit the base
-    while (super != from);
     
-    //Cannot cast to non-super class
+    //Cast failed
     return NULL;
   }
   /*

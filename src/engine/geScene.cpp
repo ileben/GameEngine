@@ -12,7 +12,10 @@ namespace GE
   
   void Scene3D::updateChanges()
   {
+    bool changed = hasChanged();
     Scene::updateChanges();
+
+    if (!changed) return;
     if (getRoot() == NULL) return;
 
     //Init stack based on last size

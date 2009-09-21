@@ -4,6 +4,7 @@
 #include "util/geUtil.h"
 #include "engine/geSkinMesh.h"
 #include "engine/actors/geTriMeshActor.h"
+#include "engine/geAnimation.h"
 
 namespace GE
 {
@@ -13,7 +14,7 @@ namespace GE
   Forward declarations
   ------------------------------------*/
 
-  class MaxCharacter;
+  class Character;
   class SkinAnim;
   class SkinTriMesh;
   class SkinMeshActor;
@@ -23,15 +24,14 @@ namespace GE
   This actor animates and renders a skinned mesh
   ------------------------------------------------*/
 
-  typedef void (*AnimCallbackFunc) (SkinMeshActor *actor);
-
   class SkinMeshActor : public TriMeshActor
   {
-    DECLARE_SUBCLASS( SkinMeshActor, TriMeshActor );
+    DECLARE_SERIAL_SUBCLASS( SkinMeshActor, TriMeshActor );
+    DECLARE_OBJVAR( character );
     DECLARE_END;
 
   private:
-    MaxCharacter *character;
+    CharacterRef character;
     Vector3 *skinVertices;
     Vector3 *skinNormals;
     Vector3 *boneTranslations;
@@ -46,44 +46,31 @@ namespace GE
     void applySkin();
 
     SkinAnim *anim;
-    Float animTime;
-    Float animStart;
-    Float animSpeed;
-    bool animIsPlaying;
-    bool animIsLooping;
-    bool animIsPaused;
+    AnimController animCtrl;
 
     Int32 skinMatUniform;
     Int32 boneIndexAttrib;
     Int32 boneWeightAttrib;
 
-    AnimCallbackFunc animEndFunc;
-
   public:
     virtual ClassPtr getShaderComposingClass() { return Class(SkinMeshActor); }
     virtual void composeShader( Shader *shader );
 
-    SkinMeshActor();
-    virtual ~SkinMeshActor();
+    SkinMeshActor ();
+    SkinMeshActor (SM *sm);
+    virtual void onResourcesLoaded();
+    virtual ~SkinMeshActor ();
 
-    void setMesh (MaxCharacter *mesh);
-    MaxCharacter* getMesh();
+    void setCharacter (const CharString &name);
+    void setCharacter (Character *mesh);
+    Character* getCharacter ();
 
     virtual void render (MaterialID materialID);
 
     void loadPose ();
-    void playAnimation (const CharString &name, Float speed=1.0f);
-    void loopAnimation (const CharString &name, Float speed=1.0f);
-    void pauseAnimation ();
-    void stopAnimation ();
+    void loadAnimation (const CharString &name);
+    AnimController *getAnimController () { return &animCtrl; }
     void tick ();
-
-    void setAnimationSpeed (Float speed);
-    Float getAnimationSpeed ();
-    bool isAnimationPlaying ();
-    bool isAnimationPaused ();
-
-    void setAnimEndCallback (AnimCallbackFunc func);
   };
 
 
