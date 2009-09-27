@@ -46,9 +46,9 @@ namespace GE
     #define GE_INVALID_FILE_HANDLE  NULL
   #endif
     
-    bool isPathAbs (const String &path);
-    String makePathNative (const String &path);
-    bool createDirectory (const String &p);
+    bool isPathAbs (const String &path) const;
+    String makePathNative (const String &path) const;
+    bool createDirectory (const String &p) const;
 
   public:
     File();
@@ -64,24 +64,24 @@ namespace GE
     FILE* getHandle() { return handle; }
     #endif
     
-    String getName(bool withExtension=true);
-    String getPath();
-    String getPathName();
-    String getExtension();
-    UintSize getSize();
-    String getRelationTo( const File &f );
-    File getRelativeFile( const String &relation );
-    File getSuperFile();
-    void getSubFiles( ArrayList<File> *outFiles );
+    String getName(bool withExtension=true) const;
+    String getPath() const;
+    String getPathName() const;
+    String getExtension() const;
+    UintSize getSize() const;
+    String getRelationTo( const File &f ) const;
+    File getRelativeFile( const String &relation ) const;
+    File getSuperFile() const;
+    void getSubFiles( ArrayList<File> *outFiles ) const;
 
-    bool isRoot();
-    bool isOpen();
-    bool isDirectory();
-    bool exists();
+    bool isRoot() const;
+    bool isOpen() const;
+    bool isDirectory() const;
+    bool exists() const;
     bool remove();
     bool rename( const String &fullpath );
 
-    bool createPath();
+    bool createPath() const;
     bool open (FileAccess::Enum access, FileCondition::Enum condition);
     void close();
 

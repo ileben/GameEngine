@@ -15,7 +15,6 @@ namespace GE
   ------------------------------------*/
 
   class Character;
-  class SkinAnim;
   class SkinTriMesh;
   class SkinMeshActor;
 
@@ -34,8 +33,8 @@ namespace GE
     CharacterRef character;
     Vector3 *skinVertices;
     Vector3 *skinNormals;
-    Vector3 *boneTranslations;
-    Quat    *boneRotations;
+    Vector3 *jointTranslations;
+    Quat    *jointRotations;
     ArrayList <Matrix4x4> skinMats;
     VertexBinding <SkinVertex> vertexBinding;
 
@@ -45,7 +44,7 @@ namespace GE
     void loadAnimRotations();
     void applySkin();
 
-    SkinAnim *anim;
+    Animation *anim;
     AnimController animCtrl;
 
     Int32 skinMatUniform;

@@ -28,6 +28,66 @@
 #include <engine/geEngine.h>
 using namespace GE;
 
+class MayaClipDummy : public Object
+{
+  DECLARE_SERIAL_SUBCLASS( MayaClipDummy, Object );
+  DECLARE_OBJVAR( objName );
+  DECLARE_DATAVAR( startTime );
+  DECLARE_DATAVAR( endTime );
+  DECLARE_END;
+
+public:
+
+  CharString objName;
+  Float startTime;
+  Float endTime;
+
+  MayaClipDummy () {}
+  MayaClipDummy (SM *sm) : Object (sm), objName (sm) {}
+};
+
+class MayaAnimDummy : public Object
+{
+  DECLARE_SERIAL_SUBCLASS( MayaAnimDummy, Object );
+  DECLARE_OBJVAR( name );
+  DECLARE_DATAVAR( startTime );
+  DECLARE_DATAVAR( endTime );
+  DECLARE_OBJVAR( clips );
+  DECLARE_END;
+
+public:
+
+  CharString name;
+  Float startTime;
+  Float endTime;
+  ObjPtrArrayList< MayaClipDummy > clips;
+
+  MayaAnimDummy () {}
+  MayaAnimDummy (SM *sm) : Object (sm), name (sm), clips (sm) {}
+  virtual ~MayaAnimDummy () {
+    for (UintSize c=0; c<clips.size(); ++c)
+      delete clips[ c ];
+  }
+};
+
+class MayaSceneDummy : public Object
+{
+  DECLARE_SERIAL_SUBCLASS( MayaSceneDummy, Object );
+  DECLARE_OBJVAR( anims );
+  DECLARE_END;
+
+public:
+
+  ObjPtrArrayList< MayaAnimDummy > anims;
+
+  MayaSceneDummy () {}
+  MayaSceneDummy (SM *sm) : Object (sm), anims (sm) {}
+  virtual ~MayaSceneDummy () {
+    for (UintSize a=0; a<anims.size(); ++a)
+      delete anims[ a ];
+  }
+};
+
 CharString operator+ (const char *cstr, const CharString &str);
 void trace( const CharString &s);
 void setStatus (const CharString &msg);
@@ -41,12 +101,21 @@ Quat exportQuat (const MQuaternion &q);
 Matrix4x4 exportScale (double s[3]);
 Vector3 exportColor (const MColor &c);
 
-SkinAnim* exportAnimation (int start, int end, int fps);
 Material* exportMaterial (const MObject &meshNode);
 Matrix4x4 exportMatrix (const MMatrix &m);
 Light* exportLight (const MDagPath &lightDagPath);
 Camera* exportCamera (const MDagPath &camDagPath);
+Animation* exportSkinAnimation (int start, int end, int fps);
 
+void exportAnimation (int kps,
+                      MayaAnimDummy *anim,
+                      Animation *outAnim,
+                      AnimController *outCtrl,
+                      ArrayList< AnimObserver* > *outObsrvs);
+
+Actor3D* findActorByName (const CharString &name);
+bool findNodeByName (const CharString &name, MDagPath &outPath);
+void findNodesInSelection (MFn::Type type, ArrayList< MDagPath > &outPaths);
 bool findNodeInSelection (MFn::Type type, MObject &pick);
 bool findSkinForMesh (const MObject &meshNode, MObject &skinNode);
 bool findSkinJointRoot (const MObject &skinNode, MObject &rootJoint);

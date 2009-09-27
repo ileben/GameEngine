@@ -2,7 +2,8 @@
 #define __GESCENE_H
 
 #include "util/geUtil.h"
-#include "geActor.h"
+#include "engine/geActor.h"
+#include "engine/geAnimation.h"
 
 namespace GE
 {
@@ -42,17 +43,29 @@ namespace GE
 
   class Scene3D : public Scene
   {
-    DECLARE_SUBCLASS (Scene3D, Scene); DECLARE_END;
+    DECLARE_SERIAL_SUBCLASS (Scene3D, Scene);
+    DECLARE_DATAVAR( ambientColor );
+    DECLARE_OBJVAR( animations );
+    DECLARE_OBJVAR( animObservers );
+    DECLARE_OBJVAR( animControllers );
+    DECLARE_END;
     friend class Renderer;
 
   private:
     Camera *cam;
     ArrayList< Light* > lights;
     ArrayList< TravNode > traversal;
+
+  private:
     Vector3 ambientColor;
+  public:
+    ObjPtrArrayList< Animation > animations;
+    ObjPtrArrayList< AnimObserver > animObservers;
+    ObjPtrArrayList< AnimController > animControllers;
 
   public:
-    Scene3D();
+    Scene3D ();
+    Scene3D (SM *sm);
 
     void bindCamera( Camera *cam );
     inline const ArrayList< TravNode >* getTraversal();

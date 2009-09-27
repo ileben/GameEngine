@@ -2,9 +2,8 @@
 
 namespace GE
 {
-  #define CLSID_ACTOR ClassID (0x0acdcd40u, 0x9da9, 0x4dac, 0xac7bccbada6e4ee5ull)
-  DEFINE_SERIAL_CLASS( Actor, CLSID_ACTOR  );
-  DEFINE_CLASS( Scene );
+  DEFINE_SERIAL_CLASS( Actor, ClassID( 0x0acdcd40u, 0x9da9, 0x4dac, 0xac7bccbada6e4ee5ull ));
+  DEFINE_SERIAL_CLASS( Scene, ClassID( 0xb70776edu, 0x5881, 0x48fb, 0x8fc46f317579d987ull ));
   DEFINE_CLASS( Event );
 
   Stage* Stage::instance = NULL;
@@ -15,18 +14,16 @@ namespace GE
     Stage::instance = this;
   }
 
-  Actor::Actor (SM *sm) : children (sm)
+  Actor::Actor()
   {
     valid = true;
     parent = NULL;
     scene = NULL;
   }
 
-  Actor::Actor()
+  Actor::Actor (SM *sm) : children (sm)
   {
     valid = true;
-    parent = NULL;
-    scene = NULL;
   }
 
   void Actor::destroy()
@@ -118,6 +115,11 @@ namespace GE
   {
     changed = false;
     root = NULL;
+  }
+
+  Scene::Scene (SM *sm) : Object (sm)
+  {
+    changed = true;
   }
 
   void Scene::markChanged()

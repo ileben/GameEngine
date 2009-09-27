@@ -175,9 +175,10 @@ void keyDown (unsigned char key, int x, int y)
     break;
 
   case 13://return
-    if (skinMeshActor == NULL) return;
-    skinMeshActor->loadAnimation( animName );
-    skinMeshActor->getAnimController()->play();
+    scene->animControllers.first()->play();
+    //if (skinMeshActor == NULL) return;
+    //skinMeshActor->loadAnimation( animName );
+    //skinMeshActor->getAnimController()->play();
     break;
 
   case ' ':
@@ -320,6 +321,9 @@ void animate()
     skinMeshActor->tick();
 
   ctrl->tick();
+
+  for (UintSize c=0; c<scene->animControllers.size(); ++c)
+    scene->animControllers[ c ]->tick();
 
   glutPostRedisplay();
 }
@@ -611,6 +615,10 @@ Actor3D* loadActor (const CharString &meshFileName,
   return actorRender;
 }
 
+//TODO: Stuf doesn't load properly if a class used by the exporter is not
+//used in the application and therefore it doesn't get classified in runtime!!!
+ActorAnimObserver a;
+
 int main (int argc, char **argv)
 {
   //Initialize GLUT
@@ -725,7 +733,7 @@ int main (int argc, char **argv)
   {
     //Find the name of the first animation
     if (!skinMeshActor->getCharacter()->anims.empty()) {
-      SkinAnim *anim = skinMeshActor->getCharacter()->anims.first();
+      Animation *anim = skinMeshActor->getCharacter()->anims.first();
       animName = anim->name;
     }
   }

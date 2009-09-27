@@ -6,7 +6,7 @@
 namespace GE
 {
   
-  DEFINE_SERIAL_CLASS (Character, CLSID_CHARACTER);
+  DEFINE_SERIAL_CLASS( Character, ClassID (0xc0db7169u, 0x65dd, 0x4375, 0xa4b2d9a505703db8ull ));
 
   Character::Character()
   {
@@ -25,7 +25,7 @@ namespace GE
       delete anims[ a ];
   }
 
-  SkinAnim* Character::findAnimByName (const CharString &name)
+  Animation* Character::findAnimByName (const CharString &name)
   {
     for (UintSize a=0; a < anims.size(); ++a)
       if (anims[ a ]->name == name)

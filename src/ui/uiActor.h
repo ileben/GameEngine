@@ -86,6 +86,7 @@ namespace GE
   {
     friend class Scene;
     DECLARE_SERIAL_SUBCLASS( Actor, Object );
+    DECLARE_OBJREF( scene );
     DECLARE_OBJREF( parent );
     DECLARE_OBJVAR( children );
     DECLARE_DATAVAR( mat );
@@ -155,7 +156,8 @@ namespace GE
 
   class Scene : public Object
   {
-    DECLARE_SUBCLASS( Scene, Object );
+    DECLARE_SERIAL_SUBCLASS( Scene, Object );
+    DECLARE_OBJPTR( root );
     DECLARE_END;
 
   private:
@@ -164,7 +166,8 @@ namespace GE
     ArrayList <Actor*> traversal;
 
   public:
-    Scene();
+    Scene ();
+    Scene (SM *sm);
 
     void setRoot (Actor *actor);
     Actor* getRoot () { return root; }

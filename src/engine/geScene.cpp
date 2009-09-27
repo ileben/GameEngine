@@ -3,9 +3,15 @@
 
 namespace GE
 {
-  DEFINE_CLASS (Scene3D);
+  DEFINE_SERIAL_CLASS (Scene3D, ClassID( 0x847aa932u, 0xf887, 0x475b, 0xa94d9a9b017e1f7aull ));
 
   Scene3D::Scene3D()
+  {
+    cam = NULL;
+  }
+
+  Scene3D::Scene3D (SM *sm)
+    : Scene (sm), animations (sm), animControllers (sm), animObservers (sm)
   {
     cam = NULL;
   }

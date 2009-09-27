@@ -36,8 +36,8 @@ namespace GE
 
   /*
   -------------------------------------------------------------
-  Algorithm that copies faces of a mesh into a sub mesh
-  and remaps the bone indices until the bone limit is reached
+  Algorithm that copies faces of a mesh into a sub mesh and
+  remaps the joint indices until the joint limit is reached
   -------------------------------------------------------------*/
 
   void SkinSuperToSubMesh::splitByBoneLimit (Uint32 maxBonesPerMesh)

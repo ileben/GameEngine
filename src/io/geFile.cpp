@@ -34,17 +34,17 @@ namespace GE
 
 #if defined(WIN32)
 
-  bool File::isPathAbs (const String &p)
+  bool File::isPathAbs (const String &p) const
   {
     return (p.sub(1,2) != ":/");
   }
 
-  String File::makePathNative (const String &p)
+  String File::makePathNative (const String &p) const
   {
     return p.sub(1).findReplace("/", "\\");
   }
 
-  UintSize File::getSize()
+  UintSize File::getSize() const
   {
     if (!isOpen()) return 0;
 
@@ -54,21 +54,21 @@ namespace GE
     return (UintSize) size.QuadPart;
   }
 
-  bool File::exists()
+  bool File::exists() const
   {
     CharString longpath = "\\\\?\\" + getPathName();
     DWORD atts = GetFileAttributes( longpath.buffer() );
     return atts != INVALID_FILE_ATTRIBUTES;
   }
 
-  bool File::isDirectory()
+  bool File::isDirectory() const
   {
     CharString longpath = "\\\\?\\" + getPathName();
     DWORD atts = GetFileAttributes( longpath.buffer() );
     return (atts & FILE_ATTRIBUTE_DIRECTORY) != 0;
   }
 
-  bool File::createDirectory (const String &p)
+  bool File::createDirectory (const String &p) const
   {
     CharString longpath = "\\\\?\\" + p;
     return (CreateDirectory( longpath.buffer(), NULL ) == TRUE);
@@ -121,7 +121,7 @@ namespace GE
     }
   }
 
-  void File::getSubFiles( ArrayList<File> *outFiles )
+  void File::getSubFiles( ArrayList<File> *outFiles ) const
   {
     String SLASH = "/";		
     String pathname = path+name;
@@ -224,10 +224,18 @@ namespace GE
   
   bool File::rename (const String &name)
   {
+    close();
+
     File newfile( name );
     CharString oldlongpath = "\\\\?\\" + getPathName();
     CharString newlongpath = "\\\\?\\" + newfile.getPathName();
-    return (MoveFile( oldlongpath.buffer(), newlongpath.buffer() ) == TRUE);
+    if (MoveFile( oldlongpath.buffer(), newlongpath.buffer() ) == TRUE)
+    {
+      this->path = newfile.path;
+      this->name = newfile.name;
+      return true;
+    }
+    else return false;
   }
 	
   UintSize File::read (void *data, UintSize size)
@@ -541,12 +549,12 @@ namespace GE
   {
   }
 
-  String File::getPath()
+  String File::getPath() const
   {
     return makePathNative( path );
   }
   
-  String File::getName (bool withExtension)
+  String File::getName (bool withExtension) const
   {
     if (withExtension) return name;
     int dot = name.findRev( "." );
@@ -554,29 +562,29 @@ namespace GE
     return name.left( dot );
   }
 
-  String File::getExtension ()
+  String File::getExtension () const
   {
     int dot = name.findRev( "." );
     if (dot == -1) return "";
     return name.sub( dot );
   }
   
-  String File::getPathName()
+  String File::getPathName() const
   {
     return getPath() + getName();
   }
 
-  bool File::isOpen()
+  bool File::isOpen() const
   {
     return (handle != GE_INVALID_FILE_HANDLE);
   }
   
-  bool File::isRoot()
+  bool File::isRoot() const
   {
     return name == (String)"/";
   }
   
-  String File::getRelationTo( const File &f )
+  String File::getRelationTo( const File &f ) const
   {
     int x = 0, y = 0;
     String out;
@@ -616,7 +624,7 @@ namespace GE
     return out;
   }
   
-  File File::getRelativeFile( const String &relation )
+  File File::getRelativeFile( const String &relation ) const
   {
     String unixrel = relation;
     unixrel.findReplace( "\\", "/" );
@@ -626,7 +634,7 @@ namespace GE
     else return File( getPath() + relation );
   }
   
-  File File::getSuperFile()
+  File File::getSuperFile() const
   {
     //Check if current file is root
     if (isRoot())
@@ -640,7 +648,7 @@ namespace GE
     return File( makePathNative( path ) );
   }
 
-  bool File::createPath()
+  bool File::createPath() const
   {
     //Find first existing directory in the path
     ArrayList<String> dirs;

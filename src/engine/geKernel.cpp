@@ -770,8 +770,8 @@ namespace GE
     //Deserialize actors
     ClassPtr cls;
     SerializeManager sm;
-    Actor3D *root = (Actor3D*) sm.load( data, &cls );
-    if (cls != Class( Actor3D )) {
+    Scene3D *scene = (Scene3D*) sm.load( data, &cls );
+    if (cls != Class( Scene3D )) {
       std::cout << "Invalid file content!" << std::endl;
       return NULL;
     }
@@ -794,9 +794,7 @@ namespace GE
       if (actor != NULL) actor->onResourcesLoaded();
     }
 
-    //Compose the scene
-    Scene3D *scene = new Scene3D;
-    scene->setRoot( root );
+    //Update the scene
     scene->updateChanges();
     return scene;
   }

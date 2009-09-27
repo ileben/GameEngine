@@ -8,7 +8,7 @@ namespace GE
   void Label::setText (const String &newText) {
     text = newText;
     ByteString cstr = newText;
-    setSize( glutStrokeLength( GLUT_STROKE_ROMAN, cstr.buffer() ), 20.0f );
+    setSize( (Float) glutStrokeLength( GLUT_STROKE_ROMAN, cstr.buffer() ), 20.0f );
   }
   
   void Label::setColor (const Vector3 &c) {

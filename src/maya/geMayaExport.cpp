@@ -1508,9 +1508,114 @@ Exports keys for an animation between given start and end
 frames on the frame scroller bar
 ----------------------------------------------------------*/
 
+void exportAnimClip (const MDagPath objPath,
+                     Float startTime, Int startKey,
+                     Int numKeys, Int kps,
+                     Animation *outAnim,
+                     AnimController *outCtrl,
+                     AnimObserver *outObsrv)
+{
+  //Add tracks to animation and bind observer to them
+  QuatAnimTrack* outTrackR = new QuatAnimTrack;
+  outAnim->addTrack( outTrackR, startKey );
+  outCtrl->addObserver( outObsrv, 0 );
+  //outCtrl->bindObserver( outObsrv, outAnim->getNumTracks()-1 );
+
+  Vec3AnimTrack* outTrackT = new Vec3AnimTrack;
+  outAnim->addTrack( outTrackT, startKey );
+  outCtrl->addObserver( outObsrv, 0 );
+  //outCtrl->bindObserver( outObsrv, outAnim->getNumTracks()-1 );
+
+  //Find key step in seconds
+  Float keyTime = (1.0f / kps);
+  
+  //Walk the animation keys
+  for (Int k=0; k < numKeys; ++k)
+  {
+    //Set current time in seconds
+    MAnimControl animCtrl;
+    MTime now( startTime + k * keyTime, MTime::kSeconds );
+    animCtrl.setCurrentTime( now );
+
+    //Break transformation into animateable components
+    Quat keyR; Vector3 keyT; Matrix4x4 keyS;
+    exportTransformMatrix( objPath.inclusiveMatrix(), keyR, keyT, keyS );
+
+    //Add keyframes
+    outTrackR->addKey( keyR );
+    outTrackT->addKey( keyT );
+  }
+}
+/*
+class Test : public AnimObserver
+{
+  DECLARE_SERIAL_SUBCLASS( Test, AnimObserver );
+  DECLARE_END;
+
+public:
+  Test () {};
+  Test (SM *sm) : AnimObserver(sm) {}
+};
+
+DEFINE_SERIAL_CLASS( Test, ClassID( 1, 2, 3, 4 ));
+*/
+
+void exportAnimation (int kps,
+                      MayaAnimDummy *anim,
+                      Animation *outAnim,
+                      AnimController *outCtrl,
+                      ArrayList< AnimObserver* > *outObsrvs)
+{
+  //Store animation properties
+  outAnim->name = anim->name;
+  outAnim->duration = anim->endTime - anim->startTime;
+  outAnim->kps = kps;
+
+  //Bind to controller
+  outCtrl->bindAnimation( outAnim );
+
+  //Walk the list of clips to export
+  for (UintSize c=0; c<anim->clips.size(); ++c)
+  {
+    MayaClipDummy *clip = anim->clips[ c ];
+
+    //Make sure the node exists in the scene
+    MDagPath path;
+    if (!findNodeByName( clip->objName, path )) continue;
+    
+    //Make sure the actor was exported in the scene
+    Actor3D *actor = findActorByName( clip->objName );
+    if (actor == NULL) continue;
+
+    //Localize clip times to animation range
+    Float clipLocalStartTime = Util::Max( 0.0f, clip->startTime - anim->startTime );
+    Float clipLocalEndTime = Util::Max( 0.0f, clip->endTime - anim->startTime );
+
+    //Round the start / end times to full keys based on animation kps
+    Int clipLocalStartKey = (Int) FLOOR( clipLocalStartTime * kps );
+    Int clipLocalEndKey = (Int) CEIL( clipLocalEndTime * kps );
+    Int clipNumKeys = clipLocalEndKey - clipLocalStartKey + 1;
+
+    //Find global key-aligned start / end times
+    Float clipStartTime = anim->startTime + (Float) clipLocalStartKey / kps;
+    Float clipEndTime = anim->startTime + (Float) clipLocalEndKey / kps;
+
+    //Create an observer for this object
+    ActorAnimObserver *outObsrv = new ActorAnimObserver;
+    outObsrv->actor = actor;
+    outObsrvs->pushBack( outObsrv );
+
+    //Export keys for this track
+    exportAnimClip( path,
+      clipStartTime, clipLocalStartKey,
+      clipNumKeys, kps,
+      outAnim, outCtrl, outObsrv );
+  }
+}
+
 void exportAnimKeys (const ArrayList<MObject> &nodeTree,
                      int start, int end, int fps,
-                     SkinAnim *outAnim)
+                     Animation *outAnim)
 {
   //Constructs with current UI units by default
   MTime time;
@@ -1534,18 +1639,21 @@ void exportAnimKeys (const ArrayList<MObject> &nodeTree,
     + CharString::FFloat( (float) durationSec) + " seconds." );
 
   //Create animation tracks for every bone
-  outAnim->duration = (float) durationSec;
+  outAnim->duration = (Float) durationSec;
+  outAnim->kps = fps;
+
+  ArrayList< QuatAnimTrack* > tracksR;
+  ArrayList< Vec3AnimTrack* > tracksT;
+
   for (UintSize n=0; n<nodeTree.size(); ++n)
   {
     QuatAnimTrack *trackR = new QuatAnimTrack;
-    trackR->totalTime = (float) durationSec;
-    trackR->frameTime = (float) stepSec;
-    outAnim->tracksR.pushBack( trackR );
+    outAnim->addTrack( trackR, 0 );
+    tracksR.pushBack( trackR );
 
     Vec3AnimTrack *trackT = new Vec3AnimTrack;
-    trackT->totalTime = (float) durationSec;
-    trackT->frameTime = (float) stepSec;
-    outAnim->tracksT.pushBack( trackT );
+    outAnim->addTrack( trackT, 0 );
+    tracksT.pushBack( trackT );
   }
 
   //Walk the animation frames
@@ -1561,12 +1669,13 @@ void exportAnimKeys (const ArrayList<MObject> &nodeTree,
     for (UintSize n=0; n<nodeTree.size(); ++n)
     {
       //Add keys to tracks
-      Matrix4x4 S;
-      QuatTrackTraits::Key keyR;
-      Vec3TrackTraits::Key keyT;
-      exportTransformJoint( nodeTree[n], keyR.value, keyT.value, S );
-      outAnim->tracksR[ n ]->keys.pushBack( keyR );
-      outAnim->tracksT[ n ]->keys.pushBack( keyT );
+      Matrix4x4 keyS;
+      Quat keyR;
+      Vector3 keyT;
+      exportTransformJoint( nodeTree[n], keyR, keyT, keyS );
+
+      tracksR[ n ]->addKey( keyR );
+      tracksT[ n ]->addKey( keyT );
     }
   }
 
@@ -1707,7 +1816,7 @@ void exportNoSkin (const MObject &meshNode, bool tangents, void **outData, UintS
   delete outTriMesh;
 }
 
-SkinAnim* exportAnimation (int start, int end, int fps)
+Animation* exportSkinAnimation (int start, int end, int fps)
 {
   ArrayList<MObject> nodeTree;
   ArrayList<SkinJoint> jointTree;
@@ -1734,7 +1843,7 @@ SkinAnim* exportAnimation (int start, int end, int fps)
   buildJointTree( jointRoot, nodeTree, jointTree );
 
   //Export animation
-  SkinAnim *outAnim = new SkinAnim;
+  Animation *outAnim = new Animation;
   exportAnimKeys( nodeTree, start, end, fps, outAnim );
 
   return outAnim;

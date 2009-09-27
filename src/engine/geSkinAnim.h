@@ -4,42 +4,96 @@
 #include "util/geUtil.h"
 #include "math/geVectors.h"
 #include "engine/geAnimation.h"
+#include "engine/geActor.h"
 
 namespace GE
 {
 
-  /*
-  -----------------------------------
-  Animation is a set of tracks
-  -----------------------------------*/
-  
-  class SkinAnim : public Object
+  class ActorAnimObserver : public AnimObserver
   {
-    DECLARE_SERIAL_SUBCLASS( SkinAnim, Object );
-    DECLARE_OBJVAR( name );
-    DECLARE_DATAVAR( duration );
+    DECLARE_SERIAL_SUBCLASS( ActorAnimObserver, AnimObserver );
+    DECLARE_OBJREF( actor );
+    DECLARE_END;
+
+  public:
+
+    Vector3 valueT;
+    Quat    valueR;
+    Actor3D *actor;
+
+    ActorAnimObserver () : actor (NULL) {};
+    ActorAnimObserver (SM *sm) : AnimObserver (sm) {};
+    
+    virtual void onValueChanged (AnimTrack *track, Int param)
+    {
+      if (ClassOf( track ) == Class (Vec3AnimTrack ))
+        valueT = ((Vec3AnimTrack*) track)->getValue();
+      
+      else if (ClassOf( track ) == Class (QuatAnimTrack))
+        valueR = ((QuatAnimTrack*) track)->getValue();
+    }
+
+    virtual void onAnyValueChanged ()
+    {
+      Matrix4x4 mat;
+      mat.fromQuat( valueR );
+      mat.setColumn( 3, valueT );
+      actor->setMatrix( mat );
+    }
+  };
+/*
+  class SkinAnimation : public Animation
+  {
+    DECLARE_SERIAL_SUBCLASS( SkinAnimation, Animation );
+    DECLARE_END;
+
+  public:
+
+    SkinAnimation () {}
+    SkinAnimation (SM *sm) : Animation (sm) {}
+
+    void init
+    {
+    }
+  };
+*/
+
+  /*
+  class SkinAnimTrack : public AnimTrack
+  {
+    DECLARE_SERIAL_SUBCLASS( SkinAnimTrack, AnimTrack );
     DECLARE_OBJVAR( tracksT );
     DECLARE_OBJVAR( tracksR );
     DECLARE_END;
     
   public:
-    CharString name;
-    Float duration;
+
     ObjPtrArrayList <Vec3AnimTrack> tracksT;
     ObjPtrArrayList <QuatAnimTrack> tracksR;
+    SkinMeshActor *actor;
     
-    SkinAnim (SM *sm) : name (sm), tracksT (sm), tracksR(sm) {}
-    SkinAnim () {}
-    ~SkinAnim ()
+    SkinAnimTrack (SM *sm) : AnimTrack (sm), tracksT (sm), tracksR(sm) {}
+    SkinAnimTrack() {}
+    ~SkinAnimTrack ()
     {
       for (UintSize t=0; t<tracksT.size(); ++t)
-        delete tracksT[t];
+        delete tracksT[ t ];
       for (UintSize t=0; t<tracksR.size(); ++t)
-        delete tracksR[t];
+        delete tracksR[ t ];
     }
     
-    void evalFrame (Float time);
+    virtual void evalAt (Int key1, Int key2, Float keyT)
+    {
+      for (UintSize t=0; t<tracksT.size(); ++t)
+      {
+        tracksT[ t ]->evalAt( key1, key2, keyT );
+        tracksR[ t ]->evalAt( key1, key2, keyT );
+
+        //TODO: apply translation and rotation to bones
+      }
+    }
   };
+  */
 };
 
 #endif//__GESKELANIM_H

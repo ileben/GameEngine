@@ -21,8 +21,8 @@ namespace GE
     character = NULL;
     skinVertices = NULL;
     skinNormals = NULL;
-    boneRotations = NULL;
-    boneTranslations = NULL;
+    jointRotations = NULL;
+    jointTranslations = NULL;
   }
 
   SkinMeshActor::SkinMeshActor(SM *sm)
@@ -30,8 +30,8 @@ namespace GE
   {
     skinVertices = NULL;
     skinNormals = NULL;
-    boneRotations = NULL;
-    boneTranslations = NULL;
+    jointRotations = NULL;
+    jointTranslations = NULL;
   }
 
   void SkinMeshActor::onResourcesLoaded()
@@ -85,9 +85,9 @@ namespace GE
     }
     */
 
-    //Init bone rotations and translations
-    boneRotations = new Quat[ character->pose->joints.size() ];
-    boneTranslations = new Vector3[ character->pose->joints.size() ];
+    //Init joint rotations and translations
+    jointRotations = new Quat[ character->pose->joints.size() ];
+    jointTranslations = new Vector3[ character->pose->joints.size() ];
   }
 
   void SkinMeshActor::freeAnimData()
@@ -102,34 +102,36 @@ namespace GE
       skinNormals = NULL;
     }
 
-    if (boneRotations != NULL) {
-      delete [] boneRotations;
-      boneRotations = NULL;
+    if (jointRotations != NULL) {
+      delete [] jointRotations;
+      jointRotations = NULL;
     }
 
-    if (boneTranslations != NULL) {
-      delete [] boneTranslations;
-      boneTranslations = NULL;
+    if (jointTranslations != NULL) {
+      delete [] jointTranslations;
+      jointTranslations = NULL;
     }
   }
 
   void SkinMeshActor::loadPoseRotations()
   {
-    for (UintSize b=0; b < character->pose->joints.size(); ++b) {
-      boneRotations[ b ] = character->pose->joints[ b ].localR;
-      boneTranslations[ b ] = character->pose->joints[ b ].localT;
+    for (UintSize j=0; j < character->pose->joints.size(); ++j)
+    {
+      jointRotations[ j ] = character->pose->joints[ j ].localR;
+      jointTranslations[ j ] = character->pose->joints[ j ].localT;
     }
   }
 
   void SkinMeshActor::loadAnimRotations()
   {
-    Float animTime = animCtrl.getTime();
+    for (UintSize j=0; j < character->pose->joints.size(); ++j)
+    {
+      QuatAnimTrack *trackR = (QuatAnimTrack*) anim->getTrack( 2 * j + 0 );
+      Vec3AnimTrack *trackT = (Vec3AnimTrack*) anim->getTrack( 2 * j + 1 );
 
-    for (UintSize b=0; b < anim->tracksR.size(); ++b)
-      boneRotations[ b ] = anim->tracksR[ b ]->evalAt( animTime );
-
-    for (UintSize b=0; b < anim->tracksT.size(); ++b)
-      boneTranslations[ b ] = anim->tracksT[ b ]->evalAt( animTime );
+      jointRotations[ j ] = trackR->getValue();
+      jointTranslations[ j ] = trackT->getValue();
+    }
   }
 
   void SkinMeshActor::applySkin ()
@@ -141,8 +143,8 @@ namespace GE
     
     //Root FK matrix = local matrix
     Matrix4x4 rootWorld;
-    rootWorld.fromQuat( boneRotations[0] );
-    rootWorld.setColumn( 3, boneTranslations[0].xyz(1.0f) );
+    rootWorld.fromQuat( jointRotations[0] );
+    rootWorld.setColumn( 3, jointTranslations[0].xyz(1.0f) );
     rootWorld *= pose->joints.first().localS;
     fkMats.pushBack( rootWorld );
     
@@ -160,8 +162,8 @@ namespace GE
         SkinJoint *child = &pose->joints[ cindex ];
 
         Matrix4x4 childLocal;
-        childLocal.fromQuat( boneRotations[ cindex ]);
-        childLocal.setColumn( 3, boneTranslations[ cindex ].xyz(1.0f) );
+        childLocal.fromQuat( jointRotations[ cindex ]);
+        childLocal.setColumn( 3, jointTranslations[ cindex ].xyz(1.0f) );
         childLocal *= child->localS;
         fkMats.pushBack( fkMats[p] * childLocal );
         cindex++;
@@ -236,12 +238,11 @@ namespace GE
   {
     if (character == NULL) return;
     
-    SkinAnim *newAnim = character->findAnimByName( name );
+    Animation *newAnim = character->findAnimByName( name );
     if (newAnim == NULL) return;
 
     anim = newAnim;
-    animCtrl.stop();
-    animCtrl.setLength( anim->duration );
+    animCtrl.bindAnimation( anim );
     loadAnimRotations();
     applySkin();
   }
@@ -295,7 +296,7 @@ namespace GE
       for (UintSize b=0; b<subMesh->mesh2skinSize; ++b)
         meshMats[b] = skinMats[ subMesh->mesh2skinMap[b] ];
 
-      //Pass bone matrices to the shader
+      //Pass joint matrices to the shader
       if (shader != NULL) {
         Int32 uniMatrix = shader->getUniformID( skinMatUniform );
         glUniformMatrix4fv( uniMatrix, subMesh->mesh2skinSize, GL_FALSE, (GLfloat*)meshMats );

@@ -549,11 +549,6 @@ namespace GE
   #define CLSID_SKINTRIMESH          ClassID (0x71186776u, 0xe0e9, 0x428a, 0xb910329aafd3392full)
   #define CLSID_SKINMESH             ClassID (0xb9a1c7cdu, 0xcf04, 0x46b3, 0x837765467e60293bull)
   #define CLSID_SKINPOSE             ClassID (0x4b2c0c9au, 0xa47f, 0x4675, 0x88e0bf3aa5955a16ull)
-  #define CLSID_SKINANIM             ClassID (0xf8b465a8u, 0x8729, 0x4406, 0x973c8a80f8950480ull)
-  #define CLSID_QUATANIMTRACK        ClassID (0x8ff2d758u, 0xa624, 0x445a, 0x87197d3e14bb22c5ull)
-  #define CLSID_VEC3ANIMTRACK        ClassID (0xd4b943cdu, 0x5cce, 0x4b50, 0x8cb7f4f2806c8637ull)
-  #define CLSID_CHARACTER            ClassID (0xc0db7169u, 0x65dd, 0x4375, 0xa4b2d9a505703db8ull)
-
 
 }//namespace GE
 #endif//__GECLASS_H_TWO

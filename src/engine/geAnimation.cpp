@@ -4,37 +4,126 @@
 namespace GE
 {
 
-  DEFINE_CLASS( IAnimTrack );
-  DEFINE_SERIAL_TEMPL_CLASS( QuatAnimTrack,  CLSID_QUATANIMTRACK );
-  DEFINE_SERIAL_TEMPL_CLASS( Vec3AnimTrack,  CLSID_VEC3ANIMTRACK );
+  DEFINE_CLASS( AnimTrack );
+  DEFINE_SERIAL_TEMPL_CLASS( QuatAnimTrack,  ClassID (0x8ff2d758u, 0xa624, 0x445a, 0x87197d3e14bb22c5ull) );
+  DEFINE_SERIAL_TEMPL_CLASS( Vec3AnimTrack,  ClassID (0xd4b943cdu, 0x5cce, 0x4b50, 0x8cb7f4f2806c8637ull) );
+  
+  DEFINE_SERIAL_CLASS( Animation,           ClassID( 0x974f85e5u, 0x72dd, 0x475c, 0x97e5e2d6e7711a61ull ));
+  DEFINE_SERIAL_CLASS( AnimObserver,        ClassID( 0x396b2925u, 0x502d, 0x45d6, 0xaf50f072f0eef03dull ));
+  DEFINE_SERIAL_CLASS( AnimObserverBinding, ClassID( 0xe12e3c68u, 0x289d, 0x45ff, 0x98f3607fe1c29b1dull ));
+  DEFINE_SERIAL_CLASS( AnimController,      ClassID( 0x9cfdb22eu, 0xe70f, 0x4211, 0x90003ba27feade9eull ));
+
+
+  Animation::~Animation ()
+  {
+    for (UintSize t=0; t<tracks.size(); ++t)
+      delete tracks[t];
+  }
+
+  void Animation::addTrack (AnimTrack *track, Int atKey)
+  {
+    track->firstKey = atKey;
+    tracks.pushBack( track );
+  }
+
+  UintSize Animation::getNumTracks ()
+  {
+    return tracks.size();
+  }
+
+  AnimTrack* Animation::getTrack (UintSize t)
+  {
+    if (t >= tracks.size()) return NULL;
+    return tracks[ t ];
+  }
 
 
   AnimController::AnimController()
   {
     maxTime = 0.0f;
-    startTime = 0.0f;
     animTime = 0.0f;
     playSpeed = 1.0f;
     maxLoops = 0;
     numLoops = 0;
     endFunc = NULL;
+
+    anim = NULL;
+    trackIndex = 0;
   }
 
-  void AnimController::play (Float length, Float from, Int nloops, Float speed)
+  AnimController::AnimController (SM *sm)
+    : Object (sm), bindings (sm)
   {
-    maxTime = length;
+    endFunc = NULL;
+    trackIndex = 0;
+  }
+
+  AnimController::~AnimController ()
+  {
+    freeBindings();
+  }
+
+  void AnimController::freeBindings()
+  {
+    for (UintSize b=0; b<bindings.size(); ++b)
+      delete bindings[ b ];
+
+    bindings.clear();
+  }
+
+  void AnimController::createBindings()
+  {
+    for (UintSize t=0; t<anim->tracks.size(); ++t)
+      bindings.pushBack( new AnimObserverBinding() );
+  }
+
+  void AnimController::bindObserver (AnimObserver *o, UintSize track, Int param)
+  {
+    if ((UintSize) track >= bindings.size())
+      return;
+
+    bindings[ track ]->observer = o;
+    bindings[ track ]->param = param;
+  }
+
+  void AnimController::addObserver (AnimObserver *o, Int param)
+  {
+    bindings.pushBack( new AnimObserverBinding() );
+    bindings.last()->observer = o;
+    bindings.last()->param = param;
+  }
+
+  void AnimController::bindAnimation (Animation *a)
+  {
+    stop();
+
+    anim = a;
+    maxTime = anim->duration;
+
+    freeBindings();
+    createBindings();
+  }
+
+  void AnimController::play (Int nloops, Float speed, Float from)
+  {
     animTime = Util::Clamp( from, 0.0f, maxTime );
     maxLoops = nloops;
     playSpeed = speed;
 
-    play();
-  }
-
-  void AnimController::play ()
-  {
-    startTime = Kernel::GetInstance()->getTime();
     playing = true;
     paused = false;
+
+    trackIndex = 0;
+  }
+
+  void AnimController::stop ()
+  {
+    playing = false;
+    paused = false;
+    animTime = 0.0;
+    numLoops = 0;
+
+    trackIndex = 0;
   }
 
   void AnimController::pause ()
@@ -47,20 +136,6 @@ namespace GE
   {
     if (playing)
       paused = false;
-  }
-
-  void AnimController::stop ()
-  {
-    playing = false;
-    paused = false;
-    animTime = 0.0;
-    numLoops = 0;
-  }
-
-  void AnimController::setLength (Float length)
-  {
-    maxTime = Util::Max( length, 0.0f );
-    animTime = Util::Clamp( animTime, 0.0f, maxTime );
   }
 
   void AnimController::setTime (Float time)
@@ -150,6 +225,79 @@ namespace GE
         if (endFunc != NULL)
           endFunc( this, endParam );
       }
+    }
+    
+    //Evaluate animation
+    evaluateAnimation();
+  }
+
+  void AnimController::evaluateAnimation ()
+  {
+    //Must have an animation bound
+    if (anim == NULL) return;
+    
+    //Find 2 keys and interpolation coeff
+    Float curKey = animTime * anim->kps;
+    key1 = (Int) FLOOR( curKey );
+    key2 = (Int) CEIL( curKey );
+    keyT = curKey - (Float) key1;
+
+    //Walk the list of tracks under current key
+    for (TrackIter ti = tracksOnKey.begin(); ti != tracksOnKey.end(); )
+    {
+      //Update track values
+      AnimTrack *track = anim->tracks[ *ti ];
+      evaluateTrack( *ti );
+
+      //Remove finished tracks
+      if (key1 >= ( track->firstKey + track->getNumKeys() - 1 ))
+        ti = tracksOnKey.removeAt( ti );
+      else ++ti;
+    }
+
+    //Walk the list of pending animation tracks
+    for (; trackIndex < anim->tracks.size(); ++trackIndex)
+    {
+      //Check if animation keys have been met at current time
+      AnimTrack *track = anim->tracks[ trackIndex ];
+      if (key1 >= track->firstKey)
+      {
+        //Evaluate animation and add to list
+        evaluateTrack( (Int) trackIndex );
+        tracksOnKey.pushBack( (Int) trackIndex );
+      }
+      else break;
+    }
+
+    //Walk the list of observers at current key
+    for (UintSize o=0; o < observersOnKey.size(); ++o)
+    {
+      observersOnKey[ o ]->onAnyValueChanged();
+      observersOnKey[ o ]->change = false;
+    }
+
+    //Clear the list of observers
+    observersOnKey.clear();
+  }
+
+  void AnimController::evaluateTrack (UintSize t)
+  {
+    //Evaluate track at current time
+    AnimTrack *track = anim->tracks[ t ];
+    track->evalAt( key1, key2, keyT );
+
+    //Get the observer of this track
+    AnimObserver *observer = bindings[ t ]->observer;
+    if (observer == NULL) return;
+
+    //Notify of the value change
+    observer->onValueChanged( track, bindings[ t ]->param );
+
+    //Add to list of observers at current key
+    if (observer->change == false)
+    {
+      observersOnKey.pushBack( observer );
+      observer->change = true;
     }
   }
 

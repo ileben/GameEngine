@@ -13,8 +13,8 @@ namespace GE
 
   class SkinMesh;
   class SkinPose;
-  class SkinAnim;
   class SkinTriMesh;
+  class Animation;
 
   /*
   ----------------------------------------
@@ -33,13 +33,13 @@ namespace GE
     
     SkinPose *pose;
     ObjPtrArrayList <SkinTriMesh> meshes;
-    ObjPtrArrayList <SkinAnim> anims;
+    ObjPtrArrayList <Animation> anims;
     
     Character (SM *sm) : Resource(sm), meshes(sm), anims(sm) {}
     Character ();
     ~Character ();
 
-    SkinAnim* findAnimByName (const CharString &name);
+    Animation* findAnimByName (const CharString &name);
   };
 
 
