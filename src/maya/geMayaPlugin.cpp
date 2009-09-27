@@ -1178,6 +1178,38 @@ MayaClipDummy* getSelectedSceneClip()
   return anim->clips[ sel ];
 }
 
+void sortSceneAnims ()
+{
+  for (UintSize a1=0; a1<g_scene->anims.size(); ++a1)
+  {
+    for (UintSize a2=a1+1; a2 < g_scene->anims.size(); ++a2)
+    {
+      if (g_scene->anims[ a2 ]->startTime < g_scene->anims[ a1 ]->startTime)
+      {
+        MayaAnimDummy *atemp = g_scene->anims[ a1 ];
+        g_scene->anims[ a1 ] = g_scene->anims[ a2 ];
+        g_scene->anims[ a2 ] = atemp;
+      }
+    }
+  }
+}
+
+void sortSceneClips (MayaAnimDummy *anim)
+{
+  for (UintSize c1=0; c1<anim->clips.size(); ++c1)
+  {
+    for (UintSize c2=c1+1; c2 < anim->clips.size(); ++c2)
+    {
+      if (anim->clips[ c2 ]->startTime < anim->clips[ c1 ]->startTime)
+      {
+        MayaClipDummy *ctemp = anim->clips[ c1 ];
+        anim->clips[ c1 ] = anim->clips[ c2 ];
+        anim->clips[ c2 ] = ctemp;
+      }
+    }
+  }
+}
+
 CharString makeAnimTitleString (MayaAnimDummy *anim)
 {
   int startFrame = timeToFrame( anim->startTime );
@@ -1465,7 +1497,12 @@ class CmdSceneSetAnim : public MPxCommand
     anim->endTime = frameToTime( endFrame );
 
     //Update GUI
-    updateSceneAnimsList( true );
+    sortSceneAnims();
+    int index = (int) g_scene->anims.indexOf( anim );
+
+    updateSceneAnimsList();
+    selectListItem( "GLstSceneAnims", index, true );
+
     updateSceneClipsList();
 
     setStatus( "Done." );
@@ -1482,6 +1519,7 @@ class CmdSceneSetClip : public MPxCommand
     setStatus( "Setting clip properties..." );
 
     //Find selected clip
+    MayaAnimDummy *anim = getSelectedSceneAnim();
     MayaClipDummy *clip = getSelectedSceneClip();
     if (clip == NULL) {
       setStatus( "Please select a clip!" );
@@ -1501,7 +1539,11 @@ class CmdSceneSetClip : public MPxCommand
     clip->endTime = frameToTime( endFrame );
 
     //Update GUI
-    updateSceneClipsList( true );
+    sortSceneClips( anim );
+    int index = (int) anim->clips.indexOf( clip );
+
+    updateSceneClipsList();
+    selectListItem( "GLstSceneClips", index, true );
 
     setStatus( "Done." );
     return MStatus::kSuccess;
@@ -1532,8 +1574,12 @@ class CmdSceneNewAnim : public MPxCommand
     g_scene->anims.pushBack( newAnim );
     
     //Update GUI
+    sortSceneAnims();
+    int index = (int) g_scene->anims.indexOf( newAnim );
+
     updateSceneAnimsList();
-    selectListItem( "GLstSceneAnims", (int) g_scene->anims.size()-1 );
+    selectListItem( "GLstSceneAnims", index, true );
+
     updateSceneClipsList();
 
     setStatus( "Done." );
@@ -1584,8 +1630,11 @@ class CmdSceneNewClip : public MPxCommand
     anim->clips.pushBack( newClip );
     
     //Update GUI
+    sortSceneClips( anim );
+    int index = (int) anim->clips.indexOf( newClip );
+
     updateSceneClipsList();
-    selectListItem( "GLstSceneClips", (int) anim->clips.size()-1 );
+    selectListItem( "GLstSceneClips", (int) index, true );
 
     setStatus( "Done." );
     return MStatus::kSuccess;
