@@ -46,8 +46,6 @@ namespace GE
     DECLARE_SERIAL_SUBCLASS (Scene3D, Scene);
     DECLARE_DATAVAR( ambientColor );
     DECLARE_OBJVAR( animations );
-    DECLARE_OBJVAR( animObservers );
-    DECLARE_OBJVAR( animControllers );
     DECLARE_END;
     friend class Renderer;
 
@@ -60,12 +58,11 @@ namespace GE
     Vector3 ambientColor;
   public:
     ObjPtrArrayList< Animation > animations;
-    ObjPtrArrayList< AnimObserver > animObservers;
-    ObjPtrArrayList< AnimController > animControllers;
 
   public:
     Scene3D ();
     Scene3D (SM *sm);
+    ~Scene3D ();
 
     void bindCamera( Camera *cam );
     inline const ArrayList< TravNode >* getTraversal();

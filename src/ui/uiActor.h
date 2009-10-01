@@ -168,6 +168,7 @@ namespace GE
   public:
     Scene ();
     Scene (SM *sm);
+    virtual ~Scene() {};
 
     void setRoot (Actor *actor);
     Actor* getRoot () { return root; }

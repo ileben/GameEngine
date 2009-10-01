@@ -1505,26 +1505,91 @@ public:
 /*
 -----------------------------------------------------------
 Exports keys for an animation between given start and end
-frames on the frame scroller bar
+frames on the frame scroll bar
+----------------------------------------------------------*/
+
+void exportSkinAnimClip (const MDagPath objPath,
+                         Float startTime, Int startKey,
+                         Int numKeys, Int kps,
+                         Animation *outAnim,
+                         AnimObserver *outObsrv)
+{
+  ArrayList<MObject> nodeTree;
+  ArrayList<SkinJoint> jointTree;
+  MObject meshNode;
+  MObject skinNode;
+  MObject jointRoot;
+
+  //Build joint tree
+  meshNode = objPath.node();
+  if (!findSkinForMesh( meshNode, skinNode )) return;
+  if (!findSkinJointRoot( skinNode, jointRoot )) return;
+  buildJointTree( jointRoot, nodeTree, jointTree );
+
+  //Create animation tracks for every joint
+  ArrayList< QuatAnimTrack* > tracksR;
+  ArrayList< Vec3AnimTrack* > tracksT;
+
+  for (UintSize n=0; n<nodeTree.size(); ++n)
+  {
+    //Create rotation track
+    QuatAnimTrack *trackR = new QuatAnimTrack;
+    outAnim->addTrack( trackR, startKey );
+    outObsrv->bindTrack( outAnim, outAnim->getNumTracks()-1, (Int) n );
+    tracksR.pushBack( trackR );
+
+    //Create translation track
+    Vec3AnimTrack *trackT = new Vec3AnimTrack;
+    outAnim->addTrack( trackT, startKey );
+    outObsrv->bindTrack( outAnim, outAnim->getNumTracks()-1, (Int) n );
+    tracksT.pushBack( trackT );
+  }
+
+  //Find key step in seconds
+  Float keyTime = (1.0f / kps);
+  
+  //Walk the animation keys
+  for (Int k=0; k < numKeys; ++k)
+  {
+    //Set current time in seconds
+    MAnimControl animCtrl;
+    MTime now( startTime + k * keyTime, MTime::kSeconds );
+    animCtrl.setCurrentTime( now );
+
+    //Walk the joint node tree
+    for (UintSize n=0; n<nodeTree.size(); ++n)
+    {
+      //Break transformation into animateable components
+      Quat keyR; Vector3 keyT; Matrix4x4 keyS;
+      exportTransformJoint( nodeTree[n], keyR, keyT, keyS );
+
+      //Add keyframes
+      tracksR[ n ]->addKey( keyR );
+      tracksT[ n ]->addKey( keyT );
+    }
+  }
+}
+
+/*
+-----------------------------------------------------------
+Exports keys for an animation between given start and end
+frames on the frame scroll bar
 ----------------------------------------------------------*/
 
 void exportAnimClip (const MDagPath objPath,
                      Float startTime, Int startKey,
                      Int numKeys, Int kps,
                      Animation *outAnim,
-                     AnimController *outCtrl,
                      AnimObserver *outObsrv)
 {
   //Add tracks to animation and bind observer to them
   QuatAnimTrack* outTrackR = new QuatAnimTrack;
   outAnim->addTrack( outTrackR, startKey );
-  outCtrl->addObserver( outObsrv, 0 );
-  //outCtrl->bindObserver( outObsrv, outAnim->getNumTracks()-1 );
+  outObsrv->bindTrack( outAnim, outAnim->getNumTracks()-1 );
 
   Vec3AnimTrack* outTrackT = new Vec3AnimTrack;
   outAnim->addTrack( outTrackT, startKey );
-  outCtrl->addObserver( outObsrv, 0 );
-  //outCtrl->bindObserver( outObsrv, outAnim->getNumTracks()-1 );
+  outObsrv->bindTrack( outAnim, outAnim->getNumTracks()-1 );
 
   //Find key step in seconds
   Float keyTime = (1.0f / kps);
@@ -1560,19 +1625,13 @@ public:
 DEFINE_SERIAL_CLASS( Test, ClassID( 1, 2, 3, 4 ));
 */
 
-void exportAnimation (int kps,
-                      MayaAnimDummy *anim,
-                      Animation *outAnim,
-                      AnimController *outCtrl,
-                      ArrayList< AnimObserver* > *outObsrvs)
+Animation* exportAnimation (int kps, MayaAnimDummy *anim)
 {
   //Store animation properties
+  Animation* outAnim = new Animation;
   outAnim->name = anim->name;
   outAnim->duration = anim->endTime - anim->startTime;
   outAnim->kps = kps;
-
-  //Bind to controller
-  outCtrl->bindAnimation( outAnim );
 
   //Walk the list of clips to export
   for (UintSize c=0; c<anim->clips.size(); ++c)
@@ -1600,17 +1659,37 @@ void exportAnimation (int kps,
     Float clipStartTime = anim->startTime + (Float) clipLocalStartKey / kps;
     Float clipEndTime = anim->startTime + (Float) clipLocalEndKey / kps;
 
-    //Create an observer for this object
-    ActorAnimObserver *outObsrv = new ActorAnimObserver;
-    outObsrv->actor = actor;
-    outObsrvs->pushBack( outObsrv );
+    //Check if it's an actor with skin
+    SkinMeshActor *skinActor = SafeCast( SkinMeshActor, actor );
+    if (skinActor != NULL)
+    {
+      //Create an observer for this object
+      SkinAnimObserver *outObsrv = new SkinAnimObserver;
+      outObsrv->actor = skinActor;
+      outAnim->addObserver( outObsrv );
 
-    //Export keys for this track
-    exportAnimClip( path,
-      clipStartTime, clipLocalStartKey,
-      clipNumKeys, kps,
-      outAnim, outCtrl, outObsrv );
+      //Export keys for this track
+      exportSkinAnimClip( path,
+        clipStartTime, clipLocalStartKey,
+        clipNumKeys, kps,
+        outAnim, outObsrv );
+    }
+    else
+    {
+      //Create an observer for this object
+      ActorAnimObserver *outObsrv = new ActorAnimObserver;
+      outObsrv->actor = actor;
+      outAnim->addObserver( outObsrv );
+
+      //Export keys for this track
+      exportAnimClip( path,
+        clipStartTime, clipLocalStartKey,
+        clipNumKeys, kps,
+        outAnim, outObsrv );
+    }
   }
+
+  return outAnim;
 }
 
 void exportAnimKeys (const ArrayList<MObject> &nodeTree,
@@ -1648,11 +1727,11 @@ void exportAnimKeys (const ArrayList<MObject> &nodeTree,
   for (UintSize n=0; n<nodeTree.size(); ++n)
   {
     QuatAnimTrack *trackR = new QuatAnimTrack;
-    outAnim->addTrack( trackR, 0 );
+    outAnim->addTrack( trackR );
     tracksR.pushBack( trackR );
 
     Vec3AnimTrack *trackT = new Vec3AnimTrack;
-    outAnim->addTrack( trackT, 0 );
+    outAnim->addTrack( trackT );
     tracksT.pushBack( trackT );
   }
 
@@ -1669,9 +1748,7 @@ void exportAnimKeys (const ArrayList<MObject> &nodeTree,
     for (UintSize n=0; n<nodeTree.size(); ++n)
     {
       //Add keys to tracks
-      Matrix4x4 keyS;
-      Quat keyR;
-      Vector3 keyT;
+      Quat keyR; Vector3 keyT; Matrix4x4 keyS;
       exportTransformJoint( nodeTree[n], keyR, keyT, keyS );
 
       tracksR[ n ]->addKey( keyR );

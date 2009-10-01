@@ -9,7 +9,9 @@ namespace GE
   DEFINE_SERIAL_TEMPL_CLASS( Vec3AnimTrack,  ClassID (0xd4b943cdu, 0x5cce, 0x4b50, 0x8cb7f4f2806c8637ull) );
   
   DEFINE_SERIAL_CLASS( Animation,           ClassID( 0x974f85e5u, 0x72dd, 0x475c, 0x97e5e2d6e7711a61ull ));
+  DEFINE_SERIAL_CLASS( AnimEvent,           ClassID( 0xd744289fu, 0xd525, 0x40de, 0x9b4e90de7fa22742ull ));
   DEFINE_SERIAL_CLASS( AnimObserver,        ClassID( 0x396b2925u, 0x502d, 0x45d6, 0xaf50f072f0eef03dull ));
+  DEFINE_SERIAL_CLASS( AnimTrackBinding,    ClassID( 0x6ed45538u, 0x0d1d, 0x46d0, 0xa9515a77ffd53b37ull ));
   DEFINE_SERIAL_CLASS( AnimObserverBinding, ClassID( 0xe12e3c68u, 0x289d, 0x45ff, 0x98f3607fe1c29b1dull ));
   DEFINE_SERIAL_CLASS( AnimController,      ClassID( 0x9cfdb22eu, 0xe70f, 0x4211, 0x90003ba27feade9eull ));
 
@@ -17,7 +19,13 @@ namespace GE
   Animation::~Animation ()
   {
     for (UintSize t=0; t<tracks.size(); ++t)
-      delete tracks[t];
+      delete tracks[ t ];
+
+    for (UintSize o=0; o<observers.size(); ++o)
+      delete observers[ o ];
+
+    for (UintSize e=0; e<events.size(); ++e)
+      delete events[ e ];
   }
 
   void Animation::addTrack (AnimTrack *track, Int atKey)
@@ -35,6 +43,27 @@ namespace GE
   {
     if (t >= tracks.size()) return NULL;
     return tracks[ t ];
+  }
+
+  void Animation::addObserver (AnimObserver *o)
+  {
+    observers.pushBack( o );
+  }
+
+
+  void AnimObserver::bindTrack (Animation *anim, UintSize track, Int param)
+  {
+    AnimTrackBinding *bind = new AnimTrackBinding;
+    bind->anim = anim;
+    bind->track = track;
+    bind->param = param;
+    bindings.pushBack( bind );
+  }
+
+  AnimObserver::~AnimObserver()
+  {
+    for (UintSize b=0; b<bindings.size(); ++b)
+      delete bindings[ b ];
   }
 
 
@@ -65,6 +94,7 @@ namespace GE
 
   void AnimController::freeBindings()
   {
+    //Delete old bindings
     for (UintSize b=0; b<bindings.size(); ++b)
       delete bindings[ b ];
 
@@ -73,24 +103,31 @@ namespace GE
 
   void AnimController::createBindings()
   {
+    //Create new bindings
     for (UintSize t=0; t<anim->tracks.size(); ++t)
       bindings.pushBack( new AnimObserverBinding() );
+
+    //Bind default animation observers
+    for (UintSize o=0; o<anim->observers.size(); ++o)
+      bindObserver( anim->observers[ o ] );
   }
 
-  void AnimController::bindObserver (AnimObserver *o, UintSize track, Int param)
+  void AnimController::bindObserver (AnimObserver *obsrv)
   {
-    if ((UintSize) track >= bindings.size())
-      return;
+    //Walk the list of track bindings on the observer
+    for (UintSize b=0; b < obsrv->bindings.size(); ++b)
+    {
+      //Find bindings that target the same animation as the controller
+      AnimTrackBinding *trackBind = obsrv->bindings[ b ];
+      if (trackBind->anim != anim) continue;
 
-    bindings[ track ]->observer = o;
-    bindings[ track ]->param = param;
-  }
+      //Check that the track is within range
+      if (trackBind->track > bindings.size()) continue;
 
-  void AnimController::addObserver (AnimObserver *o, Int param)
-  {
-    bindings.pushBack( new AnimObserverBinding() );
-    bindings.last()->observer = o;
-    bindings.last()->param = param;
+      //Bind backwards (track -> observer)
+      bindings[ trackBind->track ]->observer = obsrv;
+      bindings[ trackBind->track ]->param = trackBind->param;
+    }
   }
 
   void AnimController::bindAnimation (Animation *a)

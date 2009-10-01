@@ -191,6 +191,9 @@ namespace GE
     }
     else
     {
+      //Check if the object was really serialized
+      ASSERT( (*pmbr)->serialID != 0 );
+
       //Store object ID
       UintSize id = (*pmbr)->serialID;
       store( &id, sizeof(UintSize) );
@@ -207,8 +210,13 @@ namespace GE
     //Load class ID
     ClassID clsid;
     load( &clsid, sizeof(ClassID) );
+
+    //Check for NULL pointer
+    if (clsid == 0) return false;
+
+    //Make sure the class is found otherwise
     ClassPtr cls = IClass::FromID( clsid );
-    if (cls == NULL) return false;
+    ASSERT( cls != INVALID_CLASS_PTR );
     
     //Construct new object
     if (obj.pointedTo)

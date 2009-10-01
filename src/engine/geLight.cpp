@@ -111,14 +111,6 @@ namespace GE
   {
     return attenuationEnd;
   }
-
-  Matrix4x4 Light::getGlobalMatrix (bool inclusive)
-  {
-    //Need orthonormal matrix for fast inverse
-    Matrix4x4 m = Actor::getGlobalMatrix( inclusive );
-    m.affineNormalize();
-    return m;
-  }
   
   DirLight::DirLight (const Vector3 &dir)
   {
@@ -223,7 +215,7 @@ namespace GE
   bool SpotLight::isPointInVolume (const Vector3 &p, Float threshold)
   {
     //Transform point to light space
-    Matrix4x4 worldToLight = getGlobalMatrix().affineInverse();
+    Matrix4x4 worldToLight = getGlobalMatrix().affineNormalize().affineInverse();
     Vector3 lightP = worldToLight * p;
 
     //Check whether point in range

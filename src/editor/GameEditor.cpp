@@ -33,6 +33,7 @@ Light *light = NULL;
 
 Scene3D *scene = NULL;
 Scene3D *sceneRender = NULL;
+AnimController *animCtrl = NULL;
 
 CameraMode::Enum cameraMode;
 Camera2D *cam2D = NULL;
@@ -175,7 +176,7 @@ void keyDown (unsigned char key, int x, int y)
     break;
 
   case 13://return
-    scene->animControllers.first()->play();
+    animCtrl->play();
     //if (skinMeshActor == NULL) return;
     //skinMeshActor->loadAnimation( animName );
     //skinMeshActor->getAnimController()->play();
@@ -321,9 +322,7 @@ void animate()
     skinMeshActor->tick();
 
   ctrl->tick();
-
-  for (UintSize c=0; c<scene->animControllers.size(); ++c)
-    scene->animControllers[ c ]->tick();
+  animCtrl->tick();
 
   glutPostRedisplay();
 }
@@ -618,6 +617,7 @@ Actor3D* loadActor (const CharString &meshFileName,
 //TODO: Stuf doesn't load properly if a class used by the exporter is not
 //used in the application and therefore it doesn't get classified in runtime!!!
 ActorAnimObserver a;
+SkinAnimObserver b;
 
 int main (int argc, char **argv)
 {
@@ -630,17 +630,23 @@ int main (int argc, char **argv)
   printf( "Kernel loaded\n" );
 
   //Setup depth-of-field
-  //renderer->setDofParams( 50, 50, 150, 150 );
-  renderer->setDofParams( 400, 200, 100, 300 );
+  //renderer->setDofParams( 400, 200, 100, 300 );
+  renderer->setDofParams( 800, 300, 100, 300 );
   renderer->setIsDofEnabled( true );
 
   //Setup 3D scene
-  scene = kernel.loadSceneFile( "export.pak" );
+  //scene = kernel.loadSceneFile( "export.pak" );
+  scene = kernel.loadSceneFile( "bossScene.pak" );
   if (scene == NULL) {
     std::cout << "Failed loading scene file!" << std::endl;
     std::getchar();
     return EXIT_FAILURE;
   }
+
+  //Bind first animation to a controller
+  animCtrl = new AnimController;
+  if (!scene->animations.empty())
+    animCtrl->bindAnimation( scene->animations.first() );
 
   //Actor3D *zac = loadActor( "Zac.pak" );
   //zac->setParent( scene->getRoot() );

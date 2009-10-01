@@ -114,21 +114,25 @@ namespace GE
   {
     Float interval = Kernel::GetInstance()->getInterval();
     cam->getScene()->updateChanges();
-    Matrix4x4 mat = cam->getGlobalMatrix( false );
+    Matrix4x4 cameraMat = cam->getGlobalMatrix( true ).affineNormalize();
+    Matrix4x4 parentMatInv = cam->getGlobalMatrix( false ).inverse();
 
     if (moveDir != 0) {
-      Vector3 look = mat.transformVector( cam->getLook() );
-      cam->translate( look * moveSpeed * (Float)moveDir * interval );
+      Vector3 look = cameraMat.getColumn( 2 ).xyz();
+      Vector3 move = look * moveSpeed * (Float)moveDir * interval;
+      cam->translate( parentMatInv.transformVector( move ) );
     }
 
     if (strafeDir != 0) {
-      Vector3 side = mat.transformVector( cam->getSide() );
-      cam->translate( side * strafeSpeed * (Float)strafeDir * interval );
+      Vector3 side = cameraMat.getColumn( 0 ).xyz();
+      Vector3 move = side * strafeSpeed * (Float)strafeDir * interval;
+      cam->translate( parentMatInv.transformVector( move ) );
     }
 
     if (climbSpeed != 0) {
       Vector3 up = Vector3(0,1,0);
-      cam->translate( up * climbSpeed * (Float)climbDir * interval );
+      Vector3 move = up * climbSpeed * (Float)climbDir * interval;
+      cam->translate( parentMatInv.transformVector( move ) );
     }
   }
 

@@ -28,6 +28,27 @@
 #include <engine/geEngine.h>
 using namespace GE;
 
+
+class MayaEventDummy : public Object
+{
+  DECLARE_SERIAL_SUBCLASS( MayaEventDummy, Object );
+  DECLARE_OBJVAR( name );
+  DECLARE_DATAVAR( time );
+  DECLARE_END;
+
+public:
+
+  CharString name;
+  Float time;
+
+  MayaEventDummy (SM *sm) : Object (sm), name (sm) {}
+  MayaEventDummy () : time (0.0f) {}
+
+  bool operator < (const MayaEventDummy &other) {
+    return time < other.time;
+  }
+};
+
 class MayaClipDummy : public Object
 {
   DECLARE_SERIAL_SUBCLASS( MayaClipDummy, Object );
@@ -44,6 +65,10 @@ public:
 
   MayaClipDummy () {}
   MayaClipDummy (SM *sm) : Object (sm), objName (sm) {}
+
+  bool operator < (const MayaClipDummy &other) {
+    return startTime < other.startTime;
+  }
 };
 
 class MayaAnimDummy : public Object
@@ -53,6 +78,7 @@ class MayaAnimDummy : public Object
   DECLARE_DATAVAR( startTime );
   DECLARE_DATAVAR( endTime );
   DECLARE_OBJVAR( clips );
+  DECLARE_OBJVAR( events );
   DECLARE_END;
 
 public:
@@ -61,12 +87,20 @@ public:
   Float startTime;
   Float endTime;
   ObjPtrArrayList< MayaClipDummy > clips;
+  ObjPtrArrayList< MayaEventDummy > events;
 
   MayaAnimDummy () {}
-  MayaAnimDummy (SM *sm) : Object (sm), name (sm), clips (sm) {}
-  virtual ~MayaAnimDummy () {
+  MayaAnimDummy (SM *sm) : Object (sm), name (sm), clips (sm), events (sm) {}
+  virtual ~MayaAnimDummy ()
+  {
     for (UintSize c=0; c<clips.size(); ++c)
       delete clips[ c ];
+    for (UintSize e=0; e<events.size(); ++e)
+      delete events[ e ];
+  }
+
+  bool operator < (const MayaAnimDummy &other) {
+    return startTime < other.startTime;
   }
 };
 
@@ -82,7 +116,8 @@ public:
 
   MayaSceneDummy () {}
   MayaSceneDummy (SM *sm) : Object (sm), anims (sm) {}
-  virtual ~MayaSceneDummy () {
+  virtual ~MayaSceneDummy ()
+  {
     for (UintSize a=0; a<anims.size(); ++a)
       delete anims[ a ];
   }
@@ -106,12 +141,7 @@ Matrix4x4 exportMatrix (const MMatrix &m);
 Light* exportLight (const MDagPath &lightDagPath);
 Camera* exportCamera (const MDagPath &camDagPath);
 Animation* exportSkinAnimation (int start, int end, int fps);
-
-void exportAnimation (int kps,
-                      MayaAnimDummy *anim,
-                      Animation *outAnim,
-                      AnimController *outCtrl,
-                      ArrayList< AnimObserver* > *outObsrvs);
+Animation* exportAnimation (int kps, MayaAnimDummy *anim);
 
 Actor3D* findActorByName (const CharString &name);
 bool findNodeByName (const CharString &name, MDagPath &outPath);

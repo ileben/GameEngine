@@ -60,8 +60,6 @@ namespace GE
     virtual Matrix4x4 getProjection (Float nearClip, Float farClip);
     virtual bool isPointInVolume (const Vector3 &p, Float threshold=0.0f) { return false; }
     void renderVolume ();
-
-    virtual Matrix4x4 getGlobalMatrix (bool inclusive=true);
   };
   
   class DirLight : public Light

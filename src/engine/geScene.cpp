@@ -11,9 +11,15 @@ namespace GE
   }
 
   Scene3D::Scene3D (SM *sm)
-    : Scene (sm), animations (sm), animControllers (sm), animObservers (sm)
+    : Scene (sm), animations (sm)
   {
     cam = NULL;
+  }
+
+  Scene3D::~Scene3D ()
+  {
+    for (UintSize a=0; a<animations.size(); ++a)
+      delete animations[ a ];
   }
   
   void Scene3D::updateChanges()

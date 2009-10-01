@@ -178,18 +178,10 @@ namespace GE
   
   void Camera3D::updateView()
   {
-    Matrix4x4 world2cam = getGlobalMatrix().affineInverse();
+    Matrix4x4 world2cam = getGlobalMatrix().affineNormalize().affineInverse();
 
     glMatrixMode(GL_MODELVIEW);
     glLoadMatrixf ((GLfloat*) world2cam.m);
-  }
-
-  Matrix4x4 Camera3D::getGlobalMatrix (bool inclusive)
-  {
-    //Need orthonormal matrix for fast inverse
-    Matrix4x4 m = Actor::getGlobalMatrix( inclusive );
-    m.affineNormalize();
-    return m;
   }
 
   /*======================================

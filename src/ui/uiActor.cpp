@@ -276,7 +276,7 @@ namespace GE
 
   bool Actor::hitTest (float x, float y)
   {
-    Matrix4x4 invg = getGlobalMatrix().affineInverse();
+    Matrix4x4 invg = getGlobalMatrix().inverse();
     Vector3 hit = invg * Vector3( x,y,0 );
     if (hit.x < loc.x) return false;
     if (hit.y < loc.y) return false;

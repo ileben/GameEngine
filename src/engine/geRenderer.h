@@ -125,6 +125,7 @@ namespace GE
 
     Shader *shaderAmbient;
     Int32 ambientColorSampler;
+    Int32 uAmbientColor;
 
     Shader *shaderDofInit;
     Int32 uDofInitColorSampler;

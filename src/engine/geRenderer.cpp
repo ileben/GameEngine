@@ -220,8 +220,10 @@ namespace GE
   void Renderer::initShaders ()
   {
     shaderAmbient = new Shader;
+    shaderAmbient->registerUniform( ShaderType::Fragment, DataUnit::Vec3, "ambientColor" );
     shaderAmbient->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
     shaderAmbient->fromString( Ambient_VertexSource, Ambient_FragmentSource );
+    uAmbientColor = shaderAmbient->getUniformID( "ambientColor" );
     ambientColorSampler = shaderAmbient->getUniformID( "samplerColor" );
 
     shaderLightSpot = new Shader;
@@ -556,7 +558,7 @@ namespace GE
     glMatrixMode( GL_PROJECTION );
     glLoadMatrixf( (GLfloat*) lightProj.m );
     
-    Matrix4x4 lightView = light->getGlobalMatrix().affineInverse();
+    Matrix4x4 lightView = light->getGlobalMatrix().affineNormalize().affineInverse();
     glMatrixMode( GL_MODELVIEW );
     glLoadMatrixf( (GLfloat*) lightView.m );
 
@@ -686,6 +688,7 @@ namespace GE
 
     //Ambient light pass
     shaderAmbient->use();
+    glUniform3fv( uAmbientColor, 1, (GLfloat*) &scene->getAmbientColor() );
     glDrawBuffer( GL_COLOR_ATTACHMENT0 );
 
     glActiveTexture( GL_TEXTURE0 );
@@ -737,12 +740,12 @@ namespace GE
       camera->updateView();
 
       //Enable the light
-      Matrix4x4 worldCtm = light->getGlobalMatrix();
+      Matrix4x4 worldCtm = light->getGlobalMatrix().affineNormalize();
       glMatrixMode( GL_MODELVIEW );
       glMultMatrixf( (GLfloat*) worldCtm.m );
 
       //Avoid front faces being clipped by the camera near plane
-      Vector3 worldEye = camera->getGlobalMatrix() * Vector3(0,0,0);
+      Vector3 worldEye = camera->getGlobalMatrix().affineNormalize() * Vector3(0,0,0);
       if (light->isPointInVolume( worldEye, camera->getNearClipPlane()*2 ))
       {
         //Pass for pixels in front of light volume back
@@ -809,7 +812,7 @@ namespace GE
       camera->updateView();
 
       //Enable the light
-      Matrix4x4 worldCtm = light->getGlobalMatrix();
+      Matrix4x4 worldCtm = light->getGlobalMatrix().affineNormalize();
       glMatrixMode( GL_MODELVIEW );
       glMultMatrixf( (GLfloat*) worldCtm.m );
       light->enable( 0 );
@@ -830,7 +833,7 @@ namespace GE
       glClear( GL_STENCIL_BUFFER_BIT );
 
       //Avoid front faces being clipped by the camera near plane
-      Vector3 worldEye = camera->getGlobalMatrix() * Vector3(0,0,0);
+      Vector3 worldEye = camera->getGlobalMatrix().affineNormalize() * Vector3(0,0,0);
       if (light->isPointInVolume( worldEye, camera->getNearClipPlane()*2 ))
       {
         //Pass for pixels in front of light volume back and incr stencil
@@ -934,9 +937,9 @@ namespace GE
       }
 
       //Setup camera-eye to light-clip matrix
-      Matrix4x4 cam = camera->getGlobalMatrix();
+      Matrix4x4 cam = camera->getGlobalMatrix().affineNormalize();
       Matrix4x4 lightProj = light->getProjection( 1.0f, light->getAttenuationEnd() );
-      Matrix4x4 lightInv = light->getGlobalMatrix().affineInverse();
+      Matrix4x4 lightInv = light->getGlobalMatrix().affineNormalize().affineInverse();
       Matrix4x4 tex = lightProj * lightInv * cam;
       glActiveTexture( GL_TEXTURE0 );
       glMatrixMode( GL_TEXTURE );
@@ -1369,9 +1372,9 @@ namespace GE
     {
       Light *l = scene->getLights()->first();
       
-      Matrix4x4 cam = camera->getGlobalMatrix();
+      Matrix4x4 cam = camera->getGlobalMatrix().affineNormalize();
       Matrix4x4 lightProj = l->getProjection( 1.0f, l->getAttenuationEnd() );
-      Matrix4x4 lightInv = l->getGlobalMatrix().affineInverse();
+      Matrix4x4 lightInv = l->getGlobalMatrix().affineNormalize().affineInverse();
       Matrix4x4 tex = lightProj * lightInv * cam;
       
       glMatrixMode( GL_TEXTURE );
@@ -1387,8 +1390,7 @@ namespace GE
       Light *light = scene->getLights()->at( l );
 
       //Setup transformation matrix
-      Matrix4x4 worldCtm = light->getGlobalMatrix();
-      //worldCtm.affineNormalize();
+      Matrix4x4 worldCtm = light->getGlobalMatrix().affineNormalize();
       glMatrixMode( GL_MODELVIEW );
       glPushMatrix();
       glMultMatrixf( (GLfloat*) worldCtm.m );

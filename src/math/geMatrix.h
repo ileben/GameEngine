@@ -226,7 +226,7 @@ namespace GE
     //Float determinant () const;
     //Matrix4x4 inverse () const;
     Matrix4x4 affineInverse () const;
-    void affineNormalize ();
+    Matrix4x4& affineNormalize ();
   };
   
   

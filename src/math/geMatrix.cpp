@@ -347,7 +347,7 @@ namespace GE
   Normalizes the rotation part columns.
   */
   
-  void Matrix4x4::affineNormalize ()
+  Matrix4x4& Matrix4x4::affineNormalize ()
   {
     Float norm0inv = 1.0f / SQRT (m[0][0]*m[0][0] + m[0][1]*m[0][1] + m[0][2]*m[0][2]);
     Float norm1inv = 1.0f / SQRT (m[1][0]*m[1][0] + m[1][1]*m[1][1] + m[1][2]*m[1][2]);
@@ -356,6 +356,8 @@ namespace GE
     m[0][0] *= norm0inv; m[1][0] *= norm1inv; m[2][0] *= norm2inv;
     m[0][1] *= norm0inv; m[1][1] *= norm1inv; m[2][1] *= norm2inv;
     m[0][2] *= norm0inv; m[1][2] *= norm1inv; m[2][2] *= norm2inv;
+
+    return *this;
   }
 
   

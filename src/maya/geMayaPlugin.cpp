@@ -2,6 +2,7 @@
 #include "geMaya.h"
 #include <maya/MFnPlugin.h> //Must only be included once!
 #include <maya/MBoundingBox.h>
+#include <maya/MFnAmbientLight.h>
 
 //This MEL script links the C++ code and the GUI.
 #include "mel.embedded"
@@ -9,6 +10,7 @@
 
 DEFINE_SERIAL_CLASS( MayaAnimDummy,  ClassID ( 0x3a64a0f5u, 0x8ba7, 0x43bd, 0x98bc949ecfa7fb74ull ));
 DEFINE_SERIAL_CLASS( MayaClipDummy,  ClassID ( 0x251dd070u, 0x6d0b, 0x496a, 0x9a6eb10676a6da3eull ));
+DEFINE_SERIAL_CLASS( MayaEventDummy, ClassID ( 0x00b10b6cu, 0x1332, 0x4c20, 0xae0b14e6440d55e5ull ));
 DEFINE_SERIAL_CLASS( MayaSceneDummy, ClassID ( 0xd5c205c0u, 0xd846, 0x416b, 0x82ae7f337b15aee1ull ));
 
 
@@ -601,6 +603,9 @@ public:
       }
     }
 
+    //Apply world scale to root object
+    root->scale( worldScale );
+
     //Walk the whole scene graph
     MItDag dagIt( MItDag::kBreadthFirst );
     for ( ; !dagIt.isDone(); dagIt.next())
@@ -671,7 +676,6 @@ public:
           actor->setMatrix( matrix );
           actor->setMaterial( material );
           actor->setParent( root );
-          actor->scale( worldScale );
           outActor = actor;
 
           //It is common to apply additional transformation to the root joint
@@ -685,7 +689,8 @@ public:
             joint.getPath( jointPath );
 
             //Add its world transform to the actor
-            Matrix4x4 mjoint = exportMatrix( jointPath.inclusiveMatrix() );
+            //Matrix4x4 mjoint = exportMatrix( jointPath.inclusiveMatrix() );
+            Matrix4x4 mjoint = exportMatrix( jointPath.exclusiveMatrix() );
             actor->mulMatrixRight( mjoint );
           }
         }
@@ -697,17 +702,22 @@ public:
           actor->setMatrix( matrix );
           actor->setMaterial( material );
           actor->setParent( root );
-          actor->scale( worldScale );
           outActor = actor;
         }
       }
-      else if (dagPath.hasFn( MFn::kLight ))
+      else if (dagPath.hasFn( MFn::kAmbientLight ))
       {
-        //Export light
+        //Add color to scene ambient
+        MFnAmbientLight ambLight( dagPath );
+        Vector3 ambColor = exportColor( ambLight.color() ) * ambLight.intensity();
+        scene->setAmbientColor( scene->getAmbientColor() + ambColor );
+      }
+      else if (dagPath.hasFn( MFn::kNonAmbientLight ))
+      {
+        //Export non-ambient light
         Light *light = exportLight( dagPath );
         if (light == NULL) continue;
         light->setParent( root );
-        light->scale( worldScale );
         outActor = light;
       }
       else if (dagPath.hasFn( MFn::kCamera ))
@@ -723,14 +733,15 @@ public:
         Camera *cam = exportCamera( dagPath );
         if (cam == NULL) continue;
         cam->setParent( root );
-        cam->scale( worldScale );
         outActor = cam;
 
       }//export actor by type
 
       //Map Maya object name to exported actor
-      if (outActor != NULL)
+      if (outActor != NULL)  {
+        //outActor->scale( worldScale );
         g_mapNameToActor[ name.buffer() ] = outActor;
+      }
 
     }//walk the scene graph
 
@@ -738,18 +749,10 @@ public:
     //Export animations
     for (UintSize a=0; a<g_scene->anims.size(); ++a)
     {
-      //Export
+      //Export and add to scene
       MayaAnimDummy *anim = g_scene->anims[ a ];
-      Animation *outAnim = new Animation;
-      AnimController *outCtrl = new AnimController;
-      ArrayList< AnimObserver* > outObservers;
-      exportAnimation( 24, anim, outAnim, outCtrl, &outObservers );
-      
-      //Add to scene
+      Animation *outAnim = exportAnimation( 24, anim );
       scene->animations.pushBack( outAnim );
-      scene->animControllers.pushBack( outCtrl );
-      for (UintSize o=0; o<outObservers.size(); ++o)
-        scene->animObservers.pushBack( outObservers[ o ] );
     }
 
     //Export scene data
@@ -1096,10 +1099,15 @@ int timeToFrame (Float seconds)
 
 bool getSceneAnimInput (CharString *outName, int *outStartFrame, int *outEndFrame)
 {
+  CharString animName;
+  int startFrame = 0;
+  int endFrame = 0;
+
+
   if (outName != NULL)
   {
     //Make sure we have the animation name
-    CharString animName = getTextFieldText( "GTxtSceneAnimName" );
+    animName = getTextFieldText( "GTxtSceneAnimName" );
     if (animName.length() == 0) {
       setStatus( "Please enter animation name!" );
       return false;
@@ -1109,7 +1117,7 @@ bool getSceneAnimInput (CharString *outName, int *outStartFrame, int *outEndFram
     *outName = animName;
   }
 
-  if (outStartFrame != NULL && outEndFrame != NULL)
+  if (outStartFrame != NULL)
   {
     //Make sure we have the start frame
     CharString startFrameStr = getTextFieldText( "GTxtSceneStartFrame" );
@@ -1118,6 +1126,17 @@ bool getSceneAnimInput (CharString *outName, int *outStartFrame, int *outEndFram
       return false;
     }
 
+    //Parse start value
+    int startLen = 0;
+    startFrame = startFrameStr.parseIntegerAt( 0, &startLen );
+    if (startLen == 0) {
+      setStatus( "Invalid start value!" );
+      return false;
+    }
+  }
+
+  if (outStartFrame != NULL && outEndFrame != NULL)
+  {
     //Make sure we have the end frame
     CharString endFrameStr = getTextFieldText( "GTxtSceneEndFrame" );
     if (endFrameStr.length() == 0) {
@@ -1125,25 +1144,31 @@ bool getSceneAnimInput (CharString *outName, int *outStartFrame, int *outEndFram
       return false;
     }
 
-    //Parse start and end values
-    int startLen = 0, endLen;
-    int startFrame = startFrameStr.parseIntegerAt( 0, &startLen );
-    int endFrame = endFrameStr.parseIntegerAt( 0, &endLen );
-    if (startLen == 0 || endLen == 0) {
-      setStatus( "Invalid start/end value!" );
+    //Parse end value
+    int endLen;
+    endFrame = endFrameStr.parseIntegerAt( 0, &endLen );
+    if (endLen == 0) {
+      setStatus( "Invalid end value!" );
       return false;
     }
-  
+  }
+
+  if (outStartFrame != NULL && outEndFrame != NULL)
+  {
     //Make sure end is after start
     if (endFrame < startFrame) {
       setStatus( "End frame before start frame!");
       return false;
     }
-
-    //Return frames
-    *outStartFrame = startFrame;
-    *outEndFrame = endFrame;
   }
+
+  //Return start frame
+  if (outStartFrame != NULL)
+    *outStartFrame = startFrame;
+
+  //Return end frame
+  if (outEndFrame != NULL)
+    *outEndFrame = endFrame;
 
   return true;
 }
@@ -1178,6 +1203,40 @@ MayaClipDummy* getSelectedSceneClip()
   return anim->clips[ sel ];
 }
 
+MayaEventDummy* getSelectedSceneEvent()
+{
+  //Find selected animation
+  MayaAnimDummy *anim = getSelectedSceneAnim();
+  if (anim == NULL) return NULL;
+
+  //Find selected index
+  int sel = getListSelection( "GLstSceneEvents" );
+  if (sel == -1) return NULL;
+
+  //Make sure its in range
+  if ((UintSize) sel >= anim->events.size())
+    return NULL;
+
+  return anim->events[ sel ];
+}
+
+template <class E>
+void sortListItems (ObjPtrArrayList< E > *list)
+{
+  for (UintSize i=0; i<list->size(); ++i)
+  {
+    for (UintSize j=i+1; j < list->size(); ++j)
+    {
+      if ((*list->at( j )) < (*list->at( i )))
+      {
+        E *temp = list->at( i );
+        list->at( i ) = list->at( j );
+        list->at( j ) = temp;
+      }
+    }
+  }
+}
+/*
 void sortSceneAnims ()
 {
   for (UintSize a1=0; a1<g_scene->anims.size(); ++a1)
@@ -1210,6 +1269,22 @@ void sortSceneClips (MayaAnimDummy *anim)
   }
 }
 
+void sortSceneEvents (MayaAnimDummy *anim)
+{
+  for (UintSize c1=0; c1<anim->clips.size(); ++c1)
+  {
+    for (UintSize c2=c1+1; c2 < anim->clips.size(); ++c2)
+    {
+      if (anim->clips[ c2 ]->startTime < anim->clips[ c1 ]->startTime)
+      {
+        MayaClipDummy *ctemp = anim->clips[ c1 ];
+        anim->clips[ c1 ] = anim->clips[ c2 ];
+        anim->clips[ c2 ] = ctemp;
+      }
+    }
+  }
+}
+*/
 CharString makeAnimTitleString (MayaAnimDummy *anim)
 {
   int startFrame = timeToFrame( anim->startTime );
@@ -1222,6 +1297,12 @@ CharString makeClipTitleString (MayaClipDummy *clip)
   int startFrame = timeToFrame( clip->startTime );
   int endFrame = timeToFrame( clip->endTime );
   return CharString::Format( "%d-%d %s", startFrame, endFrame, clip->objName.buffer() );
+}
+
+CharString makeEventTitleString (MayaEventDummy *evt)
+{
+  int frame = timeToFrame( evt->time );
+  return CharString::Format( "%d %s", frame, evt->name.buffer() );
 }
 
 void updateSceneAnimsList (bool reselect = false)
@@ -1255,11 +1336,29 @@ void updateSceneClipsList (bool reselect = false)
     selectListItem( "GLstSceneClips", sel, true );
 }
 
+void updateSceneEventsList (bool reselect = false)
+{
+  int sel = getListSelection( "GLstSceneEvents" );
+  clearList( "GLstSceneEvents" );
+
+  MayaAnimDummy *anim = getSelectedSceneAnim();
+  if (anim == NULL) return;
+
+  for (UintSize e=0; e<anim->events.size(); ++e) {
+    MayaEventDummy *evt = anim->events[ e ];
+    appendListItem( "GLstSceneEvents", makeEventTitleString( evt ) );
+  }
+
+  if (reselect && sel != -1)
+    selectListItem( "GLstSceneEvents", sel, true );
+}
+
 void updateSceneAnimUI()
 {
   setTextFieldText( "GTxtSceneFile", g_sceneFileName );
   updateSceneAnimsList();
   updateSceneClipsList();
+  updateSceneEventsList();
 }
 
 /*
@@ -1412,6 +1511,7 @@ class CmdLstSceneAnimsSel : public MPxCommand
   virtual MStatus doIt (const MArgList &args)
   {
     updateSceneClipsList();
+    updateSceneEventsList();
     return MStatus::kSuccess;
   }
 };
@@ -1469,6 +1569,28 @@ class CmdLstSceneClipsDblClk : public MPxCommand
   }
 };
 
+class CmdLstSceneEventsDblClk : public MPxCommand
+{ public:
+  static void* creator() { return new CmdLstSceneEventsDblClk(); }
+  virtual MStatus doIt (const MArgList &args)
+  {
+    //Find selected event
+    MayaEventDummy *evt = getSelectedSceneEvent();
+    if (evt == NULL) return MStatus::kFailure;
+
+    //Convert times to frames
+    int frame = timeToFrame( evt->time );
+    
+    //Load into UI
+    setTextFieldText( "GTxtSceneAnimName", evt->name );
+    setTextFieldText( "GTxtSceneStartFrame", CharString::FInt( frame ) );
+    setTextFieldText( "GTxtSceneEndFrame", "" );
+
+    return MStatus::kSuccess;
+  }
+};
+
+
 class CmdSceneSetAnim : public MPxCommand
 { public:
   static void* creator() { return new CmdSceneSetAnim(); }
@@ -1497,13 +1619,14 @@ class CmdSceneSetAnim : public MPxCommand
     anim->endTime = frameToTime( endFrame );
 
     //Update GUI
-    sortSceneAnims();
+    sortListItems( &g_scene->anims );
     int index = (int) g_scene->anims.indexOf( anim );
 
     updateSceneAnimsList();
     selectListItem( "GLstSceneAnims", index, true );
 
     updateSceneClipsList();
+    updateSceneEventsList();
 
     setStatus( "Done." );
     return MStatus::kSuccess;
@@ -1539,12 +1662,50 @@ class CmdSceneSetClip : public MPxCommand
     clip->endTime = frameToTime( endFrame );
 
     //Update GUI
-    sortSceneClips( anim );
+    sortListItems( &anim->clips );
     int index = (int) anim->clips.indexOf( clip );
 
     updateSceneClipsList();
     selectListItem( "GLstSceneClips", index, true );
 
+    setStatus( "Done." );
+    return MStatus::kSuccess;
+  }
+};
+
+
+class CmdSceneSetEvent : public MPxCommand
+{ public:
+  static void* creator() { return new CmdSceneSetEvent(); }
+  virtual MStatus doIt (const MArgList &args)
+  {
+    clearStatus();
+    setStatus( "Setting event properties..." );
+
+    //Find selected clip
+    MayaAnimDummy *anim = getSelectedSceneAnim();
+    MayaEventDummy *evt = getSelectedSceneEvent();
+    if (evt == NULL) {
+      setStatus( "Please select an event!" );
+      return MStatus::kFailure;
+    }
+
+    //Get input values
+    CharString name; int frame;
+    if (!getSceneAnimInput( &name, &frame, NULL ) )
+      return MStatus::kFailure;
+
+    //Update event
+    evt->name = name;
+    evt->time = frameToTime( frame );
+
+    //Update GUI
+    sortListItems( &anim->events );
+    int index = (int) anim->events.indexOf( evt );
+
+    updateSceneEventsList();
+    selectListItem( "GLstSceneEvents", index, true );
+    
     setStatus( "Done." );
     return MStatus::kSuccess;
   }
@@ -1574,13 +1735,15 @@ class CmdSceneNewAnim : public MPxCommand
     g_scene->anims.pushBack( newAnim );
     
     //Update GUI
-    sortSceneAnims();
+    //sortSceneAnims();
+    sortListItems( &g_scene->anims );
     int index = (int) g_scene->anims.indexOf( newAnim );
 
     updateSceneAnimsList();
     selectListItem( "GLstSceneAnims", index, true );
 
     updateSceneClipsList();
+    updateSceneEventsList();
 
     setStatus( "Done." );
     return MStatus::kSuccess;
@@ -1630,11 +1793,52 @@ class CmdSceneNewClip : public MPxCommand
     anim->clips.pushBack( newClip );
     
     //Update GUI
-    sortSceneClips( anim );
+    //sortSceneClips( anim );
+    sortListItems( &anim->clips );
     int index = (int) anim->clips.indexOf( newClip );
 
     updateSceneClipsList();
     selectListItem( "GLstSceneClips", (int) index, true );
+
+    setStatus( "Done." );
+    return MStatus::kSuccess;
+  }
+};
+
+class CmdSceneNewEvent : public MPxCommand
+{ public:
+  static void* creator() { return new CmdSceneNewEvent(); }
+  virtual MStatus doIt (const MArgList &args)
+  {
+    clearStatus();
+    setStatus( "Creating new event..." );
+
+    //Get the selected animation
+    MayaAnimDummy *anim = getSelectedSceneAnim();
+    if (anim == NULL) {
+      setStatus( "Please select an animation!" );
+      return MStatus::kFailure;
+    }
+
+    //Get input values
+    CharString name; int frame;
+    if (!getSceneAnimInput( &name, &frame, NULL) )
+      return MStatus::kFailure;
+
+
+    //Create new event
+    MayaEventDummy *evt = new MayaEventDummy;
+    evt->name = name;
+    evt->time = frameToTime( frame );
+    anim->events.pushBack( evt );
+
+    //Update GUI
+    //sortSceneEvents( anim );
+    sortListItems( &anim->events );
+    int index = (int) anim->events.indexOf( evt );
+
+    updateSceneEventsList();
+    selectListItem( "GLstSceneEvents", (int) index, true );
 
     setStatus( "Done." );
     return MStatus::kSuccess;
@@ -1668,6 +1872,7 @@ class CmdSceneDelAnim : public MPxCommand
     //Update GUI
     removeListItem( "GLstSceneAnims", sel );
     updateSceneClipsList();
+    updateSceneEventsList();
     return MStatus::kSuccess;
   }
 };
@@ -1705,6 +1910,43 @@ class CmdSceneDelClip : public MPxCommand
 
     //Update GUI
     removeListItem( "GLstSceneClips", sel );
+    return MStatus::kSuccess;
+  }
+};
+
+class CmdSceneDelEvent : public MPxCommand
+{ public:
+  static void* creator() { return new CmdSceneDelEvent(); }
+  virtual MStatus doIt (const MArgList &args)
+  {
+    clearStatus();
+
+    //Get the selected animation
+    MayaAnimDummy *anim = getSelectedSceneAnim();
+    if (anim == NULL) {
+      setStatus( "Please select an animation!" );
+      return MStatus::kFailure;
+    }
+
+    //Get the selected clip
+    int sel = getListSelection( "GLstSceneEvents" );
+    if (sel == -1) {
+      setStatus( "Please select an event!" );
+      return MStatus::kFailure;
+    }
+
+    //Make sure its in valid range
+    if ((UintSize) sel >= anim->events.size()) {
+      setStatus( "Invalid selection!" );
+      return MStatus::kFailure;
+    }
+
+    //Remove event from the animation
+    delete anim->events[ sel ];
+    anim->events.removeAt( sel );
+
+    //Update GUI
+    removeListItem( "GLstSceneEvents", sel );
     return MStatus::kSuccess;
   }
 };
@@ -1805,12 +2047,16 @@ MStatus initializePlugin ( MObject obj )
   plugin.registerCommand( "GCmdLstSceneAnimsDblClk", CmdLstSceneAnimsDblClk::creator );
   plugin.registerCommand( "GCmdLstSceneClipsSel", CmdLstSceneClipsSel::creator );
   plugin.registerCommand( "GCmdLstSceneClipsDblClk", CmdLstSceneClipsDblClk::creator );
+  plugin.registerCommand( "GCmdLstSceneEventsDblClk", CmdLstSceneEventsDblClk::creator );
   plugin.registerCommand( "GCmdSceneNewAnim", CmdSceneNewAnim::creator );
   plugin.registerCommand( "GCmdSceneSetAnim", CmdSceneSetAnim::creator );
   plugin.registerCommand( "GCmdSceneDelAnim", CmdSceneDelAnim::creator );
   plugin.registerCommand( "GCmdSceneNewClip", CmdSceneNewClip::creator );
   plugin.registerCommand( "GCmdSceneSetClip", CmdSceneSetClip::creator );
   plugin.registerCommand( "GCmdSceneDelClip", CmdSceneDelClip::creator );
+  plugin.registerCommand( "GCmdSceneNewEvent", CmdSceneNewEvent::creator );
+  plugin.registerCommand( "GCmdSceneSetEvent", CmdSceneSetEvent::creator );
+  plugin.registerCommand( "GCmdSceneDelEvent", CmdSceneDelEvent::creator );
 
   //Define MEL commands
   MGlobal::executeCommand( mel_embedded );
@@ -1868,12 +2114,16 @@ MStatus uninitializePlugin( MObject obj)
   plugin.deregisterCommand( "GCmdLstSceneAnimsDblClk" );
   plugin.deregisterCommand( "GCmdLstSceneClipsSel" );
   plugin.deregisterCommand( "GCmdLstSceneClipsDblClk" );
+  plugin.deregisterCommand( "GCmdLstSceneEventsDblClk" );
   plugin.deregisterCommand( "GCmdSceneNewAnim" );
   plugin.deregisterCommand( "GCmdSceneSetAnim" );
   plugin.deregisterCommand( "GCmdSceneDelAnim" );
   plugin.deregisterCommand( "GCmdSceneNewClip" );
   plugin.deregisterCommand( "GCmdSceneSetClip" );
   plugin.deregisterCommand( "GCmdSceneDelClip" );
+  plugin.deregisterCommand( "GCmdSceneNewEvent" );
+  plugin.deregisterCommand( "GCmdSceneSetEvent" );
+  plugin.deregisterCommand( "GCmdSceneDelEvent" );
 
 	return status;
 }

@@ -14,6 +14,7 @@ namespace GE
 
   class Animation;
   class AnimTrack;
+  class AnimObserver;
   class AnimController;
 
 
@@ -224,6 +225,31 @@ namespace GE
 
   /*
   --------------------------------------------------
+  Anim event
+  --------------------------------------------------*/
+  
+  class AnimEvent : public Object
+  {
+    DECLARE_SERIAL_SUBCLASS( AnimEvent, Object );
+    DECLARE_OBJVAR( name );
+    DECLARE_DATAVAR( time );
+    DECLARE_END;
+
+  private:
+    CharString name;
+    Float time;
+
+  public:
+    AnimEvent (SM *sm) : Object (sm), name (sm) {}
+    AnimEvent () : time (0.0f) {}
+    AnimEvent (const CharString& newName, Float newTime)
+      : name (newName), time (newTime) {}
+    const CharString& getName() { return name; }
+    Float getTime() { return time; }
+  };
+
+  /*
+  --------------------------------------------------
   Animation is a group of tracks
   --------------------------------------------------*/
   
@@ -234,6 +260,7 @@ namespace GE
     DECLARE_DATAVAR( duration );
     DECLARE_OBJVAR( name );
     DECLARE_OBJVAR( tracks );
+    DECLARE_OBJVAR( observers );
     DECLARE_END;
 
     friend class AnimController;
@@ -241,6 +268,8 @@ namespace GE
   private:
 
     ObjPtrArrayList <AnimTrack> tracks;
+    ObjPtrArrayList <AnimObserver> observers;
+    ObjPtrArrayList <AnimEvent> events;
 
   public:
 
@@ -248,45 +277,76 @@ namespace GE
     Float duration;
     CharString name;
 
-    Animation (SM *sm) : Object (sm), name(sm), tracks(sm) {}
+    Animation (SM *sm) : Object(sm), name(sm), tracks(sm), observers(sm), events(sm) {}
     Animation () {}
     virtual ~Animation ();
 
-    void addTrack (AnimTrack *track, Int atKey);
+    void addTrack (AnimTrack *track, Int atKey = 0);
     AnimTrack* getTrack (UintSize t);
     UintSize getNumTracks ();
+
+    void addObserver (AnimObserver *o);
+    void addEvent (AnimEvent *e);
+  };
+
+
+  /*
+  --------------------------------------------------------
+  TrackBinding binds an animation track to an observer
+  and specifies the parameter to pass to the observer
+  when the animated value changes.
+  --------------------------------------------------------*/
+
+  class AnimTrackBinding : public Object
+  {
+    DECLARE_SERIAL_SUBCLASS( AnimTrackBinding, Object );
+    DECLARE_OBJREF( anim );
+    DECLARE_DATAVAR( track );
+    DECLARE_DATAVAR( param );
+    DECLARE_END;
+
+  public:
+
+    Animation *anim;
+    UintSize track;
+    Int param;
+
+    AnimTrackBinding () : anim (NULL), track (0), param (0) {};
+    AnimTrackBinding (SM *sm) : Object (sm) {};
   };
 
   /*
   ------------------------------------------------------
   Animation observer reacts to changes in the animated
-  values of the tracks observed by it.
+  values of the tracks it observes.
   ------------------------------------------------------*/
 
   class AnimObserver : public Object
   {
     DECLARE_SERIAL_SUBCLASS( AnimObserver, Object );
+    DECLARE_OBJVAR( bindings );
     DECLARE_END
 
     friend class AnimController;
 
   private:
     bool change;
+    ObjPtrArrayList< AnimTrackBinding > bindings;
 
   public:
     AnimObserver () : change (false) {};
     AnimObserver (SM *sm) : Object (sm), change (false) {}
-    virtual ~AnimObserver() {}
+    virtual ~AnimObserver();
 
+    void bindTrack (Animation *anim, UintSize track, Int param = 0);
     virtual void onValueChanged (AnimTrack *track, Int param) {}
     virtual void onAnyValueChanged () {}
+    virtual void onEvent (AnimEvent *e) {}
   };
 
   /*
   ---------------------------------------------------------
-  Observer binding links an observer to an animation track
-  and specifies the parameter to pass to the callback when
-  the animated value changes.
+  ObserverBinding is an inverse of a TrackBinding.
   ---------------------------------------------------------*/
 
   class AnimObserverBinding : public Object
@@ -367,10 +427,7 @@ namespace GE
     virtual ~AnimController ();
 
     void bindAnimation (Animation *a);
-    void bindObserver (AnimObserver *o, UintSize track, Int param = 0);
-    
-    //TODO: remove! VERY HACKY!!!
-    void addObserver (AnimObserver *o, Int param);
+    void bindObserver (AnimObserver *o);
 
     void play (Int nloops = 0, Float speed = 1.0f, Float from = 0.0);
     void pause ();

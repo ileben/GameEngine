@@ -91,8 +91,6 @@ namespace GE
     void panH(Float distance);
     void panV(Float distance);
     void zoom(Float distance);
-
-    virtual Matrix4x4 getGlobalMatrix (bool inclusive = true);
   };
 
   /*--------------------------------------------

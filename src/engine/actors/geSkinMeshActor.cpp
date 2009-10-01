@@ -23,6 +23,7 @@ namespace GE
     skinNormals = NULL;
     jointRotations = NULL;
     jointTranslations = NULL;
+    jointChange = false;
   }
 
   SkinMeshActor::SkinMeshActor(SM *sm)
@@ -32,11 +33,13 @@ namespace GE
     skinNormals = NULL;
     jointRotations = NULL;
     jointTranslations = NULL;
+    jointChange = false;
   }
 
   void SkinMeshActor::onResourcesLoaded()
   {
-    setCharacter( character );
+    if (character != NULL)
+      setCharacter( character );
   }
 
   SkinMeshActor::~SkinMeshActor()
@@ -113,17 +116,54 @@ namespace GE
     }
   }
 
-  void SkinMeshActor::loadPoseRotations()
+  int SkinMeshActor::getJointIndex (const CharString &jointName)
   {
+    if (character == NULL)
+      return -1;
+
+    for (UintSize j=0; j<character->pose->joints.size(); ++j)
+      if (character->pose->joints[ j ].name == jointName)
+        return (int) j;
+
+    return -1;
+  }
+
+  void SkinMeshActor::setJointRotation (int jointIndex, Quat r)
+  {
+    //Set rotation to given value
+    if (jointIndex < (int) character->pose->joints.size())
+      jointRotations[ jointIndex ] = r;
+
+    //Mark changes
+    jointChange = true;
+  }
+
+  void SkinMeshActor::setJointTranslation (int jointIndex, Vector3 t)
+  {
+    //Set translation to given value
+    if (jointIndex < (int) character->pose->joints.size())
+      jointTranslations[ jointIndex ] = t;
+
+    //Mark changes
+    jointChange = true;
+  }
+
+  void SkinMeshActor::setPoseRotations()
+  {
+    //Load transformations from character pose
     for (UintSize j=0; j < character->pose->joints.size(); ++j)
     {
       jointRotations[ j ] = character->pose->joints[ j ].localR;
       jointTranslations[ j ] = character->pose->joints[ j ].localT;
     }
+
+    //Mark changes
+    jointChange = true;
   }
 
-  void SkinMeshActor::loadAnimRotations()
+  void SkinMeshActor::setAnimRotations()
   {
+    //Load transformations from animation tracks
     for (UintSize j=0; j < character->pose->joints.size(); ++j)
     {
       QuatAnimTrack *trackR = (QuatAnimTrack*) anim->getTrack( 2 * j + 0 );
@@ -132,10 +172,18 @@ namespace GE
       jointRotations[ j ] = trackR->getValue();
       jointTranslations[ j ] = trackT->getValue();
     }
+
+    //Mark changes
+    jointChange = true;
   }
 
-  void SkinMeshActor::applySkin ()
+  void SkinMeshActor::updateSkin ()
   {
+    if (character == NULL) return;
+
+    //Check if any change in joint transformations
+    if (!jointChange) return;
+
     SkinPose *pose = character->pose;
     ArrayList <Matrix4x4> fkMats;
     skinMats.clear();
@@ -169,6 +217,9 @@ namespace GE
         cindex++;
       }
     }
+
+    //Unmark changes
+    jointChange = false;
 
     /*
     //Apply rotations to vertices
@@ -230,8 +281,8 @@ namespace GE
 
     anim = NULL;
     animCtrl.stop();
-    loadPoseRotations();
-    applySkin();
+    setPoseRotations();
+    updateSkin();
   }
 
   void SkinMeshActor::loadAnimation (const CharString &name)
@@ -243,8 +294,8 @@ namespace GE
 
     anim = newAnim;
     animCtrl.bindAnimation( anim );
-    loadAnimRotations();
-    applySkin();
+    setAnimRotations();
+    updateSkin();
   }
 
   void SkinMeshActor::tick ()
@@ -253,8 +304,8 @@ namespace GE
     if (animCtrl.isPlaying())
     {
       //Update model
-      loadAnimRotations();
-      applySkin();
+      setAnimRotations();
+      updateSkin();
     }
   }
 
@@ -278,6 +329,20 @@ namespace GE
     shader->composeNodeSocket( SocketFlow::Out, ShaderData::Normal );
     shader->composeNodeCode( skinNormalNode );
     shader->composeNodeEnd();
+
+    //This node applies skin to tangent
+    shader->composeNodeNew( ShaderType::Vertex );
+    shader->composeNodeSocket( SocketFlow::In, ShaderData::Attribute, DataSource::Attribute, DataUnit::Vec3, "Tangent" );
+    shader->composeNodeSocket( SocketFlow::Out, ShaderData::Attribute, DataSource::Attribute, DataUnit::Vec3, "Tangent" );
+    shader->composeNodeCode( skinNormalNode );
+    shader->composeNodeEnd();
+
+    //This node applies skin to bitanget
+    shader->composeNodeNew( ShaderType::Vertex );
+    shader->composeNodeSocket( SocketFlow::In, ShaderData::Attribute, DataSource::Attribute, DataUnit::Vec3, "Bitangent" );
+    shader->composeNodeSocket( SocketFlow::Out, ShaderData::Attribute, DataSource::Attribute, DataUnit::Vec3, "Bitangent" );
+    shader->composeNodeCode( skinNormalNode );
+    shader->composeNodeEnd();
   }
 
   void SkinMeshActor::render (MaterialID materialID)
@@ -285,6 +350,9 @@ namespace GE
     //Make sure there's something to render
     if (character == NULL) return;
     Shader *shader = Kernel::GetInstance()->getRenderer()->getCurrentShader();
+
+    //Make sure skin is up to date
+    updateSkin();
 
     //Walk sub meshes
     for (UintSize m=0; m<character->meshes.size(); ++m)

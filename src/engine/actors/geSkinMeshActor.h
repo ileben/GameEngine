@@ -37,12 +37,13 @@ namespace GE
     Quat    *jointRotations;
     ArrayList <Matrix4x4> skinMats;
     VertexBinding <SkinVertex> vertexBinding;
+    bool jointChange;
 
     void freeAnimData();
     void initAnimData();
-    void loadPoseRotations();
-    void loadAnimRotations();
-    void applySkin();
+    void setPoseRotations();
+    void setAnimRotations();
+    void updateSkin();
 
     Animation *anim;
     AnimController animCtrl;
@@ -63,6 +64,10 @@ namespace GE
     void setCharacter (const CharString &name);
     void setCharacter (Character *mesh);
     Character* getCharacter ();
+
+    int getJointIndex (const CharString &jointName);
+    void setJointRotation (int jointIndex, Quat rotation);
+    void setJointTranslation (int jointIndex, Vector3 rotation);
 
     virtual void render (MaterialID materialID);
 
