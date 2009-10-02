@@ -1689,6 +1689,15 @@ Animation* exportAnimation (int kps, MayaAnimDummy *anim)
     }
   }
 
+  //Walk the list of events to export
+  for (UintSize e=0; e<anim->events.size(); ++e)
+  {
+    //Export event
+    MayaEventDummy *evt = anim->events[ e ];
+    AnimEvent *outEvt = new AnimEvent( evt->name, evt->time );
+    outAnim->addEvent( outEvt );
+  }
+
   return outAnim;
 }
 

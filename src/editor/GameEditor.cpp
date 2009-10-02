@@ -614,6 +614,15 @@ Actor3D* loadActor (const CharString &meshFileName,
   return actorRender;
 }
 
+class EventObserver : public AnimObserver
+{
+public:
+  virtual void onEvent (AnimEvent *evt)
+  {
+    std::cout << "Event '" << evt->getName().buffer() << "' triggered!" << std::endl;
+  }
+};
+
 //TODO: Stuf doesn't load properly if a class used by the exporter is not
 //used in the application and therefore it doesn't get classified in runtime!!!
 ActorAnimObserver a;
@@ -636,22 +645,21 @@ int main (int argc, char **argv)
 
   //Setup 3D scene
   //scene = kernel.loadSceneFile( "export.pak" );
-  scene = kernel.loadSceneFile( "bossScene.pak" );
+  //scene = kernel.loadSceneFile( "bossScene.pak" );
+  scene = kernel.loadSceneFile( "ZacScene.pak" );
   if (scene == NULL) {
     std::cout << "Failed loading scene file!" << std::endl;
     std::getchar();
     return EXIT_FAILURE;
   }
 
-  //Bind first animation to a controller
+  //Bind first animation to the controller
   animCtrl = new AnimController;
   if (!scene->animations.empty())
     animCtrl->bindAnimation( scene->animations.first() );
-
-  //Actor3D *zac = loadActor( "Zac.pak" );
-  //zac->setParent( scene->getRoot() );
-  //zac->scale( 20 );
-  //zac->translate( 0, 150, 0 );
+  
+  //Bind event observer to the controller
+  animCtrl->bindObserver( new EventObserver() );
 
   /*
   scene = new Scene3D;

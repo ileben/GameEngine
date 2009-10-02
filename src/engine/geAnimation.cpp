@@ -50,6 +50,11 @@ namespace GE
     observers.pushBack( o );
   }
 
+  void Animation::addEvent (AnimEvent *e)
+  {
+    events.pushBack( e );
+  }
+
 
   void AnimObserver::bindTrack (Animation *anim, UintSize track, Int param)
   {
@@ -78,6 +83,7 @@ namespace GE
 
     anim = NULL;
     trackIndex = 0;
+    eventIndex = 0;
   }
 
   AnimController::AnimController (SM *sm)
@@ -85,6 +91,7 @@ namespace GE
   {
     endFunc = NULL;
     trackIndex = 0;
+    eventIndex = 0;
   }
 
   AnimController::~AnimController ()
@@ -114,6 +121,9 @@ namespace GE
 
   void AnimController::bindObserver (AnimObserver *obsrv)
   {
+    //Add to list of observers
+    observers.pushBack( obsrv );
+
     //Walk the list of track bindings on the observer
     for (UintSize b=0; b < obsrv->bindings.size(); ++b)
     {
@@ -151,6 +161,7 @@ namespace GE
     paused = false;
 
     trackIndex = 0;
+    eventIndex = 0;
   }
 
   void AnimController::stop ()
@@ -161,6 +172,7 @@ namespace GE
     numLoops = 0;
 
     trackIndex = 0;
+    eventIndex = 0;
   }
 
   void AnimController::pause ()
@@ -315,6 +327,20 @@ namespace GE
 
     //Clear the list of observers
     observersOnKey.clear();
+
+    //Walk the list of pending events
+    for (; eventIndex < anim->events.size(); ++eventIndex)
+    {
+      //Check if event has been met at current time
+      AnimEvent *evt = anim->events[ eventIndex ];
+      if (animTime >= evt->getTime())
+      {
+        //Notify observers of it
+        for (UintSize o=0; o<observers.size(); ++o)
+          observers[ o ]->onEvent( evt );
+      }
+      else break;
+    }
   }
 
   void AnimController::evaluateTrack (UintSize t)

@@ -334,14 +334,14 @@ namespace GE
     shader->composeNodeNew( ShaderType::Vertex );
     shader->composeNodeSocket( SocketFlow::In, ShaderData::Attribute, DataSource::Attribute, DataUnit::Vec3, "Tangent" );
     shader->composeNodeSocket( SocketFlow::Out, ShaderData::Attribute, DataSource::Attribute, DataUnit::Vec3, "Tangent" );
-    shader->composeNodeCode( skinNormalNode );
+    shader->composeNodeCode( skinTangentNode );
     shader->composeNodeEnd();
 
     //This node applies skin to bitanget
     shader->composeNodeNew( ShaderType::Vertex );
     shader->composeNodeSocket( SocketFlow::In, ShaderData::Attribute, DataSource::Attribute, DataUnit::Vec3, "Bitangent" );
     shader->composeNodeSocket( SocketFlow::Out, ShaderData::Attribute, DataSource::Attribute, DataUnit::Vec3, "Bitangent" );
-    shader->composeNodeCode( skinNormalNode );
+    shader->composeNodeCode( skinBitangentNode );
     shader->composeNodeEnd();
   }
 

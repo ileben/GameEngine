@@ -260,6 +260,7 @@ namespace GE
     DECLARE_DATAVAR( duration );
     DECLARE_OBJVAR( name );
     DECLARE_OBJVAR( tracks );
+    DECLARE_OBJVAR( events );
     DECLARE_OBJVAR( observers );
     DECLARE_END;
 
@@ -277,7 +278,7 @@ namespace GE
     Float duration;
     CharString name;
 
-    Animation (SM *sm) : Object(sm), name(sm), tracks(sm), observers(sm), events(sm) {}
+    Animation (SM *sm) : Object(sm), name(sm), tracks(sm), events(sm), observers(sm) {}
     Animation () {}
     virtual ~Animation ();
 
@@ -409,9 +410,11 @@ namespace GE
     Int key2;
     Float keyT;
     UintSize trackIndex;
+    UintSize eventIndex;
     typedef LinkedList< UintSize >::Iterator TrackIter;
     LinkedList< UintSize > tracksOnKey;
     ArrayList< AnimObserver* > observersOnKey;
+    ArrayList< AnimObserver* > observers;
     
     void evaluateAnimation ();
     void evaluateTrack (UintSize track);
