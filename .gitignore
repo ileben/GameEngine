@@ -26,6 +26,7 @@ TexPainter
 *.lib
 *.ncb
 *.Ivan.user
+*.Eneaa.user
 projects/visualc8/Debug
 projects/visualc8/Release
 projects/visualc8/Debug_2008
