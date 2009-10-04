@@ -16,7 +16,8 @@ namespace GE
     DECLARE_DATAVAR( diffuseColor );
     DECLARE_DATAVAR( specularColor );
     DECLARE_DATAVAR( shadowColor );
-    DECLARE_DATAVAR( attenuationEnd );
+    DECLARE_DATAVAR( attStart );
+    DECLARE_DATAVAR( attEnd );
     DECLARE_END;
     
   protected:
@@ -24,7 +25,15 @@ namespace GE
     Vector3 diffuseColor;
     Vector3 specularColor;
     Vector3 shadowColor;
-    Float attenuationEnd;
+    Float attStart;
+    Float attEnd;
+
+    bool uniformsInit;
+    Int32 uSampler[5];
+    Int32 uCastShadow;
+    Int32 uWinSize;
+    Int32 uAttEnd;
+    Int32 uAttStart;
 
     bool volumeDLinit;
     bool volumeChanged;
@@ -35,31 +44,36 @@ namespace GE
     Light ();
     Light (SM *sm);
     virtual ~Light() {};
-    
-    void setCastShadows (bool cast);
-    bool getCastShadows ();
-
-    void setDiffuseColor (const Vector3 &color);
-    const Vector3& getDiffuseColor ();
-
-    void setSpecularColor (const Vector3 &color);
-    const Vector3& getSpecularColor ();
-
-    void setShadowColor (const Vector3 &color);
-    const Vector3& getShadowColor ();
 
     void setDirection (const Vector3 &dir);
     void setPosition (const Vector3 &dir);
     Vector3 getDirection ();
     Vector3 getPosition ();
+    
+    virtual void setCastShadows (bool cast);
+    bool getCastShadows ();
 
-    void setAttenuationEnd (Float end);
+    virtual void setDiffuseColor (const Vector3 &color);
+    const Vector3& getDiffuseColor ();
+
+    virtual void setSpecularColor (const Vector3 &color);
+    const Vector3& getSpecularColor ();
+
+    virtual void setShadowColor (const Vector3 &color);
+    const Vector3& getShadowColor ();
+
+    virtual void setAttenuation (Float end, Float start = -1.0f);
     Float getAttenuationEnd ();
+    Float getAttenuationStart ();
 
-    virtual void enable (int index);
     virtual Matrix4x4 getProjection (Float nearClip, Float farClip);
     virtual bool isPointInVolume (const Vector3 &p, Float threshold=0.0f) { return false; }
     void renderVolume ();
+
+    virtual void composeShader (Shader *shader);
+    virtual void enable (int index);
+    virtual void begin (Shader *shader, Vector2 winSize, Uint32 *deferredMaps, Uint32 shadowMap);
+    virtual void end();
   };
   
   class DirLight : public Light
@@ -70,17 +84,6 @@ namespace GE
   public:
     DirLight () {}
     DirLight (const Vector3 &dir);
-    virtual void enable (int index);
-  };
-  
-  class PointLight : public Light
-  {
-    DECLARE_SUBCLASS( PointLight, Light );
-    DECLARE_END;
-
-  public:
-    PointLight () {}
-    PointLight (const Vector3 &pos);
     virtual void enable (int index);
   };
   
@@ -101,13 +104,63 @@ namespace GE
     SpotLight () : angleOuter( 30.0f ), angleInner( -1.0f ) {}
     SpotLight (const Vector3 &pos,
                const Vector3 &dir,
-               Float outerAngle = 30.0f,
+               Float outerAngle = 60.0f,
                Float innerAngle = -1.0f);
     
     void setAngle (Float outer, Float inner = -1.0f);
     virtual void enable (int index);
     virtual Matrix4x4 getProjection (Float nearClip, Float farClip);
     virtual bool isPointInVolume (const Vector3 &p, Float threshold=0.0f);
+
+    virtual void composeShader (Shader *shader);
+  };
+
+  class PyramidLight : public Light
+  {
+    DECLARE_SERIAL_SUBCLASS( PyramidLight, Light );
+    DECLARE_DATAVAR( angle );
+    DECLARE_END;
+
+  protected:
+    Float angle;
+    virtual void updateVolume ();
+
+  public:
+
+    PyramidLight (SM *sm) : Light (sm) {}
+    PyramidLight () : angle (60.0f) {}
+    PyramidLight (const Vector3 &pos,
+                  const Vector3 &dir,
+                  Float angle = 60.0f);
+
+    void setAngle (Float a);
+    virtual void enable (int index);
+    virtual Matrix4x4 getProjection (Float nearClip, Float farClip);
+    virtual bool isPointInVolume (const Vector3 &p, Float threshold=0.0f);
+
+    virtual void composeShader (Shader *shader);
+  };
+
+  class PointLight : public Light
+  {
+    DECLARE_SERIAL_SUBCLASS( PointLight, Light );
+    DECLARE_OBJVAR( subLights );
+    DECLARE_END;
+    
+    ObjRefArrayList< PyramidLight > subLights;
+    
+  public:
+
+    PointLight (SM *sm) : Light (sm) {}
+    PointLight ();
+    PointLight (const Vector3 &pos);
+
+    //Overrides that apply to each sub-light
+    void setCastShadows (bool cast);
+    void setDiffuseColor (const Vector3 &color);
+    void setSpecularColor (const Vector3 &color);
+    void setShadowColor (const Vector3 &color);
+    void setAttenuation (Float end, Float start = -1.0f);
   };
   
   class HeadLight : public PointLight

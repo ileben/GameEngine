@@ -54,6 +54,9 @@ namespace GE
 
   void Actor::setParent (Actor* p)
   {
+    Scene *oldScene = getScene();
+    if (oldScene != NULL) oldScene->markChanged();
+
     if (scene != NULL) {
       scene->setRoot( NULL );
       scene = NULL;
@@ -69,12 +72,15 @@ namespace GE
       parent = p;
     }
 
-    Scene *w = getScene();
-    if (w != NULL) w->markChanged();
+    Scene *newScene = getScene();
+    if (newScene != NULL) newScene->markChanged();
   }
 
   void Actor::addChild (Actor* c)
   {
+    Scene *oldScene = c->getScene();
+    if (oldScene != NULL) oldScene->markChanged();
+
     if (c->scene != NULL) {
       c->scene->setRoot( NULL );
       c->scene = NULL;
@@ -88,17 +94,17 @@ namespace GE
     children.pushBack( c );
     c->parent = this;
 
-    Scene *w = getScene();
-    if (w != NULL) w->markChanged();
+    Scene *newScene = c->getScene();
+    if (newScene != NULL) newScene->markChanged();
   }
   
   void Actor::removeChild (Actor* c)
   {
+    Scene *oldScene = c->getScene();
+    if (oldScene != NULL) oldScene->markChanged();
+
     children.remove( c );
     c->parent = NULL;
-
-    Scene *w = getScene();
-    if (w != NULL) w->markChanged();
   }
 
   void Actor::getAncestors (ArrayList<Actor*> &list)

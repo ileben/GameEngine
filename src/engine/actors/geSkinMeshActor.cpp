@@ -294,6 +294,7 @@ namespace GE
 
     anim = newAnim;
     animCtrl.bindAnimation( anim );
+    animCtrl.observeAt( 0.0f );
     setAnimRotations();
     updateSkin();
   }

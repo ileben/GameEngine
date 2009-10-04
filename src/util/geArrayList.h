@@ -9,11 +9,6 @@ namespace GE
   The size of the elements must be passed as an argument
   to the constructor.
   =======================================================*/
-  
-  class SerialArray
-  {
-
-  };
 
   class GenericArrayList : public Object
   {
@@ -407,6 +402,12 @@ namespace GE
     }
   };
 
+  /*
+  ====================================================
+  Generic array lists of serializable objects,
+  object pointers, and object references.
+  ====================================================*/
+
   class GenericPtrArrayList : public GenericArrayList
   {
     DECLARE_SERIAL_SUBCLASS( GenericPtrArrayList, GenericArrayList );
@@ -445,6 +446,52 @@ namespace GE
     }
 
     GenericPtrArrayList (UintSize newCap, ClassPtr eltCls)
+      : GenericArrayList (newCap, sizeof(void*))
+    {
+      this->eltClsID = ( eltCls ? eltCls->getID() : ClassID() );
+      this->eltCls = eltCls;
+    }
+  };
+
+
+  class GenericRefArrayList : public GenericArrayList
+  {
+    DECLARE_SERIAL_SUBCLASS( GenericRefArrayList, GenericArrayList );
+    DECLARE_DATAVAR( eltClsID );
+    DECLARE_CALLBACK( ClassEvent::Loaded, loaded );
+    DECLARE_CALLBACK( ClassEvent::Deserialized, loaded );
+    DECLARE_END;
+
+    ClassID eltClsID;
+    ClassPtr eltCls;
+
+  public:
+
+    virtual MemberInfo elementsInfo() {
+      return MEMBER_OBJREFARRAY( IClass::FromID(eltClsID), sz );
+    }
+
+    void loaded (void *param) {
+      GenericArrayList::loaded( param );
+      eltCls = IClass::FromID( eltClsID );
+    }
+
+    GenericRefArrayList (SM *sm)
+      : GenericArrayList(sm), eltClsID (sm) {}
+
+    GenericRefArrayList ()
+    {
+      this->eltCls = NULL;
+    }
+
+    GenericRefArrayList (ClassPtr eltCls)
+      : GenericArrayList (sizeof(void*))
+    {
+      this->eltClsID = ( eltCls ? eltCls->getID() : ClassID() );
+      this->eltCls = eltCls;
+    }
+
+    GenericRefArrayList (UintSize newCap, ClassPtr eltCls)
       : GenericArrayList (newCap, sizeof(void*))
     {
       this->eltClsID = ( eltCls ? eltCls->getID() : ClassID() );
@@ -521,11 +568,11 @@ namespace GE
     }
   };
 
+
   /*
   ======================================================
   A base for templated list classes.
   ======================================================*/
-
 
   template <class T, class Base> class TArrayList : public Base
   {
@@ -597,10 +644,8 @@ namespace GE
 
   /*
   ======================================================
-  A non-serializable templated list.
-  Should be used with base types.
+  A serializable list of base types.
   ======================================================*/
-
   
   template <class T> class ArrayList : public TArrayList <T,GenericArrayList>
   {
@@ -690,6 +735,29 @@ namespace GE
     
     ObjPtrArrayList (UintSize newCap)
       : TArrayList <T*,GenericPtrArrayList> (newCap, Class(T)) {}
+  };
+
+
+  /*
+  ===========================================================
+  A serializable list of references to serializable classes.
+  This interface features simplified constructors as the
+  class is implied from the template argument.
+  ===========================================================*/
+  
+  template <class T>
+    class ObjRefArrayList : public TArrayList <T*,GenericRefArrayList>
+  {
+  public:
+    
+    ObjRefArrayList (SerializeManager *sm)
+      : TArrayList <T*,GenericRefArrayList> (sm) {}
+
+    ObjRefArrayList ()
+      : TArrayList <T*,GenericRefArrayList> (Class(T)) {}
+    
+    ObjRefArrayList (UintSize newCap)
+      : TArrayList <T*,GenericRefArrayList> (newCap, Class(T)) {}
   };
   
 }//namespace GE

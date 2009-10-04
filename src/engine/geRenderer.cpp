@@ -12,8 +12,7 @@
 #include "engine/embedit/Dof.embedded"
 #include "engine/embedit/Bloom.embedded"
 #include "engine/embedit/Cell.embedded"
-#include "engine/embedit/shadevert.SpotLight.embedded"
-#include "engine/embedit/shadefrag.SpotLight.embedded"
+#include "engine/embedit/Shadow.embedded"
 
 namespace GE
 {
@@ -124,6 +123,33 @@ namespace GE
   Rendering interface
   --------------------------------------*/
 
+  Shader* Renderer::findLightShaderByKey (const LightShaderKey &key)
+  {
+    for (UintSize s=0; s<lightShaders.size(); ++s)
+      if (lightShaders[s] == key)
+        return lightShaders[s].shader;
+
+    return NULL;
+  }
+
+  Shader* Renderer::getLightShader (Light *light)
+  {
+    LightShaderKey key;
+    key.lightClass = ClassOf( light );
+
+    Shader *shader = findLightShaderByKey( key );
+    if (shader != NULL) return shader;
+
+    shader = new Shader();
+    light->composeShader( shader );
+    shader->link();
+
+    key.shader = shader;
+    lightShaders.pushBack( key );
+
+    return shader;
+  }
+
   Shader* Renderer::findShaderByKey (const ShaderKey &key)
   {
     for (UintSize s=0; s<shaders.size(); ++s)
@@ -133,9 +159,9 @@ namespace GE
     return NULL;
   }
 
-  Shader* Renderer::composeShader (RenderTarget::Enum target,
-                                   Actor3D *geometry,
-                                   Material *material)
+  Shader* Renderer::getShader (RenderTarget::Enum target,
+                               Actor3D *geometry,
+                               Material *material)
   {
     ShaderKey key;
     key.target = target;
@@ -219,30 +245,15 @@ namespace GE
 
   void Renderer::initShaders ()
   {
+    shaderShadow = new Shader;
+    shaderShadow->fromString( Shadow_VS, Shadow_FS );
+
     shaderAmbient = new Shader;
     shaderAmbient->registerUniform( ShaderType::Fragment, DataUnit::Vec3, "ambientColor" );
     shaderAmbient->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
     shaderAmbient->fromString( Ambient_VertexSource, Ambient_FragmentSource );
     uAmbientColor = shaderAmbient->getUniformID( "ambientColor" );
     ambientColorSampler = shaderAmbient->getUniformID( "samplerColor" );
-
-    shaderLightSpot = new Shader;
-    shaderLightSpot->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerNormal" );
-    shaderLightSpot->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
-    shaderLightSpot->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerSpec" );
-    shaderLightSpot->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerParams" );
-    shaderLightSpot->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerShadow" );
-    shaderLightSpot->registerUniform( ShaderType::Fragment, DataUnit::Int, "castShadow" );
-    shaderLightSpot->registerUniform( ShaderType::Fragment, DataUnit::Vec2, "winSize" );
-    shaderLightSpot->fromString( shadevert_SpotLight_embedded, shadefrag_SpotLight_embedded );
-
-    deferredSampler[ Deferred::Normal ] = shaderLightSpot->getUniformID( "samplerNormal" );
-    deferredSampler[ Deferred::Color ] = shaderLightSpot->getUniformID( "samplerColor" );
-    deferredSampler[ Deferred::Specular ] = shaderLightSpot->getUniformID( "samplerSpec" );
-    deferredSampler[ Deferred::Params ] = shaderLightSpot->getUniformID( "samplerParams" );
-    deferredSampler[ Deferred::Shadow ] = shaderLightSpot->getUniformID( "samplerShadow" );
-    deferredCastShadow = shaderLightSpot->getUniformID( "castShadow" );
-    deferredWinSize = shaderLightSpot->getUniformID( "winSize" );
 
     shaderDofInit = new Shader;
     shaderDofInit->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "samplerColor" );
@@ -510,7 +521,8 @@ namespace GE
 
   void Renderer::renderShadowMap (Light *light, Scene3D *scene)
   {
-    const Uint32 S = 2048;
+    //const Uint32 S = 2048;
+    const Uint32 S = 1024;
 
     if (!shadowInit)
     {
@@ -518,14 +530,18 @@ namespace GE
       glGenTextures( 1, &shadowMap2 );
       glBindTexture( GL_TEXTURE_2D, shadowMap2 );
       glTexImage2D( GL_TEXTURE_2D, 0, GL_LUMINANCE, S, S, 0, GL_LUMINANCE, GL_FLOAT, NULL );
-      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
       */
       glGenTextures( 1, &shadowMap );
       glBindTexture( GL_TEXTURE_2D, shadowMap );
       glTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, S, S, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL );
-      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+      glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
       
       glGenFramebuffers( 1, &shadowFB );
       glBindFramebuffer( GL_FRAMEBUFFER, shadowFB );
@@ -537,7 +553,6 @@ namespace GE
     }
 
     //Setup GL state to render to shadow texture
-    glUseProgram( 0 );
     glDisable( GL_LIGHTING );
     glDisable( GL_BLEND );
     glDisable( GL_TEXTURE_2D );
@@ -716,225 +731,137 @@ namespace GE
     GLuint *lightQueries = new GLuint[ numLights ];
     glGenQueries( (GLsizei) numLights, lightQueries );
 
-    ///////////////////////////////////////////////////////////////
-    //Query pixels lit by each light
 
-    //Only write to stencil buffer
-    glUseProgram( 0 );
-    glDrawBuffer( GL_NONE );
-    glDepthMask( GL_FALSE );
-    glDisable( GL_BLEND );
-    glDisable( GL_LIGHTING );
-    glEnable( GL_DEPTH_TEST );
-    glEnable( GL_STENCIL_TEST );
-    glEnable( GL_CULL_FACE );
+    ///////////////////////////////////////////////////////////////
+    //Perform shading for each light
+    UintSize stencilIndex = 0;
+    int numStencilBits = 8;
 
     //Walk all the lights in the scene
     for (UintSize l=0; l<numLights; ++l)
     {
-      Light* light = scene->getLights()->at( l );
+      /////////////////////////////////////////////////////////////////
+      //Preset stencil for as many lights in advance as there is bits
 
-      //Setup view and projection
-      glViewport( viewX, viewY, viewW, viewH );
-      camera->updateProjection( viewW, viewH );
-      camera->updateView();
-
-      //Enable the light
-      Matrix4x4 worldCtm = light->getGlobalMatrix().affineNormalize();
-      glMatrixMode( GL_MODELVIEW );
-      glMultMatrixf( (GLfloat*) worldCtm.m );
-
-      //Avoid front faces being clipped by the camera near plane
-      Vector3 worldEye = camera->getGlobalMatrix().affineNormalize() * Vector3(0,0,0);
-      if (light->isPointInVolume( worldEye, camera->getNearClipPlane()*2 ))
+      UintSize lastStencilIndex = Util::Min( l + numStencilBits, numLights );
+      for (; stencilIndex < lastStencilIndex; stencilIndex++)
       {
-        //Pass for pixels in front of light volume back
-        glDepthFunc( GL_GEQUAL );
-        glStencilFunc( GL_ALWAYS, 0x0, 0xFF );
-        glStencilOp( GL_KEEP, GL_KEEP, GL_KEEP );
+        //The stencil bit being set for this light
+        int stencilMask = (1 << (stencilIndex % numStencilBits));
+        Light* light = scene->getLights()->at( stencilIndex );
+      
+        //Only write to stencil buffer
+        glUseProgram( 0 );
+        glDrawBuffer( GL_NONE );
+        glDepthMask( GL_FALSE );
+        glDisable( GL_BLEND );
+        glDisable( GL_LIGHTING );
+        glEnable( GL_CULL_FACE );
+        glEnable( GL_DEPTH_TEST );
+        glEnable( GL_STENCIL_TEST );
+        glStencilMask( stencilMask );
 
-        //Render light volume back faces and query
-        glCullFace( GL_FRONT );
-        glBeginQuery( GL_SAMPLES_PASSED, lightQueries[l] );
-        light->renderVolume();
-        glEndQuery( GL_SAMPLES_PASSED );
-      }
-      else
-      {
-        //Pass for pixels in front of light volume back and incr stencil
-        glDepthFunc( GL_GEQUAL );
-        glStencilFunc( GL_ALWAYS, 0x0, 0xFF );
-        glStencilOp( GL_KEEP, GL_KEEP, GL_INCR );
+        //Setup view and projection
+        glViewport( viewX, viewY, viewW, viewH );
+        camera->updateProjection( viewW, viewH );
+        camera->updateView();
 
-        //Render light volume back faces
-        glCullFace( GL_FRONT );
-        light->renderVolume();
+        //Add light's world matrix
+        Matrix4x4 worldCtm = light->getGlobalMatrix().affineNormalize();
+        glMatrixMode( GL_MODELVIEW );
+        glMultMatrixf( (GLfloat*) worldCtm.m );
 
-        //Pass for pixels behind light volume front and in front of light volume back
+        //Avoid front faces being clipped by the camera near plane
+        Vector3 worldEye = camera->getGlobalMatrix().affineNormalize() * Vector3(0,0,0);
+        if (light->isPointInVolume( worldEye, camera->getNearClipPlane()*2 ))
+        {
+          //Pass for pixels in front of light volume back
+          glDepthFunc( GL_GEQUAL );
+          glStencilFunc( GL_ALWAYS, 0xFF, stencilMask );
+          glStencilOp( GL_ZERO, GL_ZERO, GL_REPLACE );
+
+          //Render light volume back faces and query
+          glCullFace( GL_FRONT );
+          glBeginQuery( GL_SAMPLES_PASSED, lightQueries[ stencilIndex ] );
+          light->renderVolume();
+          glEndQuery( GL_SAMPLES_PASSED );
+        }
+        else
+        {
+          //Pass for pixels in front of light volume back and incr stencil
+          glDepthFunc( GL_GEQUAL );
+          glStencilFunc( GL_ALWAYS, 0xFF, stencilMask );
+          glStencilOp( GL_ZERO, GL_ZERO, GL_REPLACE );
+
+          //Render light volume back faces
+          glCullFace( GL_FRONT );
+          light->renderVolume();
+
+          //Pass for pixels behind light volume front and in front of light volume back
+          glDepthFunc( GL_LESS );
+          glStencilFunc( GL_EQUAL, 0xFF, stencilMask );
+          glStencilOp( GL_ZERO, GL_ZERO, GL_REPLACE );
+
+          //Render light volume front faces and query
+          glCullFace( GL_BACK );
+          glBeginQuery( GL_SAMPLES_PASSED, lightQueries[ stencilIndex ] );
+          light->renderVolume();
+          glEndQuery( GL_SAMPLES_PASSED );
+        }
+
+        //Restore other state
+        glDisable( GL_STENCIL_TEST );
+        glDepthMask( GL_TRUE );
         glDepthFunc( GL_LESS );
-        glStencilFunc( GL_EQUAL, 0x1, 0xFF );
-        glStencilOp( GL_ZERO, GL_ZERO, GL_ZERO );
-
-        //Render light volume front faces and query
         glCullFace( GL_BACK );
-        glBeginQuery( GL_SAMPLES_PASSED, lightQueries[l] );
-        light->renderVolume();
-        glEndQuery( GL_SAMPLES_PASSED );
       }
-    }
 
-    //Restore other state
-    glDisable( GL_STENCIL_TEST );
-    glDepthMask( GL_TRUE );
-    glDepthFunc( GL_LESS );
-    glCullFace( GL_BACK );
+      //////////////////////////////////////////////////////////////////
+      //Render the shadow map
 
-    ///////////////////////////////////////////////////////////////
-    //Perform shading for each light
+      //The stencil bit used by this light
+      int stencilMask = (1 << (l % numStencilBits));
+      Light *light = scene->getLights()->at( l );
 
-    //Walk all the lights in the scene
-    for (UintSize l=0; l<scene->getLights()->size(); ++l)
-    {
-      Light* light = scene->getLights()->at( l );
-
-      //Obtain light query result (better than querying right after the
-      //drawing the queries or drawing them in this loop as it gives more
-      //time for that part of the pipeline to complete while the other
-      //lights are being rendered)
+      //Obtain light query result
       GLint litSamples = 0;
       glGetQueryObjectiv( lightQueries[l], GL_QUERY_RESULT, &litSamples );
       if (litSamples > 0) numVisibleLights++;
       else continue;
 
+      //Check if shadows enabled and render
+      if (light->getCastShadows())
+        renderShadowMap( light, scene );
+
+      /////////////////////////////////////////////////
+      //Finally light the pixels that need to be lit
+
+      Shader *shader = getLightShader( light );
+      shader->use();
+
       //Setup view and projection
       glViewport( viewX, viewY, viewW, viewH );
       camera->updateProjection( viewW, viewH );
       camera->updateView();
-
-      //Enable the light
+      
+      //Add light's world matrix and enable it
       Matrix4x4 worldCtm = light->getGlobalMatrix().affineNormalize();
       glMatrixMode( GL_MODELVIEW );
       glMultMatrixf( (GLfloat*) worldCtm.m );
       light->enable( 0 );
 
-      /////////////////////////////////////////////////////////
-      //Setup the stencil buffer to pass only for lit pixels
-
-      //Only write to stencil buffer
-      glUseProgram( 0 );
-      glBindFramebuffer( GL_FRAMEBUFFER, deferredFB );
-      glDrawBuffer( GL_NONE );
-      glDepthMask( GL_FALSE );
-      glDisable( GL_BLEND );
-      glDisable( GL_LIGHTING );
-      glEnable( GL_STENCIL_TEST );
-      glEnable( GL_DEPTH_TEST );
-      glEnable( GL_CULL_FACE );
-      glClear( GL_STENCIL_BUFFER_BIT );
-
-      //Avoid front faces being clipped by the camera near plane
-      Vector3 worldEye = camera->getGlobalMatrix().affineNormalize() * Vector3(0,0,0);
-      if (light->isPointInVolume( worldEye, camera->getNearClipPlane()*2 ))
-      {
-        //Pass for pixels in front of light volume back and incr stencil
-        glDepthFunc( GL_GEQUAL );
-        glStencilFunc( GL_ALWAYS, 0x0, 0xFF );
-        glStencilOp( GL_KEEP, GL_KEEP, GL_INCR );
-
-        //Render light volume back faces
-        glCullFace( GL_FRONT );
-        light->renderVolume();
-
-        //Pass for pixels in front of light volume back
-        glDepthFunc( GL_LESS );
-        glStencilFunc( GL_EQUAL, 0x1, 0xFF );
-        glStencilOp( GL_ZERO, GL_ZERO, GL_ZERO );
-      }
-      else
-      {
-        //Pass for pixels in front of light volume back
-        glDepthFunc( GL_GEQUAL );
-        glStencilFunc( GL_ALWAYS, 0x0, 0xFF );
-        glStencilOp( GL_KEEP, GL_KEEP, GL_INCR );
-
-        //Render light volume back faces
-        glCullFace( GL_FRONT );
-        light->renderVolume();
-
-        //Pass for pixels behind light volume front and in front of light volume back
-        glDepthFunc( GL_LESS );
-        glStencilFunc( GL_EQUAL, 0x1, 0xFF );
-        glStencilOp( GL_KEEP, GL_KEEP, GL_INCR );
-
-        //Render light volume front faces
-        glCullFace( GL_BACK );
-        light->renderVolume();
-
-        //Pass for pixels inside the light volume
-        glStencilFunc( GL_EQUAL, 0x2, 0xFF );
-        glStencilOp( GL_ZERO, GL_ZERO, GL_ZERO );
-      }
-
-      //Restore state
-      glDepthMask( GL_TRUE );
-      glDepthFunc( GL_LESS );
-      glCullFace( GL_BACK );
-
-      //GLint litSamples = 0;
-      //glGetQueryObjectiv( lightQueries[l], GL_QUERY_RESULT, &litSamples );
-      //if (litSamples > 0) numVisibleLights++;
-      //else continue;
-
-      /////////////////////////////////////////////////
-      //Render the shadow map
-
-      //Check if shadows enabled and render
-      if (light->getCastShadows())
-        renderShadowMap( light, scene );
-
-      //Re-Setup view and projection
-      glViewport( viewX, viewY, viewW, viewH );
-      camera->updateProjection( viewW, viewH );
-      camera->updateView();
-
-      //Re-Enable the light
-      glMatrixMode( GL_MODELVIEW );
-      glMultMatrixf( (GLfloat*) worldCtm.m );
-      light->enable( 0 );
-
-      /////////////////////////////////////////////////
-      //Finally light the pixels that need to be lit
-
       //Render to accumulation texture
-      shaderLightSpot->use();
-      glUniform2f( deferredWinSize, (GLfloat) winW, (GLfloat) winH );
       glBindFramebuffer( GL_FRAMEBUFFER, deferredFB );
       glDrawBuffer( GL_COLOR_ATTACHMENT0 );
       glDisable( GL_DEPTH_TEST );
+      glEnable( GL_STENCIL_TEST );
       glEnable( GL_CULL_FACE );
       glEnable( GL_BLEND );
-      glEnable( GL_STENCIL_TEST );
       glBlendFunc( GL_ONE, GL_ONE );
 
-      //Bind shadow texture if needed
-      if (light->getCastShadows())
-      {
-        glUniform1i( deferredCastShadow, 1);
-        glUniform1i( deferredSampler[Deferred::Shadow], Deferred::Shadow );
-        glActiveTexture( GL_TEXTURE0 + Deferred::Shadow );
-        glBindTexture( GL_TEXTURE_2D, shadowMap );
-        glEnable( GL_TEXTURE_2D );
-      }
-      else glUniform1i( deferredCastShadow, 0);
-
-      //Bind geometry textures
-      for (int d=0; d<GE_NUM_GBUFFERS; ++d)
-      {
-        glUniform1i( deferredSampler[d], d );
-        glActiveTexture( GL_TEXTURE0 + d );
-        glBindTexture( GL_TEXTURE_2D, deferredMaps[d] );
-        glEnable( GL_TEXTURE_2D );
-      }
+      glStencilMask( stencilMask );
+      glStencilFunc( GL_EQUAL, 0xFF, stencilMask );
+      glStencilOp( GL_ZERO, GL_ZERO, GL_ZERO );
 
       //Setup camera-eye to light-clip matrix
       Matrix4x4 cam = camera->getGlobalMatrix().affineNormalize();
@@ -947,23 +874,16 @@ namespace GE
       
       //Render light volume back faces
       glCullFace( GL_FRONT );
+
+      light->begin( shader, Vector2( winW, winH ), deferredMaps, shadowMap );
       light->renderVolume();
-      
-      //Restore texture state
-      for (int d=GE_NUM_GBUFFERS-1; d>=0; --d)
-      {
-        glActiveTexture( GL_TEXTURE0 + d );
-        glDisable( GL_TEXTURE_2D );
-      }
+      light->end();
 
-      glActiveTexture( GL_TEXTURE0 + Deferred::Shadow );
-      glDisable( GL_TEXTURE_2D );
-
-      //Restore other state
+      //Restore state
       glDisable( GL_STENCIL_TEST );
       glCullFace( GL_BACK );
       
-      /*      
+      /*
       //Draw light volume
       glUseProgram( 0 );
       glDisable( GL_DEPTH_TEST );
@@ -984,10 +904,10 @@ namespace GE
     glDeleteQueries( (GLsizei) numLights, lightQueries );
     delete[] lightQueries;
 
-    //if (numVisibleLights != lastVisibleLights) {
-    //  printf( "numVisibleLights: %d\n", numVisibleLights );
-    //  lastVisibleLights = numVisibleLights;
-    //}
+    if (numVisibleLights != lastVisibleLights) {
+      printf( "numVisibleLights: %d\n", numVisibleLights );
+      lastVisibleLights = numVisibleLights;
+    }
   }
 
   void Renderer::doToon (Uint32 sourceTex, Uint32 targetFB, Uint32 targetAtch)
@@ -1427,13 +1347,13 @@ namespace GE
       {
       case TravEvent::Begin:
         
-        node.actor->begin();
-
         if (!node.actor->isRenderable())
           continue;
 
+        node.actor->begin();
+
         curMaterial = NULL;
-        curShader = composeShader( RenderTarget::ShadowMap, node.actor, curMaterial );
+        curShader = getShader( RenderTarget::ShadowMap, node.actor, curMaterial );
         curShader->use();
 
         node.actor->render( GE_ANY_MATERIAL_ID );
@@ -1443,6 +1363,9 @@ namespace GE
 
         break;
       case TravEvent::End:
+
+        if (!node.actor->isRenderable())
+          continue;
 
         node.actor->end();
         break;
@@ -1457,11 +1380,11 @@ namespace GE
       TravNode node = scene->getTraversal()->at( t );
       if (node.event == TravEvent::Begin)
       {
-        node.actor->begin();
-
         //Skip if disabled for rendering
         if (!node.actor->isRenderable())
           continue;
+
+        node.actor->begin();
 
         //Find the type of material
         Material *mat = node.actor->getMaterial();
@@ -1469,7 +1392,7 @@ namespace GE
           
           //Compose shader
           curMaterial = NULL;
-          curShader = composeShader( RenderTarget::GBuffer, node.actor, curMaterial );
+          curShader = getShader( RenderTarget::GBuffer, node.actor, curMaterial );
           curShader->use();
 
           //Use default material if none
@@ -1484,7 +1407,7 @@ namespace GE
           {
             //Compose shader
             curMaterial = mmat->getSubMaterial((MaterialID)s);
-            curShader = composeShader( RenderTarget::GBuffer, node.actor, curMaterial );
+            curShader = getShader( RenderTarget::GBuffer, node.actor, curMaterial );
             curShader->use();
 
             //Render with each sub-material
@@ -1498,7 +1421,7 @@ namespace GE
 
           //Compose shader
           curMaterial = mat;
-          curShader = composeShader( RenderTarget::GBuffer, node.actor, curMaterial );
+          curShader = getShader( RenderTarget::GBuffer, node.actor, curMaterial );
           curShader->use();
 
           //Render with given material
@@ -1509,6 +1432,10 @@ namespace GE
       }
       else if (node.event == TravEvent::End)
       {
+        //Skip if disabled for rendering
+        if (!node.actor->isRenderable())
+          continue;
+
         node.actor->end();
       }
     }

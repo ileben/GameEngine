@@ -16,7 +16,6 @@ namespace CameraMode
   };
 }
 
-CharString animName;
 Float animSpeed = 1.0f;
 
 Scene *window = NULL;
@@ -167,7 +166,9 @@ void keyDown (unsigned char key, int x, int y)
   switch (key)
   {
   case 9://tab
-    renderer->setIsDofEnabled( !renderer->getIsDofEnabled() );
+    //renderer->setIsDofEnabled( !renderer->getIsDofEnabled() );
+    for (UintSize l=0; l<scene->getLights()->size(); ++l)
+      scene->getLights()->at( l )->setCastShadows( !scene->getLights()->at( l )->getCastShadows() );
     break;
 
   case 8://backspace
@@ -176,10 +177,12 @@ void keyDown (unsigned char key, int x, int y)
     break;
 
   case 13://return
-    animCtrl->play();
-    //if (skinMeshActor == NULL) return;
-    //skinMeshActor->loadAnimation( animName );
-    //skinMeshActor->getAnimController()->play();
+    animCtrl->play(); return;
+
+    if (skinMeshActor == NULL) return;
+    if (!skinMeshActor->getAnimController()->isPlaying())
+      skinMeshActor->getAnimController()->play( -1 );
+    else skinMeshActor->getAnimController()->toggle();
     break;
 
   case ' ':
@@ -448,7 +451,7 @@ bool loadPackage (const CharString &fileName)
               character->anims[ a ]->name.buffer());
 
     //Get animation name
-    if (character->anims.size() > 0 && animName == "") {
+    if (character->anims.size() > 0) {
       char buf[256]; int len=0; UintSize animIndex=0;
       while (len==0 || animIndex >= character->anims.size())
       {
@@ -457,26 +460,12 @@ bool loadPackage (const CharString &fileName)
         std::cin >> buf;
         CharString str = buf;
         animIndex = str.parseIntegerAt(0, &len);
-      }
-      animName = character->anims[ animIndex ]->name;
+      }      
+      //animName = character->anims[ animIndex ]->name;
     }
-/*
-    //Split into 24-bone sub meshes
-    SkinSuperToSubMesh splitter( character->mesh );
-    splitter.splitByBoneLimit( 24 );
 
-    UintSize numMeshes = splitter.getSubMeshCount();
-    for (UintSize m=0; m<numMeshes; ++m)
-    {
-      SkinTriMesh *mesh = (SkinTriMesh*) splitter.getSubMesh(m);
-      character->meshes.pushBack( mesh );
-      mesh->sendToGpu();
-    }
-    */
     for (UintSize m=0; m<character->meshes.size(); ++m)
-    {
       character->meshes[m]->sendToGpu();
-    }
   }
 
   return true;
@@ -639,118 +628,59 @@ int main (int argc, char **argv)
   printf( "Kernel loaded\n" );
 
   //Setup depth-of-field
-  //renderer->setDofParams( 400, 200, 100, 300 );
-  renderer->setDofParams( 800, 300, 100, 300 );
-  renderer->setIsDofEnabled( true );
+  renderer->setDofParams( 400, 200, 100, 300 );
+  //renderer->setDofParams( 800, 300, 100, 300 );
+  //renderer->setIsDofEnabled( true );
 
   //Setup 3D scene
-  //scene = kernel.loadSceneFile( "export.pak" );
-  //scene = kernel.loadSceneFile( "bossScene.pak" );
-  scene = kernel.loadSceneFile( "ZacScene.pak" );
+  scene = kernel.loadSceneFile( "HousePointLights.pak" );
+  //scene = kernel.loadSceneFile( "HouseSpotLights.pak" );
+  //scene = kernel.loadSceneFile( "CitySpotLights.pak" );
+  //scene = kernel.loadSceneFile( "CityPointLights.pak" );
+  //scene = kernel.loadSceneFile( "City.pak" );
+  //scene = kernel.loadSceneFile( "BossConvo.pak" );
+  //scene = kernel.loadSceneFile( "ZacScene.pak" );
   if (scene == NULL) {
     std::cout << "Failed loading scene file!" << std::endl;
     std::getchar();
     return EXIT_FAILURE;
   }
 
-  //Bind first animation to the controller
-  animCtrl = new AnimController;
-  if (!scene->animations.empty())
-    animCtrl->bindAnimation( scene->animations.first() );
-  
-  //Bind event observer to the controller
-  animCtrl->bindObserver( new EventObserver() );
-
-  /*
-  scene = new Scene3D;
-  scene->setRoot( new Actor3D() );
-
-  if (argc < 4)
-  {
-    //Get input filename and load it
-    CharString fileName;
-    do {
-      char buf[256];
-      std::cout << "Filename: ";
-      std::cin.width( 256 );
-      std::cin >> buf;
-      fileName = buf;
-      loadActor( fileName );
-    }
-    while (actorRender == NULL);
-  }
-  else
-  {
-    //Take filename from argument
-    CharString fileName = argv[1];
-
-    CharString texFileName = argv[2];
-    if (texFileName == "notex")
-      texFileName = "";
-
-    animName = argv[3];
-    if (animName == "noanim")
-      animName = "";
-
-    loadActor( fileName, texFileName );
-    if (actorRender == NULL) {
-      printf( "Failed loading '%s'\n", argv[1] );
-      getchar();
-      return 1;
-    }
-  }
-
-  scene->getRoot()->addChild( actorRender );
-  ((StandardMaterial*)actorRender->getMaterial())->setCullBack(false);
-  ((StandardMaterial*)actorRender->getMaterial())->setLuminosity(0.2f);
-  ((StandardMaterial*)actorRender->getMaterial())->setDiffuseColor(Vector3(.7,.7,.7));
-  ((StandardMaterial*)actorRender->getMaterial())->setSpecularity(1.0f);
-  ((StandardMaterial*)actorRender->getMaterial())->setGlossiness(0.5f);
-  //((StandardMaterial*)actorRender->getMaterial())->setCellShaded( true );
-*/
-
-  /*
-  //Create floor cube
-  StandardMaterial *matBox = new StandardMaterial;
-  matBox->setSpecularity( 0.5 );
-  matBox->setDiffuseColor( Vector3(1,1,1) );
-
-  TriMesh *cubeMesh = new CubeMesh;
-  TriMeshActor *cube = new TriMeshActor;
-  cube->setMaterial( matBox );
-  cube->setMesh( cubeMesh );
-  cube->scale( 300, 10, 300 );
-  cube->translate( 0, -100, 0 );
-  scene->addChild( cube );
-  */
-/*
-  //Create axes
-  StandardMaterial axesMat;
-  axesMat.setUseLighting( false );
-  AxisActor *axes = new AxisActor;
-  axes->scale( 100 );
-  axes->setMaterial( &axesMat );
-  //scene->addChild( axes );
-*/
-
   //Find lights
   ArrayList<Actor*> lights;
   scene->findActorsByClass( Class(Light), lights );
-  for (UintSize l=0; l<lights.size(); ++l) {
+  for (UintSize l=0; l<lights.size(); ++l)
+  {
+    //Set a large range
     Light* light = (Light*) lights[l];
-    light->setAttenuationEnd( 10000.0f );
+    light->setAttenuation( 10000.0f );
+    //light->setAttenuation( 200.0f );
+    //light->setAttenuation( 200.0f, 190.0f );
   }
 
   //Find first skin actor
   skinMeshActor = (SkinMeshActor*) scene->findFirstActorByClass( Class(SkinMeshActor) );
   if (skinMeshActor != NULL)
   {
+    //skinMeshActor->setParent( NULL );
+
+    /*
     //Find the name of the first animation
     if (!skinMeshActor->getCharacter()->anims.empty()) {
       Animation *anim = skinMeshActor->getCharacter()->anims.first();
-      animName = anim->name;
-    }
+      skinMeshActor->loadAnimation( anim->name );
+    }*/
   }
+
+  //Bind first animation to the controller
+  animCtrl = new AnimController;
+  if (!scene->animations.empty()) {
+    animCtrl->bindAnimation( scene->animations.first() );
+    animCtrl->observeAt( 0.0f );
+  }
+  
+  //Bind event observer to the controller
+  animCtrl->bindObserver( new EventObserver() );
 
   //Find first camera in the scene
   cam3D = (Camera3D*) scene->findFirstActorByClass( Class(Camera3D) );
@@ -777,7 +707,7 @@ int main (int argc, char **argv)
   window->setRoot( new Actor );
 
   lblFps = new FpsLabel;
-  lblFps->setLoc( Vector2( 0.0f, (Float)resY ));
+  lblFps->setLoc( Vector2( 0.0f, (Float)resY-20 ));
   lblFps->setColor( Vector3( 1.0f, 1.0f, 1.0f ));
   lblFps->setParent( window->getRoot() );
 
@@ -791,6 +721,7 @@ int main (int argc, char **argv)
   ctrl = new FpsController;
   ctrl->attachCamera( cam3D );
   ctrl->setMoveSpeed( 400 );
+  //ctrl->setMoveSpeed( 1000 );
 
   //Run application
   atexit( cleanup );

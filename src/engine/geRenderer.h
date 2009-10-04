@@ -57,6 +57,16 @@ namespace GE
     }
   };
 
+  struct LightShaderKey
+  {
+    ClassPtr lightClass;
+    Shader *shader;
+
+    bool operator == (const LightShaderKey &k) const {
+      return (lightClass == k.lightClass);
+    }
+  };
+
   #define GE_NUM_GBUFFERS 4
   #define GE_NUM_SAMPLERS 5
 
@@ -84,6 +94,7 @@ namespace GE
     Shader *curShader;
     Material *curMaterial;
     ArrayList< ShaderKey > shaders;
+    ArrayList< LightShaderKey > lightShaders;
     Float avgLuminance;
     Float maxLuminance;
     
@@ -118,10 +129,7 @@ namespace GE
     Uint32 bloomBlurMap;
     int blurW, blurH;
 
-    Shader *shaderLightSpot;
-    Int32 deferredSampler[5];
-    Int32 deferredCastShadow;
-    Int32 deferredWinSize;
+    Shader *shaderShadow;
 
     Shader *shaderAmbient;
     Int32 ambientColorSampler;
@@ -204,9 +212,12 @@ namespace GE
     void traverseSceneWithMats (Scene3D *scene);
     void renderShadowMap (Light *light, Scene3D *scene);
     Shader* findShaderByKey (const ShaderKey &key);
-    Shader* composeShader (RenderTarget::Enum target,
-                           Actor3D *geometry,
-                           Material *material);
+    Shader* getShader (RenderTarget::Enum target,
+                       Actor3D *geometry,
+                       Material *material);
+
+    Shader *findLightShaderByKey (const LightShaderKey &key);
+    Shader *getLightShader (Light *light);
 
     void doToon (Uint32 sourceTex, Uint32 targetFB, Uint32 targetAtch);
     void doDof (Uint32 sourceTex, Uint32 targetFB, Uint32 targetAtch);

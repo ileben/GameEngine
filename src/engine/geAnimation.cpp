@@ -130,8 +130,6 @@ namespace GE
       //Find bindings that target the same animation as the controller
       AnimTrackBinding *trackBind = obsrv->bindings[ b ];
       if (trackBind->anim != anim) continue;
-
-      //Check that the track is within range
       if (trackBind->track > bindings.size()) continue;
 
       //Bind backwards (track -> observer)
@@ -155,6 +153,7 @@ namespace GE
   {
     animTime = Util::Clamp( from, 0.0f, maxTime );
     maxLoops = nloops;
+    numLoops = 0;
     playSpeed = speed;
 
     playing = true;
@@ -185,6 +184,12 @@ namespace GE
   {
     if (playing)
       paused = false;
+  }
+
+  void AnimController::toggle()
+  {
+    if (playing)
+      paused = !paused;
   }
 
   void AnimController::setTime (Float time)
@@ -251,19 +256,34 @@ namespace GE
     //Check if animation has ended
     if (animTime > maxTime)
     {
-      //Check if loop limit reached
-      if (numLoops < maxLoops)
-      {
-        //Wrap animation time
-        if (maxTime > 0.0f) {
-          while (animTime > maxTime)
-            animTime -= maxTime;
-        } else animTime = 0.0;
+      bool stop = false;
 
-        //Increase number of loops
-        numLoops++;
+      //Check if the animation has got more than one key
+      if (maxTime > 0.0f) {
+
+        //Wrap animation time until within duration
+        while (animTime > maxTime)
+        {
+          //Check if loop limit reached
+          if ((numLoops >= maxLoops) && (maxLoops != -1)) {
+            stop = true;
+            break;
+          }
+
+          //Increase number of loops
+          animTime -= maxTime;
+          trackIndex = 0;
+          eventIndex = 0;
+          numLoops++;
+        }
+
+      } else {
+
+        //Single-key animation cannot be looped
+        stop = true;
       }
-      else
+
+      if (stop)
       {
         //Clip animation time and stop
         animTime = maxTime;
@@ -280,23 +300,37 @@ namespace GE
     evaluateAnimation();
   }
 
+  void AnimController::timeToKeys (Animation *a, Float t, Int *k1, Int *k2, Float *kt)
+  {
+    //Find 2 keys and interpolation coeff
+    Float fk = t * anim->kps;
+    *k1 = (Int) FLOOR( fk );
+    *k2 = (Int) CEIL( fk );
+    *kt = fk - (Float) *k1;
+  }
+
+  void AnimController::localizeKeys (AnimTrack *t, Int k1, Int k2, Int *outK1, Int *outK2)
+  {
+    //Localize keys relative to animation track and clamp to range
+    *outK1 = Util::Clamp( k1 - t->firstKey, 0, (Int) t->getNumKeys()-1 );
+    *outK2 = Util::Clamp( k2 - t->firstKey, 0, (Int) t->getNumKeys()-1 );
+  }
+
   void AnimController::evaluateAnimation ()
   {
     //Must have an animation bound
     if (anim == NULL) return;
     
     //Find 2 keys and interpolation coeff
-    Float curKey = animTime * anim->kps;
-    key1 = (Int) FLOOR( curKey );
-    key2 = (Int) CEIL( curKey );
-    keyT = curKey - (Float) key1;
+    Int key1, key2; Float keyT;
+    timeToKeys( anim, animTime, &key1, &key2, &keyT );
 
     //Walk the list of tracks under current key
     for (TrackIter ti = tracksOnKey.begin(); ti != tracksOnKey.end(); )
     {
       //Update track values
       AnimTrack *track = anim->tracks[ *ti ];
-      evaluateTrack( *ti );
+      evaluateTrack( *ti, key1, key2, keyT );
 
       //Remove finished tracks
       if (key1 >= ( track->firstKey + track->getNumKeys() - 1 ))
@@ -312,7 +346,7 @@ namespace GE
       if (key1 >= track->firstKey)
       {
         //Evaluate animation and add to list
-        evaluateTrack( (Int) trackIndex );
+        evaluateTrack( (Int) trackIndex, key1, key2, keyT );
         tracksOnKey.pushBack( (Int) trackIndex );
       }
       else break;
@@ -343,11 +377,13 @@ namespace GE
     }
   }
 
-  void AnimController::evaluateTrack (UintSize t)
+  void AnimController::evaluateTrack (UintSize t, Int key1, Int key2, Float keyT)
   {
     //Evaluate track at current time
+    Int localKey1, localKey2;
     AnimTrack *track = anim->tracks[ t ];
-    track->evalAt( key1, key2, keyT );
+    localizeKeys( track, key1, key2, &localKey1, &localKey2 );
+    track->evalAt( localKey1, localKey2, keyT );
 
     //Get the observer of this track
     AnimObserver *observer = bindings[ t ]->observer;
@@ -362,6 +398,23 @@ namespace GE
       observersOnKey.pushBack( observer );
       observer->change = true;
     }
+  }
+
+  void AnimController::observeAt (Float time)
+  {
+    if (anim == NULL) return;
+
+    //Get two keys 
+    Int k1, k2; Float kt;
+    timeToKeys( anim, time, &k1, &k2, &kt );
+
+    //Evaluate all tracks at given time
+    for (UintSize t=0; t<anim->tracks.size(); ++t)
+      evaluateTrack( t, k1, k2, kt );
+
+    //Notify all observers
+    for (UintSize o=0; o<observers.size(); ++o)
+      observers[ o ]->onAnyValueChanged();
   }
 
 }//namespace GE

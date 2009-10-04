@@ -137,10 +137,6 @@ namespace GE
     //Must have at least one key
     if (keys.empty()) return;
 
-    //Localize keys and clamp to range
-    key1 = Util::Clamp( key1 - firstKey, 0, (Int)keys.size()-1 );
-    key2 = Util::Clamp( key2 - firstKey, 0, (Int)keys.size()-1 );
-
     //Check if keys the same
     if (key1 == key2)
     {
@@ -406,18 +402,17 @@ namespace GE
     void createBindings();
 
     //Key interpolation
-    Int key1;
-    Int key2;
-    Float keyT;
     UintSize trackIndex;
     UintSize eventIndex;
     typedef LinkedList< UintSize >::Iterator TrackIter;
     LinkedList< UintSize > tracksOnKey;
     ArrayList< AnimObserver* > observersOnKey;
     ArrayList< AnimObserver* > observers;
-    
+
+    void timeToKeys (Animation *a, Float t, Int *k1, Int *k2, Float *kt);
+    void localizeKeys (AnimTrack *t, Int k1, Int k2, Int *outK1, Int *outK2);
     void evaluateAnimation ();
-    void evaluateTrack (UintSize track);
+    void evaluateTrack (UintSize track, Int key1, Int key2, Float keyT);
 
     //Callbacks
     AnimCallbackFunc endFunc;
@@ -431,10 +426,12 @@ namespace GE
 
     void bindAnimation (Animation *a);
     void bindObserver (AnimObserver *o);
+    void observeAt (Float time);
 
     void play (Int nloops = 0, Float speed = 1.0f, Float from = 0.0);
     void pause ();
     void unpause ();
+    void toggle ();
     void stop ();
     void tick ();
 

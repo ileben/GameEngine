@@ -5,6 +5,7 @@
 #include <maya/MFnBlinnShader.h>
 #include <maya/MFnLight.h>
 #include <maya/MFnSpotLight.h>
+#include <maya/MFnPointLight.h>
 #include <maya/MFnNonExtendedLight.h>
 
 /*
@@ -310,7 +311,7 @@ Light* exportLight (const MDagPath &lightDagPath)
   MStatus status;
   Light *outLight;
 
-  //Only SpotLights supported for now
+  //Check the light type
   if (lightDagPath.hasFn( MFn::kSpotLight ))
   {
     //Find the inner and out angles
@@ -329,6 +330,12 @@ Light* exportLight (const MDagPath &lightDagPath)
     SpotLight *outSpotLight = new SpotLight;
     outSpotLight->setAngle( Util::Max( a1,a2 ), Util::Min( a1,a2) );
     outLight = outSpotLight;
+  }
+  else if (lightDagPath.hasFn( MFn::kPointLight ))
+  {
+    //Create a new point light
+    PointLight *outPointLight = new PointLight;
+    outLight = outPointLight;
   }
   else return NULL;
 

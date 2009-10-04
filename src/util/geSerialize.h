@@ -64,6 +64,8 @@ namespace GE
       virtual void processObjArrayItem (Object *pmbr, ObjectInfo &newObj) {}
       virtual void processObjPtrArray (Object ***pmbr) {}
       virtual void processObjPtrArrayItem (Object **pmbr, ObjectInfo &newObj) {}
+      virtual void processObjRefArray (Object ***pmbr) {}
+      virtual void processObjRefArrayItem (Object **pmbr) {}
       virtual void processDataPtr (void **pmbr) {}
     };
 
@@ -81,6 +83,7 @@ namespace GE
       virtual void processDataVar (void *pmbr);
       virtual void processDataPtr (void **pmbr);
       virtual void processObjRef (Object **pmbr);
+      virtual void processObjRefArray (Object ***pmbr);
       virtual void processObjArray (Object **pmbr);
       virtual void processObjPtrArray (Object ***pmbr);
     };

@@ -40,7 +40,9 @@ int main (int argc, char **argv)
   character->meshes[ 0 ] = new SkinTriMesh;
   kernel->cacheResource( character, "testChar" );
 
+  Scene3D *scene = new Scene3D;
   Actor3D *root = new Actor3D;
+  scene->setRoot( root );
 
   StandardMaterial *m1 = new StandardMaterial;
   DiffuseTexMat *m2 = new DiffuseTexMat;
@@ -64,11 +66,16 @@ int main (int argc, char **argv)
   actor3->setCharacter( character );
   actor3->setParent( root );
 
+  SpotLight *spotLight = new SpotLight;
+  spotLight->setParent( root );
+
+  PointLight *pointLight = new PointLight;
+  pointLight->setParent( root );
+
   void *data; UintSize size;
   
   SerializeManager sm;
-  //sm.save( root, &data, &size );
-  sm.save( character, &data, &size );
+  sm.save( scene, &data, &size );
   sm.load( data );
 
   kernel->loadSceneData( data );

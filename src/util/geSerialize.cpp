@@ -247,6 +247,13 @@ namespace GE
     *pmbr = (Object**) std::malloc( mbr.size * sizeof(Object*) );
   }
 
+  void SerializeManager::StateLoad::processObjRefArray
+    (Object ***pmbr)
+  {
+    //Allocate an array of (reference) pointers to objects
+    *pmbr = (Object**) std::malloc( mbr.size * sizeof(Object*) );
+  }
+
   void SerializeManager::StateLoad::processDataPtr
     (void **pmbr)
   {
@@ -466,6 +473,26 @@ namespace GE
             //Enqueue and processs each pointer to object
             enqueueObjPtr( *p );
             processObjPtr( p, objQueue.back() );
+
+            //Next pointer in the array
+            Util::PtrAdd( &p, sizeof(Object*) );
+          }
+          break;
+        }
+        case MemberType::ObjRefArray:
+        {
+          if (mbr.size == 0) break;
+
+          //Process array of references to objects
+          Object ***pmbr = (Object***) member->getFrom( obj.ptr );
+          processObjRefArray( pmbr );
+
+          //Walk the array of pointers to objects
+          Object **p = *pmbr;
+          for (UintSize o=0; o<mbr.size; ++o)
+          {
+            //Store the reference
+            refList.push_back( p );
 
             //Next pointer in the array
             Util::PtrAdd( &p, sizeof(Object*) );

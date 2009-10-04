@@ -514,21 +514,14 @@
 					</FileConfiguration>
 				</File>
 				<File
-					RelativePath="..\..\src\engine\embedit\shadefrag.SpotLight.c"
+					RelativePath="..\..\src\engine\embedit\Light.c"
 					>
 					<FileConfiguration
 						Name="Debug|Win32"
 						>
 						<Tool
 							Name="Embedit"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="Embedit"
-							Preprocess="false"
+							Preprocess="true"
 						/>
 					</FileConfiguration>
 				</File>
@@ -573,20 +566,14 @@
 					</FileConfiguration>
 				</File>
 				<File
-					RelativePath="..\..\src\engine\embedit\shadevert.SpotLight.c"
+					RelativePath="..\..\src\engine\embedit\Shadow.c"
 					>
 					<FileConfiguration
 						Name="Debug|Win32"
 						>
 						<Tool
 							Name="Embedit"
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="Embedit"
+							Preprocess="true"
 						/>
 					</FileConfiguration>
 				</File>

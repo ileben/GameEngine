@@ -53,7 +53,9 @@ namespace GE
       
       //Store lights
       Light *l = SafeCast( Light, a );
-      if (l != NULL) lights.pushBack( l );
+      if (l != NULL)
+        if (ClassOf( l ) != Class( PointLight ))
+        lights.pushBack( l );
       
       //Put children actors onto the stack
       stack.pushBack( TravNode( a, TravEvent::End ));

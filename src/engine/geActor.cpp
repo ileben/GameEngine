@@ -49,11 +49,8 @@ namespace GE
   void Actor3D::lookAt (const Vector3 &look, Vector3 up)
   {
     //Avoid up vector that matches the look vector
-    if (Vector::Cross( up, look ).norm() == 0.0 ) {
-      up.x += 0.0001f;
-      up.y += 0.0002f;
-      up.z += 0.0003f;
-    }
+    if (Vector::Cross( up, look ).norm() == 0.0 )
+      up.set( up.z, up.x, up.y );
 
     //Assume look is to be the zAxis in world space
     Vector3 xAxis = Vector::Cross( up, look ).normalize();

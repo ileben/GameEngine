@@ -108,7 +108,8 @@ namespace GE
       ObjPtr,
       ObjRef,
       ObjArray,
-      ObjPtrArray
+      ObjPtrArray,
+      ObjRefArray
     };
   }
 
@@ -185,6 +186,10 @@ namespace GE
 
   inline MemberInfo MEMBER_OBJPTRARRAY (ClassPtr cls, UintSize sz) {
     return MemberInfo( MemberType::ObjPtrArray, sz, cls );
+  }
+
+  inline MemberInfo MEMBER_OBJREFARRAY (ClassPtr cls, UintSize sz) {
+    return MemberInfo( MemberType::ObjRefArray, sz, cls );
   }
 
   inline MemberInfo MEMBER_DATAPTR (UintSize sz) {
