@@ -714,9 +714,12 @@ namespace GE
   
   Resource* Kernel::getResource (const CharString &name)
   {
+    //Search for the resource in the cache
     ResourceIter iter = resources.find( name.buffer() );
-    if (iter != resources.end())
-      return iter->second;
+    if (iter != resources.end()) return iter->second;
+
+    //Load missing resource
+    std::cout << "Loading resource " << name.buffer() << "..." << std::endl;
 
     if (name.right(3) == "jpg" ||
         name.right(3) == "png")
@@ -776,7 +779,14 @@ namespace GE
       return NULL;
     }
 
-    //Load required resources
+    //Cache resources loaded with the scene
+    for (UintSize r=0; r<scene->resources.size(); ++r)
+    {
+      Resource *res = scene->resources[ r ];
+      cacheResource( res, res->getResourceName() );
+    }
+
+    //Assign resources / load missing
     const SM::ObjectList &objects = sm.getObjects();
     for (UintSize o=0; o<objects.size(); ++o)
     {

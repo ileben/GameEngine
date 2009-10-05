@@ -87,9 +87,17 @@ namespace GE
 
   void Renderer::setWindowSize (int width, int height)
   {
+    bool change = (width != winW || height != winH);
+    
     winW = width;
     winH = height;
-    initBuffers();
+    
+    if (change) initBuffers();
+  }
+
+  Vector2 Renderer::getWindowSize ()
+  {
+    return Vector2( (Float) winW, (Float) winH );
   }
 
   /*
@@ -140,6 +148,14 @@ namespace GE
     Shader *shader = findLightShaderByKey( key );
     if (shader != NULL) return shader;
 
+
+    printf( "\n");
+    printf( "==============================\n");
+    printf( "    Composing Light Shader    \n" );
+    printf( "==============================\n");
+    printf( "Light: %s\n", key.lightClass->getString() );
+    printf( "\n" );
+
     shader = new Shader();
     light->composeShader( shader );
     shader->link();
@@ -175,19 +191,18 @@ namespace GE
     Shader* shader = findShaderByKey( key );
     if (shader != NULL) return shader;
 
-    shader = new Shader;
-    if (geometry != NULL) geometry->composeShader( shader );
-    if (material != NULL) material->composeShader( shader );
-
     printf( "\n");
-    printf( "========================\n");
-    printf( "    Composing shader    \n" );
-    printf( "========================\n");
+    printf( "=================================\n");
+    printf( "    Composing Geometry Shader    \n" );
+    printf( "=================================\n");
     printf( "Target: %s\n", target == RenderTarget::GBuffer ? "GBuffer" : "ShadowMap" );
     printf( "Geometry: %s\n", key.geomClass->getString() );
     printf( "Material: %s\n", key.matClass->getString() );
     printf( "\n" );
 
+    shader = new Shader;
+    if (geometry != NULL) geometry->composeShader( shader );
+    if (material != NULL) material->composeShader( shader );
     shader->compose( target );
     
     key.shader = shader;

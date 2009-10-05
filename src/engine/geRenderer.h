@@ -228,6 +228,8 @@ namespace GE
     Renderer();
 
     void setWindowSize (int width, int height);
+    Vector2 getWindowSize ();
+
     void setBackColor (const Vector3 &back);
     void setViewport (int x, int y, int width, int height);
     void setCamera (Camera *camera);

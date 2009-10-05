@@ -46,6 +46,7 @@ namespace GE
     DECLARE_SERIAL_SUBCLASS (Scene3D, Scene);
     DECLARE_DATAVAR( ambientColor );
     DECLARE_OBJVAR( animations );
+    DECLARE_OBJVAR( resources );
     DECLARE_END;
     friend class Renderer;
 
@@ -58,6 +59,7 @@ namespace GE
     Vector3 ambientColor;
   public:
     ObjPtrArrayList< Animation > animations;
+    ObjPtrArrayList< Resource > resources;
 
   public:
     Scene3D ();

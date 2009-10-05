@@ -491,14 +491,7 @@ namespace GE
       //Both string must have ended by now
       return 0;
     }
-    
-    template <class AnyCharType>
-    int compare (AnyCharType *str, int strsize,
-                 bool caseMatters = true) const
-    {
-      return compareAt (0, size, str, strsize, caseMatters);
-    }
-    
+
     int compareAt (int start, int len,
                    const char *str,
                    bool caseMatters = true) const
@@ -506,6 +499,24 @@ namespace GE
       return compareAt (start, len, str, strlen (str), caseMatters);
     }
     
+    
+    /*
+    Wrappers that compare the whole string */
+
+    template <class AnyCharType>
+    int compare (AnyCharType *str, int strsize,
+                 bool caseMatters = true) const
+    {
+      return compareAt (0, size, str, strsize, caseMatters);
+    }
+
+    template <class AnyCharType>
+    int compare (const BasicString< AnyCharType > &str,
+                 bool caseMatters = true) const
+    {
+      return compareAt( 0, size, str.buf, str.size, caseMatters);
+    }
+   
     int compare (const char *str,
                  bool caseMatters = true) const
     {
@@ -513,9 +524,8 @@ namespace GE
     }
     
     /*
-    These are just wrappers around compare function that return bool
-    instead of -1, 0, 1.
-    */
+    Wrappers returning bool instead of -1, 0, 1. */
+
     template <class AnyCharType>
     bool equals (const AnyCharType *echars, int esize, bool caseMatters=true) const
     {
@@ -551,9 +561,8 @@ namespace GE
     }
     
     /*
-    Comparison operators are just wrappers around compare function
-    that return bool instead of -1, 0, 1.
-    */
+    Comparison operators wrappers returning bool instead of -1, 0, 1. */
+
     bool operator== (const BasicString<CharType> &str) const {
       return compare (str.buf, str.size) == 0;
     }
@@ -568,6 +577,10 @@ namespace GE
     
     bool operator!= (const char *cstr) const {
       return compare (cstr) != 0;
+    }
+
+    bool operator< (const BasicString<CharType> &str) const {
+      return compare (str.buf, str.size) == -1;
     }
     
     /*

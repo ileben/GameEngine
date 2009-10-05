@@ -186,7 +186,7 @@ bool findTextureFileName (MPlug &plug, CharString &outFileName)
   return false;
 }
 
-Material* exportShader (const MObject &shader)
+Material* exportShader (const MObject &shader, bool *hasNormalMap)
 {
   MStatus status;
 
@@ -261,15 +261,19 @@ Material* exportShader (const MObject &shader)
     ((DiffuseTexMat*) mat)->setDiffuseTexture( diffTexName );
 
   //Export normal texture
-  if (normTexUsed)
+  if (normTexUsed) {
     ((NormalTexMat*) mat)->setNormalTexture( normTexName );
+    *hasNormalMap = true;
+  }
 
   return mat;
 }
 
-Material* exportMaterial (const MObject &meshNode)
+Material* exportMaterial (const MObject &meshNode, bool *hasNormalMap)
 {
   MStatus status;
+  bool normalMap = false;
+  Material *outMaterial = NULL;
 
   //Check if it's really a mesh
   MFnMesh mesh( meshNode, &status );
@@ -290,20 +294,26 @@ Material* exportMaterial (const MObject &meshNode)
     //Group them into a multi-material
     MultiMaterial *mm = new MultiMaterial;
     mm->setNumSubMaterials( meshShaders.length() );
-    for (Uint s=0; s<meshShaders.length(); ++s)
-    {
-      //Export each shader
-      Material *mat = exportShader( meshShaders[ s ] );
+    outMaterial = mm;
+
+    //Export each sub-material
+    for (Uint s=0; s<meshShaders.length(); ++s) {
+      Material *mat = exportShader( meshShaders[ s ], &normalMap );
       mm->setSubMaterial( s, mat );
     }
-    return mm;
   }
   else
   {
     //Export single material
-    Material *mat = exportShader( meshShaders[ 0 ] );
-    return mat;
+    Material *mat = exportShader( meshShaders[ 0 ], &normalMap );
+    outMaterial = mat;
   }
+
+  //Return info on normal map
+  if (hasNormalMap != NULL)
+    *hasNormalMap = normalMap;
+
+  return outMaterial;
 }
 
 Light* exportLight (const MDagPath &lightDagPath)
@@ -1070,7 +1080,7 @@ bool findSkinForMesh (const MObject &meshNode, MObject &skinNode)
   //Find the plug named "inMesh" in the mesh object
   MPlug inMeshPlug = dagNode.findPlug("inMesh", &status );
   if (status != MStatus::kSuccess || !inMeshPlug.isConnected()) {
-    trace( "findSkinForMesh: 'inMesh' plug missing or not connected!" );
+    //trace( "findSkinForMesh: 'inMesh' plug missing or not connected!" );
     return false; }
 
   //Walk the dependency graph upstream on plug level
@@ -1094,7 +1104,7 @@ bool findSkinForMesh (const MObject &meshNode, MObject &skinNode)
   }
 
   //Not found
-  trace( "findSkinForMesh: no skin found on the 'inMesh' plug!" );
+  //trace( "findSkinForMesh: no skin found on the 'inMesh' plug!" );
   return false;
 }
 
@@ -1708,6 +1718,11 @@ Animation* exportAnimation (int kps, MayaAnimDummy *anim)
   return outAnim;
 }
 
+/*
+------------------------------------------------------------
+Export keys for character animation
+------------------------------------------------------------*/
+
 void exportAnimKeys (const ArrayList<MObject> &nodeTree,
                      int start, int end, int fps,
                      Animation *outAnim)
@@ -1777,11 +1792,49 @@ void exportAnimKeys (const ArrayList<MObject> &nodeTree,
 }
 
 /*
+------------------------------------------------------------
+Export character animation
+------------------------------------------------------------*/
+
+Animation* exportSkinAnimation (int start, int end, int fps)
+{
+  ArrayList<MObject> nodeTree;
+  ArrayList<SkinJoint> jointTree;
+  MObject meshNode;
+  MObject skinNode;
+  MObject jointRoot;
+  
+  if (!findNodeInSelection( MFn::kMesh, meshNode )) {
+    setStatus( "Please select a mesh node!" );
+    return NULL;
+  }
+
+  if (!findSkinForMesh( meshNode, skinNode )) {
+    setStatus( "Please select a mesh with skin!" );
+    return NULL;
+  }
+
+  if (!findSkinJointRoot( skinNode, jointRoot )) {
+    setStatus( "Skin doesn't have any influences!" );
+    return NULL;
+  }
+
+  //Build bone tree
+  buildJointTree( jointRoot, nodeTree, jointTree );
+
+  //Export animation
+  Animation *outAnim = new Animation;
+  exportAnimKeys( nodeTree, start, end, fps, outAnim );
+
+  return outAnim;
+}
+
+/*
 --------------------------------------------------------
 Export mesh with skin
 --------------------------------------------------------*/
 
-void exportWithSkin (const MObject &meshNode, bool tangents, void **outData, UintSize *outSize)
+Character* exportCharacter (const MObject &meshNode, bool tangents)
 {
   ArrayList<MObject> nodeTree;
   ArrayList<SkinJoint> jointTree;
@@ -1792,16 +1845,16 @@ void exportWithSkin (const MObject &meshNode, bool tangents, void **outData, Uin
 
   if (!findSkinForMesh( meshNode, skinNode )) {
     setStatus( "Please select a mesh with skin!" );
-    return;
+    return NULL;
   }
 
   if (!findSkinJointRoot( skinNode, jointRoot )) {
     setStatus( "Skin doesn't have any influences!" );
-    return;
+    return NULL;
   }
 
   if (!findSkinPoseMesh( skinNode, skinMesh ))
-    return;
+    return NULL;
 
   //Export joint tree and pose rotations
   buildJointTree( jointRoot, nodeTree, jointTree );
@@ -1848,7 +1901,7 @@ void exportWithSkin (const MObject &meshNode, bool tangents, void **outData, Uin
   character->pose->joints.pushListBack( &jointTree );
 
   //Split into 24-bone sub meshes
-  trace( "exportWithSkin: Splitting by bone limit..." );
+  trace( "exportCharacter: Splitting by bone limit..." );
 
   SkinSuperToSubMesh splitter( outTriMesh );
   splitter.splitByBoneLimit( 24 );
@@ -1860,14 +1913,9 @@ void exportWithSkin (const MObject &meshNode, bool tangents, void **outData, Uin
     character->meshes.pushBack( mesh );
   }
 
-  trace( "exportWithSkin: Generated " + CharString::FInt( (int)numMeshes ) + " sub-meshes." );
+  trace( "exportCharacter: Generated " + CharString::FInt( (int)numMeshes ) + " sub-meshes." );
 
-  //Serialize
-  SerializeManager sm;
-  sm.save( character, outData, outSize );
- 
-  //Cleanup
-  delete character;
+  return character;
 }
 
 /*
@@ -1875,7 +1923,7 @@ void exportWithSkin (const MObject &meshNode, bool tangents, void **outData, Uin
 Export static mesh
 --------------------------------------------------------*/
 
-void exportNoSkin (const MObject &meshNode, bool tangents, void **outData, UintSize *outSize)
+TriMesh* exportMesh (const MObject &meshNode, bool tangents)
 {
   //Prepare vertex format
   VertexFormat format;
@@ -1901,43 +1949,5 @@ void exportNoSkin (const MObject &meshNode, bool tangents, void **outData, UintS
   TriMeshExporter meshExporter( outTriMesh, vertToVariantMap );
   meshExporter.exportMesh( meshNode );
 
-  //Serialize
-  SerializeManager sm;
-  sm.save( outTriMesh, outData, outSize );
-
-  //Cleanup
-  delete outTriMesh;
-}
-
-Animation* exportSkinAnimation (int start, int end, int fps)
-{
-  ArrayList<MObject> nodeTree;
-  ArrayList<SkinJoint> jointTree;
-  MObject meshNode;
-  MObject skinNode;
-  MObject jointRoot;
-  
-  if (!findNodeInSelection( MFn::kMesh, meshNode )) {
-    setStatus( "Please select a mesh node!" );
-    return NULL;
-  }
-
-  if (!findSkinForMesh( meshNode, skinNode )) {
-    setStatus( "Please select a mesh with skin!" );
-    return NULL;
-  }
-
-  if (!findSkinJointRoot( skinNode, jointRoot )) {
-    setStatus( "Skin doesn't have any influences!" );
-    return NULL;
-  }
-
-  //Build bone tree
-  buildJointTree( jointRoot, nodeTree, jointTree );
-
-  //Export animation
-  Animation *outAnim = new Animation;
-  exportAnimKeys( nodeTree, start, end, fps, outAnim );
-
-  return outAnim;
+  return outTriMesh;
 }

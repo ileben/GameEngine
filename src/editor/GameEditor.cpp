@@ -619,12 +619,27 @@ SkinAnimObserver b;
 
 int main (int argc, char **argv)
 {
+  //Usage
+  if (argc < 5) {
+    std::cout << "Usage: exe SCENE_FILE ATT_START ATT_END MOVE_SPEED" << std::endl;
+    std::getchar ();
+    return EXIT_FAILURE;
+  }
+
+  CharString strAttStart = argv[2];
+  CharString strAttEnd = argv[3];
+  CharString strMoveSpeed = argv[4];
+  float attStart = strAttStart.parseFloat();
+  float attEnd = strAttEnd.parseFloat();
+  float moveSpeed = strMoveSpeed.parseFloat();
+
   //Initialize GLUT
   initGlut( argc, argv );
   
   Kernel kernel;
   kernel.enableVerticalSync( false );
   renderer = kernel.getRenderer();
+  renderer->setWindowSize( resX, resY );
   printf( "Kernel loaded\n" );
 
   //Setup depth-of-field
@@ -633,7 +648,8 @@ int main (int argc, char **argv)
   //renderer->setIsDofEnabled( true );
 
   //Setup 3D scene
-  scene = kernel.loadSceneFile( "HousePointLights.pak" );
+  scene = kernel.loadSceneFile( argv[1] );
+  //scene = kernel.loadSceneFile( "HousePointLights.pak" );
   //scene = kernel.loadSceneFile( "HouseSpotLights.pak" );
   //scene = kernel.loadSceneFile( "CitySpotLights.pak" );
   //scene = kernel.loadSceneFile( "CityPointLights.pak" );
@@ -653,7 +669,8 @@ int main (int argc, char **argv)
   {
     //Set a large range
     Light* light = (Light*) lights[l];
-    light->setAttenuation( 10000.0f );
+    light->setAttenuation( attEnd, attStart );
+    //light->setAttenuation( 10000.0f );
     //light->setAttenuation( 200.0f );
     //light->setAttenuation( 200.0f, 190.0f );
   }
@@ -720,8 +737,13 @@ int main (int argc, char **argv)
   //Assign controller
   ctrl = new FpsController;
   ctrl->attachCamera( cam3D );
-  ctrl->setMoveSpeed( 400 );
+  ctrl->setMoveSpeed( moveSpeed );
+  //ctrl->setMoveSpeed( 400 );
   //ctrl->setMoveSpeed( 1000 );
+
+  //Tick first time after all setup done
+  Float time = (Float) glutGet( GLUT_ELAPSED_TIME ) * 0.001f;
+  kernel.tick( time );
 
   //Run application
   atexit( cleanup );

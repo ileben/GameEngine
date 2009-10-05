@@ -43,6 +43,9 @@ namespace GE
   {
   private:
 
+    bool lookEnabled;
+    bool moveEnabled;
+
     bool mouseDown;
     Vector2 lastMouse;
 
@@ -58,6 +61,9 @@ namespace GE
     
     void setMoveSpeed (Float speed);
     Float getMoveSpeed ();
+
+    void enableMove (bool enabled);
+    void enableLook (bool enabled);
 
     virtual void keyDown (unsigned char key);
     virtual void keyUp (unsigned char key);

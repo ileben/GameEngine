@@ -524,6 +524,14 @@
 							Preprocess="true"
 						/>
 					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="Embedit"
+							Preprocess="true"
+						/>
+					</FileConfiguration>
 				</File>
 				<File
 					RelativePath="..\..\src\engine\embedit\shadenode.Shader.c"
@@ -570,6 +578,14 @@
 					>
 					<FileConfiguration
 						Name="Debug|Win32"
+						>
+						<Tool
+							Name="Embedit"
+							Preprocess="true"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
 						>
 						<Tool
 							Name="Embedit"

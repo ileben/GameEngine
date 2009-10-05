@@ -20,6 +20,9 @@ namespace GE
 
   FpsController::FpsController()
   {
+    lookEnabled = true;
+    moveEnabled = true;
+
     mouseDown = false;
     moveSpeed = 15.0f;
     moveDir = 0;
@@ -29,14 +32,20 @@ namespace GE
     climbDir = 0;
   }
 
-  void FpsController::setMoveSpeed (Float speed)
-  {
+  void FpsController::setMoveSpeed (Float speed) {
     moveSpeed = strafeSpeed = climbSpeed = speed;
   }
 
-  Float FpsController::getMoveSpeed ()
-  {
+  Float FpsController::getMoveSpeed () {
     return moveSpeed;
+  }
+
+  void FpsController::enableMove (bool enabled) {
+    moveEnabled = enabled;
+  }
+
+  void FpsController::enableLook (bool enabled) {
+    lookEnabled = enabled;
   }
 
   void FpsController::keyDown (unsigned char key)
@@ -98,12 +107,13 @@ namespace GE
   void FpsController::mouseMove (int x, int y)
   {
     if (!mouseDown) return;
+    if (!lookEnabled) return;
 
     Vector2 diff = Vector2( (Float)x,(Float)y ) - lastMouse;
     lastMouse.set( (Float)x, (Float)y );
     
-    Float angleH = diff.x * (2*PI) / 400;
-    Float angleV = diff.y * (2*PI) / 400;
+    Float angleH = diff.x * (2*PI) / 500;
+    Float angleV = diff.y * (2*PI) / 500;
 
     cam->setCenter( cam->getEye() );
     cam->orbitH( angleH, true );
@@ -112,6 +122,8 @@ namespace GE
 
   void FpsController::tick()
   {
+    if (!moveEnabled) return;
+
     Float interval = Kernel::GetInstance()->getInterval();
     cam->getScene()->updateChanges();
     Matrix4x4 cameraMat = cam->getGlobalMatrix( true ).affineNormalize();

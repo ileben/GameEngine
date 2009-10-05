@@ -128,6 +128,13 @@ void trace( const CharString &s);
 void setStatus (const CharString &msg);
 void clearStatus ();
 
+Actor3D* findActorByName (const CharString &name);
+bool findNodeByName (const CharString &name, MDagPath &outPath);
+void findNodesInSelection (MFn::Type type, ArrayList< MDagPath > &outPaths);
+bool findNodeInSelection (MFn::Type type, MObject &pick);
+bool findSkinForMesh (const MObject &meshNode, MObject &skinNode);
+bool findSkinJointRoot (const MObject &skinNode, MObject &rootJoint);
+
 Matrix4x4 exportMatrix (const MMatrix &m);
 Vector3 exportPoint (const MFloatPoint &p);
 Vector3 exportVector (const MVector &v);
@@ -136,21 +143,13 @@ Quat exportQuat (const MQuaternion &q);
 Matrix4x4 exportScale (double s[3]);
 Vector3 exportColor (const MColor &c);
 
-Material* exportMaterial (const MObject &meshNode);
+TriMesh* exportMesh (const MObject &meshNode, bool tangents);
+Character* exportCharacter (const MObject &meshNode, bool tangents);
+Material* exportMaterial (const MObject &meshNode, bool *hasNormalMap);
 Matrix4x4 exportMatrix (const MMatrix &m);
 Light* exportLight (const MDagPath &lightDagPath);
 Camera* exportCamera (const MDagPath &camDagPath);
 Animation* exportSkinAnimation (int start, int end, int fps);
 Animation* exportAnimation (int kps, MayaAnimDummy *anim);
-
-Actor3D* findActorByName (const CharString &name);
-bool findNodeByName (const CharString &name, MDagPath &outPath);
-void findNodesInSelection (MFn::Type type, ArrayList< MDagPath > &outPaths);
-bool findNodeInSelection (MFn::Type type, MObject &pick);
-bool findSkinForMesh (const MObject &meshNode, MObject &skinNode);
-bool findSkinJointRoot (const MObject &skinNode, MObject &rootJoint);
-
-void exportNoSkin (const MObject &meshNode, bool tangents, void **outData, UintSize *outSize);
-void exportWithSkin (const MObject &meshNode, bool tangents, void **outData, UintSize *outSize);
 
 #endif//__GEMAYA_H

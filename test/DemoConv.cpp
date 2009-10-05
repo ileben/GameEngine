@@ -21,7 +21,7 @@ namespace CameraMode
 CharString animName;
 Float animSpeed = 1.0f;
 
-UI::Window *window = NULL;
+Scene *window = NULL;
 FpsLabel *lblFps = NULL;
 
 ByteString data;
@@ -33,9 +33,9 @@ Actor *actorRender = NULL;
 
 Light *light = NULL;
 
-Scene *scene = NULL;
-Scene *sceneSky = NULL;
-Scene *sceneRender = NULL;
+Scene3D *scene = NULL;
+Scene3D *sceneSky = NULL;
+Scene3D *sceneRender = NULL;
 
 FpsController *ctrl = NULL;
 Camera2D *cam2D = NULL;
@@ -53,136 +53,6 @@ Vector3 boundsMin( 0,0,0 );
 Vector3 boundsMax( 0,0,0 );
 
 
-
-/*
--------------------------------------------
-UI Events
--------------------------------------------*/
-
-class MouseEvent : public UI::Event
-{
-  DECLARE_SUBCLASS( MouseEvent, UI::Event );
-  DECLARE_END;
-
-public:
-  int x;
-  int y;
-};
-
-class ClickEvent : public MouseEvent
-{
-  DECLARE_SUBCLASS( ClickEvent, MouseEvent );
-  DECLARE_END;
-
-public:
-  int button;
-  int state;
-};
-
-class MouseLeaveEvent : public MouseEvent
-{
-  DECLARE_SUBCLASS( MouseLeaveEvent, MouseEvent );
-  DECLARE_END;
-};
-
-class MouseEnterEvent : public MouseEvent
-{
-  DECLARE_SUBCLASS( MouseEnterEvent, MouseEvent );
-  DECLARE_END;
-};
-
-
-DEFINE_CLASS( MouseEvent );
-DEFINE_CLASS( ClickEvent );
-DEFINE_CLASS( MouseEnterEvent );
-DEFINE_CLASS( MouseLeaveEvent );
-
-
-class ClickPin : public UI::Pin
-{
-public:
-  ClickEvent eClick;
-
-  void bothPins (UI::Widget *w)
-  {
-    eClick.trigger( w );
-  };
-};
-
-class MouseFocusPin : public UI::Pin
-{
-public:
-  MouseEnterEvent eEnter;
-  MouseLeaveEvent eLeave;
-
-  void thisPin (UI::Widget *w)
-  {
-    eEnter.trigger( w );
-  }
-
-  void otherPin (UI::Widget *w)
-  {
-    eLeave.trigger( w );
-  }
-};
-
-class UICtrl
-{
-  ClickPin pMouseClick[2];
-  bool mouseDown;
-
-  MouseFocusPin pMouseFocus[2];
-  Int iMouseFocus;
-
-public:
-
-  UICtrl()
-  {
-    iMouseFocus = 0;
-    mouseDown = false;
-  }
-  
-  void mouseClick (int button, int state, int x, int y)
-  {
-    if (button != GLUT_LEFT_BUTTON) return;
-
-    UI::Widget *top = window->findTopWidgetAt( x, y );
-
-    if (state == GLUT_DOWN)
-    {
-      pMouseClick[0].drop( top );
-      mouseDown = true;
-    }
-
-    if (state == GLUT_UP)
-    {
-      pMouseClick[1].eClick.button = button;
-      pMouseClick[1].eClick.state = state;
-      pMouseClick[1].eClick.x = x;
-      pMouseClick[1].eClick.y = y;
-
-      pMouseClick[1].drop( top );
-      pMouseClick[1].intersect( pMouseClick[0] );
-
-      mouseDown = false;
-      mouseMove( x, y );
-    }
-  }
-
-  void mouseMove (int x, int y)
-  {
-    if (!mouseDown)
-    {
-      UI::Widget *top = window->findTopWidgetAt( x, y );
-      
-      int iNew = (iMouseFocus+1) % 2;
-      pMouseFocus[ iNew ].drop( top );
-      pMouseFocus[ iNew ].intersect( pMouseFocus[ iMouseFocus ] );
-      iMouseFocus = iNew;
-    }
-  }
-};
-
 class Convo;
 class ConvoOpt;
 
@@ -195,19 +65,7 @@ public:
   Convo *convo;
   ConvoOpt *opt;
 
-  void onEvent (UI::Event *e)
-  {
-    ClickEvent *eClick = SafeCast( ClickEvent, e );
-    if (eClick != NULL) onClick( eClick );
-
-    MouseEnterEvent *eEnter = SafeCast( MouseEnterEvent, e );
-    if (eEnter != NULL) onMouseEnter( eEnter );
-
-    MouseLeaveEvent *eLeave = SafeCast( MouseLeaveEvent, e );
-    if (eLeave != NULL) onMouseLeave( eLeave );
-  }
-
-  void onClick (ClickEvent *e);
+  void onClick (MouseClickEvent *e);
 
   void onMouseEnter (MouseEnterEvent *e)
   {
@@ -283,7 +141,7 @@ class Convo : public ConvoNode
 {
   Float time;
   ConvoNode *node;
-  UI::Widget *widget;
+  Actor *widget;
   void show();
   void hide();
 
@@ -318,7 +176,7 @@ void Convo::show()
     lbl->setText( speach->text );
     lbl->setLoc( 10, resY - 100 );
     lbl->setColor( speach->speaker->color );
-    lbl->setParent( window );
+    lbl->setParent( window->getRoot() );
 
     widget = lbl;
   }
@@ -326,8 +184,8 @@ void Convo::show()
   {
     ConvoBranch* branch = (ConvoBranch*) node;
 
-    UI::Widget *grp = new UI::Widget;
-    grp->setParent( window );
+    Actor *grp = new Actor;
+    grp->setParent( window->getRoot() );
 
     for (UintSize o=0; o<branch->options.size(); ++o)
     {
@@ -373,7 +231,7 @@ void Convo::tick()
     advance( node->next );
 }
 
-void ConvoOptLabel::onClick (ClickEvent *e)
+void ConvoOptLabel::onClick (MouseClickEvent *e)
 {
   convo->advance( opt->next );
 }
@@ -425,22 +283,22 @@ void keyDown (unsigned char key, int x, int y)
   */
   case 13://return
     if (skinMeshActor == NULL) return;
-    if (!skinMeshActor->isAnimationPlaying())
-      skinMeshActor->loopAnimation( animName, animSpeed );
-    else skinMeshActor->pauseAnimation();
+    //if (!skinMeshActor->isAPlaying())
+      //skinMeshActor->play( animName, animSpeed );
+    //else skinMeshActor->pauseAnimation();
     break;
 
   case '+':
     if (skinMeshActor == NULL) return;
     animSpeed += 0.1f;
-    skinMeshActor->setAnimationSpeed( animSpeed );
+    skinMeshActor->getAnimController()->setSpeed( animSpeed );
     printf ("Animation speed: %f\n", animSpeed );
     break;
 
   case '-':
     if (skinMeshActor == NULL) return;
     if (animSpeed > 0.11f) animSpeed -= 0.1f;
-    skinMeshActor->setAnimationSpeed( animSpeed );
+    skinMeshActor->getAnimController()->setSpeed( animSpeed );
     printf ("Animation speed: %f\n", animSpeed );
     break;
 

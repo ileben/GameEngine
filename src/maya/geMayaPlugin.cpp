@@ -448,36 +448,31 @@ public:
 
     //Make sure a mesh node was selected
     MObject meshNode;
-    if (!findNodeInSelection( MFn::kMesh, meshNode )) {
+    if (! findNodeInSelection( MFn::kMesh, meshNode )) {
       setStatus( "Please select a mesh node!" );
       return MStatus::kFailure;
     }
     
-    //Export skin pose or static mesh
+    //Export character or static mesh
+    Resource *res = NULL;
     if (g_chkExportSkin)
-      exportWithSkin( meshNode, g_chkExportTangents, &outData, &outSize);
-    else exportNoSkin( meshNode, g_chkExportTangents, &outData, &outSize );
+      res = exportCharacter( meshNode, g_chkExportTangents );
+    else res = exportMesh( meshNode, g_chkExportTangents );
 
     //Make sure something was actually exported
-    if (outSize == 0) {
-      setStatus( "Zero data exported!\\nAborted." );
-      trace( "Export: received zero data!" );
+    if (res == NULL) {
+      setStatus( "Export failed!\\nAborted." );
       return MStatus::kFailure;
     }
 
-    //Open output file for writing
-    File outFile( outFileName );
-    if (!outFile.open( FileAccess::Write, FileCondition::Truncate )) {
-      setStatus( "Failed writing to file." );
-      trace( "Export: failed opening output file for writing!" );
-      return MStatus::kFailure;
-    }
+    //Serialize and free data
+    SerializeManager sm;
+    sm.save( res, &outData, &outSize );
+    delete res;
 
     //Write to file
-    SerializeManager sm;
-    outFile.write( sm.getSignature(), sm.getSignatureSize() );
-    outFile.write( outData, (int)outSize );
-    outFile.close();
+    if (! writePackageFile( outData, outSize, File( outFileName ) ))
+      return MStatus::kFailure;
 
     setStatus( "Done." );
     trace( "Export: done" );
@@ -532,8 +527,17 @@ public:
     g_scene->anims.pushBack( anim );
   }
 
+  CharString removeRefFromName (const CharString &name)
+  {
+    int colon = name.findRev( ":" );
+    if (colon == -1) return name;
+    else return name.sub( colon+1 );
+  }
+
   virtual MStatus doIt (const MArgList &args)
   {
+    MStatus status;
+
     //Clear name-actor map
     g_mapNameToActor.clear();
     Float worldScale = 1.0;
@@ -589,7 +593,8 @@ public:
       //Check the name
       MFnDagNode dagNode( dagPath );
       CharString name = dagNode.name().asChar();
-      if (name == "ScaleReference")
+      CharString nonRefName = removeRefFromName( name );
+      if (nonRefName == "ScaleReference")
       {
         //Find the height of its bounding box
         MMatrix mworld = dagPath.inclusiveMatrix();
@@ -623,56 +628,69 @@ public:
       //(A better method would be to have the dummy hidden and ignore hidden
       //objects but haven't figured out how to find out if one is hidden yet)
       CharString name = dagNode.name().asChar();
-      if (name == "ScaleReference") {
+      if (name.find( "ScaleReference" ) != -1) {
         dagIt.prune();
         continue;
       }
 
       //Export actor by type
       Actor3D *outActor = NULL;
-
       if (dagPath.hasFn( MFn::kMesh ))
       {
-        //Add extension and remove the namespace prefix
-        CharString meshName = name + ".pak";
-        int colon = meshName.findRev( ":" );
-        if (colon != -1) meshName = meshName.sub( colon+1 );
-
+        CharString resName;
+        
         //Check if it's a mesh with skin
         MObject skin; bool hasSkin = false;
         if (findSkinForMesh( dagPath.node(), skin ))
           hasSkin = true;
 
-        //Only export mesh if not a file reference
-        if (! dagNode.isFromReferencedFile())
-        {
-          //Export mesh data
-          void *outData = NULL;
-          UintSize outSize = 0;
-          if (hasSkin) exportWithSkin( dagPath.node(), true, &outData, &outSize );
-          else exportNoSkin( dagPath.node(), true, &outData, &outSize );
-
-          //Write to file
-          CharString meshName = name + ".pak";
-          File meshFile = outFile.getRelativeFile( "Meshes/" + meshName );
-          writePackageFile( outData, outSize, meshFile );
-          
-          //Free mesh data
-          std::free( outData );
+        //Export material
+        bool hasNormalMap = false;
+        Material *material = exportMaterial( dagPath.node(), &hasNormalMap );
+        if (material == NULL) {
+          trace( "ExportScene: failed exporting material for '" + name + "'!" );
+          continue;
         }
 
-        //Export material
-        Material *material = exportMaterial( dagPath.node() );
-        if (material == NULL) continue;
+        //Find resource name plug
+        //(custom attributes always go on the first transform node above)
+        MFnTransform transform( dagPath.transform() );
+        MPlug resNamePlug = transform.findPlug( "ResourceName", false, &status );
+        if (status == MStatus::kSuccess)
+        {
+          //Use the referenced resource name
+          MString resNameStr;
+          resNamePlug.getValue( resNameStr );
+          resName = CharString( resNameStr.asChar() ) + ".pak";
+        }
+        else
+        {
+          //Use the full object name for resource
+          resName = name;
+          
+          //Export resource
+          Resource *res = NULL;
+          if (hasSkin) res = exportCharacter( dagPath.node(), hasNormalMap );
+          else res = exportMesh( dagPath.node(), hasNormalMap );
+          
+          //Check if exported correctly
+          if (res == NULL) {
+            trace( "ExportScene: failed exporting resource for '" + name + "'!" );
+            continue;
+          }
+          
+          //Name resource and add to scene
+          res->setResourceName( resName );
+          scene->resources.pushBack( res );
+        }
 
-        //Get transform matrix
+        //Export actor
         Matrix4x4 matrix = exportMatrix( dagPath.inclusiveMatrix() );
-
         if (hasSkin)
         {
           //Create a new actor for this mesh
           SkinMeshActor *actor = new SkinMeshActor;
-          actor->setCharacter( meshName );
+          actor->setCharacter( resName );
           actor->setMatrix( matrix );
           actor->setMaterial( material );
           actor->setParent( root );
@@ -698,7 +716,7 @@ public:
         {
           //Create a new actor for this mesh
           TriMeshActor *actor = new TriMeshActor;
-          actor->setMesh( meshName );
+          actor->setMesh( resName );
           actor->setMatrix( matrix );
           actor->setMaterial( material );
           actor->setParent( root );
