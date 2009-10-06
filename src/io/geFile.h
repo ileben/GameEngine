@@ -46,8 +46,9 @@ namespace GE
     #define GE_INVALID_FILE_HANDLE  NULL
   #endif
     
-    bool isPathAbs (const String &path) const;
+    String makePathInternal (const String &path) const;
     String makePathNative (const String &path) const;
+    bool isPathAbs (const String &path) const;
     bool createDirectory (const String &p) const;
 
   public:
@@ -69,8 +70,8 @@ namespace GE
     String getPathName() const;
     String getExtension() const;
     UintSize getSize() const;
-    String getRelationTo( const File &f ) const;
-    File getRelativeFile( const String &relation ) const;
+    String getRelationTo( const File &f, bool asDirectory=false ) const;
+    File getRelativeFile( const String &relation, bool asDirectory=false ) const;
     File getSuperFile() const;
     void getSubFiles( ArrayList<File> *outFiles ) const;
 

@@ -34,14 +34,21 @@ namespace GE
 
 #if defined(WIN32)
 
-  bool File::isPathAbs (const String &p) const
+  String File::makePathInternal (const String &path) const
   {
-    return (p.sub(1,2) != ":/");
+    String pout = path;
+    return pout.findReplace( "\\", "/" );
   }
 
-  String File::makePathNative (const String &p) const
+  String File::makePathNative (const String &internalAbsPath) const
   {
-    return p.sub(1).findReplace("/", "\\");
+    String pout = internalAbsPath;
+    return pout.sub(1).findReplace("/", "\\");
+  }
+
+  bool File::isPathAbs (const String &internalPath) const
+  {
+    return (internalPath.sub(1,2) == ":/");
   }
 
   UintSize File::getSize() const
@@ -279,14 +286,19 @@ namespace GE
 
 #else
 
-  bool File::isPathAbs (const String &p)
+  String File::makePathInternal (const String &path) const
   {
-    return (p.left(1) != "/")
+    return path;
   }
 
-  String File::makePathNative (const String &p)
+  String File::makePathNative (const String &internalAbsPath) const
   {
-    return p;
+    return internalAbsPath;
+  }
+
+  bool File::isPathAbs (const String &internalPath) const
+  {
+    return (internalPath.left(1) == "/")
   }
 
   UintSize File::getSize();
@@ -492,7 +504,7 @@ namespace GE
 
     //Break the folder/file names apart
     //-------------------------------------
-    if (isPathAbs( path ))
+    if (! isPathAbs( path ))
     {
       //Try finding current working directory
       char *cwd = getcwd( NULL, 0 );
@@ -584,17 +596,22 @@ namespace GE
     return name == (String)"/";
   }
   
-  String File::getRelationTo( const File &f ) const
+  String File::getRelationTo (const File &f, bool asDirectory) const
   {
     int x = 0, y = 0;
     String out;
+
+    //Get source path to relate to
+    String srcPath = f.path;
+    if (asDirectory)
+      srcPath += f.name + "/";
     
-    //get "/" after last common dir
+    //Find "/" after last common dir left-to-right
     while (true) {
       
-      int newx = f.path.find("/", x+1);
+      int newx = srcPath.find("/", x+1);
       if (newx == -1) break;
-      String namex = f.path.sub(x+1, newx-x-1);
+      String namex = srcPath.sub(x+1, newx-x-1);
       
       int newy = path.find("/", y+1);
       if (newy == -1) break;
@@ -604,16 +621,16 @@ namespace GE
       x = newx; y = newy;
     }
     
-    //add "../" for each different dir of [f]
+    //Add "../" for each different dir of given file
     while (true) {
       
-      int newx = f.path.find("/", x+1);
+      int newx = srcPath.find("/", x+1);
       if (newx == -1) break;
       out += "../";
       x = newx;
     }
-          
-    //add names for each different dir of [this]
+    
+    //Add names for each different dir of this file
     out += path.sub(y+1);
     out += name;
     
@@ -624,14 +641,16 @@ namespace GE
     return out;
   }
   
-  File File::getRelativeFile( const String &relation ) const
+  File File::getRelativeFile (const String &relation, bool asDirectory) const
   {
-    String unixrel = relation;
-    unixrel.findReplace( "\\", "/" );
-    
-    if (isPathAbs( unixrel ))
+    if (isPathAbs( makePathInternal( relation )))
       return File( relation );
-    else return File( getPath() + relation );
+    
+    else if (asDirectory)
+      return File( getPathName() + "/" + relation );
+
+    else 
+      return File( getPath() + relation );
   }
   
   File File::getSuperFile() const

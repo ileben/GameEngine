@@ -726,7 +726,7 @@ namespace GE
     {
       //Load image
       Image img;
-      if (img.readFile( "Textures\\" + name ) != IMAGE_NO_ERROR) {
+      if (img.readFile( name ) != IMAGE_NO_ERROR) {
         std::cout << "Failed loading texture '" << name.buffer() << "'!" << std::endl;
         return NULL;
       }

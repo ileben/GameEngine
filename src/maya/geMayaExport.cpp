@@ -1,4 +1,5 @@
 #include "geMaya.h"
+#include <maya/MFileObject.h>
 #include <maya/MFloatVectorArray.h>
 #include <maya/MFnLambertShader.h>
 #include <maya/MFnPhongShader.h>
@@ -172,13 +173,13 @@ bool findTextureFileName (MPlug &plug, CharString &outFileName)
     MPlug fileNamePlug = depNode.findPlug( "fileTextureName", &status);
     if (status == MStatus::kSuccess)
     {
-      //Get the string value
+      //Get string value
       MString fileName;
       fileNamePlug.getValue( fileName );
 
-      //Get the file name without folders
+      //Get relation to project folder
       File file( fileName.asChar() );
-      outFileName = file.getName();
+      outFileName = file.getRelationTo( getProjectFolder(), true );
       return true;
     }
   }

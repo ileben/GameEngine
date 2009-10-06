@@ -1,6 +1,7 @@
 
 #include "geMaya.h"
 #include <maya/MFnPlugin.h> //Must only be included once!
+#include <maya/MFileObject.h>
 #include <maya/MBoundingBox.h>
 #include <maya/MFnAmbientLight.h>
 
@@ -32,9 +33,12 @@ MayaSceneDummy *g_scene = NULL;
 Helper functions
 ---------------------------------------*/
 
-CharString operator+ (const char *cstr, const CharString &str)
+File getProjectFolder ()
 {
-  return CharString(cstr) + str;
+  //Find project folder
+  MString workspace;
+  MGlobal::executeCommand( MString( "workspace -q -rd;" ), workspace );
+  return File( workspace.asChar() );
 }
 
 void trace( const CharString &s)
@@ -490,43 +494,6 @@ class CmdExportAll : public MPxCommand
 public:
   static void* creator () { return new CmdExportAll(); }
 
-  void createTestAnimation ()
-  {
-    Int start = 0;
-    Int end = 24;
-
-    //Create a new animation dummy
-    MayaAnimDummy *anim = new MayaAnimDummy;
-    anim->name = "TestAnim";
-
-    //Constructs with current UI units by default
-    MTime time;
-    
-    //Find start time in seconds
-    time.setValue( start );
-    anim->startTime = (Float) time.as( MTime::kSeconds );
-
-    //Find end time in seconds
-    time.setValue( end );
-    anim->endTime = (Float) time.as( MTime::kSeconds );
-
-    //Walk the list of selected objects
-    ArrayList< MDagPath > selection;
-    findNodesInSelection( MFn::kMesh, selection );
-    for (UintSize s=0; s<selection.size(); ++s)
-    {
-      //Create a new full-duration clip dummy for this object
-      MayaClipDummy *clip = new MayaClipDummy;
-      clip->objName = MFnDagNode( selection[ s ] ).name().asChar();
-      clip->startTime = anim->startTime;
-      clip->endTime = anim->endTime;
-      anim->clips.pushBack( clip );
-    }
-
-    //Add to list of animations
-    g_scene->anims.pushBack( anim );
-  }
-
   CharString removeRefFromName (const CharString &name)
   {
     int colon = name.findRev( ":" );
@@ -561,15 +528,6 @@ public:
       setStatus( "No file selected" );
       return MStatus::kFailure; }
     File outFile( result.asChar() );
-
-    /*
-    //Make sure an output file was picked
-    CharString outFileName = getTextFieldText( "GTxtFile" );
-    if (outFileName.length() == 0) {
-      setStatus( "Output file missing!\\nAborted." );
-      return MStatus::kFailure;
-    }
-    */
 
     //Move to first frame
     MAnimControl animCtrl;

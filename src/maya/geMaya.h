@@ -123,7 +123,7 @@ public:
   }
 };
 
-CharString operator+ (const char *cstr, const CharString &str);
+File getProjectFolder ();
 void trace( const CharString &s);
 void setStatus (const CharString &msg);
 void clearStatus ();
