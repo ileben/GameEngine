@@ -50,7 +50,7 @@ namespace GE
     
   public:
 
-    MemberInfo bufInfo () {
+    MemberInfo bufInfo (SM *sm) {
       return MEMBER_DATAPTR( (size+1) * sizeof(CharType) );
     }
 

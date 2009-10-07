@@ -54,10 +54,20 @@ namespace GE
    * Camera to specify a 3D projection
    *------------------------------------------*/
 
+  struct DofParams
+  {
+    Float focusCenter;
+    Float focusRange;
+    Float falloffNear;
+    Float falloffFar;
+  };
+
   class Camera3D : public Camera
   {
     DECLARE_SERIAL_SUBCLASS (Camera3D, Camera);
     DECLARE_DATAVAR( fov );
+    DECLARE_DATAVAR( dofParams );
+    DECLARE_DATAVAR( dofEnabled );
     DECLARE_DATAVAR( center );
     DECLARE_DATAVAR( cPlus );
     DECLARE_DATAVAR( cMinus );
@@ -69,6 +79,9 @@ namespace GE
     Vector3 center;
     Matrix4x4 cPlus;
     Matrix4x4 cMinus;
+
+    DofParams dofParams;
+    bool dofEnabled;
     
     void updateProjection(int w, int h);
     void updateView();
@@ -79,18 +92,25 @@ namespace GE
     Camera3D (SM *sm);
     void onDeserialized (void *param);
     
-    void setFov(Float fieldOfView);
-    Float getFov();
+    void setFov (Float fieldOfView);
+    Float getFov ();
     
-    void setCenter(const Vector3 &center);
-    const Vector3& getCenter();
+    void setCenter (const Vector3 &center);
+    const Vector3& getCenter ();
 
-    void orbitH(Float radang, bool useCenter=false);
-    void orbitV(Float radang, bool useCenter=false);
-    void roll(Float radang);
-    void panH(Float distance);
-    void panV(Float distance);
-    void zoom(Float distance);
+    void orbitH (Float radang, bool useCenter=false);
+    void orbitV (Float radang, bool useCenter=false);
+    void roll (Float radang);
+    void panH (Float distance);
+    void panV (Float distance);
+    void zoom (Float distance);
+
+    void setDofParams (Float focusCenter, Float focusRange, Float falloffNear, Float falloffFar);
+    void setDofParams (const DofParams &params);
+    DofParams getDofParams ();
+
+    void setDofEnabled (bool enabled);
+    bool getDofEnabled ();
   };
 
   /*--------------------------------------------

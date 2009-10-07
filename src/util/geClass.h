@@ -102,6 +102,7 @@ namespace GE
 
   namespace MemberType {
     enum Enum {
+      Invalid,
       DataVar,
       DataPtr,
       ObjVar,
@@ -132,26 +133,27 @@ namespace GE
     void *data;
 
     virtual void* getFrom (void* obj) = 0;
-    virtual MemberInfo getInfo (void *obj) = 0;
+    virtual MemberInfo getInfo (void *obj, SerializeManager *sm) = 0;
     virtual bool hasInfoFunc () = 0;
   };
 
   template <class T, class C> class Member : public IMember
   {
   public:
+    typedef MemberInfo (C::*Func) (SerializeManager *sm);
     T C::* ptr;
-    MemberInfo (C:: *infofunc) ();
+    Func func;
 
     void* getFrom (void* obj) {
       return &( ((C*)obj)->*ptr );
     }
 
-    MemberInfo getInfo (void* obj) {
-      return infofunc ? (((C*)obj)->*infofunc)() : info;
+    MemberInfo getInfo (void* obj, SerializeManager *sm) {
+      return func ? (((C*)obj)->*func)(sm) : info;
     }
 
     bool hasInfoFunc () {
-      return infofunc != NULL;
+      return func != NULL;
     }
   };
 
@@ -159,6 +161,10 @@ namespace GE
   ------------------------------------------------------------
   Info templates. These can be returned by the info function.
   ------------------------------------------------------------*/
+
+  inline MemberInfo MEMBER_SKIP () {
+    return MemberInfo( MemberType::Invalid, 0, NULL );
+  }
 
   template <class T, class C>
   inline MemberInfo MEMBER_DATAVAR (T C::* ptr) {
@@ -319,15 +325,15 @@ namespace GE
       const MemberInfo &   i,
       T Name::*            p,
       const std::string &  n,
-      void *               d     = NULL,
-      MemberInfo (Name::*  f)()  = NULL)
+      void *               d = NULL,
+      typename Member<T,Name>::Func f = NULL)
     {
       Member<T,Name> *mbr = new Member<T,Name>;
       mbr->info = i;
-      mbr->ptr = p;
+      mbr->ptr  = p;
       mbr->name = n;
       mbr->data = d;
-      mbr->infofunc = f;
+      mbr->func = f;
       members.push_back( mbr );
     }
   };

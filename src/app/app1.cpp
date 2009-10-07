@@ -104,8 +104,8 @@ void onAnimLookEnable (Convo *convo, ConvoNode *node)
 
 void initConvo ()
 {
-  camHouseCtrl->enableMove( false );
-  camHouseCtrl->enableLook( false );
+  //camHouseCtrl->enableMove( false );
+  //camHouseCtrl->enableLook( false );
 
   //Setup speakers
   ConvoSpeaker *spkSound = new ConvoSpeaker;
@@ -162,10 +162,6 @@ int main (int argc, char **argv)
   appInit( resX, resY );
   appAnimateFunc( animate );
   appKeyDownFunc( keyDown );
- 
-  //Setup depth-of-field
-  Kernel::GetInstance()->getRenderer()->setDofParams( 400, 200, 100, 300 );
-  Kernel::GetInstance()->getRenderer()->setIsDofEnabled( true );
 
   /////////////////////////////////////////////////
   //Setup office scene
@@ -179,8 +175,6 @@ int main (int argc, char **argv)
 
   //Find first camera in the scene
   camOffice = (Camera3D*) sceneOffice->findFirstActorByClass( Class(Camera3D) );
-  camOffice->setNearClipPlane( 1.0f );
-  camOffice->setFarClipPlane( 20000.0f );
 
   /////////////////////////////////////////////////
   //Setup house scene
@@ -194,8 +188,6 @@ int main (int argc, char **argv)
 
   //Find first camera in the scene
   camHouse = (Camera3D*) sceneHouse->findFirstActorByClass( Class(Camera3D) );
-  camHouse->setNearClipPlane( 1.0f );
-  camHouse->setFarClipPlane( 20000.0f );
   camHouseCtrl = appCamCtrl( camHouse );
 
   //Find lights

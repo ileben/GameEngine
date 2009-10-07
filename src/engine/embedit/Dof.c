@@ -11,28 +11,25 @@ void main (void)
 #begin ComputeCoC_Func
 
 uniform vec4 dofParams;
-//uniform float focusDepth;  //dofParams[0]: center of focus
-//uniform float focusRange;  //dofParams[1]: full focus range
-//uniform float farFalloff;  //dofParams[2]: far falloff range
-//uniform float nearFalloff; //dofParams[3]: near falloff range
+//dofParams[0]: center of focus
+//dofParams[1]: full focus range
+//dofParams[2]: near falloff range
+//dofParams[3]: far falloff range
 
 float computeCoC (float depth)
 {
-  //The first row yields [0,1] for depths farther than focusDepth, 0 otherwise
-  //The second row yields [-1,0] for depths closer than focusDepth, 0 otherwise
-  //clamp( ((depth - focusDepth) - focusRange) / (farFalloff - focusRange), 0.0, +1.0 ) -
-  //clamp( ((depth - focusDepth) + focusRange) / (nearFalloff - focusRange), -1.0, 0.0 );
-
+  //The first row yields [-1,0] for depths closer than focus center, 0 otherwise
+  //The second row yields [0,+1] for depths farther than focus center, 0 otherwise
   return
-    clamp( ((depth - dofParams[0]) - dofParams[1]) / (dofParams[2] - dofParams[1]), 0.0, +1.0 ) +
-    clamp( ((depth - dofParams[0]) + dofParams[1]) / (dofParams[3] - dofParams[1]), -1.0, 0.0 );
+    clamp( ((depth - dofParams[0]) + dofParams[1]) / (dofParams[2]), -1.0, 0.0 ) +
+    clamp( ((depth - dofParams[0]) - dofParams[1]) / (dofParams[3]), 0.0, +1.0 );
 }
 
 vec4 computeCoC4 (vec4 depth)
 {
   return
-    clamp( ((depth - dofParams[0]) - dofParams[1]) / (dofParams[2] - dofParams[1]), vec4(0.0), vec4(+1.0) ) +
-    clamp( ((depth - dofParams[0]) + dofParams[1]) / (dofParams[3] - dofParams[1]), vec4(-1.0), vec4(0.0) );
+    clamp( ((depth - dofParams[0]) + dofParams[1]) / (dofParams[2]), vec4(-1.0), vec4(0.0) ) +
+    clamp( ((depth - dofParams[0]) - dofParams[1]) / (dofParams[3]), vec4(0.0), vec4(+1.0) );
 }
 
 #end

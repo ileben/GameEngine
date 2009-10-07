@@ -398,7 +398,7 @@ namespace GE
         members.pop_front();
 
         //Get member info
-        mbr = member->getInfo( obj.ptr );
+        mbr = member->getInfo( obj.ptr, sm );
         switch (mbr.type)
         {
         case MemberType::DataVar:

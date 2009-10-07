@@ -33,35 +33,6 @@ namespace GE
 
     avgLuminance = 0.5f;
     maxLuminance = 1.0f;
-
-    isDofEnabled = false;
-    focusDepth = 50.0f;
-    focusRange = 50.0f;
-    nearFalloff = 150.0f;
-    farFalloff = 150.0f;
-  }
-
-  void Renderer::setIsDofEnabled (bool onoff) {
-    isDofEnabled = onoff;
-  }
-
-  bool Renderer::getIsDofEnabled () {
-    return isDofEnabled;
-  }
-
-  void Renderer::setDofParams (Float fd, Float fr, Float nf, Float ff ) {
-    focusDepth = fd;
-    focusRange = fr;
-    nearFalloff = nf;
-    farFalloff = ff;
-  }
-
-  void Renderer::setDofParams (const Vector4 &params) {
-    setDofParams( params.x, params.y, params.z, params.w );
-  }
-
-  Vector4 Renderer::getDofParams () {
-    return Vector4( focusDepth, focusRange, nearFalloff, farFalloff );
   }
 
   void Renderer::setAvgLuminance (Float l) {
@@ -927,10 +898,11 @@ namespace GE
 
   void Renderer::doToon (Uint32 sourceTex, Uint32 targetFB, Uint32 targetAtch)
   {
-    float focusZ = focusDepth;
-    float focusW = focusRange;
-    float farW = focusRange + farFalloff;
-    float nearW = focusRange + nearFalloff;
+    DofParams dofParams = ((Camera3D*)camera)->getDofParams();
+    float focusZ = dofParams.focusCenter;
+    float focusW = dofParams.focusRange;
+    float farW = dofParams.falloffFar;
+    float nearW = dofParams.falloffNear;
 
     ///////////////////////////////////////////////////
     //Apply toon shading and initialize CoC values.
@@ -940,7 +912,7 @@ namespace GE
     if (targetFB != 0) glDrawBuffer( targetAtch );
 
     shaderDofInit->use();
-    glUniform4f( uDofInitDofParams, focusZ, focusW, farW, nearW );
+    glUniform4f( uDofInitDofParams, focusZ, focusW, nearW, farW );
 
     glUniform1i( uDofInitColorSampler, 0 );
     glActiveTexture( GL_TEXTURE0 );
@@ -962,10 +934,11 @@ namespace GE
 
   void Renderer::doDof (Uint32 sourceTex, Uint32 targetFB, Uint32 targetAtch)
   {
-    float focusZ = focusDepth;
-    float focusW = focusRange;
-    float farW = focusRange + farFalloff;
-    float nearW = focusRange + nearFalloff;
+    DofParams dofParams = ((Camera3D*)camera)->getDofParams();
+    float focusZ = dofParams.focusCenter;
+    float focusW = dofParams.focusRange;
+    float farW = dofParams.falloffFar;
+    float nearW = dofParams.falloffNear;
 
     int medBlurRadius = 5;
     int maxBlurRadius = 5;
@@ -1016,7 +989,7 @@ namespace GE
 
     shaderDofDown->use();
     glUniform2f( uDofDownPixelSize, 1.0f/winW, 1.0f/winH );
-    glUniform4f( uDofDownDofParams, focusZ, focusW, farW, nearW );
+    glUniform4f( uDofDownDofParams, focusZ, focusW, nearW, farW );
 
     glUniform1i( uDofDownColorSampler, 0 );
     glActiveTexture( GL_TEXTURE0 );
@@ -1131,7 +1104,7 @@ namespace GE
     shaderDofBlur->use();
     glUniform1i( uDofBlurRadius, maxBlurRadius );
     glUniform2f( uDofBlurPixelSize, 1.0f/blurW, 1.0f/blurH);
-    glUniform4f( uDofBlurDofParams, focusZ, focusW, farW, nearW );
+    glUniform4f( uDofBlurDofParams, focusZ, focusW, nearW, farW );
 
     glUniform1i( uDofBlurColorSampler, 0 );
     glActiveTexture( GL_TEXTURE0 );
@@ -1149,7 +1122,7 @@ namespace GE
     if (targetFB != 0) glDrawBuffer( targetAtch );
 
     shaderDofMix->use();
-    glUniform4f( uDofMixDofParams, focusZ, focusW, farW, nearW );
+    glUniform4f( uDofMixDofParams, focusZ, focusW, nearW, farW );
 
     glUniform1i( uDofMixColorSampler, 0 );
     glActiveTexture( GL_TEXTURE0 );
@@ -1262,7 +1235,7 @@ namespace GE
 
     doToon( deferredAccum, deferredFB, GL_COLOR_ATTACHMENT5 );
     
-    if (isDofEnabled)
+    if (((Camera3D*)camera)->getDofEnabled())
     {
       doDof( dofMap, deferredFB, GL_COLOR_ATTACHMENT0 );
       doBloom( deferredAccum, 0, 0 );

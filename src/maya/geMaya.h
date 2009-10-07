@@ -28,6 +28,14 @@
 #include <engine/geEngine.h>
 using namespace GE;
 
+namespace MayaClipType {
+  enum Enum
+  {
+    ActorTransform   = 1,
+    SkinTransform    = 2,
+    DepthOfField     = 3
+  };
+}
 
 class MayaEventDummy : public Object
 {
@@ -52,19 +60,21 @@ public:
 class MayaClipDummy : public Object
 {
   DECLARE_SERIAL_SUBCLASS( MayaClipDummy, Object );
-  DECLARE_OBJVAR( objName );
+  DECLARE_DATAVAR( type );
+  DECLARE_OBJVAR( nodePath );
   DECLARE_DATAVAR( startTime );
   DECLARE_DATAVAR( endTime );
   DECLARE_END;
 
 public:
 
-  CharString objName;
+  MayaClipType::Enum type;
+  CharString nodePath;
   Float startTime;
   Float endTime;
 
   MayaClipDummy () {}
-  MayaClipDummy (SM *sm) : Object (sm), objName (sm) {}
+  MayaClipDummy (SM *sm) : Object (sm), nodePath (sm) {}
 
   bool operator < (const MayaClipDummy &other) {
     return startTime < other.startTime;
@@ -124,11 +134,13 @@ public:
 };
 
 File getProjectFolder ();
+Float getWorldScale ();
 void trace( const CharString &s);
 void setStatus (const CharString &msg);
 void clearStatus ();
 
 Actor3D* findActorByName (const CharString &name);
+bool findNodeByType (MFn::Type type, MDagPath &outPath, MDagPath *start = NULL);
 bool findNodeByName (const CharString &name, MDagPath &outPath);
 void findNodesInSelection (MFn::Type type, ArrayList< MDagPath > &outPaths);
 bool findNodeInSelection (MFn::Type type, MObject &pick);

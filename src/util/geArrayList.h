@@ -32,7 +32,7 @@ namespace GE
     Serialization
     ------------------------------------------------------*/
     
-    virtual MemberInfo elementsInfo () {
+    virtual MemberInfo elementsInfo (SM *sm) {
       return MEMBER_DATAPTR( sz * eltSize );
     }
 
@@ -421,7 +421,7 @@ namespace GE
 
   public:
 
-    virtual MemberInfo elementsInfo() {
+    virtual MemberInfo elementsInfo (SM *sm) {
       return MEMBER_OBJPTRARRAY( IClass::FromID(eltClsID), sz );
     }
 
@@ -467,7 +467,7 @@ namespace GE
 
   public:
 
-    virtual MemberInfo elementsInfo() {
+    virtual MemberInfo elementsInfo (SM *sm) {
       return MEMBER_OBJREFARRAY( IClass::FromID(eltClsID), sz );
     }
 
@@ -512,7 +512,7 @@ namespace GE
 
   public:
 
-    virtual MemberInfo elementsInfo () {
+    virtual MemberInfo elementsInfo (SM *sm) {
       return MEMBER_OBJARRAY( IClass::FromID(eltClsID), sz );
     };
 

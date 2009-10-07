@@ -27,11 +27,17 @@ std::map< std::string, Actor3D* > g_mapNameToActor;
 
 CharString g_sceneFileName;
 MayaSceneDummy *g_scene = NULL;
+Float g_worldScale = 1.0f;
 
 /*
 ---------------------------------------
 Helper functions
 ---------------------------------------*/
+
+Float getWorldScale ()
+{
+  return g_worldScale;
+}
 
 File getProjectFolder ()
 {
@@ -150,6 +156,37 @@ Actor3D* findActorByName (const CharString &name)
   return NULL;
 }
 
+bool findNodeByType (MFn::Type type, MDagPath &outPath, MDagPath *start)
+{
+  //Begin at start node if given
+  MItDag dagIt( MItDag::kBreadthFirst, type );
+  if (start != NULL)
+    dagIt.reset( *start, MItDag::kBreadthFirst, type );
+
+  //Walk the scene graph
+  for (; !dagIt.isDone(); dagIt.next())
+  {
+    //Get path to the node
+    MDagPath dagPath;
+    dagIt.getPath( dagPath );
+
+    //Skip intermediate objects
+    MFnDagNode dagNode( dagPath );
+    if (dagNode.isIntermediateObject()) continue;
+
+    //Check type
+    if (dagPath.hasFn( type ))
+    {
+      //Return match
+      outPath.set( dagPath );
+      return true;
+    }
+  }
+
+  //Not found
+  return false;
+}
+
 bool findNodeByName (const CharString &name, MDagPath &outPath)
 {
   //Walk the whole scene graph
@@ -163,7 +200,6 @@ bool findNodeByName (const CharString &name, MDagPath &outPath)
     //Skip intermediate objects
     MFnDagNode dagNode( dagPath );
     if (dagNode.isIntermediateObject()) continue;
-    if (dagPath.hasFn( MFn::kTransform )) continue;
 
     //Compare name
     CharString dagName = dagNode.name().asChar();
@@ -256,28 +292,12 @@ void findNodesInSelection (MFn::Type type,
     MDagPath dagPath;
     selIt.getDagPath( dagPath );
 
-    /*
-    //Output the node path and api type
-    CharString apiStr = dagPath.node().apiTypeStr();
-    trace( CharString("findNodeInSelection: ")
-           + dagPath.fullPathName().asChar()
-           + " (" + apiStr + ")" );
-    */
-
     //Go down the tree at this selection
     MItDag dagSubIt; dagSubIt.reset( dagPath, MItDag::kBreadthFirst );
     for (; !dagSubIt.isDone(); dagSubIt.next())
     {
       MDagPath dagSubPath;
       dagSubIt.getPath( dagSubPath );
-
-      /*
-      //Output the sub node path and api type
-      CharString apiStr = dagSubObj.apiTypeStr();
-      trace( CharString("findNodeInSelection: - ")
-             + dagSubIt.fullPathName().asChar()
-             + " (" + apiStr + ")" );
-      */
 
       //Skip intermediate objects and transform nodes
       MFnDagNode dagSubNode( dagSubPath );
@@ -291,6 +311,13 @@ void findNodesInSelection (MFn::Type type,
       break;
     }
   }
+}
+
+void findExportableNodesInSelection (ArrayList< MDagPath > &outPaths)
+{
+  findNodesInSelection( MFn::kMesh, outPaths );
+  findNodesInSelection( MFn::kLight, outPaths );
+  findNodesInSelection( MFn::kCamera, outPaths );
 }
 
 bool writePackageFile (void *data, UintSize size, File &file)
@@ -507,7 +534,7 @@ public:
 
     //Clear name-actor map
     g_mapNameToActor.clear();
-    Float worldScale = 1.0;
+    g_worldScale = 1.0;
     int meshID = 0;
 
     //Update status
@@ -548,11 +575,15 @@ public:
       MDagPath dagPath;
       dagScaleIt.getPath( dagPath );
 
-      //Check the name
+      //Skip intermediate objects
       MFnDagNode dagNode( dagPath );
+      if (dagNode.isIntermediateObject())
+        continue;
+
+      //Check the name
       CharString name = dagNode.name().asChar();
       CharString nonRefName = removeRefFromName( name );
-      if (nonRefName == "ScaleReference")
+      if (nonRefName == "GameScale")
       {
         //Find the height of its bounding box
         MMatrix mworld = dagPath.inclusiveMatrix();
@@ -561,13 +592,14 @@ public:
         Float h = (Float) box.height();
 
         //Adjust the exporting scale so that it matches 180 units
-        worldScale = 180.0f / h;
+        g_worldScale = 180.0f / h;
         break;
       }
     }
 
     //Apply world scale to root object
-    root->scale( worldScale );
+    trace( "ExportScene: setting world scale to " + CharString::FFloat( g_worldScale ));
+    root->scale( g_worldScale );
 
     //Walk the whole scene graph
     MItDag dagIt( MItDag::kBreadthFirst );
@@ -582,14 +614,19 @@ public:
       if (dagNode.isIntermediateObject()) continue;
       if (dagPath.hasFn( MFn::kTransform )) continue;
 
-      //Get the name of the node and skip scale reference dummy
-      //(A better method would be to have the dummy hidden and ignore hidden
-      //objects but haven't figured out how to find out if one is hidden yet)
-      CharString name = dagNode.name().asChar();
-      if (name.find( "ScaleReference" ) != -1) {
-        dagIt.prune();
-        continue;
-      }
+      //Find first transform above it. This uniquely identifies the object
+      //since the instance duplicates will point to the same node
+      MFnTransform transform( dagPath.transform() );
+      CharString name = dagNode.partialPathName().asChar();
+      
+      //Find the export attribute
+      MPlug plugExport = transform.findPlug( "GameExport", false, &status );
+      if (status != MStatus::kSuccess) continue;
+      
+      //Skip if not marked for export
+      bool exportable = false;
+      plugExport.getValue( exportable );
+      if (!exportable) continue;
 
       //Export actor by type
       Actor3D *outActor = NULL;
@@ -612,8 +649,7 @@ public:
 
         //Find resource name plug
         //(custom attributes always go on the first transform node above)
-        MFnTransform transform( dagPath.transform() );
-        MPlug resNamePlug = transform.findPlug( "ResourceName", false, &status );
+        MPlug resNamePlug = transform.findPlug( "GameReference", false, &status );
         if (status == MStatus::kSuccess)
         {
           //Use the referenced resource name
@@ -623,7 +659,7 @@ public:
         }
         else
         {
-          //Use the full object name for resource
+          //Use the node name for resource
           resName = name;
           
           //Export resource
@@ -633,7 +669,7 @@ public:
           
           //Check if exported correctly
           if (res == NULL) {
-            trace( "ExportScene: failed exporting resource for '" + name + "'!" );
+            trace( "ExportScene: failed exporting mesh for '" + name + "'!" );
             continue;
           }
           
@@ -710,24 +746,29 @@ public:
         if (cam == NULL) continue;
         cam->setParent( root );
         outActor = cam;
-
-      }//export actor by type
+      }
 
       //Map Maya object name to exported actor
-      if (outActor != NULL)  {
-        //outActor->scale( worldScale );
+      if (outActor != NULL)
         g_mapNameToActor[ name.buffer() ] = outActor;
-      }
 
     }//walk the scene graph
 
 
-    //Export animations
+    //Walk the list of animations
     for (UintSize a=0; a<g_scene->anims.size(); ++a)
     {
-      //Export and add to scene
+      //Export animation
       MayaAnimDummy *anim = g_scene->anims[ a ];
       Animation *outAnim = exportAnimation( 24, anim );
+
+      //Check if exported correctly
+      if (outAnim == NULL) {
+        trace( "ExportScene: failed exporting animation '" + anim->name + "'!" );
+        continue;
+      }
+      
+      //Add to scne
       scene->animations.pushBack( outAnim );
     }
 
@@ -1272,7 +1313,7 @@ CharString makeClipTitleString (MayaClipDummy *clip)
 {
   int startFrame = timeToFrame( clip->startTime );
   int endFrame = timeToFrame( clip->endTime );
-  return CharString::Format( "%d-%d %s", startFrame, endFrame, clip->objName.buffer() );
+  return CharString::Format( "%d-%d %s", startFrame, endFrame, clip->nodePath.buffer() );
 }
 
 CharString makeEventTitleString (MayaEventDummy *evt)
@@ -1537,7 +1578,7 @@ class CmdLstSceneClipsDblClk : public MPxCommand
     int endFrame = timeToFrame( clip->endTime );
     
     //Load into UI
-    setTextFieldText( "GTxtSceneAnimName", clip->objName );
+    setTextFieldText( "GTxtSceneAnimName", "" );
     setTextFieldText( "GTxtSceneStartFrame", CharString::FInt( startFrame ) );
     setTextFieldText( "GTxtSceneEndFrame", CharString::FInt( endFrame ) );
 
@@ -1625,15 +1666,26 @@ class CmdSceneSetClip : public MPxCommand
       return MStatus::kFailure;
     }
 
+    //Get the selected objects
+    ArrayList< MDagPath > selection;
+    findExportableNodesInSelection( selection );
+    if (selection.empty()) {
+      setStatus( "Please select an object!" );
+      return MStatus::kFailure;
+    }
+
+    //Get the name of the first object
+    MFnDagNode node( selection.first() );
+    CharString nodePath = node.partialPathName().asChar();
+
     //Get input values
-    CharString objName;
     int startFrame;
     int endFrame;
-    if (!getSceneAnimInput( &objName, &startFrame, &endFrame) )
+    if (!getSceneAnimInput( NULL, &startFrame, &endFrame) )
       return MStatus::kFailure;
 
     //Update clip
-    clip->objName = objName;
+    clip->nodePath = nodePath;
     clip->startTime = frameToTime( startFrame );
     clip->endTime = frameToTime( endFrame );
 
@@ -1743,17 +1795,15 @@ class CmdSceneNewClip : public MPxCommand
 
     //Get the selected objects
     ArrayList< MDagPath > selection;
-    findNodesInSelection( MFn::kMesh, selection );
-    findNodesInSelection( MFn::kLight, selection );
-    findNodesInSelection( MFn::kCamera, selection );
+    findExportableNodesInSelection( selection );
     if (selection.empty()) {
       setStatus( "Please select an object!" );
       return MStatus::kFailure;
     }
 
     //Get the name of the first object
-    MFnDagNode objNode( selection.first() );
-    CharString objName = objNode.name().asChar();
+    MFnDagNode node( selection.first() );
+    CharString nodePath = node.partialPathName().asChar();
 
     //Get input values
     int startFrame;
@@ -1763,7 +1813,7 @@ class CmdSceneNewClip : public MPxCommand
 
     //Create new clip
     MayaClipDummy *newClip = new MayaClipDummy;
-    newClip->objName = objName;
+    newClip->nodePath = nodePath;
     newClip->startTime = frameToTime( startFrame );
     newClip->endTime = frameToTime( endFrame );
     anim->clips.pushBack( newClip );

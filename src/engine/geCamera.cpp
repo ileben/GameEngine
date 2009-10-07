@@ -65,7 +65,6 @@ namespace GE
   Float Camera::getNearClipPlane() {
     return nearClip;
   }
-
   
   /*======================================
    *
@@ -76,6 +75,11 @@ namespace GE
   Camera3D::Camera3D()
   {
     fov = 45.0f;
+    dofParams.focusCenter = 200.0f;
+    dofParams.focusRange = 100.0f;
+    dofParams.falloffNear = 50.0f;
+    dofParams.falloffFar = 50.0f;
+    dofEnabled = false;
   }
 
   Camera3D::Camera3D (SM *sm) : Camera (sm)
@@ -182,6 +186,31 @@ namespace GE
 
     glMatrixMode(GL_MODELVIEW);
     glLoadMatrixf ((GLfloat*) world2cam.m);
+  }
+
+
+  void Camera3D::setDofParams (Float focusCenter, Float focusRange, Float falloffNear, Float falloffFar)
+  {
+    dofParams.focusCenter = focusCenter;
+    dofParams.focusRange = focusRange;
+    dofParams.falloffNear = falloffNear;
+    dofParams.falloffFar = falloffFar;
+  }
+
+  void Camera3D::setDofParams (const DofParams &params) {
+    dofParams = params;
+  }
+
+  DofParams Camera3D::getDofParams () {
+    return dofParams;
+  }
+
+  void Camera3D::setDofEnabled (bool enabled) {
+    dofEnabled = enabled;
+  }
+
+  bool Camera3D::getDofEnabled () {
+    return dofEnabled;
   }
 
   /*======================================

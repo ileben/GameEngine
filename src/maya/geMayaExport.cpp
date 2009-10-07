@@ -350,11 +350,34 @@ Light* exportLight (const MDagPath &lightDagPath)
   }
   else return NULL;
 
-  //Get shadow parameters
-  if (lightDagPath.hasFn( MFn::kNonExtendedLight ))
+  //Get first transform above it
+  MFnTransform transform = lightDagPath.transform();
+
+  //Search for custom attenuation attribute plugs
+  MStatus plugStatus[2];
+  MPlug plugAttStart = transform.findPlug( "AttStart", false, &plugStatus[0] );
+  MPlug plugAttEnd = transform.findPlug( "AttEnd", false, &plugStatus[1] );
+  if (plugStatus[0] == MStatus::kSuccess &&
+      plugStatus[1] == MStatus::kSuccess)
   {
-    MFnNonExtendedLight nextLight( lightDagPath );
-    outLight->setCastShadows( nextLight.useDepthMapShadows() );
+    //Set light attenuation
+    Float attStart=0.0f, attEnd=100.0f;
+    plugAttStart.getValue( attStart );
+    plugAttEnd.getValue( attEnd );
+    outLight->setAttenuation(
+      attEnd * getWorldScale(),
+      attStart * getWorldScale()
+    );
+  }
+
+  //Search for custom shadows attribute plug
+  MPlug plugShadows = transform.findPlug( "CastShadows", false, &plugStatus[0] );
+  if (plugStatus[0] == MStatus::kSuccess)
+  {
+    //Set light shadows
+    bool castShadows = false;
+    plugShadows.getValue( castShadows );
+    outLight->setCastShadows( castShadows );
   }
 
   //Set other light properties
@@ -366,8 +389,50 @@ Light* exportLight (const MDagPath &lightDagPath)
 
 Camera* exportCamera (const MDagPath &camDagPath)
 {
+  //Export camera position
   Camera3D *outCam = new Camera3D;
   outCam->setMatrix( exportMatrix( camDagPath.inclusiveMatrix() ));
+
+  //Export camera attributes
+  MFnCamera cam( camDagPath );
+  outCam->setNearClipPlane( (Float) cam.nearClippingPlane() * getWorldScale() );
+  outCam->setFarClipPlane( (Float) cam.farClippingPlane() * getWorldScale() );
+
+  //Get first transform above it
+  MFnTransform transform = camDagPath.transform();
+
+  //Search for custom DOF attribute plugs
+  MStatus dofStatus[5];
+  MPlug plugDofNear    = transform.findPlug( "DofNear",    false, &dofStatus[0] );
+  MPlug plugDofStart   = transform.findPlug( "DofStart",   false, &dofStatus[1] );
+  MPlug plugDofEnd     = transform.findPlug( "DofEnd",     false, &dofStatus[2] );
+  MPlug plugDofFar     = transform.findPlug( "DofFar",     false, &dofStatus[3] );
+  MPlug plugDofEnabled = transform.findPlug( "DofEnabled", false, &dofStatus[4] );
+  if (dofStatus[0] == MStatus::kSuccess &&
+      dofStatus[1] == MStatus::kSuccess &&
+      dofStatus[2] == MStatus::kSuccess &&
+      dofStatus[3] == MStatus::kSuccess &&
+      dofStatus[4] == MStatus::kSuccess)
+  {
+    //Get values off the plugs
+    bool dofEnabled = false;
+    Float dofNear=0.0f, dofStart=0.0f, dofEnd=0.0f, dofFar=0.0f;
+    plugDofNear.getValue( dofNear );
+    plugDofStart.getValue( dofStart );
+    plugDofEnd.getValue( dofEnd );
+    plugDofFar.getValue( dofFar );
+    plugDofEnabled.getValue( dofEnabled );
+
+    //Set camera dof params
+    DofParams dofParams;
+    dofParams.focusCenter = ((dofEnd + dofStart) / 2) * getWorldScale();
+    dofParams.focusRange = ((dofEnd - dofStart) / 2) * getWorldScale();
+    dofParams.falloffNear = (dofStart - dofNear) * getWorldScale();
+    dofParams.falloffFar = (dofFar - dofEnd) * getWorldScale();
+    outCam->setDofParams( dofParams );
+    outCam->setDofEnabled( dofEnabled );
+  }
+
   return outCam;
 }
 
@@ -1658,11 +1723,33 @@ Animation* exportAnimation (int kps, MayaAnimDummy *anim)
 
     //Make sure the node exists in the scene
     MDagPath path;
-    if (!findNodeByName( clip->objName, path )) continue;
+    MSelectionList matches;
+    MGlobal::getSelectionListByName( clip->nodePath.buffer(), matches);
+    if (matches.getDagPath( 0, path ) != MStatus::kSuccess) {
+      trace( "ExportAnimation: node '" + clip->nodePath + "' not found in the scene!" );
+      continue;
+    }
     
     //Make sure the actor was exported in the scene
-    Actor3D *actor = findActorByName( clip->objName );
-    if (actor == NULL) continue;
+    Actor3D *actor = findActorByName( clip->nodePath );
+    if (actor == NULL) {
+      trace( "ExportAnimation: actor '" + clip->nodePath + "' missing in the export list!" );
+      continue;
+    }
+
+    //Find the actual node to export below the given transform
+
+    /*
+    MFn::Type type;
+    if (SafeCast( SkinMeshActor, actor ) != NULL)
+      type =
+    if (SafeCast( TriMeshActor, actor ) != NULL)
+      type = MFn::kMesh;
+    else if (SafeCast( Camera, actor ) != NULL)
+      type = MFn::kCamera;
+    else if (SafeCast( Light, actor ) != NULL)
+      type = MFn::kLight;
+    */
 
     //Localize clip times to animation range
     Float clipLocalStartTime = Util::Max( 0.0f, clip->startTime - anim->startTime );
@@ -1678,7 +1765,7 @@ Animation* exportAnimation (int kps, MayaAnimDummy *anim)
     Float clipEndTime = anim->startTime + (Float) clipLocalEndKey / kps;
 
     //Check if it's an actor with skin
-    SkinMeshActor *skinActor = SafeCast( SkinMeshActor, actor );
+    SkinMeshActor *skinActor = SafeCast( SkinMeshActor, actor );    
     if (skinActor != NULL)
     {
       //Create an observer for this object

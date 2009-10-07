@@ -98,12 +98,6 @@ namespace GE
     Float avgLuminance;
     Float maxLuminance;
     
-    bool isDofEnabled;
-    Float focusDepth;
-    Float focusRange;
-    Float nearFalloff;
-    Float farFalloff;
-    
     bool shadowInit;
     Uint32 shadowMap;
     Uint32 shadowMap2;
@@ -252,13 +246,6 @@ namespace GE
     void setMaxLuminance (Float l);
     Float getAvgLuminance ();
     Float getMaxLuminance ();
-
-    void setIsDofEnabled (bool onoff);
-    bool getIsDofEnabled ();
-
-    void setDofParams (Float focusDepth, Float focusRange, Float nearFalloff, Float farFalloff );
-    void setDofParams (const Vector4 &params);
-    Vector4 getDofParams ();
   };
 }
 

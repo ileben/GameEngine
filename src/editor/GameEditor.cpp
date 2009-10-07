@@ -221,8 +221,8 @@ void specialKey (int key, int x, int y)
 {
   float l;
   float lstep = 0.05f;
-  float fstep = 5.0f;
-  Vector4 dof;
+  float fstep = 20.0f;
+  DofParams dof;
 
   switch (key)
   {
@@ -239,16 +239,16 @@ void specialKey (int key, int x, int y)
     std::cout << "Luminance: " << l << std::endl;
     break;
   case GLUT_KEY_F4:
-    dof = renderer->getDofParams();
-    dof.x = Util::Max( dof.x-fstep, 0.0f );
-    renderer->setDofParams( dof );
-    std::cout << "Focus distance: " << dof.x << std::endl;
+    dof = camRender->getDofParams();
+    dof.focusCenter = Util::Max( dof.focusCenter-fstep, 0.0f );
+    camRender->setDofParams( dof );
+    std::cout << "Focus distance: " << dof.focusCenter << std::endl;
     break;
   case GLUT_KEY_F5:
-    dof = renderer->getDofParams();
-    dof.x = dof.x + fstep;
-    renderer->setDofParams( dof );
-    std::cout << "Focus distance: " << dof.x << std::endl;
+    dof = camRender->getDofParams();
+    dof.focusCenter = dof.focusCenter + fstep;
+    camRender->setDofParams( dof );
+    std::cout << "Focus distance: " << dof.focusCenter << std::endl;
     break;
 
   }
@@ -620,18 +620,16 @@ SkinAnimObserver b;
 int main (int argc, char **argv)
 {
   //Usage
-  if (argc < 5) {
-    std::cout << "Usage: exe SCENE_FILE ATT_START ATT_END MOVE_SPEED" << std::endl;
-    std::getchar ();
+  if (argc < 3) {
+    printf( "Usage: EXE  SCENE_FILE  MOVE_SPEED" );
+    getchar();
     return EXIT_FAILURE;
   }
 
-  CharString strAttStart = argv[2];
-  CharString strAttEnd = argv[3];
-  CharString strMoveSpeed = argv[4];
-  float attStart = strAttStart.parseFloat();
-  float attEnd = strAttEnd.parseFloat();
-  float moveSpeed = strMoveSpeed.parseFloat();
+  //Params
+  Float moveSpeed = 400.0f;
+  CharString strMoveSpeed = argv[2];
+  moveSpeed = strMoveSpeed.parseFloat();
 
   //Initialize GLUT
   initGlut( argc, argv );
@@ -641,11 +639,6 @@ int main (int argc, char **argv)
   renderer = kernel.getRenderer();
   renderer->setWindowSize( resX, resY );
   printf( "Kernel loaded\n" );
-
-  //Setup depth-of-field
-  renderer->setDofParams( 400, 200, 100, 300 );
-  //renderer->setDofParams( 800, 300, 100, 300 );
-  //renderer->setIsDofEnabled( true );
 
   //Setup 3D scene
   scene = kernel.loadSceneFile( argv[1] );
@@ -660,19 +653,6 @@ int main (int argc, char **argv)
     std::cout << "Failed loading scene file!" << std::endl;
     std::getchar();
     return EXIT_FAILURE;
-  }
-
-  //Find lights
-  ArrayList<Actor*> lights;
-  scene->findActorsByClass( Class(Light), lights );
-  for (UintSize l=0; l<lights.size(); ++l)
-  {
-    //Set a large range
-    Light* light = (Light*) lights[l];
-    light->setAttenuation( attEnd, attStart );
-    //light->setAttenuation( 10000.0f );
-    //light->setAttenuation( 200.0f );
-    //light->setAttenuation( 200.0f, 190.0f );
   }
 
   //Find first skin actor
@@ -701,23 +681,15 @@ int main (int argc, char **argv)
 
   //Find first camera in the scene
   cam3D = (Camera3D*) scene->findFirstActorByClass( Class(Camera3D) );
-
-  //Create a new camera if missing
   if (cam3D == NULL)
   {
+    //Create one if missing
     cam3D = new Camera3D;
-    cam3D->orbitV( Util::DegToRad( 35 ) );
-    cam3D->orbitH( Util::DegToRad( -40 ) );
-    cam3D->translate( 80, 80, -80 );
     cam3D->setParent( scene->getRoot() );
+    cam3D->setNearClipPlane( 1.0f );
+    cam3D->setFarClipPlane( 20000.0f );
   }
-
-  //Setup camera properties
-  cam3D->setCenter( center );
-  cam3D->setNearClipPlane( 1.0f );
-  cam3D->setFarClipPlane( 20000.0f );
-  //cam3D->setFarClipPlane( 3000.0f );
-
+  
   //Setup 2D overlay
   Stage *stage = new Stage;
   window = new Scene;

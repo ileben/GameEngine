@@ -130,7 +130,7 @@ static void specialKey (int key, int x, int y)
   float l;
   float lstep = 0.05f;
   float fstep = 5.0f;
-  Vector4 dof;
+  DofParams dof;
 
   switch (key)
   {
@@ -147,16 +147,16 @@ static void specialKey (int key, int x, int y)
     std::cout << "Luminance: " << l << std::endl;
     break;
   case GLUT_KEY_F4:
-    dof = renderer->getDofParams();
-    dof.x = Util::Max( dof.x-fstep, 0.0f );
-    renderer->setDofParams( dof );
-    std::cout << "Focus distance: " << dof.x << std::endl;
+    dof = camRender->getDofParams();
+    dof.focusCenter = Util::Max( dof.focusCenter - fstep, 0.0f );
+    camRender->setDofParams( dof );
+    std::cout << "Focus distance: " << dof.focusCenter << std::endl;
     break;
   case GLUT_KEY_F5:
-    dof = renderer->getDofParams();
-    dof.x = dof.x + fstep;
-    renderer->setDofParams( dof );
-    std::cout << "Focus distance: " << dof.x << std::endl;
+    dof = camRender->getDofParams();
+    dof.focusCenter = dof.focusCenter + fstep;
+    camRender->setDofParams( dof );
+    std::cout << "Focus distance: " << dof.focusCenter << std::endl;
     break;
   }
 }
