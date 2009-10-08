@@ -189,16 +189,6 @@ int main (int argc, char **argv)
   //Find first camera in the scene
   camHouse = (Camera3D*) sceneHouse->findFirstActorByClass( Class(Camera3D) );
   camHouseCtrl = appCamCtrl( camHouse );
-
-  //Find lights
-  ArrayList<Actor*> lights;
-  sceneHouse->findActorsByClass( Class(Light), lights );
-  for (UintSize l=0; l<lights.size(); ++l)
-  {
-    //Set attenuation range
-    Light* light = (Light*) lights[l];
-    light->setAttenuation( 700.0f, 300.0f );
-  }
   
   /////////////////////////////////////////////////
   //Setup 2D overlay

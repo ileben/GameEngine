@@ -176,9 +176,16 @@ bool findTextureFileName (MPlug &plug, CharString &outFileName)
       //Get string value
       MString fileName;
       fileNamePlug.getValue( fileName );
+      CharString p = fileName.asChar();
+
+      //Resolve file name
+      MFileObject fo;
+      fo.setResolveMethod( MFileObject::kExact );
+      fo.setFullName( fileName );
+      CharString resolvedFileName = fo.resolvedFullName().asChar();
 
       //Get relation to project folder
-      File file( fileName.asChar() );
+      File file( resolvedFileName );
       outFileName = file.getRelationTo( getProjectFolder(), true );
       return true;
     }
@@ -387,6 +394,16 @@ Light* exportLight (const MDagPath &lightDagPath)
   return outLight;
 }
 
+DofParams exportDofParams (Float dofNear, Float dofStart, Float dofEnd, Float dofFar)
+{
+  DofParams dofParams;
+  dofParams.focusCenter = ((dofEnd + dofStart) / 2) * getWorldScale();
+  dofParams.focusRange = ((dofEnd - dofStart) / 2) * getWorldScale();
+  dofParams.falloffNear = (dofStart - dofNear) * getWorldScale();
+  dofParams.falloffFar = (dofFar - dofEnd) * getWorldScale();
+  return dofParams;
+}
+
 Camera* exportCamera (const MDagPath &camDagPath)
 {
   //Export camera position
@@ -424,11 +441,7 @@ Camera* exportCamera (const MDagPath &camDagPath)
     plugDofEnabled.getValue( dofEnabled );
 
     //Set camera dof params
-    DofParams dofParams;
-    dofParams.focusCenter = ((dofEnd + dofStart) / 2) * getWorldScale();
-    dofParams.focusRange = ((dofEnd - dofStart) / 2) * getWorldScale();
-    dofParams.falloffNear = (dofStart - dofNear) * getWorldScale();
-    dofParams.falloffFar = (dofFar - dofEnd) * getWorldScale();
+    DofParams dofParams = exportDofParams( dofNear, dofStart, dofEnd, dofFar );
     outCam->setDofParams( dofParams );
     outCam->setDofEnabled( dofEnabled );
   }
@@ -1591,6 +1604,78 @@ Exports keys for an animation between given start and end
 frames on the frame scroll bar
 ----------------------------------------------------------*/
 
+void exportAnimClipDof (const MDagPath objPath,
+                        Float startTime, Int startKey,
+                        Int numKeys, Int kps,
+                        Animation *outAnim,
+                        DofAnimObserver *outObsrv)
+{
+  //Find first transform above camera
+  MFnTransform transform = objPath.transform();
+
+  //Search for custom DOF attribute plugs
+  MStatus dofStatus[5];
+  MPlug plugDofNear    = transform.findPlug( "DofNear",    false, &dofStatus[0] );
+  MPlug plugDofStart   = transform.findPlug( "DofStart",   false, &dofStatus[1] );
+  MPlug plugDofEnd     = transform.findPlug( "DofEnd",     false, &dofStatus[2] );
+  MPlug plugDofFar     = transform.findPlug( "DofFar",     false, &dofStatus[3] );
+  MPlug plugDofEnabled = transform.findPlug( "DofEnabled", false, &dofStatus[4] );
+  if (dofStatus[0] != MStatus::kSuccess ||
+      dofStatus[1] != MStatus::kSuccess ||
+      dofStatus[2] != MStatus::kSuccess ||
+      dofStatus[3] != MStatus::kSuccess ||
+      dofStatus[4] != MStatus::kSuccess)
+    return;
+
+  //Create range animation tracks
+  FloatAnimTrack *outTrackF[4];
+  for (int t=0; t<4; ++t) {
+    outTrackF[ t ] = new FloatAnimTrack;
+    outAnim->addTrack( outTrackF[ t ], startKey );
+    outObsrv->bindTrack( outAnim, outAnim->getNumTracks()-1, t );
+  }
+
+  //Create enabled animation track
+  BoolAnimTrack *outTrackB = new BoolAnimTrack;
+  outAnim->addTrack( outTrackB, startKey );
+  outObsrv->bindTrack( outAnim, outAnim->getNumTracks()-1, 4 );
+
+  //Find key step in seconds
+  Float keyTime = (1.0f / kps);
+  
+  //Walk the animation keys
+  for (Int k=0; k < numKeys; ++k)
+  {
+    //Set current time in seconds
+    MAnimControl animCtrl;
+    MTime now( startTime + k * keyTime, MTime::kSeconds );
+    animCtrl.setCurrentTime( now );
+
+    //Get values off the plugs
+    bool dofEnabled = false;
+    Float dofNear=0.0f, dofStart=0.0f, dofEnd=0.0f, dofFar=0.0f;
+    plugDofNear.getValue( dofNear );
+    plugDofStart.getValue( dofStart );
+    plugDofEnd.getValue( dofEnd );
+    plugDofFar.getValue( dofFar );
+    plugDofEnabled.getValue( dofEnabled );
+
+    //Add keyframes
+    DofParams dofParams = exportDofParams( dofNear, dofStart, dofEnd, dofFar );
+    outTrackF[ 0 ]->addKey( dofParams.focusCenter );
+    outTrackF[ 1 ]->addKey( dofParams.focusRange );
+    outTrackF[ 2 ]->addKey( dofParams.falloffNear );
+    outTrackF[ 3 ]->addKey( dofParams.falloffFar );
+    outTrackB->addKey( dofEnabled );
+  }
+}
+
+/*
+-----------------------------------------------------------
+Exports keys for an animation between given start and end
+frames on the frame scroll bar
+----------------------------------------------------------*/
+
 void exportSkinAnimClip (const MDagPath objPath,
                          Float startTime, Int startKey,
                          Int numKeys, Int kps,
@@ -1663,8 +1748,14 @@ void exportAnimClip (const MDagPath objPath,
                      Float startTime, Int startKey,
                      Int numKeys, Int kps,
                      Animation *outAnim,
-                     AnimObserver *outObsrv)
+                     ActorAnimObserver *outObsrv)
 {
+  //Set fixed scale
+  double scale[3];
+  MTransformationMatrix mat( objPath.inclusiveMatrix() );
+  mat.getScale( scale, MSpace::kTransform );
+  outObsrv->valueS = exportScale( scale );
+
   //Add tracks to animation and bind observer to them
   QuatAnimTrack* outTrackR = new QuatAnimTrack;
   outAnim->addTrack( outTrackR, startKey );
@@ -1788,6 +1879,22 @@ Animation* exportAnimation (int kps, MayaAnimDummy *anim)
 
       //Export keys for this track
       exportAnimClip( path,
+        clipStartTime, clipLocalStartKey,
+        clipNumKeys, kps,
+        outAnim, outObsrv );
+    }
+
+    //Check if it's a camera
+    Camera3D *camera = SafeCast( Camera3D, actor );
+    if (camera != NULL)
+    {
+      //Create a DOF observer for it
+      DofAnimObserver *outObsrv = new DofAnimObserver;
+      outObsrv->camera = camera;
+      outAnim->addObserver( outObsrv );
+
+      //Export keys for this clip
+      exportAnimClipDof( path,
         clipStartTime, clipLocalStartKey,
         clipNumKeys, kps,
         outAnim, outObsrv );

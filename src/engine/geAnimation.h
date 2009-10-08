@@ -195,8 +195,22 @@ namespace GE
     inline static Vector3 Interpolate (const Vector3 &v1, const Vector3 &v2, Float t);
   };
 
+  class FloatTrackTraits
+  { public:
+    typedef Float Value;
+    inline static Float Interpolate (Float v1, Float v2, Float t);
+  };
+
+  class BoolTrackTraits
+  { public:
+    typedef bool Value;
+    inline static bool Interpolate (bool v1, bool v2, Float t);
+  };
+
   typedef AnimTrackT< Vec3TrackTraits > Vec3AnimTrack;
   typedef AnimTrackT< QuatTrackTraits > QuatAnimTrack;
+  typedef AnimTrackT< FloatTrackTraits > FloatAnimTrack;
+  typedef AnimTrackT< BoolTrackTraits > BoolAnimTrack;
 
 
   Quat QuatTrackTraits::Interpolate (Quat q1, Quat q2, Float t)
@@ -217,6 +231,18 @@ namespace GE
   {
     //Return linear interpolation
     return Vector::Lerp( v1, v2, t );
+  }
+
+  Float FloatTrackTraits::Interpolate (Float v1, Float v2, Float t)
+  {
+    //Return linear interpolation
+    return (1.0f - t) * v1 + t * v2;
+  }
+
+  bool BoolTrackTraits::Interpolate (bool v1, bool v2, Float t)
+  {
+    //Always return first value
+    return v1;
   }
 
   /*

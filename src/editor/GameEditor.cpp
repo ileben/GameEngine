@@ -673,7 +673,7 @@ int main (int argc, char **argv)
   animCtrl = new AnimController;
   if (!scene->animations.empty()) {
     animCtrl->bindAnimation( scene->animations.first() );
-    animCtrl->observeAt( 0.0f );
+    //animCtrl->observeAt( 0.0f );
   }
   
   //Bind event observer to the controller
@@ -681,6 +681,7 @@ int main (int argc, char **argv)
 
   //Find first camera in the scene
   cam3D = (Camera3D*) scene->findFirstActorByClass( Class(Camera3D) );
+  cam3D->setDofEnabled( false );
   if (cam3D == NULL)
   {
     //Create one if missing

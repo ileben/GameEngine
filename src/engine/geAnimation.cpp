@@ -5,8 +5,10 @@ namespace GE
 {
 
   DEFINE_CLASS( AnimTrack );
-  DEFINE_SERIAL_TEMPL_CLASS( QuatAnimTrack,  ClassID (0x8ff2d758u, 0xa624, 0x445a, 0x87197d3e14bb22c5ull) );
-  DEFINE_SERIAL_TEMPL_CLASS( Vec3AnimTrack,  ClassID (0xd4b943cdu, 0x5cce, 0x4b50, 0x8cb7f4f2806c8637ull) );
+  DEFINE_SERIAL_TEMPL_CLASS( QuatAnimTrack,  ClassID (0x8ff2d758u, 0xa624, 0x445a, 0x87197d3e14bb22c5ull ));
+  DEFINE_SERIAL_TEMPL_CLASS( Vec3AnimTrack,  ClassID (0xd4b943cdu, 0x5cce, 0x4b50, 0x8cb7f4f2806c8637ull ));
+  DEFINE_SERIAL_TEMPL_CLASS( FloatAnimTrack, ClassID (0x3412ea4fu, 0x2111, 0x481b, 0xbded7f3c19a3b1f1ull ));
+  DEFINE_SERIAL_TEMPL_CLASS( BoolAnimTrack,  ClassID (0x9430611bu, 0x8001, 0x47fe, 0x8f4045e94c48b1adull ));
   
   DEFINE_SERIAL_CLASS( Animation,           ClassID( 0x974f85e5u, 0x72dd, 0x475c, 0x97e5e2d6e7711a61ull ));
   DEFINE_SERIAL_CLASS( AnimEvent,           ClassID( 0xd744289fu, 0xd525, 0x40de, 0x9b4e90de7fa22742ull ));
