@@ -33,6 +33,9 @@ namespace GE
 
     avgLuminance = 0.5f;
     maxLuminance = 1.0f;
+
+    shadowMapSize = 1024;
+    //shadowMapSize = 2048;
   }
 
   void Renderer::setAvgLuminance (Float l) {
@@ -511,9 +514,7 @@ namespace GE
 
   void Renderer::renderShadowMap (Light *light, Scene3D *scene)
   {
-    //const Uint32 S = 2048;
-    const Uint32 S = 1024;
-
+    Uint S = shadowMapSize;
     if (!shadowInit)
     {
       /*
@@ -559,7 +560,7 @@ namespace GE
     //Setup view from the lights perspective
     glViewport( 0, 0, S, S );
 
-    Matrix4x4 lightProj = light->getProjection( 1.0f, light->getAttenuationEnd() );
+    Matrix4x4 lightProj = light->getProjection();
     glMatrixMode( GL_PROJECTION );
     glLoadMatrixf( (GLfloat*) lightProj.m );
     
@@ -812,6 +813,7 @@ namespace GE
       //The stencil bit used by this light
       int stencilMask = (1 << (l % numStencilBits));
       Light *light = scene->getLights()->at( l );
+      curLight = light;
 
       //Obtain light query result
       GLint litSamples = 0;
@@ -855,7 +857,7 @@ namespace GE
 
       //Setup camera-eye to light-clip matrix
       Matrix4x4 cam = camera->getGlobalMatrix().affineNormalize();
-      Matrix4x4 lightProj = light->getProjection( 1.0f, light->getAttenuationEnd() );
+      Matrix4x4 lightProj = light->getProjection();
       Matrix4x4 lightInv = light->getGlobalMatrix().affineNormalize().affineInverse();
       Matrix4x4 tex = lightProj * lightInv * cam;
       glActiveTexture( GL_TEXTURE0 );
@@ -1285,7 +1287,7 @@ namespace GE
       Light *l = scene->getLights()->first();
       
       Matrix4x4 cam = camera->getGlobalMatrix().affineNormalize();
-      Matrix4x4 lightProj = l->getProjection( 1.0f, l->getAttenuationEnd() );
+      Matrix4x4 lightProj = l->getProjection();
       Matrix4x4 lightInv = l->getGlobalMatrix().affineNormalize().affineInverse();
       Matrix4x4 tex = lightProj * lightInv * cam;
       
@@ -1361,23 +1363,10 @@ namespace GE
         return Inside;
       else return Outside;
     }
-
-    Result testPoint (const Vector3 &p) const
-    {
-      for (int pl = 0; pl < 6; ++pl)
-        if (testPoint( p, pl ) == Outside)
-          return Outside;
-
-      return Inside;
-    }
   };
 
-  void getFrustum (Camera3D *cam, int w, int h, Frustum &outFrustum)
+  void getFrustum (const Matrix4x4 &m, Frustum &outFrustum)
   {
-    Matrix4x4 proj = cam->getProjection( w,h );
-    Matrix4x4 modelview = cam->getGlobalMatrix().affineNormalize().affineInverse();
-    Matrix4x4 m = proj * modelview;
-
     outFrustum.planes[ Frustum::Left ]   = m.getRow(3) + m.getRow(0);
     outFrustum.planes[ Frustum::Right ]  = m.getRow(3) - m.getRow(0);
     outFrustum.planes[ Frustum::Bottom ] = m.getRow(3) + m.getRow(1);
@@ -1412,9 +1401,23 @@ namespace GE
     Matrix4x4 camMat = camera->getGlobalMatrix();
     Vector3 eye = camMat.getColumn(3).xyz();
 
-    //Camera frustum
+    //Frustum for culling
     Frustum frustum;
-    getFrustum( (Camera3D*) camera, viewW, viewH, frustum );
+    if (target == RenderTarget::ShadowMap)
+    {
+      Matrix4x4 proj = curLight->getProjection();
+      Matrix4x4 modelview = curLight->getGlobalMatrix().affineNormalize().affineInverse();
+      Matrix4x4 m = proj * modelview;
+      getFrustum( m, frustum );
+    }
+    else
+    {
+      Camera3D *cam = (Camera3D*) camera;
+      Matrix4x4 proj = cam->getProjection( viewW,viewH );
+      Matrix4x4 modelview = cam->getGlobalMatrix().affineNormalize().affineInverse();
+      Matrix4x4 m = proj * modelview;
+      getFrustum( m, frustum );
+    }
 
     //Traverse the scene
     for (UintSize t=0; t<scene->getTraversal()->size(); ++t)
@@ -1436,10 +1439,24 @@ namespace GE
           if (node.actor->getCastShadow() == false)
             continue;
 
-        
+
+        //Bounding box in world space
         BoundingBox bbox = node.actor->getBoundingBox();
         Matrix4x4 worldMat = node.actor->getGlobalMatrix();
-        /*
+
+        //Maximum draw distance
+        Float maxDist = node.actor->getMaxDrawDistance();
+        if (maxDist >= 0.0f)
+        {
+          //Center of the bounding box in world coordinates
+          Vector3 center = worldMat * bbox.center;
+
+          //Check distance to camera
+          Float dist = (center - eye).norm();
+          if (dist > maxDist) continue;
+        }
+
+        //Frustum culling
         Vector3 min = worldMat * bbox.min;
         Vector3 max = worldMat * bbox.max;
         Vector3 bboxPoints[8] = {
@@ -1455,19 +1472,6 @@ namespace GE
 
         if (outsideFrustum( frustum, bboxPoints ))
           continue;
-        */
-
-        //Maximum draw distance
-        Float maxDist = node.actor->getMaxDrawDistance();
-        if (maxDist >= 0.0f)
-        {
-          //Center of the bounding box in world coordinates
-          bbox.center = worldMat * bbox.center;
-
-          //Check distance to camera
-          Float dist = (bbox.center - eye).norm();
-          if (dist > maxDist) continue;
-        }
 
         //Render geometry
         node.actor->begin();

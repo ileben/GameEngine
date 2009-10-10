@@ -66,7 +66,7 @@ namespace GE
     Float getAttenuationEnd ();
     Float getAttenuationStart ();
 
-    virtual Matrix4x4 getProjection (Float nearClip, Float farClip);
+    virtual Matrix4x4 getProjection ();
     virtual bool isPointInVolume (const Vector3 &p, Float threshold=0.0f) { return false; }
     void renderVolume ();
 
@@ -109,7 +109,7 @@ namespace GE
     
     void setAngle (Float outer, Float inner = -1.0f);
     virtual void enable (int index);
-    virtual Matrix4x4 getProjection (Float nearClip, Float farClip);
+    virtual Matrix4x4 getProjection ();
     virtual bool isPointInVolume (const Vector3 &p, Float threshold=0.0f);
 
     virtual void composeShader (Shader *shader);
@@ -135,7 +135,7 @@ namespace GE
 
     void setAngle (Float a);
     virtual void enable (int index);
-    virtual Matrix4x4 getProjection (Float nearClip, Float farClip);
+    virtual Matrix4x4 getProjection ();
     virtual bool isPointInVolume (const Vector3 &p, Float threshold=0.0f);
 
     virtual void composeShader (Shader *shader);

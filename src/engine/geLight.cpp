@@ -100,7 +100,7 @@ namespace GE
     return getMatrix().getColumn(3).xyz();
   }
 
-  Matrix4x4 Light::getProjection (Float nearClip, Float farClip)
+  Matrix4x4 Light::getProjection ()
   {
     Matrix4x4 m;
     m.setIdentity();
@@ -376,15 +376,21 @@ namespace GE
     glPopMatrix();
   }
 
-  Matrix4x4 SpotLight::getProjection (Float nearClip, Float farClip)
+  Matrix4x4 SpotLight::getProjection ()
   {
+    Float nearClip = 1.0f;
+    Float farClip = attEnd;
+
     Matrix4x4 m;
     m.setPerspectiveFovLH( Util::DegToRad( angleOuter ), 1.0f, nearClip, farClip );
     return m;
   }
 
-  Matrix4x4 PyramidLight::getProjection (Float nearClip, Float farClip)
+  Matrix4x4 PyramidLight::getProjection ()
   {
+    Float nearClip = 1.0f;
+    Float farClip = attEnd;
+
     Matrix4x4 m;
     m.setPerspectiveFovLH( Util::DegToRad( angle ), 1.0f, nearClip, farClip );
     return m;

@@ -90,18 +90,22 @@ namespace GE
     int viewW;
     int viewH;
     Vector3 back;
-    Camera *camera;
-    Shader *curShader;
-    Material *curMaterial;
     ArrayList< ShaderKey > shaders;
     ArrayList< LightShaderKey > lightShaders;
     Float avgLuminance;
     Float maxLuminance;
+
+    //State
+    Camera *camera;
+    Shader *curShader;
+    Material *curMaterial;
+    Light *curLight;
     
     bool shadowInit;
     Uint32 shadowMap;
     Uint32 shadowMap2;
     Uint32 shadowFB;
+    Uint shadowMapSize;
 
     bool buffersInit;
     Uint32 deferredFB;
