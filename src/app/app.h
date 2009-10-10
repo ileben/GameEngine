@@ -25,6 +25,18 @@ void appSwitchCamera (Camera3D *cam);
 void appSwitchScene (Scene3D *scene);
 AnimController* appPlayAnim (const CharString &name);
 AnimController* appGetAnim (const CharString &name);
+BoundingBox appProjectActor (Actor3D *actor, Camera *camera,
+                             Float viewX, Float viewY, Float viewW, Float viewH);
 
+namespace ActorMouseEvent {
+  enum Enum {
+    Enter,
+    Leave,
+    Click
+  };}
+
+typedef void (*ActorFunc) (ActorMouseEvent::Enum evt, Actor3D *actor);
+void appActorMouseFunc (ActorMouseEvent::Enum evt, Actor3D *actor, ActorFunc func);
+void removeActorMouseFunc (ActorMouseEvent::Enum evt, Actor3D *actor);
 
 #endif//__APP_H

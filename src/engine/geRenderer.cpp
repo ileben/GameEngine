@@ -20,7 +20,6 @@ namespace GE
   
   Renderer::Renderer()
   {
-    camera = NULL;
     winW = 0;
     winH = 0;
     viewX = 0;
@@ -36,6 +35,10 @@ namespace GE
 
     shadowMapSize = 1024;
     //shadowMapSize = 2048;
+
+    curCamera = NULL;
+    curShader = NULL;
+    curMaterial = NULL;
   }
 
   void Renderer::setAvgLuminance (Float l) {
@@ -85,19 +88,6 @@ namespace GE
     viewY = y;
     viewW = width;
     viewH = height;
-  }
-
-  /*
-  -----------------------------------------
-  Changes the camera used for rendering
-  -----------------------------------------*/
-
-  void Renderer::setCamera (Camera *camera) {
-    this->camera = camera;
-  }
-
-  Camera* Renderer::getCamera() {
-    return camera;
   }
 
   /*
@@ -195,6 +185,10 @@ namespace GE
   
   Material* Renderer::getCurrentMaterial() {
     return curMaterial;
+  }
+
+  Camera* Renderer::getCurrentCamera() {
+    return curCamera;
   }
 
   void Renderer::beginFrame()
@@ -646,19 +640,22 @@ namespace GE
     glClear( GL_COLOR_BUFFER_BIT );
   }
 
-  void Renderer::renderSceneDeferred (Scene3D *scene)
+  void Renderer::renderSceneDeferred (Scene3D *scene, Camera *camera)
   {
+    if (camera == NULL)
+      return;
+
+    //Set camera current
+    curCamera = camera;
+
     //Update scene
     if (scene->hasChanged())
       scene->updateChanges();
 
     //Setup view and projection
     glViewport( viewX, viewY, viewW, viewH );
-
-    if (camera != NULL) {
-      camera->updateProjection( viewW, viewH );
-      camera->updateView();
-    }
+    camera->updateProjection( (Float) viewW, (Float) viewH );
+    camera->updateView();
 
     //Render into geometry textures
     glBindFramebuffer( GL_FRAMEBUFFER, deferredFB );
@@ -754,7 +751,7 @@ namespace GE
 
         //Setup view and projection
         glViewport( viewX, viewY, viewW, viewH );
-        camera->updateProjection( viewW, viewH );
+        camera->updateProjection( (Float) viewW, (Float) viewH );
         camera->updateView();
 
         //Add light's world matrix
@@ -833,7 +830,7 @@ namespace GE
 
       //Setup view and projection
       glViewport( viewX, viewY, viewW, viewH );
-      camera->updateProjection( viewW, viewH );
+      camera->updateProjection( (Float) viewW, (Float) viewH );
       camera->updateView();
       
       //Add light's world matrix and enable it
@@ -867,7 +864,7 @@ namespace GE
       //Render light volume back faces
       glCullFace( GL_FRONT );
 
-      light->begin( shader, Vector2( winW, winH ), deferredMaps, shadowMap );
+      light->begin( shader, Vector2( (Float)winW, (Float)winH ), deferredMaps, shadowMap );
       light->renderVolume();
       light->end();
 
@@ -904,7 +901,7 @@ namespace GE
 
   void Renderer::doToon (Uint32 sourceTex, Uint32 targetFB, Uint32 targetAtch)
   {
-    DofParams dofParams = ((Camera3D*)camera)->getDofParams();
+    DofParams dofParams = ((Camera3D*)curCamera)->getDofParams();
     float focusZ = dofParams.focusCenter;
     float focusW = dofParams.focusRange;
     float farW = dofParams.falloffFar;
@@ -940,7 +937,7 @@ namespace GE
 
   void Renderer::doDof (Uint32 sourceTex, Uint32 targetFB, Uint32 targetAtch)
   {
-    DofParams dofParams = ((Camera3D*)camera)->getDofParams();
+    DofParams dofParams = ((Camera3D*)curCamera)->getDofParams();
     float focusZ = dofParams.focusCenter;
     float focusW = dofParams.focusRange;
     float farW = dofParams.falloffFar;
@@ -1241,7 +1238,7 @@ namespace GE
 
     doToon( deferredAccum, deferredFB, GL_COLOR_ATTACHMENT5 );
     
-    if (((Camera3D*)camera)->getDofEnabled())
+    if (((Camera3D*)curCamera)->getDofEnabled())
     {
       doDof( dofMap, deferredFB, GL_COLOR_ATTACHMENT0 );
       doBloom( deferredAccum, 0, 0 );
@@ -1263,8 +1260,14 @@ namespace GE
     glDisable( GL_TEXTURE_2D );
   }
 
-  void Renderer::renderScene (Scene3D *scene)
+  void Renderer::renderScene (Scene3D *scene, Camera *camera)
   {
+    if (camera == NULL)
+      return;
+
+    //Set camera current
+    curCamera = camera;
+
     //Update scene
     if (scene->hasChanged())
       scene->updateChanges();
@@ -1275,11 +1278,8 @@ namespace GE
 
     //Setup view and projection
     glViewport( viewX, viewY, viewW, viewH );
-    
-    if (camera != NULL) {
-      camera->updateProjection( viewW, viewH );
-      camera->updateView();
-    }
+    camera->updateProjection( (Float) viewW, (Float) viewH );
+    camera->updateView();
 
     //Setup camera-eye to light-clip matrix
     if (!scene->getLights()->empty())
@@ -1387,7 +1387,7 @@ namespace GE
         if (frustum.testPoint( box[ b ], p ) == Frustum::Outside)
           outCount++;
 
-      //The box is out if all points are outside one of the planes
+      //The box is out if all points are outside any one of the planes
       if (outCount == 8)
         return true;
     }
@@ -1398,7 +1398,7 @@ namespace GE
   void Renderer::traverseScene (Scene3D *scene, RenderTarget::Enum target)
   {
     //Camera center in world coordinates
-    Matrix4x4 camMat = camera->getGlobalMatrix();
+    Matrix4x4 camMat = curCamera->getGlobalMatrix();
     Vector3 eye = camMat.getColumn(3).xyz();
 
     //Frustum for culling
@@ -1412,9 +1412,8 @@ namespace GE
     }
     else
     {
-      Camera3D *cam = (Camera3D*) camera;
-      Matrix4x4 proj = cam->getProjection( viewW,viewH );
-      Matrix4x4 modelview = cam->getGlobalMatrix().affineNormalize().affineInverse();
+      Matrix4x4 proj = curCamera->getProjection( (Float) viewW, (Float) viewH );
+      Matrix4x4 modelview = curCamera->getGlobalMatrix().affineNormalize().affineInverse();
       Matrix4x4 m = proj * modelview;
       getFrustum( m, frustum );
     }
@@ -1439,8 +1438,7 @@ namespace GE
           if (node.actor->getCastShadow() == false)
             continue;
 
-
-        //Bounding box in world space
+        //Get bounding box
         BoundingBox bbox = node.actor->getBoundingBox();
         Matrix4x4 worldMat = node.actor->getGlobalMatrix();
 
@@ -1448,29 +1446,20 @@ namespace GE
         Float maxDist = node.actor->getMaxDrawDistance();
         if (maxDist >= 0.0f)
         {
-          //Center of the bounding box in world coordinates
+          //Check distance of bbox center to camera
           Vector3 center = worldMat * bbox.center;
-
-          //Check distance to camera
           Float dist = (center - eye).norm();
           if (dist > maxDist) continue;
         }
 
-        //Frustum culling
-        Vector3 min = worldMat * bbox.min;
-        Vector3 max = worldMat * bbox.max;
-        Vector3 bboxPoints[8] = {
-          Vector3( min.x, min.y, min.z ),
-          Vector3( min.x, min.y, max.z ),
-          Vector3( min.x, max.y, min.z ),
-          Vector3( min.x, max.y, max.z ),
-          Vector3( max.x, min.y, min.z ),
-          Vector3( max.x, min.y, max.z ),
-          Vector3( max.x, max.y, min.z ),
-          Vector3( max.x, max.y, max.z )
-        };
+        //Transform bbox corners to world space
+        Vector3 bboxCorners[8];
+        bbox.getCorners( bboxCorners );
+        for (Uint c=0; c<8; ++c)
+          bboxCorners[ c ] = worldMat * bboxCorners[ c ];
 
-        if (outsideFrustum( frustum, bboxPoints ))
+        //Frustum culling
+        if (outsideFrustum( frustum, bboxCorners ))
           continue;
 
         //Render geometry
@@ -1492,8 +1481,14 @@ namespace GE
     }
   }
   
-  void Renderer::renderWindow( Scene *s )
+  void Renderer::renderWindow (Scene *s, Camera *camera)
   {
+    if (camera == NULL)
+      return;
+
+    //Set camera current
+    curCamera = camera;
+
     //Setup GL state
     GLProgram::UseFixed();
     glDisable( GL_DEPTH_TEST );
@@ -1505,11 +1500,8 @@ namespace GE
 
     //Setup view and projection
     glViewport( viewX, viewY, viewW, viewH );
-    
-    if (camera != NULL) {
-      camera->updateProjection( viewW, viewH );
-      camera->updateView();
-    }
+    camera->updateProjection( (Float) viewW, (Float) viewH );
+    camera->updateView();
     
     //Update widget traversal
     if (s->hasChanged()) s->updateChanges();

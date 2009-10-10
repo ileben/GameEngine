@@ -22,6 +22,7 @@ namespace GE
   {
     lookEnabled = true;
     moveEnabled = true;
+    clickToLook = true;
 
     mouseDown = false;
     moveSpeed = 15.0f;
@@ -38,6 +39,14 @@ namespace GE
 
   Float FpsController::getMoveSpeed () {
     return moveSpeed;
+  }
+
+  void FpsController::setClickToLook (bool enabled) {
+    clickToLook = enabled;
+  }
+
+  bool FpsController::getClickToLook () {
+    return clickToLook;
   }
 
   void FpsController::enableMove (bool enabled) {
@@ -106,7 +115,7 @@ namespace GE
 
   void FpsController::mouseMove (int x, int y)
   {
-    if (!mouseDown) return;
+    if (clickToLook && !mouseDown) return;
     if (!lookEnabled) return;
 
     Vector2 diff = Vector2( (Float)x,(Float)y ) - lastMouse;

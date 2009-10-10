@@ -1,4 +1,5 @@
 #include <app/app.h>
+#include <engine/geGLHeaders.h>
 
 int resX = 800;
 int resY = 600;
@@ -19,14 +20,50 @@ ArrayList< Convo* > convos;
 
 Convo *convo1 = NULL;
 Convo *convo2 = NULL;
+Convo *convoMug = NULL;
 
 AnimController *animStandUp = NULL;
 AnimController *animBossGreet = NULL;
 AnimController *animSwitchSpeaker = NULL;
 
 Actor3D *actMug = NULL;
-Actor3D *actNews = NULL;
+Actor3D *actPaper = NULL;
 
+bool mugConvoUp = false;
+bool drankCoffee = false;
+bool pickedPaper = false;
+
+/*
+class BBoxWidget : public Widget
+{
+public:
+  Actor3D *actor;
+  
+  virtual void draw()
+  {
+    if (actor == NULL) return;
+
+    Vector2 winSize = Kernel::GetInstance()->getRenderer()->getWindowSize();
+    BoundingBox bbox = appProjectActor( actor, camHouse, 0.0f, 0.0f, winSize.x, winSize.y );
+    if (bbox.max.z < 0.0f) return;
+
+    bbox.min.y = winSize.y - bbox.min.y;
+    bbox.max.y = winSize.y - bbox.max.y;
+
+    glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+
+    glColor3f( 1,1,1 );
+    glBegin( GL_QUADS );
+    glVertex2f( bbox.min.x, bbox.min.y );
+    glVertex2f( bbox.max.x, bbox.min.y );
+    glVertex2f( bbox.max.x, bbox.max.y );
+    glVertex2f( bbox.min.x, bbox.max.y );
+    glEnd();
+
+    glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+  }
+};
+*/
 
 void nextConvo ()
 {
@@ -64,39 +101,42 @@ void animate()
   if (convoCur != NULL)
     convoCur->tick();
 
-  Matrix4x4 mugWorld = actMug->getGlobalMatrix();
-  BoundingBox mugBBox = actMug->getBoundingBox();
-  Vector3 mugCenter= mugWorld * mugBBox.center;
-  
-  Matrix4x4 camWorld = camHouse->getGlobalMatrix().affineNormalize();
-  Vector3 camEye = camWorld.getColumn( 3 ).xyz();
-  Vector3 camLook = camWorld.getColumn( 2 ).xyz();
-  
-  Vector3 eyeToMug = (mugCenter - camEye);
-  Float dist = eyeToMug.norm();
-  eyeToMug /= dist;
+  if (!drankCoffee)
+  {
+    Matrix4x4 mugWorld = actMug->getGlobalMatrix();
+    BoundingBox mugBBox = actMug->getBoundingBox();
+    Vector3 mugCenter= mugWorld * mugBBox.center;
+    
+    Matrix4x4 camWorld = camHouse->getGlobalMatrix().affineNormalize();
+    Vector3 camEye = camWorld.getColumn( 3 ).xyz();
+    Vector3 camLook = camWorld.getColumn( 2 ).xyz();
+    
+    Vector3 eyeToMug = (mugCenter - camEye);
+    Float dist = eyeToMug.norm();
+    eyeToMug /= dist;
 
-  Float cosMugAngle = Util::Max( Vector::Dot( eyeToMug, camLook ), 0.0f );
-  Float cosViewAngle = COS( Util::DegToRad( camHouse->getFov() * 0.5f * 1.33f ));
-  Float dofCoeff = Util::Min( (1.0f - cosMugAngle) / (1.0f - cosViewAngle), 1.0f );
-  dofCoeff = 1.0f - dofCoeff;
+    Float cosMugAngle = Util::Max( Vector::Dot( eyeToMug, camLook ), 0.0f );
+    Float cosViewAngle = COS( Util::DegToRad( camHouse->getFov() * 0.5f * 1.33f ));
+    Float dofCoeff = Util::Min( (1.0f - cosMugAngle) / (1.0f - cosViewAngle), 1.0f );
+    dofCoeff = 1.0f - dofCoeff;
 
-  DofParams dof = camHouse->getDofParams();
-  dof.focusCenter = dist;
-  dof.focusRange = dofCoeff * 100;
-  dof.falloffFar = dofCoeff * 100;
-  dof.falloffNear = dofCoeff * 100;
-  camHouse->setDofParams( dof );
+    DofParams dof = camHouse->getDofParams();
+    dof.focusCenter = dist;
+    dof.focusRange = dofCoeff * 50;
+    dof.falloffFar = dofCoeff * 50;
+    dof.falloffNear = dofCoeff * 50;
+    camHouse->setDofParams( dof );
+  }
+
+  if (!pickedPaper)
+  {
+
+  }
 }
 
-bool bindAnimByName (Scene3D *scene, AnimController *ctrl, const CharString &name)
+void onAnimDrinkCoffee (Convo *convo, ConvoNode *node)
 {
-  for (UintSize a=0; a<scene->animations.size(); ++a) {
-    if (scene->animations[ a ]->name == name) {
-      ctrl->bindAnimation( scene->animations[ a ] );
-      return true; }}
 
-  return false;
 }
 
 void onAnimRingStart (Convo *convo, ConvoNode *node)
@@ -167,6 +207,11 @@ void initConvo ()
   convo2
     ->addSpeach( spkKlyde, 2.0f, "Umm... what are you talking about?" )
     ->addSpeach( spkKlyde, 3.0f, "You know we're still number one newspaper in town..." );
+
+  convoMug = new Convo;
+  convoMug->bindScene( scene2D );
+  convoMug->addSpeach( spkSound, 2.0f,
+    "Yumm, yumm, yummmmmm....mmmm!", onAnimDrinkCoffee );
 }
 
 class EventObserver : public AnimObserver
@@ -177,6 +222,50 @@ public:
     std::cout << "Event '" << evt->getName().buffer() << "' triggered!" << std::endl;
   }
 };
+
+void onEnterLeaveMug (ActorMouseEvent::Enum evt, Actor3D *actor)
+{
+  if (evt == ActorMouseEvent::Enter)
+  {
+    printf( "ENTER!\n" );
+    ((StandardMaterial*)actor->getMaterial())->setLuminosity( 0.3f );
+  }
+  else if (evt == ActorMouseEvent::Leave)
+  {
+    printf( "LEAVE!\n" );
+    ((StandardMaterial*)actor->getMaterial())->setLuminosity( 0.0f );
+  }
+}
+
+void onClickMug (ActorMouseEvent::Enum evt, Actor3D *actor)
+{
+  drankCoffee = true;
+  camHouse->setDofEnabled( false );
+  convoMug->begin();
+}
+
+void onClickPaper (ActorMouseEvent::Enum evt, Actor3D *actor)
+{
+  //Extract scale
+  Matrix4x4 &mat = actor->getMatrix();
+  Float scale = mat.getColumn(0).xyz().norm();
+
+  Matrix4x4 matCam = camHouse->getGlobalMatrix();
+  Float camScale = matCam.getColumn(0).xyz().norm();
+
+  Vector3 offset (  );
+  //Vector3 camOffset = matCamInv.transformVector( offset );
+
+  actor->setParent( camHouse );
+  actor->setMatrix( Matrix4x4() );
+  actor->scale( scale );
+  actor->rotate( Vector3( 1, 0, 0 ), Util::DegToRad( -70 ) );
+  actor->rotate( Vector3( 0, 0, 1 ), Util::DegToRad( 10 ) );
+  actor->translate( Vector3( -35.0f, -20.0f, 100.0f ) / camScale );
+  sceneHouse->updateChanges();
+
+  bool zomg = true;
+}
 
 //TODO: Stuf doesn't load properly if a class used by the exporter is not
 //used in the application and therefore it doesn't get classified in runtime!!!
@@ -216,10 +305,15 @@ int main (int argc, char **argv)
   //Find first camera in the scene
   camHouse = (Camera3D*) sceneHouse->findFirstActorByClass( Class(Camera3D) );
   camHouseCtrl = appCamCtrl( camHouse );
+  //camHouseCtrl->setClickToLook( false );
 
   //Find important actors in the scene
   actMug = (Actor3D*) sceneHouse->findFirstActorByName( "Mug" );
-  actNews = (Actor3D*) sceneHouse->findFirstActorByName( "Newspaper" );
+  actPaper = (Actor3D*) sceneHouse->findFirstActorByName( "Newspaper" );
+  appActorMouseFunc( ActorMouseEvent::Enter, actMug, onEnterLeaveMug );
+  appActorMouseFunc( ActorMouseEvent::Enter, actPaper, onEnterLeaveMug );
+  appActorMouseFunc( ActorMouseEvent::Click, actMug, onClickMug );
+  appActorMouseFunc( ActorMouseEvent::Click, actPaper, onClickPaper );
   
   /////////////////////////////////////////////////
   //Setup 2D overlay

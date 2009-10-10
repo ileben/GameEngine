@@ -45,6 +45,7 @@ namespace GE
 
     bool lookEnabled;
     bool moveEnabled;
+    bool clickToLook;
 
     bool mouseDown;
     Vector2 lastMouse;
@@ -61,6 +62,9 @@ namespace GE
     
     void setMoveSpeed (Float speed);
     Float getMoveSpeed ();
+
+    void setClickToLook (bool enabled);
+    bool getClickToLook ();
 
     void enableMove (bool enabled);
     void enableLook (bool enabled);

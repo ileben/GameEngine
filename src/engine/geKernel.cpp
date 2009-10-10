@@ -853,7 +853,7 @@ namespace GE
       }
 
       //Copy index groups, offsetting by last existing index and material
-      UintSize startIndex = out.mesh->indices.size();
+      VertexID startIndex = (VertexID) out.mesh->indices.size();
       for (UintSize g=0; g<srcMesh->groups.size(); ++g)
       {
         TriMesh::IndexGroup grp = srcMesh->groups[ g ];

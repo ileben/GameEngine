@@ -219,6 +219,7 @@ namespace GE
 
     Vector3 transformPoint (const Vector3 &v) const;
     Vector3 transformVector (const Vector3 &v) const;
+    Vector4 transformPoint (const Vector4 &v) const;
     
     Matrix4x4& operator*= (const Matrix4x4 &r);
     Matrix4x4 operator* (const Matrix4x4 &r) const;

@@ -1,6 +1,27 @@
 #include <app/app.h>
 #include <engine/geGLHeaders.h>
 
+/*
+-------------------------------------------
+Crosshair
+-------------------------------------------*/
+
+class Crosshair : public Widget
+{
+  virtual void draw ()
+  {
+    float S = 5.0f;
+
+    glColor3f( 1,1,1 );
+    glBegin( GL_LINES );
+    glVertex2f( loc.x - S, loc.y );
+    glVertex2f( loc.x + S, loc.y );
+    glVertex2f( loc.x, loc.y - S );
+    glVertex2f( loc.x, loc.y + S );
+    glEnd();
+  }
+};
+
 
 /*
 -------------------------------------------
@@ -83,18 +104,137 @@ static void animate()
   glutPostRedisplay();
 }
 
+/*
+------------------------------------------------------------
+Actor mouse events
+------------------------------------------------------------*/
+
+
+struct ActorCallback
+{
+  ActorMouseEvent::Enum evt;
+  Actor3D *actor;
+  ActorFunc func;
+  bool on;
+
+  ActorCallback() : on (false) {}
+};
+
+ArrayList< ActorCallback > actorCallbacks;
+
+int findActorMouseFunc (ActorMouseEvent::Enum evt, Actor3D *actor)
+{
+  for (UintSize c=0; c<actorCallbacks.size(); ++c) {
+    if (actorCallbacks[ c ].actor == actor &&
+        actorCallbacks[ c ].evt == evt) {
+     return (int) c;
+  }}
+
+  return -1;
+}
+
+void appActorMouseFunc (ActorMouseEvent::Enum evt, Actor3D *actor, ActorFunc func)
+{
+  int existing = findActorMouseFunc( evt, actor );
+  if (existing >= 0)
+  {
+    actorCallbacks[ existing ].func = func;
+    return;
+  }
+
+  ActorCallback c;
+  c.actor = actor;
+  c.evt = evt;
+  c.func = func;
+  actorCallbacks.pushBack( c );
+}
+
+void removeActorMouseFunc (ActorMouseEvent::Enum evt, Actor3D *actor)
+{
+  int existing = findActorMouseFunc( evt, actor );
+  if (existing >= 0) actorCallbacks.removeAt( existing );
+}
+
+bool actorHitTest (Actor3D *actor, Float x, Float y)
+{
+  Vector2 winSize = renderer->getWindowSize();
+  BoundingBox bbox = appProjectActor( actor, camRender, 0.0f, 0.0f, winSize.x, winSize.y );
+  if (bbox.max.z < 0.0f) return false;
+
+  bbox.min.y = winSize.y - bbox.min.y;
+  bbox.max.y = winSize.y - bbox.max.y;
+  
+  Float miny = bbox.min.y;
+  bbox.min.y = bbox.max.y;
+  bbox.max.y = miny;
+
+  if (x < bbox.min.x || x > bbox.max.x) return false;
+  if (y < bbox.min.y || y > bbox.max.y) return false;
+
+  return true;
+}
+
+void actorMouseMove (Float x, Float y)
+{
+  for (UintSize c=0; c < actorCallbacks.size(); ++c)
+  {
+    ActorCallback &cb = actorCallbacks[ c ];
+    if (cb.evt == ActorMouseEvent::Enter)
+    {
+      bool hit = actorHitTest( cb.actor, x, y );
+      if ((!cb.on) && hit)
+      {
+        cb.func( ActorMouseEvent::Enter, cb.actor );
+        cb.on = true;
+      }
+      else if (cb.on && (!hit))
+      {
+        cb.func( ActorMouseEvent::Leave, cb.actor );
+        cb.on = false;
+      }
+    }
+  }
+}
+
+void actorMouseClick (Float x, Float y)
+{
+  for (UintSize c=0; c < actorCallbacks.size(); ++c)
+  {
+    ActorCallback &cb = actorCallbacks[ c ];
+    if (cb.evt == ActorMouseEvent::Click)
+    {
+      if (actorHitTest( cb.actor, x, y ))
+        cb.func( cb.evt, cb.actor );
+    }
+  }
+}
+
+/*
+------------------------------------------------------------
+GLUT events
+------------------------------------------------------------*/
+
 static void mouseClick (int button, int state, int x, int y)
 {
-  if (button == GLUT_LEFT_BUTTON)
+  if (button == GLUT_LEFT_BUTTON) {
     uiCtrl->mouseClick( button, state, x, y );
-  else
+    actorMouseClick( (Float) x, (Float) y );
+  }else
     camCtrl->mouseClick( button, state, x, y );
+
+  //if (state == GLUT_DOWN) {
+  //  Vector2 winSize = renderer->getWindowSize();
+  //  actorMouseClick( winSize.x * 0.5f, winSize.y * 0.5f );
+  //}
 }
 
 static void mouseMove (int x, int y)
 {
   uiCtrl->mouseMove( x, y );
   camCtrl->mouseMove( x, y );
+  actorMouseMove( (Float) x, (Float) y );
+  //Vector2 winSize = renderer->getWindowSize();
+  //actorMouseMove( winSize.x * 0.5f, winSize.y * 0.5f );
 }
 
 static void keyDown (unsigned char key, int x, int y)
@@ -181,17 +321,20 @@ static void display ()
   renderer->beginFrame();
   
   //3D scene
-  renderer->setCamera( camRender );
   renderer->beginDeferred();
-  renderer->renderSceneDeferred( sceneRender );
+  renderer->renderSceneDeferred( sceneRender, camRender );
   renderer->endDeferred();
   
   //2D scene
-  renderer->setCamera( cam2D );
-  renderer->renderWindow( scene2D );
+  renderer->renderWindow( scene2D, cam2D );
   
   renderer->endFrame();
 }
+
+/*
+-------------------------------------------------
+Init functions
+-------------------------------------------------*/
 
 void appInit (int resX, int resY)
 {
@@ -204,6 +347,9 @@ void appInit (int resX, int resY)
   glutInitWindowPosition( 100,100 );
   glutInitWindowSize( resX,resY );
   glutCreateWindow( "Game App" );
+
+  //glutGameModeString( "1280x1024:32@60" );
+  //glutEnterGameMode();
   
   glutReshapeFunc( reshape );
   glutDisplayFunc( display );
@@ -258,6 +404,13 @@ Scene* appScene2D ()
   //Create UI camera
   cam2D = new Camera2D;
 
+  /*
+  Vector2 winSize = renderer->getWindowSize();
+  Crosshair *crosshair = new Crosshair;
+  scene2D->getRoot()->addChild( crosshair );
+  crosshair->setLoc( winSize.x * 0.5f, winSize.y * 0.5f );
+  */
+
   return scene2D;
 }
 
@@ -292,4 +445,51 @@ void appSwitchCamera (Camera3D *cam)
 void appSwitchScene (Scene3D *scene)
 {
   sceneRender = scene;
+}
+
+BoundingBox appProjectActor (Actor3D *actor, Camera *camera,
+                             Float viewX, Float viewY, Float viewW, Float viewH)
+{
+  //Get the transformation matrix
+  Matrix4x4 world = actor->getGlobalMatrix();
+  Matrix4x4 modelview = camera->getGlobalMatrix().affineNormalize().affineInverse();
+  Matrix4x4 projection = camera->getProjection( viewW, viewH );
+  Matrix4x4 m = projection * modelview * world;
+
+  //Get corners of the bounding box
+  BoundingBox bboxActor = actor->getBoundingBox();
+  Vector3 bboxCorners[8];
+  bboxActor.getCorners( bboxCorners );
+
+  //Project each corner into viewport
+  BoundingBox bboxOut;
+  for (Uint c=0; c<8; ++c)
+  {
+    //Projection and perspective division
+    Vector4 p = m.transformPoint( bboxCorners[ c ].xyz(1.0f) );
+    p /= p.w;
+
+    //Apply view
+    Vector3 v;
+    v.x = (Float)viewX + (0.5f * p.x + 0.5f) * (Float)viewW;
+    v.y = (Float)viewY + (0.5f * p.y + 0.5f) * (Float)viewH;
+    v.z = 1.0f - (0.5f * p.z + 0.5f);
+
+    //Find projected bounds
+    if (c==0) bboxOut.min = bboxOut.max = v;
+    else {
+
+      if (v.x < bboxOut.min.x) bboxOut.min.x = v.x;
+      if (v.y < bboxOut.min.y) bboxOut.min.y = v.y;
+      if (v.z < bboxOut.min.z) bboxOut.min.z = v.z;
+
+      if (v.x > bboxOut.max.x) bboxOut.max.x = v.x;
+      if (v.y > bboxOut.max.y) bboxOut.max.y = v.y;
+      if (v.z > bboxOut.max.z) bboxOut.max.z = v.z;
+    }
+  }
+
+  bboxOut.center = (bboxOut.min + bboxOut.max) * 0.5f;
+
+  return bboxOut;
 }

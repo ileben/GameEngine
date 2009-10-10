@@ -111,8 +111,9 @@ void Convo::tick()
 
   //Check if the node ended
   Float newTime = Kernel::GetInstance()->getTime();
-  if (newTime - time > node->duration)
-    advance( node->next );
+  if (node->duration >= 0.0f )
+    if (newTime - time > node->duration)
+      advance( node->next );
 }
 
 

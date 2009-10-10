@@ -30,7 +30,7 @@ namespace GE
     Float nearClip;
 
     virtual void onMatrixChanged ();
-    virtual void updateProjection(int w, int h) {}
+    virtual void updateProjection (Float w, Float h) {}
     virtual void updateView() {}
 
   public:
@@ -48,6 +48,8 @@ namespace GE
 
     void setNearClipPlane(Float nearClip);
     Float getNearClipPlane();
+
+    virtual Matrix4x4 getProjection (Float w, Float h) { return Matrix4x4(); }
   };
 
   /*------------------------------------------
@@ -76,6 +78,7 @@ namespace GE
 
   private:
     Float fov;
+
     Vector3 center;
     Matrix4x4 cPlus;
     Matrix4x4 cMinus;
@@ -83,8 +86,8 @@ namespace GE
     DofParams dofParams;
     bool dofEnabled;
     
-    void updateProjection (int w, int h);
-    void updateView();
+    virtual void updateProjection (Float w, Float h);
+    virtual void updateView();
 
   public:
 
@@ -94,8 +97,6 @@ namespace GE
     
     void setFov (Float fieldOfView);
     Float getFov ();
-
-    Matrix4x4 getProjection (int w, int h);
     
     void setCenter (const Vector3 &center);
     const Vector3& getCenter ();
@@ -113,6 +114,8 @@ namespace GE
 
     void setDofEnabled (bool enabled);
     bool getDofEnabled ();
+
+    virtual Matrix4x4 getProjection (Float w, Float h);
   };
 
   /*--------------------------------------------
@@ -127,8 +130,8 @@ namespace GE
   private:
     Vector2 eye;
 
-    void updateProjection(int w, int h);
-    void updateView();
+    virtual void updateProjection (Float w, Float h);
+    virtual void updateView();
 
   public:
     

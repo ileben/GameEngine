@@ -10,7 +10,7 @@ namespace GE
   Camera::Camera ()
   {
     nearClip = 0.1f;
-    farClip = 300.0f;
+    farClip = 10000.0f;
     setIsRenderable( false );
   }
 
@@ -168,14 +168,14 @@ namespace GE
   local-viewer model is enabled.
   -----------------------------------------------------------*/
 
-  Matrix4x4 Camera3D::getProjection (int w, int h)
+  Matrix4x4 Camera3D::getProjection (Float w, Float h)
   {
     Matrix4x4 m;
-    m.setPerspectiveFovLH( Util::DegToRad( fov ), (Float)w/h, nearClip, farClip );
+    m.setPerspectiveFovLH( Util::DegToRad( fov ), w/h, nearClip, farClip );
     return m;
   }
 
-  void Camera3D::updateProjection (int w, int h)
+  void Camera3D::updateProjection (Float w, Float h)
   {
     Matrix4x4 m = getProjection( w,h );
 
@@ -225,7 +225,7 @@ namespace GE
    *
    *======================================*/
 
-  void Camera2D::updateProjection(int w, int h)
+  void Camera2D::updateProjection (Float w, Float h)
   {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();

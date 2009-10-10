@@ -69,24 +69,8 @@ namespace GE
       charBBox = c->meshes.first()->getBoundingBox();
 
     //Merge with the rest of the meshes
-    for (UintSize m=1; m<c->meshes.size(); ++m)
-    {
-      BoundingBox bbox = c->meshes[m]->getBoundingBox();
-      
-      if (bbox.min.x < charBBox.min.x) charBBox.min.x = bbox.min.x;
-      if (bbox.min.y < charBBox.min.y) charBBox.min.y = bbox.min.y;
-      if (bbox.min.z < charBBox.min.z) charBBox.min.z = bbox.min.z;
-
-      if (bbox.max.x > charBBox.max.x) charBBox.max.x = bbox.max.x;
-      if (bbox.max.y > charBBox.max.y) charBBox.max.y = bbox.max.y;
-      if (bbox.max.z > charBBox.max.z) charBBox.max.z = bbox.max.z;
-
-      charBBox.center += bbox.center;
-    }
-
-    //Average center
-    if (c->meshes.size() > 0)
-      charBBox.center /= c->meshes.size();
+    for (UintSize m=1; m < c->meshes.size(); ++m)
+      charBBox += c->meshes[m]->getBoundingBox();
   }
 
   Character* SkinMeshActor::getCharacter()

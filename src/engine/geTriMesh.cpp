@@ -397,7 +397,7 @@ namespace GE
     if (getVertexCount() > 0) {
       vert = vertBind( getVertex(0) );
       if (vert.coord == NULL) return;
-      bbox.center = bbox.min = bbox.max = (*vert.coord);
+      bbox.min = bbox.max = (*vert.coord);
     }
 
     //Walk the remaining vertices
@@ -406,20 +406,19 @@ namespace GE
       //Get the vertex coordinate
       TriVertex vert = vertBind( getVertex( v ) );
       Vector3 point = *vert.coord;
-      bbox.center += point;
 
       //Update bbox
       if (point.x < bbox.min.x) bbox.min.x = point.x;
-      if (point.x > bbox.max.x) bbox.max.x = point.x;
       if (point.y < bbox.min.y) bbox.min.y = point.y;
-      if (point.y > bbox.max.y) bbox.max.y = point.y;
       if (point.z < bbox.min.z) bbox.min.z = point.z;
+
+      if (point.x > bbox.max.x) bbox.max.x = point.x;
+      if (point.y > bbox.max.y) bbox.max.y = point.y;
       if (point.z > bbox.max.z) bbox.max.z = point.z;
     }
     
     //Average center
-    if (getVertexCount() > 0)
-      bbox.center /= (Float) getVertexCount();
+    bbox.center = (bbox.max + bbox.min) * 0.5f;
   }
   
   BoundingBox TriMesh::getBoundingBox() {

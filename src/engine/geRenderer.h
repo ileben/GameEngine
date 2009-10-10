@@ -96,7 +96,7 @@ namespace GE
     Float maxLuminance;
 
     //State
-    Camera *camera;
+    Camera *curCamera;
     Shader *curShader;
     Material *curMaterial;
     Light *curLight;
@@ -230,20 +230,19 @@ namespace GE
 
     void setBackColor (const Vector3 &back);
     void setViewport (int x, int y, int width, int height);
-    void setCamera (Camera *camera);
-    Camera* getCamera();
     
     void renderShadowQuad ();
     Shader* getCurrentShader();
     Material* getCurrentMaterial();
+    Camera* getCurrentCamera();
 
     void beginFrame ();
-    void renderScene (Scene3D *scene);
-    void renderWindow (Scene *w);
+    void renderScene (Scene3D *scene, Camera *camera);
+    void renderWindow (Scene *w, Camera *camera);
     void endFrame ();
 
     void beginDeferred();
-    void renderSceneDeferred (Scene3D *scene);
+    void renderSceneDeferred (Scene3D *scene, Camera *camera);
     void endDeferred();
 
     void setAvgLuminance (Float l);
