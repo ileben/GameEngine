@@ -641,7 +641,7 @@ public:
 
         //Export material
         bool hasNormalMap = false;
-        Material *material = exportMaterial( dagPath.node(), &hasNormalMap );
+        Material *material = exportMaterial( dagPath, &hasNormalMap );
         if (material == NULL) {
           trace( "ExportScene: failed exporting material for '" + name + "'!" );
           continue;
@@ -748,9 +748,32 @@ public:
         outActor = cam;
       }
 
-      //Map Maya object name to exported actor
+      //Check if exported correctly
       if (outActor != NULL)
+      {
+        //Find the draw distance attribute
+        MPlug plugDist = transform.findPlug( "GameMaxDistance", false, &status );
+        if (status == MStatus::kSuccess)
+        {
+          //Set maximum draw distance
+          Float dist = -1.0f;
+          plugDist.getValue( dist );
+          outActor->setMaxDrawDistance( dist * getWorldScale() );
+        }
+
+        //Find the cast shadow attribute
+        MPlug plugCastShadow = transform.findPlug( "GameCastShadow", false, &status );
+        if (status == MStatus::kSuccess)
+        {
+          //Set shadow casting
+          bool castShadow = true;
+          plugCastShadow.getValue( castShadow );
+          outActor->setCastShadow( castShadow );
+        }
+
+        //Map Maya object name to exported actor
         g_mapNameToActor[ name.buffer() ] = outActor;
+      }
 
     }//walk the scene graph
 

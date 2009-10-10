@@ -673,7 +673,7 @@ int main (int argc, char **argv)
   animCtrl = new AnimController;
   if (!scene->animations.empty()) {
     animCtrl->bindAnimation( scene->animations.first() );
-    //animCtrl->observeAt( 0.0f );
+    animCtrl->observeAt( 0.0f );
   }
   
   //Bind event observer to the controller

@@ -202,13 +202,9 @@ namespace GE
     void initTexture (Uint *texID, Uint format, Uint attachment, bool gen=false, int W=-1, int H=-1);
     void initBuffers ();
 
-    void traverseSceneNoMats (Scene3D *scene);
-    void traverseSceneWithMats (Scene3D *scene);
+    void traverseScene (Scene3D *scene, RenderTarget::Enum target);
     void renderShadowMap (Light *light, Scene3D *scene);
     Shader* findShaderByKey (const ShaderKey &key);
-    Shader* getShader (RenderTarget::Enum target,
-                       Actor3D *geometry,
-                       Material *material);
 
     Shader *findLightShaderByKey (const LightShaderKey &key);
     Shader *getLightShader (Light *light);
@@ -218,6 +214,10 @@ namespace GE
     void doBloom (Uint32 sourceTex, Uint32 targetFB, Uint32 targetAtch);
 
   public:
+
+    Shader* getShader (RenderTarget::Enum target,
+                       Actor3D *geometry,
+                       Material *material);
     
     Renderer();
 

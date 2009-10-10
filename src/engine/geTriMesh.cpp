@@ -51,6 +51,33 @@ namespace GE
     return *this;
   }
 
+  bool FormatMember::operator== (const FormatMember &other) const
+  {
+    return
+      (other.data == data &&
+       other.unit == unit &&
+       other.size == size &&
+       other.offset == offset &&
+       other.attribName == attribName &&
+       other.attribUnit == attribUnit &&
+       other.attribNorm == attribNorm);
+  }
+
+  bool VertexFormat::operator == (const VertexFormat &other) const
+  {
+    if (size != other.size)
+      return false;
+
+    if (members.size() != other.members.size())
+      return false;
+
+    for (UintSize m=0; m<members.size(); ++m)
+      if (! (members[ m ] == other.members[ m ]))
+        return false;
+
+    return true;
+  }
+
   FormatMember* VertexFormat::findMember (ShaderData::Enum dataType,
                                           const CharString &attribName) const
   {
@@ -354,6 +381,49 @@ namespace GE
     glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );
 
     isOnGpu = true;
+  }
+
+  void TriMesh::updateBoundingBox()
+  {
+    //Reset box
+    bbox.center = bbox.min = bbox.max = Vector3(0,0,0);
+
+    //Prepare vertex binding
+    VertexBinding <TriVertex> vertBind;
+    vertBind.init( &format );
+    TriVertex vert;
+
+    //Init with first vertex
+    if (getVertexCount() > 0) {
+      vert = vertBind( getVertex(0) );
+      if (vert.coord == NULL) return;
+      bbox.center = bbox.min = bbox.max = (*vert.coord);
+    }
+
+    //Walk the remaining vertices
+    for (UintSize v=1; v<getVertexCount(); ++v)
+    {
+      //Get the vertex coordinate
+      TriVertex vert = vertBind( getVertex( v ) );
+      Vector3 point = *vert.coord;
+      bbox.center += point;
+
+      //Update bbox
+      if (point.x < bbox.min.x) bbox.min.x = point.x;
+      if (point.x > bbox.max.x) bbox.max.x = point.x;
+      if (point.y < bbox.min.y) bbox.min.y = point.y;
+      if (point.y > bbox.max.y) bbox.max.y = point.y;
+      if (point.z < bbox.min.z) bbox.min.z = point.z;
+      if (point.z > bbox.max.z) bbox.max.z = point.z;
+    }
+    
+    //Average center
+    if (getVertexCount() > 0)
+      bbox.center /= (Float) getVertexCount();
+  }
+  
+  BoundingBox TriMesh::getBoundingBox() {
+    return bbox;
   }
 
   /*

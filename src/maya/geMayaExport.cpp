@@ -277,23 +277,30 @@ Material* exportShader (const MObject &shader, bool *hasNormalMap)
   return mat;
 }
 
-Material* exportMaterial (const MObject &meshNode, bool *hasNormalMap)
+Material* exportMaterial (const MDagPath &nodePath, bool *hasNormalMap)
 {
   MStatus status;
   bool normalMap = false;
+  bool twoSided = false;
   Material *outMaterial = NULL;
 
   //Check if it's really a mesh
-  MFnMesh mesh( meshNode, &status );
+  MFnMesh mesh( nodePath, &status );
   if (status != MStatus::kSuccess)
     return NULL;
 
+  //Find first transform above it
+  MFnTransform transform = nodePath.transform();
+
+  //Get the backface culling attribute
+  MPlug plugTwoSided = transform.findPlug( "GameTwoSided", false, &status );
+  if (status == MStatus::kSuccess)
+    plugTwoSided.getValue( twoSided );
+
   //Get shaders connected to this mesh
-  MDagPath meshDagPath;
   MIntArray materialIDs;
   MObjectArray meshShaders;
-  mesh.getPath( meshDagPath );
-  mesh.getConnectedShaders( meshDagPath.instanceNumber(), meshShaders, materialIDs );
+  mesh.getConnectedShaders( nodePath.instanceNumber(), meshShaders, materialIDs );
   if (meshShaders.length() == 0) return NULL;
 
   //Is there more than one shader assigned?
@@ -307,6 +314,7 @@ Material* exportMaterial (const MObject &meshNode, bool *hasNormalMap)
     //Export each sub-material
     for (Uint s=0; s<meshShaders.length(); ++s) {
       Material *mat = exportShader( meshShaders[ s ], &normalMap );
+      ((StandardMaterial*)mat)->setCullBack( !twoSided );
       mm->setSubMaterial( s, mat );
     }
   }
@@ -314,6 +322,7 @@ Material* exportMaterial (const MObject &meshNode, bool *hasNormalMap)
   {
     //Export single material
     Material *mat = exportShader( meshShaders[ 0 ], &normalMap );
+    ((StandardMaterial*)mat)->setCullBack( !twoSided );
     outMaterial = mat;
   }
 
@@ -2105,6 +2114,7 @@ Character* exportCharacter (const MObject &meshNode, bool tangents)
   for (UintSize m=0; m<numMeshes; ++m)
   {
     SkinTriMesh *mesh = (SkinTriMesh*) splitter.getSubMesh(m);
+    mesh->updateBoundingBox();
     character->meshes.pushBack( mesh );
   }
 
@@ -2144,5 +2154,6 @@ TriMesh* exportMesh (const MObject &meshNode, bool tangents)
   TriMeshExporter meshExporter( outTriMesh, vertToVariantMap );
   meshExporter.exportMesh( meshNode );
 
+  outTriMesh->updateBoundingBox();
   return outTriMesh;
 }

@@ -346,11 +346,24 @@ namespace GE
     shader->composeNodeEnd();
   }
 
-  void SkinMeshActor::render (MaterialID materialID)
+  void SkinMeshActor::bindFormat (Shader *shader, VertexFormat *format)
+  {
+    TriMeshActor::bindFormat (shader, format);
+
+    //Construct a mesh-specific array of joint matrices
+    Matrix4x4 meshMats[24];
+    for (UintSize b=0; b<curSubMesh->mesh2skinSize; ++b)
+      meshMats[b] = skinMats[ curSubMesh->mesh2skinMap[b] ];
+
+    //Pass joint matrices to the shader
+    Int32 uniMatrix = shader->getUniformID( skinMatUniform );
+    glUniformMatrix4fv( uniMatrix, curSubMesh->mesh2skinSize, GL_FALSE, (GLfloat*)meshMats );
+  }
+
+  void SkinMeshActor::render (RenderTarget::Enum target)
   {
     //Make sure there's something to render
     if (character == NULL) return;
-    Shader *shader = Kernel::GetInstance()->getRenderer()->getCurrentShader();
 
     //Make sure skin is up to date
     updateSkin();
@@ -358,22 +371,10 @@ namespace GE
     //Walk sub meshes
     for (UintSize m=0; m<character->meshes.size(); ++m)
     {
-      SkinTriMesh *subMesh = character->meshes[m];
-
-      //Construct a mesh-specific array of skin matrices
-      Matrix4x4 meshMats[24];
-      for (UintSize b=0; b<subMesh->mesh2skinSize; ++b)
-        meshMats[b] = skinMats[ subMesh->mesh2skinMap[b] ];
-
-      //Pass joint matrices to the shader
-      if (shader != NULL) {
-        Int32 uniMatrix = shader->getUniformID( skinMatUniform );
-        glUniformMatrix4fv( uniMatrix, subMesh->mesh2skinSize, GL_FALSE, (GLfloat*)meshMats );
-      }
-      
       //Render this sub mesh
-      this->mesh = subMesh;
-      TriMeshActor::render( materialID );
+      curSubMesh = character->meshes[m];
+      this->mesh = curSubMesh;
+      TriMeshActor::render( target );
     }
   }
 

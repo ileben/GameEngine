@@ -6,6 +6,7 @@
 #include "math/geMatrix.h"
 #include "ui/uiActor.h"
 #include "geMaterial.h"
+#include "geRenderer.h"
 
 namespace GE
 {
@@ -32,6 +33,8 @@ namespace GE
   {
     DECLARE_SERIAL_SUBCLASS( Actor3D, Actor );
     DECLARE_DATAVAR( renderable );
+    DECLARE_DATAVAR( castShadow );
+    DECLARE_DATAVAR( maxDrawDistance );
     DECLARE_OBJPTR( material );
     DECLARE_END;
     
@@ -40,18 +43,24 @@ namespace GE
     
   private:
 
-    Material *material;
-    
-  protected:
-
     bool renderable;
+    bool castShadow;
+    Float maxDrawDistance;
+    Material *material;
 
   public:
 
     Actor3D (SM *sm);
     Actor3D ();
     virtual ~Actor3D ();
-    
+
+    void setMaxDrawDistance (Float d);
+    Float getMaxDrawDistance ();
+    virtual BoundingBox getBoundingBox() { return BoundingBox(); }
+
+    void setCastShadow (bool cast);
+    bool getCastShadow ();
+
     //Transform matrix manipulation
     virtual void onMatrixChanged ();
     void mulMatrixLeft (const Matrix4x4 &m);
@@ -81,12 +90,9 @@ namespace GE
     
     //Rendering steps (as invoked by Renderer):
     virtual void prepare () {}
-    virtual void begin ();
-    //- material begin
-    virtual void render (MaterialID materialID) {}
-    //- material end
-    //- recurse to children
-    virtual void end ();
+    virtual void begin () {}
+    virtual void render (RenderTarget::Enum target) {}
+    virtual void end () {}
 
     //Invoked when loading after referenced resources are loaded
     virtual void onResourcesLoaded() {}

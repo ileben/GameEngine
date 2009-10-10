@@ -42,7 +42,7 @@ namespace GE
       { }
     DataUnit (DataType::Enum t, int c)
       { type=t; count=c; }
-    bool operator== (const DataUnit &u)
+    bool operator== (const DataUnit &u) const
       { return (type == u.type && count == u.count); }
     CharString toString();
 

@@ -43,6 +43,7 @@ namespace GE
 
     FormatMember () {}
     FormatMember (SM *sm) : attribName(sm) {}
+    bool operator == (const FormatMember &other) const;
   };
 
   class VertexFormat : public Object
@@ -64,6 +65,7 @@ namespace GE
     UintSize getByteSize() const;
     const ObjArrayList <FormatMember> * getMembers () const;
     VertexFormat& operator= (const VertexFormat &f);
+    bool operator == (const VertexFormat &other) const;
 
     FormatMember* findMember (ShaderData::Enum data,
                               const CharString &attribName) const;
@@ -188,6 +190,7 @@ namespace GE
     DECLARE_OBJVAR( data );
     DECLARE_OBJVAR( indices );
     DECLARE_OBJVAR( groups );
+    DECLARE_DATAVAR( bbox );
     DECLARE_END;
     
   public:
@@ -203,6 +206,7 @@ namespace GE
     GenericArrayList data;
     ArrayList <Uint32> indices;
     ArrayList <IndexGroup> groups;
+    BoundingBox bbox;
     
     //Drawing data
     Uint32 dataVBO;
@@ -252,6 +256,9 @@ namespace GE
     UintSize getVertexCount ();
     UintSize getFaceCount ();
     UintSize getGroupFaceCount (UintSize group);
+
+    void updateBoundingBox();
+    BoundingBox getBoundingBox();
 
     void sendToGpu ();
   };

@@ -83,7 +83,7 @@ namespace GE
     DofParams dofParams;
     bool dofEnabled;
     
-    void updateProjection(int w, int h);
+    void updateProjection (int w, int h);
     void updateView();
 
   public:
@@ -94,6 +94,8 @@ namespace GE
     
     void setFov (Float fieldOfView);
     Float getFov ();
+
+    Matrix4x4 getProjection (int w, int h);
     
     void setCenter (const Vector3 &center);
     const Vector3& getCenter ();

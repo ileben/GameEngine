@@ -157,7 +157,7 @@ Vector3 exportColor (const MColor &c);
 
 TriMesh* exportMesh (const MObject &meshNode, bool tangents);
 Character* exportCharacter (const MObject &meshNode, bool tangents);
-Material* exportMaterial (const MObject &meshNode, bool *hasNormalMap);
+Material* exportMaterial (const MDagPath &nodePath, bool *hasNormalMap);
 Matrix4x4 exportMatrix (const MMatrix &m);
 Light* exportLight (const MDagPath &lightDagPath);
 Camera* exportCamera (const MDagPath &camDagPath);

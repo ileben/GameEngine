@@ -51,6 +51,8 @@ namespace GE
     Int32 skinMatUniform;
     Int32 boneIndexAttrib;
     Int32 boneWeightAttrib;
+    SkinTriMesh *curSubMesh;
+    virtual void bindFormat (Shader *shader, VertexFormat *format);
 
   public:
     virtual ClassPtr getShaderComposingClass() { return Class(SkinMeshActor); }
@@ -69,7 +71,7 @@ namespace GE
     void setJointRotation (int jointIndex, Quat rotation);
     void setJointTranslation (int jointIndex, Vector3 rotation);
 
-    virtual void render (MaterialID materialID);
+    virtual void render (RenderTarget::Enum target);
 
     void loadPose ();
     void loadAnimation (const CharString &name);

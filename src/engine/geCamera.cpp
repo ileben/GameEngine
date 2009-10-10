@@ -168,10 +168,16 @@ namespace GE
   local-viewer model is enabled.
   -----------------------------------------------------------*/
 
-  void Camera3D::updateProjection(int w, int h)
+  Matrix4x4 Camera3D::getProjection (int w, int h)
   {
     Matrix4x4 m;
-    m.setPerspectiveFovLH( fov, (float)w/h, nearClip, farClip );
+    m.setPerspectiveFovLH( fov, (Float)w/h, nearClip, farClip );
+    return m;
+  }
+
+  void Camera3D::updateProjection (int w, int h)
+  {
+    Matrix4x4 m = getProjection( w,h );
 
     glMatrixMode(GL_PROJECTION);
     glLoadMatrixf( (GLfloat*) m.m );

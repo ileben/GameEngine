@@ -9,6 +9,7 @@
 #include "engine/geKernel.h"
 #include "engine/geRenderer.h"
 #include "engine/geScene.h"
+#include "engine/actors/geTriMeshActor.h"
 
 #define GE_NO_EXTENSION_ROUTING
 #include "geGLHeaders.h"
@@ -768,6 +769,143 @@ namespace GE
     }
   }
 
+
+  struct MeshOutput
+  {
+    TriMesh *mesh;
+    TriMeshActor *actor;
+    MultiMaterial *material;
+  };
+
+  class MergeVertex : public Object
+  {
+  public:
+    Vector3 *normal;
+    Vector3 *coord;
+
+    DECLARE_SUBCLASS( MergeVertex, Object );
+    DECLARE_MEMBER_DATA( normal, new BindTarget( ShaderData::Normal ) );
+    DECLARE_MEMBER_DATA( coord, new BindTarget( ShaderData::Coord ) );
+    DECLARE_END;
+  };
+
+  DEFINE_CLASS( MergeVertex );
+
+  void mergeMeshes (Scene3D *scene)
+  {
+    scene->updateChanges();
+
+    //Output meshes and actors
+    ArrayList< MeshOutput > outputs;
+    
+    //Walk the list of mesh actors
+    ArrayList< Actor* > actors;
+    scene->findActorsByClass( Class(TriMeshActor), actors );
+    for (UintSize a=0; a<actors.size(); ++a)
+    {
+      //Get source mesh from the actor
+      TriMeshActor *srcActor = (TriMeshActor*) actors[ a ];
+      TriMesh *srcMesh = srcActor->getMesh();
+      if (srcMesh == NULL) continue;
+
+      //Get material from the actor
+      Material *srcMat = srcActor->getMaterial();
+      if (srcMat == NULL) continue;
+
+      //Find an existing output with matching mesh format
+      MeshOutput out; bool found = false;
+      for (UintSize o=0; o<outputs.size(); ++o) {
+        if (*outputs[ o ].mesh->getFormat() == *srcMesh->getFormat()) {
+          out = outputs[ o ];
+          found = true;
+          break;
+        }}
+
+      //Create new one if not found
+      if (!found)
+      {
+        out.mesh = new TriMesh;
+        out.actor = new TriMeshActor;
+        out.material = new MultiMaterial;
+        outputs.pushBack( out );
+
+        //Match format to source mesh;
+        out.mesh->setFormat( *srcMesh->getFormat() );
+        out.actor->setMesh( out.mesh );
+        out.actor->setMaterial( out.material );
+      }
+
+      //Copy materials
+      MaterialID startMat = (MaterialID) out.material->getNumSubMaterials();
+      if (ClassOf( srcMat ) == Class( MultiMaterial )) {
+
+        MultiMaterial* multiMat = (MultiMaterial*) srcMat;
+        out.material->setNumSubMaterials( startMat + multiMat->getNumSubMaterials() );
+
+        for (MaterialID m=0; m<multiMat->getNumSubMaterials(); ++m) {
+          Material *subMat = multiMat->getSubMaterial( m );
+          out.material->setSubMaterial( startMat + m, subMat );
+        }
+      }else
+      {
+        out.material->setNumSubMaterials( startMat + 1 );
+        out.material->setSubMaterial( startMat, srcMat );
+      }
+
+      //Copy index groups, offsetting by last existing index and material
+      UintSize startIndex = out.mesh->indices.size();
+      for (UintSize g=0; g<srcMesh->groups.size(); ++g)
+      {
+        TriMesh::IndexGroup grp = srcMesh->groups[ g ];
+        grp.start += startIndex;
+        grp.materialID += startMat;
+        out.mesh->groups.pushBack( grp );
+      }
+
+      //Copy mesh indices, offsetting by last existing vertex
+      VertexID startVertex = (VertexID) out.mesh->getVertexCount();
+      for (UintSize i=0; i<srcMesh->indices.size(); ++i)
+        out.mesh->indices.pushBack( startVertex + srcMesh->indices[ i ] );
+
+      //Get the world transform from the actor
+      //(TODO: should exclude the root transform as the new actor
+      //will be placed under root too. For now we know all the
+      //actors are direct children of root.
+      Matrix4x4 worldMat = srcActor->getMatrix();
+
+      //Walk the list of vertices
+      VertexBinding< MergeVertex > vertBind;
+      vertBind.init( srcMesh->getFormat() );
+      for (UintSize v=0; v<srcMesh->getVertexCount(); ++v)
+      {
+        //Init vertex by copying all the data
+        void *vertData = srcMesh->getVertex(v);
+        MergeVertex srcVert = vertBind( vertData  );
+        MergeVertex outVert = vertBind( out.mesh->addVertex( vertData ) );
+        
+        //Modify normal and coord by multiplying with the world transform
+        if (srcVert.coord == NULL || outVert.coord == NULL) continue;
+        if (srcVert.normal == NULL || outVert.normal == NULL) continue;
+        *outVert.coord = worldMat.transformPoint( *srcVert.coord );
+        *outVert.normal = worldMat.transformVector( *srcVert.normal );
+      }
+
+      //Remove the actor from the scene
+      srcActor->setParent( NULL );
+    }
+
+    //Walk the list of output meshes
+    for (UintSize o=0; o<outputs.size(); ++o)
+    {
+      //Add output actors to the scene
+      MeshOutput &out = outputs[ o ];
+      scene->getRoot()->addChild( out.actor );
+
+      //Send mesh to GPU
+      out.mesh->sendToGpu();
+    }
+  }
+
   Scene3D* Kernel::loadSceneData (void *data)
   {
     //Deserialize actors
@@ -782,8 +920,19 @@ namespace GE
     //Cache resources loaded with the scene
     for (UintSize r=0; r<scene->resources.size(); ++r)
     {
+      //Store resource in cache
       Resource *res = scene->resources[ r ];
       cacheResource( res, res->getResourceName() );
+
+      //Send meshes to GPU
+      TriMesh *mesh = SafeCast( TriMesh, res );
+      if (mesh != NULL) mesh->sendToGpu();
+
+      Character *character = SafeCast( Character, res );
+      if (character != NULL) {
+        for (UintSize m=0; m<character->meshes.size(); ++m)
+          character->meshes[ m ]->sendToGpu();
+      }
     }
 
     //Assign resources / load missing
@@ -803,6 +952,8 @@ namespace GE
       Actor3D *actor = SafeCast( Actor3D, objects.at(o) );
       if (actor != NULL) actor->onResourcesLoaded();
     }
+
+    //mergeMeshes( scene );
 
     //Update the scene
     scene->updateChanges();

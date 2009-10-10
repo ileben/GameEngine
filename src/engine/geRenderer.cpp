@@ -160,12 +160,15 @@ namespace GE
     else key.matClass = material->getShaderComposingClass();
 
     Shader* shader = findShaderByKey( key );
-    if (shader != NULL) return shader;
+    if (shader != NULL) {
+      curShader = shader;
+      return shader;
+    }
 
     printf( "\n");
-    printf( "=================================\n");
+    printf( "=================================\n" );
     printf( "    Composing Geometry Shader    \n" );
-    printf( "=================================\n");
+    printf( "=================================\n" );
     printf( "Target: %s\n", target == RenderTarget::GBuffer ? "GBuffer" : "ShadowMap" );
     printf( "Geometry: %s\n", key.geomClass->getString() );
     printf( "Material: %s\n", key.matClass->getString() );
@@ -179,6 +182,7 @@ namespace GE
     key.shader = shader;
     shaders.pushBack( key );
 
+    curShader = shader;
     return shader;
   }
 
@@ -564,7 +568,7 @@ namespace GE
     glLoadMatrixf( (GLfloat*) lightView.m );
 
     //Render scene
-    traverseSceneNoMats( scene );
+    traverseScene( scene, RenderTarget::ShadowMap );
 
     //Restore state
     glDisable( GL_POLYGON_OFFSET_FILL );
@@ -685,7 +689,7 @@ namespace GE
     glEnable( GL_DEPTH_TEST );
     glDisable( GL_BLEND );
 
-    traverseSceneWithMats( scene );
+    traverseScene( scene, RenderTarget::GBuffer );
 
     //Ambient light pass
     shaderAmbient->use();
@@ -1310,7 +1314,7 @@ namespace GE
     }
 
     //Render geometry with materials
-    traverseSceneWithMats( scene );
+    traverseScene( scene, RenderTarget::GBuffer );
 
     //Disable lights
     for (UintSize l=0; l<scene->getLights()->size(); ++l)
@@ -1326,100 +1330,155 @@ namespace GE
   shading programs) might not be desired.
   ------------------------------------------------------*/
 
-  void Renderer::traverseSceneNoMats (Scene3D *scene)
+  class Frustum
   {
-    for (UintSize t=0; t<scene->getTraversal()->size(); ++t)
+  public:
+
+    enum Result
     {
-      TravNode node = scene->getTraversal()->at( t );
-      switch (node.event)
-      {
-      case TravEvent::Begin:
-        
-        if (!node.actor->isRenderable())
-          continue;
+      Outside,
+      Inside
+    };
 
-        node.actor->begin();
+    enum PlaneIndex
+    {
+      Left   = 0,
+      Right  = 1,
+      Bottom = 2,
+      Top    = 3,
+      Near   = 4,
+      Far    = 5
+    };
 
-        curMaterial = NULL;
-        curShader = getShader( RenderTarget::ShadowMap, node.actor, curMaterial );
-        curShader->use();
+    Vector4 planes[6];
 
-        node.actor->render( GE_ANY_MATERIAL_ID );
-
-        curShader = NULL;
-        glUseProgram(0);
-
-        break;
-      case TravEvent::End:
-
-        if (!node.actor->isRenderable())
-          continue;
-
-        node.actor->end();
-        break;
-      }
+    Result testPoint (const Vector3 &p, int pl) const
+    {
+      if (p.x  * planes[pl].x +
+          p.y  * planes[pl].y +
+          p.z  * planes[pl].z +
+          1.0f * planes[pl].w > 0.0f)
+        return Inside;
+      else return Outside;
     }
+
+    Result testPoint (const Vector3 &p) const
+    {
+      for (int pl = 0; pl < 6; ++pl)
+        if (testPoint( p, pl ) == Outside)
+          return Outside;
+
+      return Inside;
+    }
+  };
+
+  void getFrustum (Camera3D *cam, int w, int h, Frustum &outFrustum)
+  {
+    Matrix4x4 proj = cam->getProjection( w,h );
+    Matrix4x4 modelview = cam->getGlobalMatrix().affineNormalize().affineInverse();
+    Matrix4x4 m = proj * modelview;
+
+    outFrustum.planes[ Frustum::Left ]   = m.getRow(3) + m.getRow(0);
+    outFrustum.planes[ Frustum::Right ]  = m.getRow(3) - m.getRow(0);
+    outFrustum.planes[ Frustum::Bottom ] = m.getRow(3) + m.getRow(1);
+    outFrustum.planes[ Frustum::Top ]    = m.getRow(3) - m.getRow(1);
+    outFrustum.planes[ Frustum::Near ]   = m.getRow(3) + m.getRow(2);
+    outFrustum.planes[ Frustum::Far ]    = m.getRow(3) - m.getRow(2);
   }
 
-  void Renderer::traverseSceneWithMats (Scene3D *scene)
+  bool outsideFrustum (const Frustum &frustum, Vector3 box[8])
   {
+    //Test against frustum
+    for (int p=0; p<6; ++p) {
+
+      int outCount = 0;
+
+      //Test how many points is outside
+      for (int b=0; b<8; ++b)
+        if (frustum.testPoint( box[ b ], p ) == Frustum::Outside)
+          outCount++;
+
+      //The box is out if all points are outside one of the planes
+      if (outCount == 8)
+        return true;
+    }
+
+    return false;
+  }
+
+  void Renderer::traverseScene (Scene3D *scene, RenderTarget::Enum target)
+  {
+    //Camera center in world coordinates
+    Matrix4x4 camMat = camera->getGlobalMatrix();
+    Vector3 eye = camMat.getColumn(3).xyz();
+
+    //Camera frustum
+    Frustum frustum;
+    getFrustum( (Camera3D*) camera, viewW, viewH, frustum );
+
+    //Traverse the scene
     for (UintSize t=0; t<scene->getTraversal()->size(); ++t)
     {
       TravNode node = scene->getTraversal()->at( t );
       if (node.event == TravEvent::Begin)
       {
+        //Push matrix on the stack
+        glMatrixMode( GL_MODELVIEW );
+        glPushMatrix();
+        glMultMatrixf( (GLfloat*) node.actor->getMatrix().m );
+
         //Skip if disabled for rendering
         if (!node.actor->isRenderable())
           continue;
 
-        node.actor->begin();
+        //Skip if targeting shadow map and not casting shadows
+        if (target == RenderTarget::ShadowMap)
+          if (node.actor->getCastShadow() == false)
+            continue;
 
-        //Find the type of material
-        Material *mat = node.actor->getMaterial();
-        if (mat == NULL) {
-          
-          //Compose shader
-          curMaterial = NULL;
-          curShader = getShader( RenderTarget::GBuffer, node.actor, curMaterial );
-          curShader->use();
-
-          //Use default material if none
-          Material::BeginDefault();
-          node.actor->render( GE_ANY_MATERIAL_ID );
-          
-        }else if (ClassOf(mat) == Class(MultiMaterial)) {
-          
-          //Iterate through the sub materials
-          MultiMaterial *mmat = (MultiMaterial*) mat;
-          for (UintSize s=0; s<mmat->getNumSubMaterials(); ++s)
-          {
-            //Compose shader
-            curMaterial = mmat->getSubMaterial((MaterialID)s);
-            curShader = getShader( RenderTarget::GBuffer, node.actor, curMaterial );
-            curShader->use();
-
-            //Render with each sub-material
-            mmat->selectSubMaterial( (MaterialID)s );
-            mmat->begin();
-            node.actor->render( (MaterialID)s );
-            mmat->end();
-          }
         
-        }else{
+        BoundingBox bbox = node.actor->getBoundingBox();
+        Matrix4x4 worldMat = node.actor->getGlobalMatrix();
+        /*
+        Vector3 min = worldMat * bbox.min;
+        Vector3 max = worldMat * bbox.max;
+        Vector3 bboxPoints[8] = {
+          Vector3( min.x, min.y, min.z ),
+          Vector3( min.x, min.y, max.z ),
+          Vector3( min.x, max.y, min.z ),
+          Vector3( min.x, max.y, max.z ),
+          Vector3( max.x, min.y, min.z ),
+          Vector3( max.x, min.y, max.z ),
+          Vector3( max.x, max.y, min.z ),
+          Vector3( max.x, max.y, max.z )
+        };
 
-          //Compose shader
-          curMaterial = mat;
-          curShader = getShader( RenderTarget::GBuffer, node.actor, curMaterial );
-          curShader->use();
+        if (outsideFrustum( frustum, bboxPoints ))
+          continue;
+        */
 
-          //Render with given material
-          mat->begin();
-          node.actor->render( GE_ANY_MATERIAL_ID );
-          mat->end();
+        //Maximum draw distance
+        Float maxDist = node.actor->getMaxDrawDistance();
+        if (maxDist >= 0.0f)
+        {
+          //Center of the bounding box in world coordinates
+          bbox.center = worldMat * bbox.center;
+
+          //Check distance to camera
+          Float dist = (bbox.center - eye).norm();
+          if (dist > maxDist) continue;
         }
+
+        //Render geometry
+        node.actor->begin();
+        node.actor->render( target );
       }
       else if (node.event == TravEvent::End)
       {
+        //Pop matrix off the stack
+        glMatrixMode( GL_MODELVIEW );
+        glPopMatrix();
+
         //Skip if disabled for rendering
         if (!node.actor->isRenderable())
           continue;

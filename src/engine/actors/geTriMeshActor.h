@@ -34,8 +34,15 @@ namespace GE
     MeshRef mesh;
     ArrayList<Int32> attributeIDs;
     
-    void beginVertexData (Shader *shader, VertexFormat *format, void *data);
-    void endVertexData (Shader *shader, VertexFormat *format);
+    virtual void bindBuffers();
+    virtual void bindFormat (Shader *shader, VertexFormat *format);
+    virtual void renderGroup (const TriMesh::IndexGroup &grp);
+    virtual void unbindFormat (Shader *shader, VertexFormat *format);
+    virtual void unbindBuffers();
+
+    void renderSingleMat ();
+    void renderMultiMat ();
+    void renderShadow ();
     
   public:
     virtual ClassPtr getShaderComposingClass() { return Class(TriMeshActor); }
@@ -48,8 +55,9 @@ namespace GE
     void setMesh (TriMesh *mesh);
     void setMesh (const CharString &name);
     TriMesh* getMesh();
-    
-    virtual void render (MaterialID materialID);
+
+    virtual BoundingBox getBoundingBox();
+    virtual void render (RenderTarget::Enum target);
   };
 
 

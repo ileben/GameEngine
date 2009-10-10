@@ -82,7 +82,7 @@ namespace GE
     bool status = shader->compile( source );
 
     if (status)
-      printf( "%s shader compiledd.\n",
+      printf( "%s shader compiled.\n",
         target == ShaderType::Vertex ? "Vertex" : "Fragment" );
     else
       printf( "Failed compiling %s shader!",
@@ -107,7 +107,7 @@ namespace GE
     bool status = program->link();
 
     if (status)
-      printf ("Shading program linkedd.\n");
+      printf ("Shading program linked.\n");
     else printf ("Failed linking shading program!\n");
 
     CharString infoLog = program->getInfoLog ();

@@ -30,9 +30,9 @@ namespace GE
   
   =========================================================*/
   
-  typedef Uint8 MaterialID;
-  #define GE_MAX_MATERIAL_ID 254
-  #define GE_ANY_MATERIAL_ID 255
+  typedef Uint32 MaterialID;
+  #define GE_MAX_MATERIAL_ID 59999
+  #define GE_ANY_MATERIAL_ID 60000
   
   /*
   ============================================

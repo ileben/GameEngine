@@ -16,12 +16,30 @@ namespace GE
   {
     material = NULL;
     renderable = true;
+    castShadow = true;
+    maxDrawDistance = -1.0f;
   }
 
   Actor3D::~Actor3D ()
   {
     if (material != NULL)
       material->dereference();
+  }
+
+  void Actor3D::setMaxDrawDistance (Float d) {
+    maxDrawDistance = d;
+  }
+
+  Float Actor3D::getMaxDrawDistance () {
+    return maxDrawDistance;
+  }
+
+  void Actor3D::setCastShadow (bool cast) {
+    castShadow = cast;
+  }
+
+  bool Actor3D::getCastShadow () {
+    return castShadow;
   }
   
   void Actor3D::onMatrixChanged ()
@@ -121,19 +139,6 @@ namespace GE
   bool Actor3D::isRenderable ()
   {
     return renderable;
-  }
-
-  void Actor3D::begin ()
-  {
-    glMatrixMode( GL_MODELVIEW );
-    glPushMatrix();
-    glMultMatrixf( (GLfloat*) getMatrix().m );
-  }
-  
-  void Actor3D::end ()
-  {
-    glMatrixMode( GL_MODELVIEW );
-    glPopMatrix();
   }
 
 }//namespace GE

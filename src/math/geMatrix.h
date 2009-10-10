@@ -200,6 +200,7 @@ namespace GE
               Float m03, Float m13, Float m23, Float m33);
     
     Vector4 getColumn (int col) const;
+    Vector4 getRow (int row) const;
     void setColumn (int col, const Vector4 &v);
     void setColumn (int col, const Vector3 &v);
     void setRow (int row, const Vector4 &v);

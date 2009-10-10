@@ -39,6 +39,12 @@ namespace GE
     return mesh;
   }
 
+  BoundingBox TriMeshActor::getBoundingBox()
+  {
+    if (mesh == NULL) return BoundingBox();
+    return mesh->getBoundingBox();
+  }
+
   void TriMeshActor::composeShader( Shader *shader )
   {
     if (mesh == NULL) return;
@@ -62,8 +68,13 @@ namespace GE
     }
   }
 
-  void TriMeshActor::beginVertexData (Shader *shader, VertexFormat *format, void *data)
+  void TriMeshActor::bindFormat (Shader *shader, VertexFormat *format)
   {
+    //Get data pointer
+    void *data = NULL;
+    if (!mesh->isOnGpu)
+      data = mesh->data.buffer();
+    
     //Walk the vertx data members
     for (UintSize m=0; m<format->getMembers()->size(); ++m)
     {
@@ -101,7 +112,8 @@ namespace GE
         break;
       case ShaderData::Attribute:
         if (shader == NULL) break;
-        Int32 glattrib = shader->getVertexAttribID( attributeIDs[ m ] );
+        //Int32 glattrib = shader->getVertexAttribID( attributeIDs[ m ] );
+        Int32 glattrib = shader->getVertexAttribID( member.attribName );
         if (glattrib == -1) break;
         glVertexAttribPointer( glattrib, member.unit.count, gltype, glnormalize, (GLsizei) stride, memberData );
         glEnableVertexAttribArray( glattrib );
@@ -110,7 +122,7 @@ namespace GE
     }
   }
 
-  void TriMeshActor::endVertexData (Shader *shader, VertexFormat *format)
+  void TriMeshActor::unbindFormat (Shader *shader, VertexFormat *format)
   {
     for (UintSize m=0; m<format->getMembers()->size(); ++m)
     {
@@ -128,57 +140,151 @@ namespace GE
         break;
       case ShaderData::Attribute:
         if (shader == NULL) break;
-        Int32 glattrib = shader->getVertexAttribID( attributeIDs[ m ] );
+        //Int32 glattrib = shader->getVertexAttribID( attributeIDs[ m ] );
+        Int32 glattrib = shader->getVertexAttribID( member.attribName );
         if (glattrib == -1) break;
         glDisableVertexAttribArray( glattrib );
         break;
       }
     }
   }
-  
-  void TriMeshActor::render (MaterialID materialID)
+
+  void TriMeshActor::bindBuffers()
   {
-    //Make sure there's something to render
-    if (mesh == NULL) return;
-    VertexFormat *format = const_cast<VertexFormat*>( mesh->getFormat() );
-    Shader *shader = Kernel::GetInstance()->getRenderer()->getCurrentShader();
+    if (mesh->isOnGpu)
+    {
+      //Render using on-GPU arrays
+      glBindBuffer( GL_ARRAY_BUFFER, mesh->dataVBO );
+      glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, mesh->indexVBO );
+    }
+  }
+
+  void TriMeshActor::unbindBuffers()
+  {
+    if (mesh->isOnGpu)
+    {
+      //Restore arrays
+      glBindBuffer( GL_ARRAY_BUFFER, 0 );
+      glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );
+    }
+  }
+
+  void TriMeshActor::renderGroup (const TriMesh::IndexGroup &grp)
+  {
+    //Pass the geometry to OpenGL
+    if (mesh->isOnGpu) {
+
+      //Render using on-GPU indices
+      glDrawElements( GL_TRIANGLES, grp.count, GL_UNSIGNED_INT,
+                      Util::PtrOff( 0, grp.start * sizeof(VertexID)) );
+    }else{
+
+      //Render using off-GPU indices
+      glDrawElements( GL_TRIANGLES, grp.count, GL_UNSIGNED_INT,
+                      mesh->indices.buffer() + grp.start);
+    }
+  }
+
+  void TriMeshActor::renderShadow ()
+  {
+    VertexFormat *format = (VertexFormat*) mesh->getFormat();
+    Renderer *renderer = Kernel::GetInstance()->getRenderer();
+    Shader *shader = renderer->getShader( RenderTarget::ShadowMap, this, NULL );
+
+    shader->use();
+    bindBuffers();
+    bindFormat( shader, format );
 
     //Walk material index groups
     for (UintSize g=0; g<mesh->groups.size(); ++g)
     {
-      //Check if the material id matches
+      //Render current group
       TriMesh::IndexGroup &grp = mesh->groups[ g ];
-      if (materialID != grp.materialID &&
-          materialID != GE_ANY_MATERIAL_ID)
-        continue;
+      renderGroup( grp );
+    }
+
+    Material::EndDefault();
+    unbindFormat( shader, format );
+    unbindBuffers();
+  }
+
+  void TriMeshActor::renderSingleMat ()
+  {
+    Material *material = getMaterial();
+    VertexFormat *format = (VertexFormat*) mesh->getFormat();
+    Renderer *renderer = Kernel::GetInstance()->getRenderer();
+    Shader *shader = renderer->getShader( RenderTarget::GBuffer, this, material );
+
+    shader->use();
+    bindBuffers();
+    bindFormat( shader, format );
+    material->begin();
+
+    //Walk material index groups
+    for (UintSize g=0; g<mesh->groups.size(); ++g)
+    {
+      //Render current group
+      TriMesh::IndexGroup &grp = mesh->groups[ g ];
+      renderGroup( grp );
+    }
+
+    material->end();
+    unbindFormat( shader, format );
+    unbindBuffers();
+  }
+
+  void TriMeshActor::renderMultiMat ()
+  {
+    Material *material = getMaterial();
+    VertexFormat *format = (VertexFormat*) mesh->getFormat();
+    MultiMaterial *multiMat = (MultiMaterial*) material;
+    Renderer *renderer = Kernel::GetInstance()->getRenderer();
+    Shader *shader = NULL;
+
+    bindBuffers();
+
+    //Walk material index groups
+    for (UintSize g=0; g<mesh->groups.size(); ++g)
+    {
+      //Get sub-material of this group
+      TriMesh::IndexGroup &grp = mesh->groups[ g ];
+      Material *subMat = multiMat->getSubMaterial( grp.materialID );
+      if (subMat == NULL) continue;
+
+      //Find shader for this material
+      Shader *subShader = renderer->getShader( RenderTarget::GBuffer, this, subMat );
+      if (subShader != shader)
+      {
+        //If different, resend format data
+        shader = subShader;
+        shader->use();
+        bindFormat( shader, format );
+      }
       
-      //Pass the geometry to OpenGL
+      //Render current group
+      subMat->begin();
+      renderGroup( grp );
+      subMat->end();
+    }
+    
+    unbindFormat( shader, format );
+    unbindBuffers();
+  }
 
-      if (mesh->isOnGpu)
-      {
-        GE_glBindBuffer( GL_ARRAY_BUFFER, mesh->dataVBO );
-        GE_glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, mesh->indexVBO );
-        beginVertexData( shader, format, NULL );
-        glDrawElements( GL_TRIANGLES, grp.count, GL_UNSIGNED_INT,
-                        Util::PtrOff( 0, grp.start * sizeof(VertexID)) );
-      }
-      else
-      {
-        beginVertexData( shader, format, mesh->data.buffer() );
-        glDrawElements( GL_TRIANGLES, grp.count, GL_UNSIGNED_INT,
-                        mesh->indices.buffer() + grp.start);
-      }
-
-      endVertexData( shader, format );
-
-      if (mesh->isOnGpu)
-      {
-        glBindBuffer( GL_ARRAY_BUFFER, 0 );
-        glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );
-      }
-
-      if (materialID != GE_ANY_MATERIAL_ID)
-        break;
+  void TriMeshActor::render (RenderTarget::Enum target)
+  {
+    Material *material = getMaterial();
+    if (mesh == NULL) return;
+    if (material == NULL) return;
+    if (target == RenderTarget::ShadowMap)
+    {
+      renderShadow();
+    }
+    else if (target == RenderTarget::GBuffer)
+    {
+      MultiMaterial *multiMat = SafeCast( MultiMaterial, material );
+      if (multiMat == NULL) renderSingleMat();
+      else renderMultiMat();
     }
   }
 

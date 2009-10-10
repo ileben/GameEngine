@@ -147,6 +147,11 @@ namespace GE
                     m[col][2],
                     m[col][3]);
   }
+
+  Vector4 Matrix4x4::getRow (int row) const
+  {
+    return Vector4( m[1][row], m[2][row], m[3][row], m[4][row] );
+  }
   
   void Matrix4x4::setColumn (int col, const Vector4 &v)
   {
