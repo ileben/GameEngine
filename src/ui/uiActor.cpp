@@ -21,9 +21,17 @@ namespace GE
     scene = NULL;
   }
 
-  Actor::Actor (SM *sm) : children (sm)
+  Actor::Actor (SM *sm) : children (sm), name (sm)
   {
     valid = true;
+  }
+
+  void Actor::setName (const CharString &n) {
+    name = n;
+  }
+
+  const CharString& Actor::getName () {
+    return name;
   }
 
   void Actor::destroy()
@@ -321,5 +329,15 @@ namespace GE
       Actor* a = (Actor*) SafeCastPtr( cls, traversal[t] );
       if (a != NULL) outActors.pushBack( a );
     }
+  }
+
+  Actor* Scene::findFirstActorByName (const CharString &name)
+  {
+    for (UintSize t=0; t<traversal.size(); ++t) {
+      if (traversal[ t ]->getName() == name)
+        return traversal[ t ];
+    }
+
+    return NULL;
   }
 }

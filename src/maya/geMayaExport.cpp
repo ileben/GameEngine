@@ -207,22 +207,28 @@ Material* exportShader (const MObject &shader, bool *hasNormalMap)
   //Find the "surfaceShader" plug on this node
   MFnDependencyNode shaderDepNode( shader );
   MPlug surfShaderPlug = shaderDepNode.findPlug( "surfaceShader", &status );
-  if (status != MStatus::kSuccess)
+  if (status != MStatus::kSuccess) {
+    trace( "Could not find 'surfaceShader' plug on shader node!" );
     return NULL;
+  }
 
   //Get all the surface shaders connected to this plug as destination
   MPlugArray surfShaderSrcPlugs;
   surfShaderPlug.connectedTo( surfShaderSrcPlugs, true, false );
-  if (surfShaderSrcPlugs.length() == 0)
+  if (surfShaderSrcPlugs.length() == 0) {
+    trace( "No surface shaders connected to shader node!" );
     return NULL;
+  }
 
   //Take the first one
   MObject surfShader = surfShaderSrcPlugs[0].node();
   MFnDependencyNode surfShaderDepNode( surfShader );
 
   //Only Lambert shading models supported
-  if (! surfShader.hasFn( MFn::kLambert ))
+  if (! surfShader.hasFn( MFn::kLambert )) {
+    trace( "Surface shader is not of Lambert  type (unsupported)!" );
     return NULL;
+  }
 
   //Find the "color" plug on the surface shader
   MPlug colorPlug = surfShaderDepNode.findPlug( "color", &status );
@@ -311,19 +317,27 @@ Material* exportMaterial (const MDagPath &nodePath, bool *hasNormalMap)
     mm->setNumSubMaterials( meshShaders.length() );
     outMaterial = mm;
 
-    //Export each sub-material
-    for (Uint s=0; s<meshShaders.length(); ++s) {
+    //Walk the list of connected shaders
+    for (Uint s=0; s<meshShaders.length(); ++s)
+    {
+      //Export each sub-material
       Material *mat = exportShader( meshShaders[ s ], &normalMap );
-      ((StandardMaterial*)mat)->setCullBack( !twoSided );
+      if (mat == NULL) mat = new StandardMaterial();
       mm->setSubMaterial( s, mat );
+      
+      //Set additional attributes
+      ((StandardMaterial*)mat)->setCullBack( !twoSided );
     }
   }
   else
   {
     //Export single material
     Material *mat = exportShader( meshShaders[ 0 ], &normalMap );
-    ((StandardMaterial*)mat)->setCullBack( !twoSided );
+    if (mat == NULL) mat = new StandardMaterial();
     outMaterial = mat;
+
+    //Set additional attributes
+    ((StandardMaterial*)mat)->setCullBack( !twoSided );
   }
 
   //Return info on normal map

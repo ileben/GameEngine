@@ -171,7 +171,7 @@ namespace GE
   Matrix4x4 Camera3D::getProjection (int w, int h)
   {
     Matrix4x4 m;
-    m.setPerspectiveFovLH( fov, (Float)w/h, nearClip, farClip );
+    m.setPerspectiveFovLH( Util::DegToRad( fov ), (Float)w/h, nearClip, farClip );
     return m;
   }
 

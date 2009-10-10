@@ -86,6 +86,7 @@ namespace GE
   {
     friend class Scene;
     DECLARE_SERIAL_SUBCLASS( Actor, Object );
+    DECLARE_OBJVAR( name );
     DECLARE_OBJREF( scene );
     DECLARE_OBJREF( parent );
     DECLARE_OBJVAR( children );
@@ -96,6 +97,7 @@ namespace GE
     bool valid;
     Scene *scene;
     Actor *parent;
+    CharString name;
 
   protected:
     Vector2 loc;
@@ -110,6 +112,9 @@ namespace GE
 
     void destroy ();
     bool isValid () { return valid; }
+
+    void setName (const CharString &name);
+    const CharString& getName ();
 
     //Location
     Matrix4x4& getMatrix() { return mat; }
@@ -182,6 +187,8 @@ namespace GE
     
     Actor* findFirstActorByClass (ClassPtr cls);
     void findActorsByClass (ClassPtr cls, ArrayList< Actor* > &outActors);
+
+    Actor* findFirstActorByName (const CharString &name);
   };
 
   /*

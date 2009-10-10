@@ -24,6 +24,7 @@ namespace GE
     jointRotations = NULL;
     jointTranslations = NULL;
     jointChange = false;
+    numJoints = 0;
   }
 
   SkinMeshActor::SkinMeshActor(SM *sm)
@@ -34,6 +35,7 @@ namespace GE
     jointRotations = NULL;
     jointTranslations = NULL;
     jointChange = false;
+    numJoints = 0;
   }
 
   void SkinMeshActor::onResourcesLoaded()
@@ -61,6 +63,30 @@ namespace GE
     freeAnimData();
     initAnimData();
     loadPose();
+
+    //Init BBox by first mesh
+    if (!c->meshes.empty())
+      charBBox = c->meshes.first()->getBoundingBox();
+
+    //Merge with the rest of the meshes
+    for (UintSize m=1; m<c->meshes.size(); ++m)
+    {
+      BoundingBox bbox = c->meshes[m]->getBoundingBox();
+      
+      if (bbox.min.x < charBBox.min.x) charBBox.min.x = bbox.min.x;
+      if (bbox.min.y < charBBox.min.y) charBBox.min.y = bbox.min.y;
+      if (bbox.min.z < charBBox.min.z) charBBox.min.z = bbox.min.z;
+
+      if (bbox.max.x > charBBox.max.x) charBBox.max.x = bbox.max.x;
+      if (bbox.max.y > charBBox.max.y) charBBox.max.y = bbox.max.y;
+      if (bbox.max.z > charBBox.max.z) charBBox.max.z = bbox.max.z;
+
+      charBBox.center += bbox.center;
+    }
+
+    //Average center
+    if (c->meshes.size() > 0)
+      charBBox.center /= c->meshes.size();
   }
 
   Character* SkinMeshActor::getCharacter()
@@ -89,8 +115,9 @@ namespace GE
     */
 
     //Init joint rotations and translations
-    jointRotations = new Quat[ character->pose->joints.size() ];
-    jointTranslations = new Vector3[ character->pose->joints.size() ];
+    numJoints = character->pose->joints.size();
+    jointRotations = new Quat[ numJoints ];
+    jointTranslations = new Vector3[ numJoints ];
   }
 
   void SkinMeshActor::freeAnimData()
@@ -376,6 +403,26 @@ namespace GE
       this->mesh = curSubMesh;
       TriMeshActor::render( target );
     }
+  }
+
+  BoundingBox SkinMeshActor::getBoundingBox()
+  {
+    Matrix4x4 rootWorld;
+
+    //Find root joint world matrix
+    if (character != NULL && numJoints > 0) {
+      rootWorld.fromQuat( jointRotations[0] );
+      rootWorld.setColumn( 3, jointTranslations[0].xyz(1.0f) );
+      rootWorld *= character->pose->joints.first().localS;
+    }
+
+    //Transform by root joint matrix
+    BoundingBox outBBox = charBBox;
+    outBBox.center = rootWorld * outBBox.center;
+    outBBox.min    = rootWorld * outBBox.min;
+    outBBox.max    = rootWorld * outBBox.max;
+
+    return outBBox;
   }
 
 }//namespace GE

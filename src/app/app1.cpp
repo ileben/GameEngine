@@ -24,6 +24,9 @@ AnimController *animStandUp = NULL;
 AnimController *animBossGreet = NULL;
 AnimController *animSwitchSpeaker = NULL;
 
+Actor3D *actMug = NULL;
+Actor3D *actNews = NULL;
+
 
 void nextConvo ()
 {
@@ -60,6 +63,30 @@ void animate()
 {
   if (convoCur != NULL)
     convoCur->tick();
+
+  Matrix4x4 mugWorld = actMug->getGlobalMatrix();
+  BoundingBox mugBBox = actMug->getBoundingBox();
+  Vector3 mugCenter= mugWorld * mugBBox.center;
+  
+  Matrix4x4 camWorld = camHouse->getGlobalMatrix().affineNormalize();
+  Vector3 camEye = camWorld.getColumn( 3 ).xyz();
+  Vector3 camLook = camWorld.getColumn( 2 ).xyz();
+  
+  Vector3 eyeToMug = (mugCenter - camEye);
+  Float dist = eyeToMug.norm();
+  eyeToMug /= dist;
+
+  Float cosMugAngle = Util::Max( Vector::Dot( eyeToMug, camLook ), 0.0f );
+  Float cosViewAngle = COS( Util::DegToRad( camHouse->getFov() * 0.5f * 1.33f ));
+  Float dofCoeff = Util::Min( (1.0f - cosMugAngle) / (1.0f - cosViewAngle), 1.0f );
+  dofCoeff = 1.0f - dofCoeff;
+
+  DofParams dof = camHouse->getDofParams();
+  dof.focusCenter = dist;
+  dof.focusRange = dofCoeff * 100;
+  dof.falloffFar = dofCoeff * 100;
+  dof.falloffNear = dofCoeff * 100;
+  camHouse->setDofParams( dof );
 }
 
 bool bindAnimByName (Scene3D *scene, AnimController *ctrl, const CharString &name)
@@ -189,6 +216,10 @@ int main (int argc, char **argv)
   //Find first camera in the scene
   camHouse = (Camera3D*) sceneHouse->findFirstActorByClass( Class(Camera3D) );
   camHouseCtrl = appCamCtrl( camHouse );
+
+  //Find important actors in the scene
+  actMug = (Actor3D*) sceneHouse->findFirstActorByName( "Mug" );
+  actNews = (Actor3D*) sceneHouse->findFirstActorByName( "Newspaper" );
   
   /////////////////////////////////////////////////
   //Setup 2D overlay

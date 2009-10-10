@@ -30,7 +30,9 @@ namespace GE
     DECLARE_END;
 
   private:
+    BoundingBox charBBox;
     CharacterRef character;
+    UintSize numJoints;
     Vector3 *skinVertices;
     Vector3 *skinNormals;
     Vector3 *jointTranslations;
@@ -77,6 +79,8 @@ namespace GE
     void loadAnimation (const CharString &name);
     AnimController *getAnimController () { return &animCtrl; }
     void tick ();
+
+    virtual BoundingBox getBoundingBox();
   };
 
 

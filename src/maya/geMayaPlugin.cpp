@@ -751,6 +751,16 @@ public:
       //Check if exported correctly
       if (outActor != NULL)
       {
+        //Find the name attribute
+        MPlug plugName = transform.findPlug( "GameName", false, &status);
+        if (status == MStatus::kSuccess)
+        {
+          //Set name
+          MString gameName;
+          plugName.getValue( gameName );
+          outActor->setName( gameName.asChar() );
+        }
+
         //Find the draw distance attribute
         MPlug plugDist = transform.findPlug( "GameMaxDistance", false, &status );
         if (status == MStatus::kSuccess)
