@@ -25,6 +25,8 @@ void appSwitchCamera (Camera3D *cam);
 void appSwitchScene (Scene3D *scene);
 AnimController* appPlayAnim (const CharString &name);
 AnimController* appGetAnim (const CharString &name);
+void appFinishAnim (const CharString &name);
+void appStopAnim (const CharString &name);
 BoundingBox appProjectActor (Actor3D *actor, Camera *camera,
                              Float viewX, Float viewY, Float viewW, Float viewH);
 

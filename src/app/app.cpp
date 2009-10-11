@@ -69,6 +69,27 @@ AnimController* appPlayAnim (const CharString &name)
   return ctrl;
 }
 
+void appStopAnim (const CharString &name)
+{
+  AnimController *ctrl = appGetAnim( name );
+  AnimIter it = animQueue.iteratorOf( ctrl );
+  if (it == animQueue.end()) return;
+  
+  ctrl->pause();
+  animQueue.removeAt( it );
+}
+
+void appFinishAnim (const CharString &name)
+{
+  AnimController *ctrl = appGetAnim( name );
+  AnimIter it = animQueue.iteratorOf( ctrl );
+  if (it == animQueue.end()) return;
+
+  ctrl->pause();
+  ctrl->observeAt( ctrl->getDuration() );
+  animQueue.removeAt( it );
+}
+
 AnimController* appGetAnim (const CharString &name)
 {
   AnimMapIter i = anims.find( name );
@@ -217,10 +238,16 @@ GLUT events
 static void mouseClick (int button, int state, int x, int y)
 {
   if (button == GLUT_LEFT_BUTTON) {
+
+    //Send left clicks to UI
     uiCtrl->mouseClick( button, state, x, y );
     actorMouseClick( (Float) x, (Float) y );
-  }else
-    camCtrl->mouseClick( button, state, x, y );
+  }else{
+
+    //Send right clicks to camera
+    if (camCtrl->getAttachedCamera() == camRender)
+      camCtrl->mouseClick( button, state, x, y );
+  }
 
   //if (state == GLUT_DOWN) {
   //  Vector2 winSize = renderer->getWindowSize();
@@ -231,15 +258,19 @@ static void mouseClick (int button, int state, int x, int y)
 static void mouseMove (int x, int y)
 {
   uiCtrl->mouseMove( x, y );
-  camCtrl->mouseMove( x, y );
   actorMouseMove( (Float) x, (Float) y );
+
+  if (camCtrl->getAttachedCamera() == camRender)
+    camCtrl->mouseMove( x, y );
+
   //Vector2 winSize = renderer->getWindowSize();
   //actorMouseMove( winSize.x * 0.5f, winSize.y * 0.5f );
 }
 
 static void keyDown (unsigned char key, int x, int y)
 {
-  camCtrl->keyDown( key );
+  if (camCtrl->getAttachedCamera() == camRender)
+    camCtrl->keyDown( key );
 
   switch (key)
   {
@@ -303,7 +334,8 @@ static void specialKey (int key, int x, int y)
 
 static void keyUp (unsigned char key, int x, int y)
 {
-  camCtrl->keyUp( key );
+  if (camCtrl->getAttachedCamera() == camRender)
+    camCtrl->keyUp( key );
 }
 
 static void reshape (int w, int h)
@@ -440,6 +472,7 @@ FpsController* appCamCtrl (Camera3D *cam)
 void appSwitchCamera (Camera3D *cam)
 {
   camRender = cam;
+  camCtrl->resetState();
 }
 
 void appSwitchScene (Scene3D *scene)

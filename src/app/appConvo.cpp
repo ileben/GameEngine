@@ -22,15 +22,18 @@ void Convo::show()
   if (ClassOf( node ) == Class( ConvoSpeach ))
   {
     ConvoSpeach* speach = (ConvoSpeach*) node;
-    Vector2 winSize = Kernel::GetInstance()->getRenderer()->getWindowSize();
+    if (speach->text != "")
+    {
+      Vector2 winSize = Kernel::GetInstance()->getRenderer()->getWindowSize();
 
-    ConvoSpeachLabel *lbl = new ConvoSpeachLabel;
-    lbl->setText( speach->text );
-    lbl->setLoc( 10, winSize.y - 50 );
-    lbl->setColor( speach->speaker->color );
-    lbl->setParent( scene->getRoot() );
+      ConvoSpeachLabel *lbl = new ConvoSpeachLabel;
+      lbl->setText( speach->text );
+      lbl->setLoc( 10, winSize.y - 50 );
+      lbl->setColor( speach->speaker->color );
+      lbl->setParent( scene->getRoot() );
 
-    actor = lbl;
+      actor = lbl;
+    }
   }
   else if (ClassOf( node ) == Class( ConvoBranch ))
   {
@@ -61,8 +64,10 @@ void Convo::show()
 void Convo::hide()
 {
   //Destroy actor
-  if (actor != NULL)
+  if (actor != NULL) {
     actor->destroy();
+    actor = NULL;
+  }
 
   //Invoke end callback
   if (node != NULL)
@@ -82,11 +87,14 @@ void Convo::advance (ConvoNode *to)
 
 void Convo::begin()
 {
+  node = NULL;
   advance( next );
 }
 
 void Convo::end()
 {
+  if (node == NULL) return;
+
   node = NULL;
   hide();
 }

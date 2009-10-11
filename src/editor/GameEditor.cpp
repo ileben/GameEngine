@@ -262,14 +262,12 @@ void display ()
   
   //draw model
   renderer->beginDeferred();
-  renderer->setCamera( camRender );
-  renderer->renderSceneDeferred( sceneRender );
+  renderer->renderSceneDeferred( sceneRender, camRender );
   renderer->endDeferred();
   
   //Frames per second
   renderer->setViewport( 0,0,resX, resY );
-  renderer->setCamera( cam2D );
-  renderer->renderWindow( window );
+  renderer->renderWindow( window, cam2D );
   
   renderer->endFrame();
 }

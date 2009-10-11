@@ -105,7 +105,7 @@ namespace GE
       else if (ClassOf( track ) == Class( BoolAnimTrack ))
       {
         BoolAnimTrack *btrack = (BoolAnimTrack*) track;
-        camera->setDofEnabled( btrack->getValue() );
+        //camera->setDofEnabled( btrack->getValue() );
       }
     }
   };

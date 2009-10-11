@@ -36,6 +36,7 @@ namespace GE
     virtual void keyUp (unsigned char key) {}
     virtual void mouseClick (int button, int state, int x, int y) {}
     virtual void mouseMove (int x, int y) {};
+    virtual void resetState () {}
     virtual void tick () {};
   };
 
@@ -73,6 +74,7 @@ namespace GE
     virtual void keyUp (unsigned char key);
     virtual void mouseClick (int button, int state, int x, int y);
     virtual void mouseMove (int x, int y);
+    virtual void resetState ();
     virtual void tick ();
   };
 

@@ -57,6 +57,14 @@ namespace GE
     lookEnabled = enabled;
   }
 
+  void FpsController::resetState ()
+  {
+    moveDir = 0;
+    strafeDir = 0;
+    climbDir = 0;
+    mouseDown = false;
+  }
+
   void FpsController::keyDown (unsigned char key)
   {
     switch (key)

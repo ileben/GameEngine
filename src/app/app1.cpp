@@ -18,22 +18,22 @@ int convoIndex = -1;
 Convo* convoCur = NULL;
 ArrayList< Convo* > convos;
 
-Convo *convo1 = NULL;
+Convo *convoRing = NULL;
+Convo *convoAnswer = NULL;
 Convo *convo2 = NULL;
 Convo *convoMug = NULL;
 
-AnimController *animStandUp = NULL;
-AnimController *animBossGreet = NULL;
-AnimController *animSwitchSpeaker = NULL;
-
 Actor3D *actMug = NULL;
 Actor3D *actPaper = NULL;
+Actor3D *actPhone = NULL;
 
-bool mugConvoUp = false;
+bool stoodUp = false;
+bool answeredPhone = false;
 bool drankCoffee = false;
 bool pickedPaper = false;
 
-/*
+AnimController *animBright = NULL;
+
 class BBoxWidget : public Widget
 {
 public:
@@ -63,7 +63,7 @@ public:
     glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
   }
 };
-*/
+
 
 void nextConvo ()
 {
@@ -78,12 +78,32 @@ void nextConvo ()
   }
 }
 
+void beginConvo (Convo *convo)
+{
+  if (convoCur != NULL)
+    convoCur->end();
+
+  convoCur = convo;
+  convoCur->begin();
+}
+
 void keyDown (unsigned char key)
 {
   switch (key)
   {
   case 13: //return
 
+    if (convoCur == NULL)
+    {
+      beginConvo( convoRing );
+    }
+    else
+    {
+      if (!convoCur->done())
+        convoCur->skip();
+    }
+
+    /*
     if (convoCur == NULL)
       nextConvo();
     else
@@ -92,7 +112,7 @@ void keyDown (unsigned char key)
       if (convoCur->done())
         nextConvo();
     }
-    break;
+    break;*/
   }
 }
 
@@ -115,8 +135,10 @@ void animate()
     Float dist = eyeToMug.norm();
     eyeToMug /= dist;
 
+    Vector2 winSize = Kernel::GetInstance()->getRenderer()->getWindowSize();
+    Float camFovHoriz = camHouse->getFov() * 0.5f * winSize.x/winSize.y;
+    Float cosViewAngle = COS( Util::DegToRad( camFovHoriz ));
     Float cosMugAngle = Util::Max( Vector::Dot( eyeToMug, camLook ), 0.0f );
-    Float cosViewAngle = COS( Util::DegToRad( camHouse->getFov() * 0.5f * 1.33f ));
     Float dofCoeff = Util::Min( (1.0f - cosMugAngle) / (1.0f - cosViewAngle), 1.0f );
     dofCoeff = 1.0f - dofCoeff;
 
@@ -139,21 +161,49 @@ void onAnimDrinkCoffee (Convo *convo, ConvoNode *node)
 
 }
 
-void onAnimRingStart (Convo *convo, ConvoNode *node)
+void onAnimStandUp (Convo *convo, ConvoNode *node)
 {
+  if (stoodUp) return;
+
   appPlayAnim( "StandUp" );
+  camHouseCtrl->enableLook( false );
+}
+
+void onAnimStoodUp (Convo *convo, ConvoNode *node)
+{
+  if (stoodUp) return;
+  stoodUp = true;
+
+  camHouseCtrl->enableLook( true );
 }
 
 void onAnimBossGreet (Convo *convo, ConvoNode *node)
 {
   appSwitchScene( sceneOffice );
   appSwitchCamera( camOffice );
+ 
+  appFinishAnim( "StandUp" );
+  appPlayAnim( "CamLaptopSlide" )->setSpeed( 0.5f );
   appPlayAnim( "Greet" )->setNumLoops( 5 );
 }
 
 void onAnimSwitchSpeaker (Convo *convo, ConvoNode *node)
 {
+  appStopAnim( "Greet" );
   appPlayAnim( "SwitchSpeaker" );
+}
+
+void onAnimWalkToCabinet (Convo *convo, ConvoNode *node)
+{
+  appFinishAnim( "SwitchSpeaker" );
+  appPlayAnim( "WalkToCabinet" );
+}
+
+void onAnimShakeHead1 (Convo *convo, ConvoNode *node)
+{
+  appFinishAnim( "WalkToCabinet" );
+  appPlayAnim( "ShakeHead" );
+  appPlayAnim( "CamAboveCabinet" );
 }
 
 void onAnimLookEnable (Convo *convo, ConvoNode *node)
@@ -165,8 +215,7 @@ void onAnimLookEnable (Convo *convo, ConvoNode *node)
   camHouseCtrl->enableMove( true );
   camHouse->lookAt( camHouse->getLook() );
 
-  convo2->begin();
-  convoCur = convo2;
+  //beginConvo( convo2 );
 }
 
 void initConvo ()
@@ -184,13 +233,24 @@ void initConvo ()
   ConvoSpeaker *spkBoss = new ConvoSpeaker;
   spkBoss->color = Vector3( 1,0,0 );
 
-  //Setup convo
-  convo1 = new Convo;
-  convo1->bindScene( scene2D );
-  convos.pushBack( convo1 );
+  //Looping ring convo
+  convoRing = new Convo;
+  convoRing->bindScene( scene2D );
+  convos.pushBack( convoRing );
 
-  convo1
-    ->addSpeach( spkSound, 4.0f, "Rrrrrinnnng, Rrrrinnnnnnnnnnng!!!", onAnimRingStart )
+  ConvoSpeach *convoRingStart = convoRing
+    ->addSpeach( spkSound, 4.0f, "Rrrrrinnnng, Rrrrinnnnnnnnnnng!!!", onAnimStandUp, onAnimStoodUp );
+  
+  ConvoSpeach *convoRingEnd = convoRingStart
+    ->addSpeach( spkSound, 4.0f, "" );
+
+  convoRingEnd->next = convoRingStart;
+
+  //Intro boss convo
+  convoAnswer = new Convo;
+  convoAnswer->bindScene( scene2D );
+  convos.pushBack( convoAnswer );
+  convoAnswer
     ->addSpeach( spkKlyde, 2.0f, "...err....Hello?" )
     ->addSpeach( spkBoss,  2.0f, "Klyde! Klyde! I can't believe we missed it!", onAnimBossGreet )
     ->addSpeach( spkBoss,  2.0f, "Urgh! Where were you yesterday, for god's sake?!" )
@@ -198,15 +258,18 @@ void initConvo ()
     ->addSpeach( spkBoss,  2.0f, "Haven't you read their paper this morning?" )
     ->addSpeach( spkBoss,  1.0f, "Oh, you gotta be kidding me!" )
     ->addSpeach( spkBoss,  2.0f, "Our competitors are totally killing us this week!" )
-    ->addSpeach( spkBoss,  3.0f, "Hang on, I'll switch to speaker...", onAnimSwitchSpeaker, onAnimLookEnable );
+    ->addSpeach( spkBoss,  3.0f, "Hang on, I'll switch to speaker...", onAnimSwitchSpeaker, onAnimWalkToCabinet )
+    ->addSpeach( spkKlyde, 2.0f, "Umm... what are you talking about?" )
+    ->addSpeach( spkKlyde, 3.0f, "You know we're still number one newspaper in town..." )
+    ->addSpeach( spkBoss,  3.0f, "What’s wrong with you? Pull it together, man!", onAnimShakeHead1 )
+    ->addSpeach( spkBoss,  3.0f, "I want you to have a look at the newspaper right now!", NULL, onAnimLookEnable )
+    ->addSpeach( spkKlyde, 4.0f, "Oooookay… Gimme a second, should be at the front door..." );
 
+  //...
   convo2 = new Convo;
   convo2->bindScene( scene2D );
   convos.pushBack( convo2 );
 
-  convo2
-    ->addSpeach( spkKlyde, 2.0f, "Umm... what are you talking about?" )
-    ->addSpeach( spkKlyde, 3.0f, "You know we're still number one newspaper in town..." );
 
   convoMug = new Convo;
   convoMug->bindScene( scene2D );
@@ -223,17 +286,38 @@ public:
   }
 };
 
-void onEnterLeaveMug (ActorMouseEvent::Enum evt, Actor3D *actor)
+typedef void (*MaterialFunc) (Actor3D *actor, StandardMaterial *mat);
+
+void forEachMaterial (Actor3D *actor, MaterialFunc func)
 {
-  if (evt == ActorMouseEvent::Enter)
+  Material *mat = actor->getMaterial();
+  if (ClassOf( mat ) == Class( MultiMaterial ))
   {
-    printf( "ENTER!\n" );
-    ((StandardMaterial*)actor->getMaterial())->setLuminosity( 0.3f );
+    MultiMaterial *mm = (MultiMaterial*) mat;
+    for (UintSize m=0; m < mm->getNumSubMaterials(); ++m)
+    {
+      Material *submat = mm->getSubMaterial( (MaterialID) m );
+      func( actor, (StandardMaterial*) submat );
+    }
   }
-  else if (evt == ActorMouseEvent::Leave)
-  {
-    printf( "LEAVE!\n" );
-    ((StandardMaterial*)actor->getMaterial())->setLuminosity( 0.0f );
+  else func( actor, (StandardMaterial*) mat );
+}
+
+void highlight (Actor3D *actor, StandardMaterial *material) {
+  material->setLuminosity( 0.3f );
+}
+
+void unhighlight (Actor3D *actor, StandardMaterial *material) {
+  material->setLuminosity( 0.0f );
+}
+
+void onMouseHighlight (ActorMouseEvent::Enum evt, Actor3D *actor)
+{
+  if (evt == ActorMouseEvent::Enter) {
+    forEachMaterial( actor, highlight );
+  }
+  else if (evt == ActorMouseEvent::Leave) {
+    forEachMaterial( actor, unhighlight );
   }
 }
 
@@ -241,21 +325,23 @@ void onClickMug (ActorMouseEvent::Enum evt, Actor3D *actor)
 {
   drankCoffee = true;
   camHouse->setDofEnabled( false );
-  convoMug->begin();
+  beginConvo( convoMug );
 }
 
 void onClickPaper (ActorMouseEvent::Enum evt, Actor3D *actor)
 {
-  //Extract scale
+  if (pickedPaper) return;
+  pickedPaper = true;
+
+  //Extract paper scale
   Matrix4x4 &mat = actor->getMatrix();
   Float scale = mat.getColumn(0).xyz().norm();
 
+  //Extract camera scale
   Matrix4x4 matCam = camHouse->getGlobalMatrix();
   Float camScale = matCam.getColumn(0).xyz().norm();
 
-  Vector3 offset (  );
-  //Vector3 camOffset = matCamInv.transformVector( offset );
-
+  //Attach relative to camera and reapply scale
   actor->setParent( camHouse );
   actor->setMatrix( Matrix4x4() );
   actor->scale( scale );
@@ -263,8 +349,13 @@ void onClickPaper (ActorMouseEvent::Enum evt, Actor3D *actor)
   actor->rotate( Vector3( 0, 0, 1 ), Util::DegToRad( 10 ) );
   actor->translate( Vector3( -35.0f, -20.0f, 100.0f ) / camScale );
   sceneHouse->updateChanges();
+}
 
-  bool zomg = true;
+void onClickPhone (ActorMouseEvent::Enum evt, Actor3D *actor)
+{
+  if (answeredPhone) return;
+  answeredPhone = true;
+  beginConvo( convoAnswer );
 }
 
 //TODO: Stuf doesn't load properly if a class used by the exporter is not
@@ -308,22 +399,37 @@ int main (int argc, char **argv)
   //camHouseCtrl->setClickToLook( false );
 
   //Find important actors in the scene
+  actPhone = (Actor3D*) sceneHouse->findFirstActorByName( "Telephone" );
   actMug = (Actor3D*) sceneHouse->findFirstActorByName( "Mug" );
   actPaper = (Actor3D*) sceneHouse->findFirstActorByName( "Newspaper" );
-  appActorMouseFunc( ActorMouseEvent::Enter, actMug, onEnterLeaveMug );
-  appActorMouseFunc( ActorMouseEvent::Enter, actPaper, onEnterLeaveMug );
+  
+  appActorMouseFunc( ActorMouseEvent::Enter, actPhone, onMouseHighlight );
+  appActorMouseFunc( ActorMouseEvent::Enter, actMug, onMouseHighlight );
+  appActorMouseFunc( ActorMouseEvent::Enter, actPaper, onMouseHighlight );
+  
+  appActorMouseFunc( ActorMouseEvent::Click, actPhone, onClickPhone);
   appActorMouseFunc( ActorMouseEvent::Click, actMug, onClickMug );
   appActorMouseFunc( ActorMouseEvent::Click, actPaper, onClickPaper );
+
+  Actor3D* sky = (Actor3D*) sceneOffice->findFirstActorByName( "Sky" );
+  ((StandardMaterial*)sky->getMaterial())->setLuminosity( 2.0f );
   
   /////////////////////////////////////////////////
   //Setup 2D overlay
 
   scene2D = appScene2D();
 
+  BBoxWidget *w = new BBoxWidget;
+  w->actor = actPhone;
+  //scene2D->getRoot()->addChild( w );
+
   FpsLabel *lblFps = new FpsLabel;
   lblFps->setLoc( Vector2( 0.0f, (Float)resY-20 ));
   lblFps->setColor( Vector3( 1.0f, 1.0f, 1.0f ));
   lblFps->setParent( scene2D->getRoot() );
+
+  /////////////////////////////////////////////////
+  //Brightness animation
   
   //Create conversation
   initConvo();
