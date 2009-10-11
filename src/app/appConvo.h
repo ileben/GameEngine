@@ -44,7 +44,10 @@ public:
   ConvoSpeaker *speaker;
   CharString text;
 
-  ConvoSpeach() : speaker(NULL) {}
+  ConvoSpeach () : speaker(NULL) {}
+
+  ConvoSpeach (ConvoSpeaker *speaker, Float dur, const CharString &text,
+    ConvoFunc startFunc = NULL, ConvoFunc endFunc = NULL);
 };
 
 class ConvoBranch : public ConvoNode

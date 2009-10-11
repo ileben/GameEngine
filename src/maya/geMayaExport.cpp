@@ -254,6 +254,7 @@ Material* exportShader (const MObject &shader, bool *hasNormalMap)
   MFnLambertShader lambert( surfShader );
   mat->setAmbientColor( exportColor( lambert.ambientColor() ));
   mat->setDiffuseColor( exportColor( lambert.color() ));
+  mat->setLuminosity( lambert.translucenceCoeff() );
 
   //Export Phong params
   if (surfShader.hasFn( MFn::kPhong ))
@@ -1638,18 +1639,18 @@ void exportAnimClipDof (const MDagPath objPath,
 
   //Search for custom DOF attribute plugs
   MStatus dofStatus[5];
-  MPlug plugDofNear    = transform.findPlug( "DofNear",    false, &dofStatus[0] );
-  MPlug plugDofStart   = transform.findPlug( "DofStart",   false, &dofStatus[1] );
-  MPlug plugDofEnd     = transform.findPlug( "DofEnd",     false, &dofStatus[2] );
-  MPlug plugDofFar     = transform.findPlug( "DofFar",     false, &dofStatus[3] );
-  MPlug plugDofEnabled = transform.findPlug( "DofEnabled", false, &dofStatus[4] );
+  MPlug plugDofNear    = transform.findPlug( "DofNear",    true, &dofStatus[0] );
+  MPlug plugDofStart   = transform.findPlug( "DofStart",   true, &dofStatus[1] );
+  MPlug plugDofEnd     = transform.findPlug( "DofEnd",     true, &dofStatus[2] );
+  MPlug plugDofFar     = transform.findPlug( "DofFar",     true, &dofStatus[3] );
+  MPlug plugDofEnabled = transform.findPlug( "DofEnabled", true, &dofStatus[4] );
   if (dofStatus[0] != MStatus::kSuccess ||
       dofStatus[1] != MStatus::kSuccess ||
       dofStatus[2] != MStatus::kSuccess ||
       dofStatus[3] != MStatus::kSuccess ||
       dofStatus[4] != MStatus::kSuccess)
     return;
-
+  
   //Create range animation tracks
   FloatAnimTrack *outTrackF[4];
   for (int t=0; t<4; ++t) {

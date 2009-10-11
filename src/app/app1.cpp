@@ -20,8 +20,9 @@ ArrayList< Convo* > convos;
 
 Convo *convoRing = NULL;
 Convo *convoAnswer = NULL;
-Convo *convo2 = NULL;
+Convo *convoPaper = NULL;
 Convo *convoMug = NULL;
+Convo *convoInfo = NULL;
 
 Actor3D *actMug = NULL;
 Actor3D *actPaper = NULL;
@@ -29,6 +30,7 @@ Actor3D *actPhone = NULL;
 
 bool stoodUp = false;
 bool answeredPhone = false;
+bool talkedToBoss = false;
 bool drankCoffee = false;
 bool pickedPaper = false;
 
@@ -121,7 +123,7 @@ void animate()
   if (convoCur != NULL)
     convoCur->tick();
 
-  if (!drankCoffee)
+  if (talkedToBoss && !drankCoffee)
   {
     Matrix4x4 mugWorld = actMug->getGlobalMatrix();
     BoundingBox mugBBox = actMug->getBoundingBox();
@@ -137,7 +139,7 @@ void animate()
 
     Vector2 winSize = Kernel::GetInstance()->getRenderer()->getWindowSize();
     Float camFovHoriz = camHouse->getFov() * 0.5f * winSize.x/winSize.y;
-    Float cosViewAngle = COS( Util::DegToRad( camFovHoriz ));
+    Float cosViewAngle = COS( Util::DegToRad( camFovHoriz + 10.0f ));
     Float cosMugAngle = Util::Max( Vector::Dot( eyeToMug, camLook ), 0.0f );
     Float dofCoeff = Util::Min( (1.0f - cosMugAngle) / (1.0f - cosViewAngle), 1.0f );
     dofCoeff = 1.0f - dofCoeff;
@@ -156,17 +158,13 @@ void animate()
   }
 }
 
-void onAnimDrinkCoffee (Convo *convo, ConvoNode *node)
-{
-
-}
-
 void onAnimStandUp (Convo *convo, ConvoNode *node)
 {
   if (stoodUp) return;
 
   appPlayAnim( "StandUp" );
   camHouseCtrl->enableLook( false );
+  camHouseCtrl->enableMove( false );
 }
 
 void onAnimStoodUp (Convo *convo, ConvoNode *node)
@@ -189,7 +187,8 @@ void onAnimBossGreet (Convo *convo, ConvoNode *node)
 
 void onAnimSwitchSpeaker (Convo *convo, ConvoNode *node)
 {
-  appStopAnim( "Greet" );
+  appFinishAnim( "CamLaptopSlide" );
+  appFinishAnim( "Greet" );
   appPlayAnim( "SwitchSpeaker" );
 }
 
@@ -202,27 +201,84 @@ void onAnimWalkToCabinet (Convo *convo, ConvoNode *node)
 void onAnimShakeHead1 (Convo *convo, ConvoNode *node)
 {
   appFinishAnim( "WalkToCabinet" );
+  appPlayAnim( "CamBesideCabinet" );
   appPlayAnim( "ShakeHead" );
-  appPlayAnim( "CamAboveCabinet" );
+}
+
+void onAnimPourAndDrink1 (Convo *convo, ConvoNode *node)
+{
+  appFinishAnim( "ShakeHead" );
+  appPlayAnim( "PourAndDrink" );
 }
 
 void onAnimLookEnable (Convo *convo, ConvoNode *node)
 {
+  talkedToBoss = true;
+
   appSwitchScene( sceneHouse );
   appSwitchCamera( camHouse );
 
   camHouseCtrl->enableLook( true );
   camHouseCtrl->enableMove( true );
   camHouse->lookAt( camHouse->getLook() );
+}
 
-  //beginConvo( convo2 );
+void onAnimShakeHead2  (Convo *convo, ConvoNode *node)
+{
+  appSwitchScene( sceneOffice );
+  appSwitchCamera( camOffice );
+
+  appPlayAnim( "CamAboveCabinet" );
+  appPlayAnim( "ShakeHead" );
+}
+
+void onAnimPourAndDrink2 (Convo *convo, ConvoNode *node)
+{
+  appFinishAnim( "ShakeHead" );
+  appPlayAnim( "PourAndDrink" );
+}
+
+void onAnimNeedCoffee (Convo *convo, ConvoNode *node)
+{
+  appSwitchScene( sceneHouse );
+  appSwitchCamera( camHouse );
+}
+
+void onAnimGetCoffee (Convo *convo, ConvoNode *node)
+{
+  camHouseCtrl->enableMove( true );
+}
+
+void onAnimDrankCoffee (Convo *convo, ConvoNode *node)
+{
+  if (pickedPaper)
+    beginConvo( convoInfo );
+}
+
+void onAnimBackToChair (Convo *convo, ConvoNode *node)
+{
+  appSwitchScene( sceneOffice );
+  appSwitchCamera( camOffice );
+
+  appPlayAnim( "BackToChair" );
+}
+
+void onAnimIntercom (Convo *convo, ConvoNode *node)
+{
+  Kernel::GetInstance()->getRenderer()->setAvgLuminance( 0.3f );
+  camOffice->setDofEnabled( false );
+  appPlayAnim( "CamIntercom" );
+  appPlayAnim( "Intercom" )->setNumLoops( 1 );
+}
+
+void onAnimMarlene (Convo *convo, ConvoNode *node)
+{
+  camOffice->setDofEnabled( false );
+  appPlayAnim( "Marlene" );
 }
 
 void initConvo ()
 {
-  //camHouseCtrl->enableMove( false );
-  //camHouseCtrl->enableLook( false );
-
   //Setup speakers
   ConvoSpeaker *spkSound = new ConvoSpeaker;
   spkSound->color = Vector3( 1, 0.8f, 0 );
@@ -260,21 +316,121 @@ void initConvo ()
     ->addSpeach( spkBoss,  2.0f, "Our competitors are totally killing us this week!" )
     ->addSpeach( spkBoss,  3.0f, "Hang on, I'll switch to speaker...", onAnimSwitchSpeaker, onAnimWalkToCabinet )
     ->addSpeach( spkKlyde, 2.0f, "Umm... what are you talking about?" )
-    ->addSpeach( spkKlyde, 3.0f, "You know we're still number one newspaper in town..." )
+    ->addSpeach( spkKlyde, 6.0f, "You know we're still number one newspaper in town..." )
     ->addSpeach( spkBoss,  3.0f, "What’s wrong with you? Pull it together, man!", onAnimShakeHead1 )
-    ->addSpeach( spkBoss,  3.0f, "I want you to have a look at the newspaper right now!", NULL, onAnimLookEnable )
-    ->addSpeach( spkKlyde, 4.0f, "Oooookay… Gimme a second, should be at the front door..." );
+    ->addSpeach( spkBoss,  4.0f, "I want you to have a look at today's issue right now!", onAnimPourAndDrink1, onAnimLookEnable )
+    ->addSpeach( spkKlyde, 4.0f, "Oooookay… Gimme a second, I think I left it on the sofa..." )
+    ->addSpeach( spkKlyde, 2.0f, "" )
+    ->addSpeach( spkKlyde, 3.0f, "Urgh... so sleeepy!" );
 
-  //...
-  convo2 = new Convo;
-  convo2->bindScene( scene2D );
-  convos.pushBack( convo2 );
+  //After picking up the paper
+  convoPaper = new Convo;
+  convoPaper->bindScene( scene2D );
+  convos.pushBack( convoPaper );
+
+  ConvoBranch *branchPaper1 =
+  convoPaper
+    ->addSpeach( spkKlyde, 3.0f, "Alright, let's see... Did you mean..." )
+    ->addBranch( -1.0f );
+  
+  ConvoSpeach *wrongAnswer =
+    new ConvoSpeach( spkBoss, 4.0f, "No, no! The one about the GIRL, idiot! Should be on the front page." );
+
+  branchPaper1->addOption( "Toilet Seat" )
+    ->addSpeach( spkKlyde, 4.0f, "Flaming toilet seat causes evacuation at high school..." )
+    ->next = wrongAnswer;
+
+  branchPaper1->addOption( "Horse Suit" )
+    ->addSpeach( spkKlyde, 4.0f, "Doctor testifies in horse suit..." )
+    ->next = wrongAnswer;
+
+  branchPaper1->addOption( "Iraqi Head" )
+    ->addSpeach( spkKlyde, 4.0f, "Iraqi head seeks arms..." )
+    ->next = wrongAnswer;
+
+  branchPaper1->addOption( "Jet Crash" )
+    ->addSpeach( spkKlyde, 4.0f, "Something went wrong in jet crash, expert says..." )
+    ->next = wrongAnswer;
+
+  ConvoBranch *branchPaper2 = wrongAnswer->addBranch( -1.0f );
+
+  ConvoSpeach *girlAnswer = 
+    new ConvoSpeach( spkBoss, 4.0f, "No, you moron, you're looking at the back page! Wake up already!",
+    onAnimShakeHead2, onAnimPourAndDrink2 );
+
+  branchPaper2->addOption( "Call me, I'm all yours!" )
+    ->addSpeach( spkKlyde, 3.0f, "Call me, I'm all yours!" )
+    ->next = girlAnswer;
+
+  branchPaper2->addOption( "Naughty Marlene needs a daddy!" )
+    ->addSpeach( spkKlyde, 3.0f, "Naughty Marlene needs a daddy!" )
+    ->next = girlAnswer;
+
+  branchPaper2->addOption( "Heartbroken next door!" )
+    ->addSpeach( spkKlyde, 3.0f, "Heartbroken next door!" )
+    ->next = girlAnswer;
+
+  girlAnswer
+    ->addSpeach( spkBoss, 2.0f, "", NULL, onAnimNeedCoffee )
+    ->addSpeach( spkKlyde, 3.0f, "Hang on... I really need some caffeine." )
+    ->addSpeach( spkBoss, 2.0f, "Jeez, be quick about it!", NULL, onAnimGetCoffee );
 
 
+  //When drinking coffee
   convoMug = new Convo;
   convoMug->bindScene( scene2D );
   convoMug->addSpeach( spkSound, 2.0f,
-    "Yumm, yumm, yummmmmm....mmmm!", onAnimDrinkCoffee );
+    "Yumm, yumm, yummmmmm....mmmm!", NULL, onAnimDrankCoffee );
+
+  //After having drank coffee and picked up the newspaper
+  convoInfo = new Convo;
+  convoInfo->bindScene( scene2D );
+  convos.pushBack( convoInfo );
+
+  ConvoBranch *branchInfo =
+  convoInfo
+    ->addSpeach( spkKlyde, 1.5f, "Let's see..." )
+    ->addSpeach( spkKlyde, 3.0f, "Oh my god, they finally got a lead on the VeraSign conspiracy!" )
+    ->addBranch( -1.0f );
+
+  branchInfo
+    ->addOption( "VeraSign" )
+    ->addSpeach( spkKlyde, 4.0f, "There was always something fishy about those AlterShell suits they make." )
+    ->addSpeach( spkBoss, 3.0f, "Yeah but still everyone loves them." )
+    ->addSpeach( spkBoss, 2.0f, "Being healthy and looking good... How can you get better than that?" )
+    ->addSpeach( spkBoss, 3.0f, "All that from one suit... it's awesome man!" )
+    ->next = branchInfo;
+
+  branchInfo
+    ->addOption( "Conspiracy" )
+    ->addSpeach( spkKlyde, 3.0f, "Well it's about time. I kept hearing these rumors " )
+    ->addSpeach( spkKlyde, 3.0f, "about the missing people being connected to VeraSign." )
+    ->addSpeach( spkBoss, 3.0f, "Yeah and apparently the police finally have a lead." )
+    ->addSpeach( spkBoss, 3.0f, "Then again, there's those protestors who hate AlterShells." )
+    ->addSpeach( spkBoss, 3.0f, "Maybe THEY made it all up, who knows." )
+    ->next = branchInfo;
+
+  branchInfo
+    ->addOption( "Innocent" )
+    ->addSpeach( spkKlyde, 3.0f, "Oh wow, so they've connected a girl to one of the missing people." )
+    ->addSpeach( spkBoss, 4.0f, "Yup but apparently none of the missing person's relatives recognize her." )
+    ->addSpeach( spkBoss, 3.0f, "She sounds innocent to me. I mean..." )
+    ->addSpeach( spkBoss, 3.0f, "...they did confirm she wasn't wearing an avatar." )
+    ->next = branchInfo;
+
+  branchInfo
+    ->addOption( "Get to work" )
+    ->addSpeach( spkKlyde, 3.0f, "So you want me to cover this story, right?", NULL, onAnimBackToChair )
+    ->addSpeach( spkBoss, 4.0f, "Sure thing. I want a thousand words and I want it on my desk by tonight!" )
+    ->addSpeach( spkBoss, 3.0f, "And no drinking with your mates until your're done!" )
+    ->addSpeach( spkBoss, 4.0f, "I'll be down at the bar making sure you're not slacking off." )
+    ->addSpeach( spkBoss, 3.0f, "KAPISH?!" )
+    ->addSpeach( spkSound, 1.0f, "*Click*" )
+    ->addSpeach( spkBoss, 1.0f, "", onAnimIntercom )
+    ->addSpeach( spkBoss, 3.0f, "Darling, can you get me my coat, please?" )
+    ->addSpeach( spkBoss, 2.0f, "I have a meeting with..." )
+    ->addSpeach( spkBoss, 5.0f, "Marlene.", onAnimMarlene );
+
 }
 
 class EventObserver : public AnimObserver
@@ -323,13 +479,18 @@ void onMouseHighlight (ActorMouseEvent::Enum evt, Actor3D *actor)
 
 void onClickMug (ActorMouseEvent::Enum evt, Actor3D *actor)
 {
+  if (!answeredPhone) return;
+  if (drankCoffee) return;
   drankCoffee = true;
+
+  //Remove depth of field lock
   camHouse->setDofEnabled( false );
   beginConvo( convoMug );
 }
 
 void onClickPaper (ActorMouseEvent::Enum evt, Actor3D *actor)
 {
+  if (!answeredPhone) return;
   if (pickedPaper) return;
   pickedPaper = true;
 
@@ -349,6 +510,14 @@ void onClickPaper (ActorMouseEvent::Enum evt, Actor3D *actor)
   actor->rotate( Vector3( 0, 0, 1 ), Util::DegToRad( 10 ) );
   actor->translate( Vector3( -35.0f, -20.0f, 100.0f ) / camScale );
   sceneHouse->updateChanges();
+
+  if (drankCoffee)
+    beginConvo( convoInfo );
+  else
+  {
+    beginConvo( convoPaper );
+    camHouseCtrl->enableMove( false );
+  }
 }
 
 void onClickPhone (ActorMouseEvent::Enum evt, Actor3D *actor)
@@ -373,7 +542,7 @@ int main (int argc, char **argv)
   /////////////////////////////////////////////////
   //Setup office scene
 
-  sceneOffice = appScene3D( "BossOffice.pak" );
+  sceneOffice = appScene3D( "Export/BossOffice.pak" );
   if (sceneOffice == NULL) {
     std::cout << "Failed loading scene file!" << std::endl;
     std::getchar();
@@ -382,11 +551,12 @@ int main (int argc, char **argv)
 
   //Find first camera in the scene
   camOffice = (Camera3D*) sceneOffice->findFirstActorByClass( Class(Camera3D) );
+  //camOffice->setDofEnabled( true );
 
   /////////////////////////////////////////////////
   //Setup house scene
 
-  sceneHouse = appScene3D( "WakingUp.pak" );
+  sceneHouse = appScene3D( "Export/WakingUp.pak" );
   if (sceneHouse == NULL) {
     std::cout << "Failed loading scene file!" << std::endl;
     std::getchar();

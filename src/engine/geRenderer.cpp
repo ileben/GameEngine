@@ -892,11 +892,11 @@ namespace GE
 
     glDeleteQueries( (GLsizei) numLights, lightQueries );
     delete[] lightQueries;
-
+/*
     if (numVisibleLights != lastVisibleLights) {
       printf( "numVisibleLights: %d\n", numVisibleLights );
       lastVisibleLights = numVisibleLights;
-    }
+    }*/
   }
 
   void Renderer::doToon (Uint32 sourceTex, Uint32 targetFB, Uint32 targetAtch)

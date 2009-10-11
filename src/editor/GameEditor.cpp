@@ -30,6 +30,9 @@ Actor3D *actorRender = NULL;
 
 Light *light = NULL;
 
+Scene3D *sceneSky = NULL;
+Camera3D *camSky = NULL;
+
 Scene3D *scene = NULL;
 Scene3D *sceneRender = NULL;
 AnimController *animCtrl = NULL;
@@ -177,7 +180,7 @@ void keyDown (unsigned char key, int x, int y)
     break;
 
   case 13://return
-    animCtrl->play(); return;
+    animCtrl->play(0, 0.7f); return;
 
     if (skinMeshActor == NULL) return;
     if (!skinMeshActor->getAnimController()->isPlaying())
@@ -256,12 +259,17 @@ void specialKey (int key, int x, int y)
 
 void display ()
 {
+  Matrix4x4 camWorld = camRender->getMatrix().affineNormalize();
+  camWorld.setColumn( 3, Vector4( 0,0,0,1 ) );
+  camSky->setMatrix( camWorld );
+
   //switch camera
   renderer->setViewport( 0,0,resX, resY );
   renderer->beginFrame();
   
   //draw model
   renderer->beginDeferred();
+  renderer->renderSceneDeferred( sceneSky, camSky );
   renderer->renderSceneDeferred( sceneRender, camRender );
   renderer->endDeferred();
   
@@ -616,30 +624,36 @@ ActorAnimObserver a;
 SkinAnimObserver b;
 
 int main (int argc, char **argv)
-{
+{/*
   //Usage
   if (argc < 3) {
     printf( "Usage: EXE  SCENE_FILE  MOVE_SPEED" );
     getchar();
     return EXIT_FAILURE;
   }
-
+*/
   //Params
-  Float moveSpeed = 400.0f;
-  CharString strMoveSpeed = argv[2];
-  moveSpeed = strMoveSpeed.parseFloat();
+  Float moveSpeed = 200.0f;
+  //CharString strMoveSpeed = argv[2];
+  //moveSpeed = strMoveSpeed.parseFloat();
 
   //Initialize GLUT
   initGlut( argc, argv );
   
   Kernel kernel;
-  kernel.enableVerticalSync( false );
+  kernel.enableVerticalSync( true );
   renderer = kernel.getRenderer();
   renderer->setWindowSize( resX, resY );
   printf( "Kernel loaded\n" );
 
+  //Setup sky scene
+  sceneSky = kernel.loadSceneFile( "Export/SkyBox.pak" );
+  camSky = (Camera3D*) sceneSky->findFirstActorByClass( Class(Camera3D) );
+
+
   //Setup 3D scene
-  scene = kernel.loadSceneFile( argv[1] );
+  scene = kernel.loadSceneFile( "Export/CityNight.pak" );
+  //scene = kernel.loadSceneFile( argv[1] );
   //scene = kernel.loadSceneFile( "HousePointLights.pak" );
   //scene = kernel.loadSceneFile( "HouseSpotLights.pak" );
   //scene = kernel.loadSceneFile( "CitySpotLights.pak" );
@@ -670,8 +684,8 @@ int main (int argc, char **argv)
   //Bind first animation to the controller
   animCtrl = new AnimController;
   if (!scene->animations.empty()) {
-    animCtrl->bindAnimation( scene->animations.first() );
-    animCtrl->observeAt( 0.0f );
+    //animCtrl->bindAnimation( scene->animations.first() );
+    //animCtrl->observeAt( 0.0f );
   }
   
   //Bind event observer to the controller

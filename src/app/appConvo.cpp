@@ -5,6 +5,37 @@ DEFINE_CLASS( ConvoNode );
 DEFINE_CLASS( ConvoSpeach );
 DEFINE_CLASS( ConvoBranch );
 
+class ConvoBg : public Widget
+{
+public:
+  virtual void draw()
+  {
+    Vector2 winSize = Kernel::GetInstance()->getRenderer()->getWindowSize();
+
+    glEnable( GL_BLEND );
+    glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+
+    glColor4f( 0,0,0, 0.8f );
+
+    glMatrixMode( GL_MODELVIEW );
+    glPushMatrix();
+    //glTranslatef( loc.x, winSize.y - loc.y, 0 );
+    glTranslatef( loc.x, loc.y, 0 );
+    glScalef( box.x, box.y, 1 );
+
+    glBegin( GL_QUADS );
+    glVertex2f(0,0);
+    glVertex2f(1,0);
+    glVertex2f(1,1);
+    glVertex2f(0,1);
+    glEnd();
+
+    glPopMatrix();
+
+    glDisable( GL_BLEND );
+  }
+};
+
 void Convo::bindScene (Scene *s)
 {
   scene = s;
@@ -38,6 +69,7 @@ void Convo::show()
   else if (ClassOf( node ) == Class( ConvoBranch ))
   {
     ConvoBranch* branch = (ConvoBranch*) node;
+    Vector2 winSize = Kernel::GetInstance()->getRenderer()->getWindowSize();
 
     Actor *grp = new Actor;
     grp->setParent( scene->getRoot() );
@@ -56,6 +88,11 @@ void Convo::show()
       lbl->setColor( lbl->outColor );
       lbl->setParent( grp );
     }
+
+    ConvoBg *bg = new ConvoBg;
+    bg->setLoc( 0, 0 );
+    bg->setSize( winSize.x, branch->options.size() * 20 + 40 );
+    bg->setParent( grp );
 
     actor = grp;
   }
@@ -129,6 +166,16 @@ void Convo::tick()
 ----------------------------------
 Construction helpers
 ----------------------------------*/
+
+ConvoSpeach::ConvoSpeach (ConvoSpeaker *speaker, Float dur,
+  const CharString &text, ConvoFunc startFunc, ConvoFunc endFunc)
+{
+  this->speaker = speaker;
+  this->duration = dur;
+  this->text = text;
+  this->startFunc = startFunc;
+  this->endFunc = endFunc;
+}
 
 ConvoSpeach* ConvoNode::addSpeach (ConvoSpeaker *speaker, Float dur,
   const CharString &text, ConvoFunc startFunc, ConvoFunc endFunc)
