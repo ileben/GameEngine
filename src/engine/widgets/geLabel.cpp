@@ -9,6 +9,7 @@ namespace GE
     text = newText;
     ByteString cstr = newText;
     setSize( (Float) glutStrokeLength( GLUT_STROKE_ROMAN, cstr.buffer() ), 20.0f );
+    //setSize( (Float) glutBitmapLength( GLUT_BITMAP_TIMES_ROMAN_24 , cstr.buffer() ), 20.0f );
   }
   
   void Label::setColor (const Vector3 &c) {
@@ -42,8 +43,11 @@ namespace GE
         glLoadIdentity();
         glTranslatef(x, y, 0);
         glScalef(k,-k,k);
+        //glRasterPos2f(x,y);
+        //glTranslatef(0,0, 0);
         continue; }
       glutStrokeCharacter(GLUT_STROKE_ROMAN, text[i]);
+      //glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24 , text[i]);
     }
     
     glPopMatrix();

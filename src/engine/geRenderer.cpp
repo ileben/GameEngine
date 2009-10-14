@@ -615,6 +615,10 @@ namespace GE
       +1,+1,1,
       -1,+1,1 };
 
+    //glBindVertexArray( 0 );
+    glBindBuffer( GL_ARRAY_BUFFER, 0 );
+    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );
+
     glTexCoordPointer( 2, GL_FLOAT, 0, texCoords );
     glVertexPointer( 3, GL_FLOAT, 0, vertCoords );
     glEnableClientState( GL_TEXTURE_COORD_ARRAY );

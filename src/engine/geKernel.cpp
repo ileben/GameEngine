@@ -134,6 +134,13 @@ GE_PFGLGETQUERYOBJECTIV          GE_glGetQueryObjectiv = NULL;
 GE_PFGLGETQUERYOBJECTUIV         GE_glGetQueryObjectuiv = NULL;
 #endif
 
+#ifndef GL_ARB_vertex_array_object
+GE_PFGLBINDVERTEXARRAY           GE_glBindVertexArray = NULL;
+GE_PFGLDELETEVERTEXARRAYS        GE_glDeleteVertexArrays = NULL;
+GE_PFGLGENVERTEXARRAYS           GE_glGenVertexArrays = NULL;
+GE_PFGLISVERTEXARRAY             GE_glIsVertexArray = NULL;
+#endif
+
 GE_PFGLSWAPINTERVAL glSwapInterval = NULL;
 
 
@@ -565,6 +572,31 @@ namespace GE
     }else{ hasOcclusionQuery = false; }
 
     /*
+    Check for vertex array object
+    *****************************************/
+
+    printf( ext );
+    if (checkExtension( ext, "GL_ARB_vertex_array_object" )) {
+      hasVertexArrayObjects = true;
+
+      #ifndef GL_ARB_vertex_array_object
+      GE_glBindVertexArray = (GE_PFGLBINDVERTEXARRAY)
+        getProcAddress( "glBindVertexArray" );
+      GE_glDeleteVertexArrays = (GE_PFGLDELETEVERTEXARRAYS)
+        getProcAddress( "glDeleteVertexArrays" );
+      GE_glGenVertexArrays = (GE_PFGLGENVERTEXARRAYS)
+        getProcAddress( "glGenVertexArrays" );
+      GE_glIsVertexArray = (GE_PFGLISVERTEXARRAY)
+        getProcAddress( "glIsVertexArray" );
+
+      if (GE_glBindVertexArray==NULL || GE_glIsVertexArray==NULL ||
+          GE_glGenVertexArrays==NULL || GE_glDeleteVertexArrays==NULL)
+        hasVertexArrayObjects = false;
+      #endif
+
+    }else{ hasVertexArrayObjects = false; }
+
+    /*
     Check vertical sync control
     *****************************************/
     
@@ -916,7 +948,20 @@ namespace GE
       std::cout << "Invalid file content!" << std::endl;
       return NULL;
     }
-
+/*
+    //DEBUG: Replace textured materials with simple ones
+    ArrayList< Actor* > actors;
+    scene->updateChanges();
+    scene->findActorsByClass( Class(TriMeshActor), actors );
+    for (UintSize a=0; a<actors.size(); ++a)
+    {
+      StandardMaterial *m = new StandardMaterial;
+      m->setDiffuseColor( Vector3( .6, .6, .6 ) );
+      
+      TriMeshActor *meshActor = (TriMeshActor*) actors[a];
+      meshActor->setMaterial( m );
+    }
+*/
     //Cache resources loaded with the scene
     for (UintSize r=0; r<scene->resources.size(); ++r)
     {

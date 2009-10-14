@@ -71,6 +71,7 @@ namespace GE
     bool hasShaderObjects;
     bool hasFramebufferObjects;
     bool hasVertexBufferObjects;
+    bool hasVertexArrayObjects;
     bool hasMultipleRenderTargets;
     bool hasDepthStencilFormat;
     bool hasRangeElements;

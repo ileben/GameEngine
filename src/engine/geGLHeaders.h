@@ -125,6 +125,31 @@ typedef void
 #endif
 
 /*******************************************************
+GL_ARB_vertex_array_object
+********************************************************/
+
+#ifndef GL_ARB_vertex_array_object
+
+typedef void
+  (APIENTRY* GE_PFGLBINDVERTEXARRAY)
+  (GLuint array);
+
+typedef void
+  (APIENTRY* GE_PFGLDELETEVERTEXARRAYS)
+  (GLsizei n, const GLuint *arrays);
+
+typedef void
+  (APIENTRY* GE_PFGLGENVERTEXARRAYS)
+  (GLsizei n, GLuint *arrays);
+
+typedef GLboolean
+  (APIENTRY* GE_PFGLISVERTEXARRAY)
+  (GLuint array);
+
+#endif
+
+
+/*******************************************************
 GL_ARB_shader_objects
 ********************************************************/
 
@@ -560,6 +585,13 @@ extern GE_PFGLGETQUERYOBJECTIV          GE_glGetQueryObjectiv;
 extern GE_PFGLGETQUERYOBJECTUIV         GE_glGetQueryObjectuiv;
 #endif
 
+#ifndef GL_ARB_vertex_array_object
+extern GE_PFGLBINDVERTEXARRAY           GE_glBindVertexArray;
+extern GE_PFGLDELETEVERTEXARRAYS        GE_glDeleteVertexArrays;
+extern GE_PFGLGENVERTEXARRAYS           GE_glGenVertexArrays;
+extern GE_PFGLISVERTEXARRAY             GE_glIsVertexArray;
+#endif
+
 
 /*******************************************************
 Function re-routing
@@ -649,6 +681,13 @@ Function re-routing
 #define glGetQueryiv                GE_glGetQueryiv
 #define glGetQueryObjectiv          GE_glGetQueryObjectiv
 #define glGetQueryObjectuiv         GE_glGetQueryObjectuiv
+#endif
+
+#ifndef GL_ARB_vertex_array_object
+#define glBindVertexArray           GE_glBindVertexArray
+#define glDeleteVertexArrays        GE_glDeleteVertexArrays
+#define glGenVertexArrays           GE_glGenVertexArrays
+#define glIsVertexArray             GE_glIsVertexArray
 #endif
 
 #endif//!GE_NO_EXTENSION_ROUTING

@@ -32,6 +32,8 @@ namespace GE
 
   protected:
     MeshRef mesh;
+    Uint meshVAO;
+    bool meshVAOInit;
     ArrayList<Int32> attributeIDs;
     
     virtual void bindBuffers();
@@ -48,8 +50,8 @@ namespace GE
     virtual ClassPtr getShaderComposingClass() { return Class(TriMeshActor); }
     virtual void composeShader( Shader *shader );
 
-    TriMeshActor (SM *sm) : Actor3D(sm), mesh(sm) {}
     TriMeshActor ();
+    TriMeshActor (SM *sm);
     virtual ~TriMeshActor();
 
     void setMesh (TriMesh *mesh);

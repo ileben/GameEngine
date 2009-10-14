@@ -269,7 +269,7 @@ void display ()
   
   //draw model
   renderer->beginDeferred();
-  renderer->renderSceneDeferred( sceneSky, camSky );
+  //renderer->renderSceneDeferred( sceneSky, camSky );
   renderer->renderSceneDeferred( sceneRender, camRender );
   renderer->endDeferred();
   
@@ -641,7 +641,7 @@ int main (int argc, char **argv)
   initGlut( argc, argv );
   
   Kernel kernel;
-  kernel.enableVerticalSync( true );
+  kernel.enableVerticalSync( false );
   renderer = kernel.getRenderer();
   renderer->setWindowSize( resX, resY );
   printf( "Kernel loaded\n" );
@@ -652,7 +652,8 @@ int main (int argc, char **argv)
 
 
   //Setup 3D scene
-  scene = kernel.loadSceneFile( "Export/CityNight.pak" );
+  scene = kernel.loadSceneFile( "Export/CityPlain.pak" );
+  //scene = kernel.loadSceneFile( "Export/CityNight.pak" );
   //scene = kernel.loadSceneFile( argv[1] );
   //scene = kernel.loadSceneFile( "HousePointLights.pak" );
   //scene = kernel.loadSceneFile( "HouseSpotLights.pak" );
