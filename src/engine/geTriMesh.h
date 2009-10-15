@@ -44,6 +44,7 @@ namespace GE
     FormatMember () {}
     FormatMember (SM *sm) : attribName(sm) {}
     bool operator == (const FormatMember &other) const;
+    void resolveKnownData();
   };
 
   class VertexFormat : public Object
@@ -70,8 +71,11 @@ namespace GE
     FormatMember* findMember (ShaderData::Enum data,
                               const CharString &attribName) const;
 
-    void addMember (ShaderData::Enum newData,
-                    DataUnit newUnit,
+    void addMember (const FormatMember &m);
+
+    void addMember (ShaderData::Enum newData);
+
+    void addMember (DataUnit newUnit,
                     UintSize newSize,
                     CharString newAttribName = "",
                     DataUnit newAttribUnit = DataUnit(),
@@ -86,15 +90,15 @@ namespace GE
   class BindTarget
   {
   public:
-    ShaderData::Enum type;
+    ShaderData::Enum data;
     CharString name;
 
-    BindTarget (ShaderData::Enum t) {
-      type = t;
+    BindTarget (ShaderData::Enum d) {
+      data = d;
     }
 
     BindTarget (const CharString &n) {
-      type = ShaderData::Attribute;
+      data = ShaderData::Custom;
       name = n;
     }
   };
@@ -127,7 +131,7 @@ namespace GE
         BindTarget *target = (BindTarget*) vmember->data;
 
         //Find the matching format member
-        FormatMember *fmember = vertexFormat->findMember ( target->type, target->name );
+        FormatMember *fmember = vertexFormat->findMember ( target->data, target->name );
         if (fmember != NULL)
         {
           //Bind vertex to format member
@@ -176,9 +180,9 @@ namespace GE
     Vector3 *coord;
 
     DECLARE_SUBCLASS( TriVertex, Object );
-    DECLARE_MEMBER_DATA( texcoord, new BindTarget( ShaderData::TexCoord ) );
+    DECLARE_MEMBER_DATA( texcoord, new BindTarget( ShaderData::TexCoord2 ) );
     DECLARE_MEMBER_DATA( normal, new BindTarget( ShaderData::Normal ) );
-    DECLARE_MEMBER_DATA( coord, new BindTarget( ShaderData::Coord ) );
+    DECLARE_MEMBER_DATA( coord, new BindTarget( ShaderData::Coord3 ) );
     DECLARE_END;
   };
 
@@ -204,7 +208,7 @@ namespace GE
     
     //Mesh data
     GenericArrayList data;
-    ArrayList <Uint32> indices;
+    ArrayList <VertexID> indices;
     ArrayList <IndexGroup> groups;
     BoundingBox bbox;
     

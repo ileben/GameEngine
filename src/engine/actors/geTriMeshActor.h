@@ -32,9 +32,9 @@ namespace GE
 
   protected:
     MeshRef mesh;
+    
     Uint meshVAO;
     bool meshVAOInit;
-    ArrayList<Int32> attributeIDs;
     
     virtual void bindBuffers();
     virtual void bindFormat (Shader *shader, VertexFormat *format);

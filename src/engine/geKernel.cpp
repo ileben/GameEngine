@@ -575,7 +575,6 @@ namespace GE
     Check for vertex array object
     *****************************************/
 
-    printf( ext );
     if (checkExtension( ext, "GL_ARB_vertex_array_object" )) {
       hasVertexArrayObjects = true;
 
@@ -816,8 +815,8 @@ namespace GE
     Vector3 *coord;
 
     DECLARE_SUBCLASS( MergeVertex, Object );
-    DECLARE_MEMBER_DATA( normal, new BindTarget( ShaderData::Normal ) );
-    DECLARE_MEMBER_DATA( coord, new BindTarget( ShaderData::Coord ) );
+    DECLARE_MEMBER_DATA( normal, new BindTarget( "Normal" ) );
+    DECLARE_MEMBER_DATA( coord, new BindTarget( "Coord" ) );
     DECLARE_END;
   };
 

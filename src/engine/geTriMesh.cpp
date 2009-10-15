@@ -17,8 +17,27 @@ namespace GE
     return &members;
   }
 
+  void VertexFormat::addMember (const FormatMember &fm)
+  {
+    FormatMember m = fm;
+    m.resolveKnownData();
+
+    m.offset = members.empty() ? 0 :
+      members.last().offset + members.last().size;
+
+    size += m.size;
+    members.pushBack( m );
+  }
+
   void VertexFormat::addMember (
-    ShaderData::Enum newData,
+    ShaderData::Enum newData )
+  {
+    FormatMember m;
+    m.data = newData;
+    addMember( m );
+  }
+
+  void VertexFormat::addMember (
     DataUnit newUnit,
     UintSize newSize,
     CharString newAttribName,
@@ -26,18 +45,13 @@ namespace GE
     bool newAttribNorm )
   {
     FormatMember m;
-    m.data = newData;
+    m.data = ShaderData::Custom;
     m.unit = newUnit;
     m.size = newSize;
     m.attribName = newAttribName;
     m.attribUnit = newAttribUnit;
     m.attribNorm = newAttribNorm;
-
-    m.offset = members.empty() ? 0 :
-      members.last().offset + members.last().size;
-
-    size += m.size;
-    members.pushBack( m );
+    addMember( m );
   }
 
   VertexFormat& VertexFormat::operator= (const VertexFormat &f)
@@ -49,6 +63,100 @@ namespace GE
       members.pushBack( f.members[m] );
     
     return *this;
+  }
+
+  void FormatMember::resolveKnownData ()
+  {
+    switch (data)
+    {
+    case ShaderData::Coord2:
+      unit = DataUnit::Vec2;
+      size = sizeof( Vector2 );
+      attribName = "Coord2";
+      attribUnit = unit;
+      attribNorm = false;
+      break;
+
+    case ShaderData::Coord3:
+      unit = DataUnit::Vec3;
+      size = sizeof( Vector3 );
+      attribName = "Coord3";
+      attribUnit = unit;
+      attribNorm = false;
+      break;
+
+    case ShaderData::Coord4:
+      unit = DataUnit::Vec4;
+      size = sizeof( Vector4 );
+      attribName = "Coord4";
+      attribUnit = unit;
+      attribNorm = false;
+      break;
+
+    case ShaderData::TexCoord1:
+      unit = DataUnit::Float;
+      size = sizeof( Float );
+      attribName = "TexCoord1";
+      attribUnit = unit;
+      attribNorm = false;
+      break;
+
+    case ShaderData::TexCoord2:
+      unit = DataUnit::Vec2;
+      size = sizeof( Vector2 );
+      attribName = "TexCoord2";
+      attribUnit = unit;
+      attribNorm = false;
+      break;
+
+    case ShaderData::TexCoord3:
+      unit = DataUnit::Vec3;
+      size = sizeof( Vector3 );
+      attribName = "TexCoord3";
+      attribUnit = unit;
+      attribNorm = false;
+      break;
+
+    case ShaderData::Normal:
+      unit = DataUnit::Vec3;
+      size = sizeof( Vector3 );
+      attribName = "Normal";
+      attribUnit = unit;
+      attribNorm = true;
+      break;
+
+    case ShaderData::Tangent:
+      unit = DataUnit::Vec3;
+      size = sizeof( Vector3 );
+      attribName = "Tangent";
+      attribUnit = unit;
+      attribNorm = true;
+      break;
+
+    case ShaderData::Bitangent:
+      unit = DataUnit::Vec3;
+      size = sizeof( Vector3 );
+      attribName = "Bitangent";
+      attribUnit = unit;
+      attribNorm = true;
+      break;
+
+    case ShaderData::JointIndex:
+      unit = DataUnit::UVec4;
+      size = sizeof( Uint32 ) * 4;
+      attribName = "jointIndex";
+      attribUnit = DataUnit::Vec4;
+      attribNorm = true;
+      break;
+
+    case ShaderData::JointWeight:
+      unit = DataUnit::Vec4;
+      size = sizeof( Float32 ) * 4;
+      attribName = "jointWeight";
+      attribUnit = DataUnit::Vec4;
+      attribNorm = true;
+      break;
+    };
   }
 
   bool FormatMember::operator== (const FormatMember &other) const
@@ -83,7 +191,7 @@ namespace GE
   {
     for (UintSize m=0; m<members.size(); ++m)
     {
-      if (dataType == ShaderData::Attribute) {
+      if (dataType == ShaderData::Custom) {
         if (members[m].attribName == attribName)
           return &members[m];
       }
@@ -97,8 +205,12 @@ namespace GE
   void TriMesh::setDefaultFormat()
   {
     VertexFormat f;
-    f.addMember( ShaderData::Coord, DataUnit::Vec3, sizeof(Vector3) );
-    f.addMember( ShaderData::Normal, DataUnit::Vec3, sizeof(Vector3) );
+    //f.addMember( ShaderData::Coord, DataUnit::Vec3, sizeof(Vector3) );
+    //f.addMember( ShaderData::Normal, DataUnit::Vec3, sizeof(Vector3) );
+    //f.addMember( ShaderData::Attribute, DataUnit::Vec3, sizeof(Vector3), "Coord", DataUnit::Vec3 );
+    //f.addMember( ShaderData::Attribute, DataUnit::Vec3, sizeof(Vector3), "Normal", DataUnit::Vec3, true );
+    f.addMember( ShaderData::Coord3 );
+    f.addMember( ShaderData::Normal );
     setFormat( f );
   }
 

@@ -768,7 +768,7 @@ Mesh exporter for TriMesh
 
 struct Variant
 {
-  VertexID id;
+  Uint id;
   Uint normalId;
   Uint tangentId;
   Uint uvId;
@@ -848,7 +848,7 @@ public:
     return -1;
   }
 
-  void addVariant (VertexID variantId, Uint vertId, Uint normalId, Uint tangentId, Uint uvId)
+  void addVariant (Uint variantId, Uint vertId, Uint normalId, Uint tangentId, Uint uvId)
   {
     if (vertId >= firstVariants.size())
       return;
@@ -882,13 +882,13 @@ public:
   Float32 *jointIndex;
 
   DECLARE_SUBCLASS( OmniVertex, Object );
-  DECLARE_MEMBER_DATA( texcoord, new BindTarget( ShaderData::TexCoord ) );
-  DECLARE_MEMBER_DATA( coord, new BindTarget( ShaderData::Coord ) );
+  DECLARE_MEMBER_DATA( texcoord, new BindTarget( ShaderData::TexCoord2 ) );
   DECLARE_MEMBER_DATA( normal, new BindTarget( ShaderData::Normal ) );
-  DECLARE_MEMBER_DATA( tangent, new BindTarget( "Tangent" ) );
-  DECLARE_MEMBER_DATA( bitangent, new BindTarget( "Bitangent" ) );
-  DECLARE_MEMBER_DATA( jointWeight, new BindTarget( "jointWeight" ) );
-  DECLARE_MEMBER_DATA( jointIndex, new BindTarget( "jointIndex" ) );
+  DECLARE_MEMBER_DATA( coord, new BindTarget( ShaderData::Coord3 ) );
+  DECLARE_MEMBER_DATA( tangent, new BindTarget( ShaderData::Tangent ) );
+  DECLARE_MEMBER_DATA( bitangent, new BindTarget( ShaderData::Bitangent ) );
+  DECLARE_MEMBER_DATA( jointWeight, new BindTarget( ShaderData::JointWeight ) );
+  DECLARE_MEMBER_DATA( jointIndex, new BindTarget( ShaderData::JointIndex ) );
   DECLARE_END;
 };
 
@@ -937,7 +937,7 @@ public:
     vertBind.init( format );
 
     //Init variant matching mask
-    FormatMember *fmember = format->findMember( ShaderData::Attribute, "Tangent" );
+    FormatMember *fmember = format->findMember( ShaderData::Tangent, "" );
     if (fmember == NULL) vertToVariantMap->setVariantMask( true, false, true );
     else vertToVariantMap->setVariantMask( true, true, true );
   }
@@ -989,7 +989,7 @@ public:
     faceVertVariantIds[ vertId ] = variantId;
 
     //Add new variant ID to map
-    vertToVariantMap->addVariant( (VertexID) variantId,
+    vertToVariantMap->addVariant( variantId,
       vertId, normalId, tangentId, uvId);
   }
 
@@ -1022,9 +1022,9 @@ public:
       {
         //Add new triangle to mesh
         outTriMesh->addFace(
-          group[ i+0 ],
-          group[ i+1 ],
-          group[ i+2 ] );
+          (VertexID) group[ i+0 ],
+          (VertexID) group[ i+1 ],
+          (VertexID) group[ i+2 ] );
       }
     }
 
@@ -2082,23 +2082,15 @@ Character* exportCharacter (const MObject &meshNode, bool tangents)
 
   //Prepare vertex format
   VertexFormat format;
-  format.addMember( ShaderData::TexCoord, DataUnit::Vec2, sizeof(Vector2) );
-  format.addMember( ShaderData::Normal,   DataUnit::Vec3, sizeof(Vector3) );
-  format.addMember( ShaderData::Coord,    DataUnit::Vec3, sizeof(Vector3) );
-
-  format.addMember( ShaderData::Attribute, DataUnit::UVec4, sizeof(Uint32)*4,
-                    "jointIndex", DataUnit::Vec4 );
-
-  format.addMember( ShaderData::Attribute, DataUnit::Vec4, sizeof(Float32)*4,
-                    "jointWeight", DataUnit::Vec4 );
-
+  format.addMember( ShaderData::TexCoord2 );
+  format.addMember( ShaderData::Normal );
+  format.addMember( ShaderData::Coord3 );
+  format.addMember( ShaderData::JointIndex );
+  format.addMember( ShaderData::JointWeight );
   if (tangents)
   {
-    format.addMember( ShaderData::Attribute, DataUnit::Vec3, sizeof(Vector3),
-                      "Tangent", DataUnit::Vec3 );
-
-    format.addMember( ShaderData::Attribute, DataUnit::Vec3, sizeof(Vector3),
-                      "Bitangent", DataUnit::Vec3 );
+    format.addMember( ShaderData::Tangent );
+    format.addMember( ShaderData::Bitangent );
   }
 
   //Export pose mesh
@@ -2147,17 +2139,13 @@ TriMesh* exportMesh (const MObject &meshNode, bool tangents)
 {
   //Prepare vertex format
   VertexFormat format;
-  format.addMember( ShaderData::TexCoord, DataUnit::Vec2, sizeof(Vector2) );
-  format.addMember( ShaderData::Normal,   DataUnit::Vec3, sizeof(Vector3) );
-  format.addMember( ShaderData::Coord,    DataUnit::Vec3, sizeof(Vector3) );
-
+  format.addMember( ShaderData::TexCoord2 );
+  format.addMember( ShaderData::Normal );
+  format.addMember( ShaderData::Coord3 );
   if (tangents)
   {
-    format.addMember( ShaderData::Attribute, DataUnit::Vec3, sizeof(Vector3),
-                      "Tangent", DataUnit::Vec3 );
-
-    format.addMember( ShaderData::Attribute, DataUnit::Vec3, sizeof(Vector3),
-                      "Bitangent", DataUnit::Vec3 );
+    format.addMember( ShaderData::Tangent );
+    format.addMember( ShaderData::Bitangent );
   }
 
   //Export mesh data

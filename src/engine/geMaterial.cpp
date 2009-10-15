@@ -268,9 +268,9 @@ namespace GE
     shader->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "diffSampler" );
 
     shader->composeNodeNew( ShaderType::Fragment );
-    shader->composeNodeSocket( SocketFlow::In, ShaderData::TexCoord, DataSource::BuiltIn, 0 );
+    shader->composeNodeSocket( SocketFlow::In, ShaderData::TexCoord2 );
     shader->composeNodeSocket( SocketFlow::Out, ShaderData::Diffuse );
-    shader->composeNodeCode( "outDiffuse = texture2D( diffSampler, inTexCoord0.xy );\n" );
+    shader->composeNodeCode( "outDiffuse = texture2D( diffSampler, inTexCoord2 );\n" );
     shader->composeNodeEnd();
   }
 
@@ -344,27 +344,26 @@ namespace GE
     shader->registerUniform( ShaderType::Fragment, DataUnit::Sampler2D, "normSampler" );
 
     shader->composeNodeNew( ShaderType::Vertex );
-    shader->composeNodeSocket( SocketFlow::In, ShaderData::Attribute, DataSource::Attribute, DataUnit::Vec3, "Tangent" );
-    shader->composeNodeSocket( SocketFlow::Out, ShaderData::Attribute, DataSource::Attribute, DataUnit::Vec3, "Tangent" );
+    shader->composeNodeSocket( SocketFlow::In, ShaderData::Tangent );
+    shader->composeNodeSocket( SocketFlow::Out, ShaderData::Tangent );
     shader->composeNodeCode( "outTangent = normalize( gl_NormalMatrix * inTangent );\n" );
     shader->composeNodeEnd();
 
     shader->composeNodeNew( ShaderType::Vertex );
-    shader->composeNodeSocket( SocketFlow::In, ShaderData::Attribute, DataSource::Attribute, DataUnit::Vec3, "Bitangent" );
-    shader->composeNodeSocket( SocketFlow::Out, ShaderData::Attribute, DataSource::Attribute, DataUnit::Vec3, "Bitangent" );
+    shader->composeNodeSocket( SocketFlow::In, ShaderData::Bitangent );
+    shader->composeNodeSocket( SocketFlow::Out, ShaderData::Bitangent );
     shader->composeNodeCode( "outBitangent = normalize( gl_NormalMatrix * inBitangent );\n" );
     shader->composeNodeEnd();
 
     shader->composeNodeNew( ShaderType::Fragment );
-    shader->composeNodeSocket( SocketFlow::In, ShaderData::Attribute, DataSource::Attribute, DataUnit::Vec3, "Tangent" );
-    shader->composeNodeSocket( SocketFlow::In, ShaderData::Attribute, DataSource::Attribute, DataUnit::Vec3, "Bitangent" );
-    shader->composeNodeSocket( SocketFlow::In, ShaderData::TexCoord, DataSource::BuiltIn, 0 );
+    shader->composeNodeSocket( SocketFlow::In, ShaderData::Tangent );
+    shader->composeNodeSocket( SocketFlow::In, ShaderData::Bitangent );
     shader->composeNodeSocket( SocketFlow::In, ShaderData::Normal );
-    //shader->composeNodeSocket( SocketFlow::Out, ShaderData::Diffuse );
+    shader->composeNodeSocket( SocketFlow::In, ShaderData::TexCoord2 );
     shader->composeNodeSocket( SocketFlow::Out, ShaderData::Normal );
     shader->composeNodeCode(
       "mat3 normMatrix = mat3( inTangent, inBitangent, inNormal);\n"
-      "vec3 normTexel = texture2D( normSampler, inTexCoord0.xy ).xyz;\n"
+      "vec3 normTexel = texture2D( normSampler, inTexCoord2 ).xyz;\n"
       "vec3 localNormal = ((normTexel * 2.0) - vec3(1.0,1.0,1.0));\n"
       //"localNormal.x = -localNormal.x;\n"
       //"localNormal.y = -localNormal.y;\n"

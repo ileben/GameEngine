@@ -330,8 +330,8 @@ namespace GE
 
     //This node applies skin to the vertex coordinate
     shader->composeNodeNew( ShaderType::Vertex );
-    shader->composeNodeSocket( SocketFlow::In, ShaderData::Coord );
-    shader->composeNodeSocket( SocketFlow::Out, ShaderData::Coord );
+    shader->composeNodeSocket( SocketFlow::In, ShaderData::Coord4 );
+    shader->composeNodeSocket( SocketFlow::Out, ShaderData::Coord4 );
     shader->composeNodeCode( skinCoordNode );
     shader->composeNodeEnd();
 
@@ -344,15 +344,15 @@ namespace GE
 
     //This node applies skin to tangent
     shader->composeNodeNew( ShaderType::Vertex );
-    shader->composeNodeSocket( SocketFlow::In, ShaderData::Attribute, DataSource::Attribute, DataUnit::Vec3, "Tangent" );
-    shader->composeNodeSocket( SocketFlow::Out, ShaderData::Attribute, DataSource::Attribute, DataUnit::Vec3, "Tangent" );
+    shader->composeNodeSocket( SocketFlow::In, ShaderData::Tangent );
+    shader->composeNodeSocket( SocketFlow::Out, ShaderData::Tangent );
     shader->composeNodeCode( skinTangentNode );
     shader->composeNodeEnd();
 
     //This node applies skin to bitanget
     shader->composeNodeNew( ShaderType::Vertex );
-    shader->composeNodeSocket( SocketFlow::In, ShaderData::Attribute, DataSource::Attribute, DataUnit::Vec3, "Bitangent" );
-    shader->composeNodeSocket( SocketFlow::Out, ShaderData::Attribute, DataSource::Attribute, DataUnit::Vec3, "Bitangent" );
+    shader->composeNodeSocket( SocketFlow::In, ShaderData::Bitangent );
+    shader->composeNodeSocket( SocketFlow::Out, ShaderData::Bitangent );
     shader->composeNodeCode( skinBitangentNode );
     shader->composeNodeEnd();
   }

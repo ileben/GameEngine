@@ -652,7 +652,8 @@ int main (int argc, char **argv)
 
 
   //Setup 3D scene
-  scene = kernel.loadSceneFile( "Export/CityPlain.pak" );
+  scene = kernel.loadSceneFile( "Export/CityTex.pak" );
+  //scene = kernel.loadSceneFile( "Export/CityPlain.pak" );
   //scene = kernel.loadSceneFile( "Export/CityNight.pak" );
   //scene = kernel.loadSceneFile( argv[1] );
   //scene = kernel.loadSceneFile( "HousePointLights.pak" );

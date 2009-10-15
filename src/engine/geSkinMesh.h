@@ -61,11 +61,11 @@ namespace GE
     Float32 *jointWeight;
 
     DECLARE_SUBCLASS( SkinVertex, Object );
-    DECLARE_MEMBER_DATA( texcoord, new BindTarget( ShaderData::TexCoord ) );
+    DECLARE_MEMBER_DATA( texcoord, new BindTarget( ShaderData::TexCoord2 ) );
     DECLARE_MEMBER_DATA( normal, new BindTarget( ShaderData::Normal ) );
-    DECLARE_MEMBER_DATA( coord, new BindTarget( ShaderData::Coord ) );
-    DECLARE_MEMBER_DATA( jointIndex, new BindTarget( "jointIndex" ) );
-    DECLARE_MEMBER_DATA( jointWeight, new BindTarget( "jointWeight" ) );
+    DECLARE_MEMBER_DATA( coord, new BindTarget( ShaderData::Coord3 ) );
+    DECLARE_MEMBER_DATA( jointIndex, new BindTarget( ShaderData::JointIndex ) );
+    DECLARE_MEMBER_DATA( jointWeight, new BindTarget( ShaderData::JointWeight ) );
     DECLARE_END;
   };
 

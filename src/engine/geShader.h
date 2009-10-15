@@ -85,13 +85,20 @@ namespace GE
     enum Enum
     {
       Custom,
-      Coord,
-      TexCoord,
+      Coord2,
+      Coord3,
+      Coord4,
+      TexCoord1,
+      TexCoord2,
+      TexCoord3,
       Normal,
       Diffuse,
       Specular,
       SpecularExp,
-      Attribute
+      JointIndex,
+      JointWeight,
+      Tangent,
+      Bitangent
     };}
   
   class GE_API_ENTRY Shader : public Resource
@@ -134,20 +141,32 @@ namespace GE
       int index;
       bool builtInAccess[2];
 
-      Socket()
-        : index( -1 ) {}
-      Socket( ShaderData::Enum d, DataSource::Enum s = DataSource::BuiltIn, int i=-1 )
-        { data = d; source = s; index = i; resolveKnownData(); }
-      Socket( ShaderData::Enum d, DataSource::Enum s, const DataUnit &u, const CharString &n, int i=-1 )
-        { data = d; source = s; unit = u; name = n; index = i; resolveKnownData(); }
+      Socket() : index( -1 ) {}
+
+      Socket( ShaderData::Enum d, int i=-1 ) {
+        source = DataSource::Attribute;
+        data = d;
+        index = i; 
+        resolveKnownData();
+      }
+      Socket( const DataUnit &u, const CharString &n, int i=-1 ) {
+        source = DataSource::Attribute;
+        data = ShaderData::Custom;
+        unit = u;
+        name = n;
+        index = i;
+        resolveKnownData();
+      }
       bool operator== (const Socket &s)
       {
+        //Data type must match
         if (data != s.data)
           return false;
-        if (source == DataSource::BuiltIn && s.source == DataSource::BuiltIn)
+        //If not custom, match by index
+        if (data != ShaderData::Custom)
           return (index == s.index);
-        else
-          return (name == s.name && unit == s.unit && index == s.index);
+        //Custom have to be matched by all properties
+        return (name == s.name && unit == s.unit && index == s.index);
       }
       void resolveKnownData();
       CharString getInitString();
@@ -208,12 +227,9 @@ namespace GE
 
     void composeNodeSocket (SocketFlow::Enum flow,
                             ShaderData::Enum data,
-                            DataSource::Enum source = DataSource::BuiltIn,
                             int index=-1);
 
     void composeNodeSocket (SocketFlow::Enum flow,
-                            ShaderData::Enum data,
-                            DataSource::Enum source,
                             const DataUnit &unit,
                             const CharString &name,
                             int index=-1 );
@@ -238,6 +254,7 @@ namespace GE
     const GLShader* getFragment (UintSize index);
     const GLProgram* getProgram ();
 
+    UintSize getVertexAttribCount ();
     Int32 getVertexAttribID (UintSize index);
     Int32 getVertexAttribID (const CharString &name);
     Int32 getUniformID (UintSize index);

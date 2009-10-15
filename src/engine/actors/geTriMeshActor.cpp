@@ -59,101 +59,13 @@ namespace GE
 
     //Get mesh vertex format
     const VertexFormat *format = mesh->getFormat();
-    attributeIDs.clear();
 
     //Walk the vertex data members
     for (UintSize m=0; m<format->getMembers()->size(); ++m)
     {
-      //Check if data type is an attribute
+      //Register attributes with the shader
       FormatMember &member= format->getMembers()->at( m );
-      if (member.data == ShaderData::Attribute)
-      {
-        //Register all attribute members with the shader
-        Int32 id = shader->registerVertexAttrib( member.attribUnit, member.attribName );
-        attributeIDs.pushBack( id );
-      }
-      else attributeIDs.pushBack( -1 );
-    }
-  }
-
-  void TriMeshActor::bindFormat (Shader *shader, VertexFormat *format)
-  {
-    //Get data pointer
-    void *data = NULL;
-    if (!mesh->isOnGpu)
-      data = mesh->data.buffer();
-    
-    //Walk the vertx data members
-    for (UintSize m=0; m<format->getMembers()->size(); ++m)
-    {
-      //Get the offset into the data
-      FormatMember &member= format->getMembers()->at( m );
-      void *memberData = Util::PtrOff( data, member.offset );
-      UintSize stride = format->getByteSize();
-
-      //Find the GL data type
-      GLenum gltype;
-      switch (member.unit.type) {
-      case DataType::Float: gltype = GL_FLOAT; break;
-      case DataType::Int:   gltype = GL_INT; break;
-      case DataType::Uint:  gltype = GL_UNSIGNED_INT; break;
-      }
-
-      //Check if attribute is to be normalized
-      GLboolean glnormalize = (member.attribNorm ? GL_TRUE : GL_FALSE);
-      Int32 attIndex = attributeIDs[ m ];
-
-      //Pass the data pointer to OpenGL
-      switch (member.data)
-      {
-      case ShaderData::Coord:
-        glVertexPointer( member.unit.count, gltype, (GLsizei) stride, memberData);
-        glEnableClientState( GL_VERTEX_ARRAY );
-        break;
-      case ShaderData::TexCoord:
-        glTexCoordPointer( member.unit.count, gltype, (GLsizei) stride, memberData);
-        glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-        break;
-      case ShaderData::Normal:
-        glNormalPointer( gltype, (GLsizei) stride, memberData );
-        glEnableClientState( GL_NORMAL_ARRAY );
-        break;
-      case ShaderData::Attribute:
-        if (shader == NULL) break;
-        //Int32 glattrib = shader->getVertexAttribID( attributeIDs[ m ] );
-        Int32 glattrib = shader->getVertexAttribID( member.attribName );
-        if (glattrib == -1) break;
-        glVertexAttribPointer( glattrib, member.unit.count, gltype, glnormalize, (GLsizei) stride, memberData );
-        glEnableVertexAttribArray( glattrib );
-        break;
-      }
-    }
-  }
-
-  void TriMeshActor::unbindFormat (Shader *shader, VertexFormat *format)
-  {
-    for (UintSize m=0; m<format->getMembers()->size(); ++m)
-    {
-      FormatMember &member= format->getMembers()->at( m );
-      switch (member.data)
-      {
-      case ShaderData::Coord:
-        glDisableClientState( GL_VERTEX_ARRAY );
-        break;
-      case ShaderData::TexCoord:
-        glDisableClientState( GL_TEXTURE_COORD_ARRAY );
-        break;
-      case ShaderData::Normal:
-        glDisableClientState( GL_NORMAL_ARRAY );
-        break;
-      case ShaderData::Attribute:
-        if (shader == NULL) break;
-        //Int32 glattrib = shader->getVertexAttribID( attributeIDs[ m ] );
-        Int32 glattrib = shader->getVertexAttribID( member.attribName );
-        if (glattrib == -1) break;
-        glDisableVertexAttribArray( glattrib );
-        break;
-      }
+      Int32 id = shader->registerVertexAttrib( member.attribUnit, member.attribName );
     }
   }
 
@@ -174,6 +86,64 @@ namespace GE
       //Restore arrays
       glBindBuffer( GL_ARRAY_BUFFER, 0 );
       glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );
+    }
+  }
+
+  void TriMeshActor::bindFormat (Shader *shader, VertexFormat *format)
+  {
+    if (shader == NULL)
+      return;
+
+    //Get data pointer
+    void *data = NULL;
+    if (!mesh->isOnGpu)
+      data = mesh->data.buffer();
+    
+    //Walk the vertex data members
+    for (UintSize m=0; m<format->getMembers()->size(); ++m)
+    {
+      //Get the offset into the data
+      FormatMember &member= format->getMembers()->at( m );
+      void *memberData = Util::PtrOff( data, member.offset );
+      UintSize stride = format->getByteSize();
+
+      //Find the input data type
+      GLenum gltype;
+      switch (member.unit.type) {
+      case DataType::Float: gltype = GL_FLOAT; break;
+      case DataType::Int:   gltype = GL_INT; break;
+      case DataType::Uint:  gltype = GL_UNSIGNED_INT; break;
+      }
+
+      //Check if attribute is to be normalized
+      GLboolean glnormalize = (member.attribNorm ? GL_TRUE : GL_FALSE);
+
+      //Get the vertex attribute index
+      Int32 glattrib = shader->getVertexAttribID( m );
+      if (glattrib == -1) continue;
+      
+      //Enable attribute and set its data pointer
+      glEnableVertexAttribArray( glattrib );
+      glVertexAttribPointer( glattrib, member.unit.count, gltype, glnormalize, (GLsizei) stride, memberData );
+    }
+  }
+
+  void TriMeshActor::unbindFormat (Shader *shader, VertexFormat *format)
+  {
+    if (shader == NULL)
+      return;
+
+    //Walk the vertex data members
+    for (UintSize m=0; m<format->getMembers()->size(); ++m)
+    {
+      FormatMember &member= format->getMembers()->at( m );
+
+      //Get the vertex attribute index
+      Int32 glattrib = shader->getVertexAttribID( m );
+      if (glattrib == -1) continue;
+      
+      //Disable attribute
+      glDisableVertexAttribArray( glattrib );
     }
   }
 
@@ -211,7 +181,7 @@ namespace GE
       renderGroup( grp );
     }
 
-    //unbindFormat( shader, format );
+    unbindFormat( shader, format );
     //unbindBuffers();
   }
 
@@ -248,7 +218,7 @@ namespace GE
     }
 
     material->end();
-    //unbindFormat( shader, format );
+    unbindFormat( shader, format );
     //unbindBuffers();
   }
 
