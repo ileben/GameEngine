@@ -498,39 +498,25 @@ namespace GE
   void TriMesh::updateBoundingBox()
   {
     //Reset box
-    bbox.center = bbox.min = bbox.max = Vector3(0,0,0);
+    bbox.min = bbox.max = Vector3(0,0,0);
 
     //Prepare vertex binding
     VertexBinding <TriVertex> vertBind;
     vertBind.init( &format );
     TriVertex vert;
 
-    //Init with first vertex
-    if (getVertexCount() > 0) {
-      vert = vertBind( getVertex(0) );
-      if (vert.coord == NULL) return;
-      bbox.min = bbox.max = (*vert.coord);
-    }
-
-    //Walk the remaining vertices
-    for (UintSize v=1; v<getVertexCount(); ++v)
+    //Walk the vertices
+    for (UintSize v=0; v<getVertexCount(); ++v)
     {
       //Get the vertex coordinate
       TriVertex vert = vertBind( getVertex( v ) );
+      if (vert.coord == NULL) return;
       Vector3 point = *vert.coord;
 
-      //Update bbox
-      if (point.x < bbox.min.x) bbox.min.x = point.x;
-      if (point.y < bbox.min.y) bbox.min.y = point.y;
-      if (point.z < bbox.min.z) bbox.min.z = point.z;
-
-      if (point.x > bbox.max.x) bbox.max.x = point.x;
-      if (point.y > bbox.max.y) bbox.max.y = point.y;
-      if (point.z > bbox.max.z) bbox.max.z = point.z;
+      //Add to bbox
+      if (v==0) bbox = point;
+      else bbox += point;
     }
-    
-    //Average center
-    bbox.center = (bbox.max + bbox.min) * 0.5f;
   }
   
   BoundingBox TriMesh::getBoundingBox() {

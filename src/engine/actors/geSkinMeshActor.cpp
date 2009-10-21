@@ -402,9 +402,8 @@ namespace GE
 
     //Transform by root joint matrix
     BoundingBox outBBox = charBBox;
-    outBBox.center = rootWorld * outBBox.center;
-    outBBox.min    = rootWorld * outBBox.min;
-    outBBox.max    = rootWorld * outBBox.max;
+    outBBox.min = rootWorld * outBBox.min;
+    outBBox.max = rootWorld * outBBox.max;
 
     return outBBox;
   }

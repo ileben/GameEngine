@@ -18,11 +18,13 @@ namespace GE
   public:
     Vector3 min;
     Vector3 max;
-    Vector3 center;
 
     BoundingBox ();
-    void getCorners (Vector3 *corners);
+    BoundingBox (const Vector3 &first);
+    BoundingBox& operator = (const Vector3 &first);
+    BoundingBox& operator += (const Vector3 &vert);
     BoundingBox& operator += (const BoundingBox &bbox);
+    void getCorners (Vector3 *corners);
   };
 
 

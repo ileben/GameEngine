@@ -6,16 +6,6 @@ using namespace GE;
 #include <cstdio>
 #include <iostream>
 
-namespace CameraMode
-{
-  enum Enum
-  {
-    Pan,
-    Orbit,
-    Zoom
-  };
-}
-
 Float animSpeed = 1.0f;
 
 Scene *window = NULL;
@@ -30,16 +20,13 @@ Actor3D *actorRender = NULL;
 
 Light *light = NULL;
 
-Scene3D *sceneSky = NULL;
-Camera3D *camSky = NULL;
-
 Scene3D *scene = NULL;
 Scene3D *sceneRender = NULL;
 AnimController *animCtrl = NULL;
 
-CameraMode::Enum cameraMode;
 Camera2D *cam2D = NULL;
 Camera3D *cam3D = NULL;
+Camera3D *camTest = NULL;
 Camera3D *camRender = NULL;
 FpsController *ctrl = NULL;
 
@@ -70,8 +57,7 @@ void drag3D (int x, int y)
   Vector2 diff = Vector2( (Float)x,(Float)y ) - lastMouse3D;
   float eyeDist = ( camRender->getEye() - center ).norm();
   lastMouse3D.set( (Float)x, (Float)y );
-
-
+  
   if (light != NULL)
   {
     Vector3 side = camRender->getGlobalMatrix( false ).transformVector( camRender->getSide() );
@@ -81,63 +67,15 @@ void drag3D (int x, int y)
     light->lookInto( center );
   }
 
-  /*  
-  Float angleH = diff.x * (2*PI) / 400;
-  Float angleV = diff.y * (2*PI) / 400;
-  Float panH = -diff.x * ( eyeDist * 0.002f );
-  Float panV =  diff.y * ( eyeDist * 0.002f );
-  Float zoom =  diff.y * ( eyeDist * 0.01f );
-
-  switch (cameraMode)
-  {  
-  case CameraMode::Zoom:
-
-    camRender->zoom( zoom );
-    break;
-    
-  case CameraMode::Orbit:
-    
-    camRender->setCenter( center );
-    camRender->orbitH( angleH, true );
-    camRender->orbitV( angleV, true );
-    break;
-
-  case CameraMode::Pan:
-
-    camRender->panH( panH );
-    camRender->panV( panV );
-    break;
-  }
-  */
   postRedisplay();
 }
 
 void click3D (int button, int state, int x, int y)
 {
-  if (state != GLUT_DOWN)
-  {
+  if (state != GLUT_DOWN) {
     down3D = false;
     return;
   }
-
-  /*
-  int mods = glutGetModifiers();
-
-  if (mods & GLUT_ACTIVE_ALT)
-  {
-    if (button == GLUT_LEFT_BUTTON)
-      cameraMode = CameraMode::Orbit;
-    else if (button == GLUT_RIGHT_BUTTON)
-      cameraMode = CameraMode::Zoom;
-    else if (button == GLUT_MIDDLE_BUTTON)
-      cameraMode = CameraMode::Pan;
-  }
-  else if (mods & GLUT_ACTIVE_CTRL)
-  {
-    cameraMode = CameraMode::Pan;
-  }
-  else return;
-  */
 
   lastMouse3D.set( (Float)x, (Float)y );
   down3D = true;
@@ -259,17 +197,12 @@ void specialKey (int key, int x, int y)
 
 void display ()
 {
-  //Matrix4x4 camWorld = camRender->getMatrix().affineNormalize();
-  //camWorld.setColumn( 3, Vector4( 0,0,0,1 ) );
-  //camSky->setMatrix( camWorld );
-
   //switch camera
   renderer->setViewport( 0,0,resX, resY );
   renderer->beginFrame();
   
   //draw model
   renderer->beginDeferred();
-  //renderer->renderSceneDeferred( sceneSky, camSky );
   renderer->renderSceneDeferred( sceneRender, camRender );
   renderer->endDeferred();
   
@@ -609,14 +542,6 @@ Actor3D* loadActor (const CharString &meshFileName,
   return actorRender;
 }
 
-class EventObserver : public AnimObserver
-{
-public:
-  virtual void onEvent (AnimEvent *evt)
-  {
-    std::cout << "Event '" << evt->getName().buffer() << "' triggered!" << std::endl;
-  }
-};
 
 //TODO: Stuf doesn't load properly if a class used by the exporter is not
 //used in the application and therefore it doesn't get classified in runtime!!!
@@ -624,18 +549,9 @@ ActorAnimObserver a;
 SkinAnimObserver b;
 
 int main (int argc, char **argv)
-{/*
-  //Usage
-  if (argc < 3) {
-    printf( "Usage: EXE  SCENE_FILE  MOVE_SPEED" );
-    getchar();
-    return EXIT_FAILURE;
-  }
-*/
+{
   //Params
   Float moveSpeed = 200.0f;
-  //CharString strMoveSpeed = argv[2];
-  //moveSpeed = strMoveSpeed.parseFloat();
 
   //Initialize GLUT
   initGlut( argc, argv );
@@ -646,23 +562,8 @@ int main (int argc, char **argv)
   renderer->setWindowSize( resX, resY );
   printf( "Kernel loaded\n" );
 
-  //Setup sky scene
-  //sceneSky = kernel.loadSceneFile( "Export/SkyBox.pak" );
-  //camSky = (Camera3D*) sceneSky->findFirstActorByClass( Class(Camera3D) );
-
-
   //Setup 3D scene
-  //scene = kernel.loadSceneFile( "Export/CityTex.pak" );
-  scene = kernel.loadSceneFile( "Export/CityPlain.pak" );
-  //scene = kernel.loadSceneFile( "Export/CityNight.pak" );
-  //scene = kernel.loadSceneFile( argv[1] );
-  //scene = kernel.loadSceneFile( "HousePointLights.pak" );
-  //scene = kernel.loadSceneFile( "HouseSpotLights.pak" );
-  //scene = kernel.loadSceneFile( "CitySpotLights.pak" );
-  //scene = kernel.loadSceneFile( "CityPointLights.pak" );
-  //scene = kernel.loadSceneFile( "City.pak" );
-  //scene = kernel.loadSceneFile( "BossConvo.pak" );
-  //scene = kernel.loadSceneFile( "ZacScene.pak" );
+  scene = kernel.loadSceneFile( "TestFrustum.pak" );
   if (scene == NULL) {
     std::cout << "Failed loading scene file!" << std::endl;
     std::getchar();
@@ -671,30 +572,14 @@ int main (int argc, char **argv)
 
   //Find first skin actor
   skinMeshActor = (SkinMeshActor*) scene->findFirstActorByClass( Class(SkinMeshActor) );
-  if (skinMeshActor != NULL)
-  {
-    //skinMeshActor->setParent( NULL );
-
-    /*
-    //Find the name of the first animation
-    if (!skinMeshActor->getCharacter()->anims.empty()) {
-      Animation *anim = skinMeshActor->getCharacter()->anims.first();
-      skinMeshActor->loadAnimation( anim->name );
-    }*/
-  }
 
   //Bind first animation to the controller
   animCtrl = new AnimController;
-  if (!scene->animations.empty()) {
-    //animCtrl->bindAnimation( scene->animations.first() );
-    //animCtrl->observeAt( 0.0f );
-  }
-  
-  //Bind event observer to the controller
-  animCtrl->bindObserver( new EventObserver() );
 
   //Find first camera in the scene
-  cam3D = (Camera3D*) scene->findFirstActorByClass( Class(Camera3D) );
+  //cam3D = (Camera3D*) scene->findFirstActorByClass( Class(Camera3D) );
+  camTest = (Camera3D*) scene->findFirstActorByName( "CamTest" );
+  cam3D = (Camera3D*) scene->findFirstActorByName( "CamMain" );
   cam3D->setDofEnabled( false );
   if (cam3D == NULL)
   {
@@ -717,7 +602,7 @@ int main (int argc, char **argv)
 
   cam2D = new Camera2D;
 
-  //Start with Logo scene
+  //Select scene to render
   sceneRender = scene;
   camRender = cam3D;
 
@@ -725,8 +610,6 @@ int main (int argc, char **argv)
   ctrl = new FpsController;
   ctrl->attachCamera( cam3D );
   ctrl->setMoveSpeed( moveSpeed );
-  //ctrl->setMoveSpeed( 400 );
-  //ctrl->setMoveSpeed( 1000 );
 
   //Tick first time after all setup done
   Float time = (Float) glutGet( GLUT_ELAPSED_TIME ) * 0.001f;

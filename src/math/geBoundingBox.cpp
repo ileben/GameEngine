@@ -4,19 +4,31 @@ namespace GE
 {
   BoundingBox::BoundingBox ()
   {
-    min = max = center = Vector3( 0,0,0 );
+    min = max = Vector3( 0,0,0 );
   }
 
-  void BoundingBox::getCorners (Vector3 *corners)
+  BoundingBox::BoundingBox (const Vector3 &first)
   {
-    corners[0].set( min.x, min.y, min.z );
-    corners[1].set( min.x, min.y, max.z );
-    corners[2].set( min.x, max.y, min.z );
-    corners[3].set( min.x, max.y, max.z );
-    corners[4].set( max.x, min.y, min.z );
-    corners[5].set( max.x, min.y, max.z );
-    corners[6].set( max.x, max.y, min.z );
-    corners[7].set( max.x, max.y, max.z );
+    min = max = Vector3( 0,0,0 );
+  }
+
+  BoundingBox& BoundingBox::operator = (const Vector3 &first)
+  {
+    min = max = Vector3( 0,0,0 );
+    return *this;
+  }
+
+  BoundingBox& BoundingBox::operator += (const Vector3 &vert)
+  {
+    if (vert.x < min.x) min.x = vert.x;
+    if (vert.y < min.y) min.y = vert.y;
+    if (vert.z < min.z) min.z = vert.z;
+
+    if (vert.x > max.x) max.x = vert.x;
+    if (vert.y > max.y) max.y = vert.y;
+    if (vert.z > max.z) max.z = vert.z;
+
+    return *this;
   }
 
   BoundingBox& BoundingBox::operator += (const BoundingBox &bbox)
@@ -29,8 +41,18 @@ namespace GE
     if (bbox.max.y > max.y) max.y = bbox.max.y;
     if (bbox.max.z > max.z) max.z = bbox.max.z;
 
-    center = (min + max) * 0.5f;
-
     return *this;
+  }
+
+  void BoundingBox::getCorners (Vector3 *corners)
+  {
+    corners[0].set( min.x, min.y, min.z );
+    corners[1].set( min.x, min.y, max.z );
+    corners[2].set( min.x, max.y, min.z );
+    corners[3].set( min.x, max.y, max.z );
+    corners[4].set( max.x, min.y, min.z );
+    corners[5].set( max.x, min.y, max.z );
+    corners[6].set( max.x, max.y, min.z );
+    corners[7].set( max.x, max.y, max.z );
   }
 }

@@ -811,10 +811,12 @@ namespace GE
       //////////////////////////////////////////////////////////////////
       //Render the shadow map
 
-      //The stencil bit used by this light
-      int stencilMask = (1 << (l % numStencilBits));
+      //Set light current
       Light *light = scene->getLights()->at( l );
       curLight = light;
+
+      //The stencil bit used by this light
+      int stencilMask = (1 << (l % numStencilBits));
 
       //Obtain light query result
       GLint litSamples = 0;
@@ -1451,7 +1453,7 @@ namespace GE
         if (maxDist >= 0.0f)
         {
           //Check distance of bbox center to camera
-          Vector3 center = worldMat * bbox.center;
+          Vector3 center = worldMat * ((bbox.min + bbox.max) * 0.5f);
           Float dist = (center - eye).norm();
           if (dist > maxDist) continue;
         }
