@@ -60,12 +60,14 @@ namespace GE
     lighting = true;
     culling = true;
     cell = false;
+    wire = false;
 
     gotUniforms = false;
   }
 
   StandardMaterial::StandardMaterial (SM *sm)
   {
+    wire = false;
     gotUniforms = false;
   }
 
@@ -149,6 +151,14 @@ namespace GE
     return cell;
   }
 
+  void StandardMaterial::setWireframe (bool enable) {
+    wire = enable;
+  }
+
+  bool StandardMaterial::getWireframe () {
+    return wire;
+  }
+
   void StandardMaterial::composeShader( Shader *shader )
   {
     shader->registerUniform( ShaderType::Fragment, DataUnit::Float, "uLuminosity" );
@@ -221,6 +231,10 @@ namespace GE
     if(culling) {
       glEnable (GL_CULL_FACE);
     }else glDisable (GL_CULL_FACE);
+
+    //Wirefrace
+    if (wire)
+      glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
     
     //Normalize all normals so
     //we can freely scale actors
@@ -228,6 +242,12 @@ namespace GE
 
     //Lighting model
     glUniform1f( uCellShading, cell ? 1.0f : 0.0f );
+  }
+
+  void StandardMaterial::end()
+  {
+    if (wire)
+      glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
   }
   
   /*

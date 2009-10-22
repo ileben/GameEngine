@@ -101,6 +101,7 @@ namespace GE
     bool lighting;
     bool culling;
     bool cell;
+    bool wire;
 
     Int32 uLuminosity;
     Int32 uSpecularity;
@@ -144,8 +145,12 @@ namespace GE
 
     void setCellShaded (bool enable);
     bool getCellShaded ();
+
+    void setWireframe (bool enable);
+    bool getWireframe ();
     
     virtual void begin();
+    virtual void end();
   };
 
   /*

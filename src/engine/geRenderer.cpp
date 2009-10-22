@@ -1329,78 +1329,6 @@ namespace GE
       glDisable( GL_LIGHT0 + (int) l );
   }
 
-  /*
-  ------------------------------------------------------
-  Renderer class has authority over the rendering steps
-  invoked and their order. This is to allow for special
-  rendering passes - e.g. when a shadow map is being
-  rendered using materials (and possibly enabling other
-  shading programs) might not be desired.
-  ------------------------------------------------------*/
-
-  class Frustum
-  {
-  public:
-
-    enum Result
-    {
-      Outside,
-      Inside
-    };
-
-    enum PlaneIndex
-    {
-      Left   = 0,
-      Right  = 1,
-      Bottom = 2,
-      Top    = 3,
-      Near   = 4,
-      Far    = 5
-    };
-
-    Vector4 planes[6];
-
-    Result testPoint (const Vector3 &p, int pl) const
-    {
-      if (p.x  * planes[pl].x +
-          p.y  * planes[pl].y +
-          p.z  * planes[pl].z +
-          1.0f * planes[pl].w > 0.0f)
-        return Inside;
-      else return Outside;
-    }
-  };
-
-  void getFrustum (const Matrix4x4 &m, Frustum &outFrustum)
-  {
-    outFrustum.planes[ Frustum::Left ]   = m.getRow(3) + m.getRow(0);
-    outFrustum.planes[ Frustum::Right ]  = m.getRow(3) - m.getRow(0);
-    outFrustum.planes[ Frustum::Bottom ] = m.getRow(3) + m.getRow(1);
-    outFrustum.planes[ Frustum::Top ]    = m.getRow(3) - m.getRow(1);
-    outFrustum.planes[ Frustum::Near ]   = m.getRow(3) + m.getRow(2);
-    outFrustum.planes[ Frustum::Far ]    = m.getRow(3) - m.getRow(2);
-  }
-
-  bool outsideFrustum (const Frustum &frustum, Vector3 box[8])
-  {
-    //Test against frustum
-    for (int p=0; p<6; ++p) {
-
-      int outCount = 0;
-
-      //Test how many points is outside
-      for (int b=0; b<8; ++b)
-        if (frustum.testPoint( box[ b ], p ) == Frustum::Outside)
-          outCount++;
-
-      //The box is out if all points are outside any one of the planes
-      if (outCount == 8)
-        return true;
-    }
-
-    return false;
-  }
-
   void Renderer::traverseScene (Scene3D *scene, RenderTarget::Enum target)
   {
     //Camera center in world coordinates
@@ -1414,14 +1342,14 @@ namespace GE
       Matrix4x4 proj = curLight->getProjection();
       Matrix4x4 modelview = curLight->getGlobalMatrix().affineNormalize().affineInverse();
       Matrix4x4 m = proj * modelview;
-      getFrustum( m, frustum );
+      frustum.fromMatrix( m );
     }
     else
     {
       Matrix4x4 proj = curCamera->getProjection( (Float) viewW, (Float) viewH );
       Matrix4x4 modelview = curCamera->getGlobalMatrix().affineNormalize().affineInverse();
       Matrix4x4 m = proj * modelview;
-      getFrustum( m, frustum );
+      frustum.fromMatrix( m );
     }
 
     //Traverse the scene
@@ -1465,7 +1393,7 @@ namespace GE
           bboxCorners[ c ] = worldMat * bboxCorners[ c ];
 
         //Frustum culling
-        if (outsideFrustum( frustum, bboxCorners ))
+        if (frustum.testBox( bboxCorners ) == Frustum::Outside)
           continue;
 
         //Render geometry

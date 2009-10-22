@@ -162,6 +162,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\math\geFrustum.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\math\geFrustum.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\math\geMath.h"
 				>
 			</File>

@@ -58,13 +58,17 @@ void drag3D (int x, int y)
   float eyeDist = ( camRender->getEye() - center ).norm();
   lastMouse3D.set( (Float)x, (Float)y );
   
-  if (light != NULL)
+  if (camTest != NULL)
   {
+    //Get parent scale
+    Matrix4x4 pMatrix = camTest->getGlobalMatrix( false );
+    Float scale = pMatrix.getColumn(0).xyz().norm();
+
+    //Translate in view space
     Vector3 side = camRender->getGlobalMatrix( false ).transformVector( camRender->getSide() );
     Vector3 look = Vector::Cross( Vector3(0,1,0), side );
-    light->translate( look * diff.y );
-    light->translate( side * diff.x );
-    light->lookInto( center );
+    camTest->translate( look * diff.y / scale );
+    camTest->translate( side * diff.x / scale );
   }
 
   postRedisplay();
@@ -255,6 +259,49 @@ void cleanup()
 {
 }
 
+void checkFrustum()
+{
+  Vector2 winSize = renderer->getWindowSize();
+
+  //Frustum for culling
+  Frustum frustum;
+  Matrix4x4 proj = camTest->getProjection( winSize.x, winSize.y );
+  Matrix4x4 modelview = camTest->getGlobalMatrix().affineNormalize().affineInverse();
+  Matrix4x4 m = proj * modelview;
+  frustum.fromMatrix( m );
+
+  //Traverse the scene
+  for (UintSize t=0; t<scene->getTraversal()->size(); ++t)
+  {
+    TravNode node = scene->getTraversal()->at( t );
+    if (node.event == TravEvent::Begin)
+    {
+      //Skip if disabled for rendering
+      if (!node.actor->isRenderable())
+        continue;
+
+      //Get bounding box
+      BoundingBox bbox = node.actor->getBoundingBox();
+      Matrix4x4 worldMat = node.actor->getGlobalMatrix();
+
+      //Transform bbox corners to world space
+      Vector3 bboxCorners[8];
+      bbox.getCorners( bboxCorners );
+      for (Uint c=0; c<8; ++c)
+        bboxCorners[ c ] = worldMat * bboxCorners[ c ];
+
+      //Frustum culling
+      bool out = (frustum.testBox( bboxCorners ) == Frustum::Outside);
+      
+      Material* mat = node.actor->getMaterial();
+      if (mat == NULL) continue;
+      
+      StandardMaterial* smat = SafeCast( StandardMaterial, mat );
+      if (mat != NULL) smat->setWireframe( out );
+    }
+  }
+}
+
 void animate()
 {
   Float time = (Float) glutGet( GLUT_ELAPSED_TIME ) * 0.001f;
@@ -265,6 +312,8 @@ void animate()
 
   ctrl->tick();
   animCtrl->tick();
+  
+  checkFrustum();
 
   glutPostRedisplay();
 }
