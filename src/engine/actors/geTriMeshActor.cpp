@@ -182,7 +182,6 @@ namespace GE
     }
 
     unbindFormat( shader, format );
-    //unbindBuffers();
   }
 
   void TriMeshActor::renderSingleMat ()
@@ -193,7 +192,9 @@ namespace GE
     Shader *shader = renderer->getShader( RenderTarget::GBuffer, this, material );
 
     shader->use();
-/*
+
+#if (0)
+
     if (!meshVAOInit)
     {
       glGenVertexArrays( 1, &meshVAO );
@@ -204,9 +205,14 @@ namespace GE
     }
     else
       glBindVertexArray( meshVAO );
-*/
+
+#else
+
     bindBuffers();
     bindFormat( shader, format );
+
+#endif
+
     material->begin();
 
     //Walk material index groups
@@ -218,8 +224,8 @@ namespace GE
     }
 
     material->end();
+
     unbindFormat( shader, format );
-    //unbindBuffers();
   }
 
   void TriMeshActor::renderMultiMat ()

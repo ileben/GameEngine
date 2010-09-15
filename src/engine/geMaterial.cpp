@@ -178,12 +178,6 @@ namespace GE
       uCellShading = shader->getUniformID( "uCellShading" );
       gotUniforms = true;
     }
-    
-    //Lighting
-    if (lighting)
-      glEnable (GL_LIGHTING);
-    else
-      glDisable (GL_LIGHTING);
 
     //We will set material color manually (not via glColor)
     glDisable (GL_COLOR_MATERIAL);
@@ -227,6 +221,14 @@ namespace GE
     }else glDisable (GL_BLEND);
     */
 
+    /*
+    //Lighting
+    if (lighting)
+      glEnable (GL_LIGHTING);
+    else
+      glDisable (GL_LIGHTING);
+    */
+
     //Back-face culling
     if(culling) {
       glEnable (GL_CULL_FACE);
@@ -238,7 +240,7 @@ namespace GE
     
     //Normalize all normals so
     //we can freely scale actors
-    glEnable( GL_NORMALIZE ); 
+    glEnable( GL_NORMALIZE );
 
     //Lighting model
     glUniform1f( uCellShading, cell ? 1.0f : 0.0f );

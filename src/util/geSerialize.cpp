@@ -216,7 +216,7 @@ namespace GE
 
     //Make sure the class is found otherwise
     ClassPtr cls = IClass::FromID( clsid );
-    ASSERT( cls != INVALID_CLASS_PTR );
+    assert( cls != INVALID_CLASS_PTR );
     
     //Construct new object
     if (obj.pointedTo)

@@ -127,7 +127,7 @@ void animate()
   {
     Matrix4x4 mugWorld = actMug->getGlobalMatrix();
     BoundingBox mugBBox = actMug->getBoundingBox();
-    Vector3 mugCenter= mugWorld * mugBBox.center;
+    Vector3 mugCenter= mugWorld * (mugBBox.min + mugBBox.max) * 0.5f;
     
     Matrix4x4 camWorld = camHouse->getGlobalMatrix().affineNormalize();
     Vector3 camEye = camWorld.getColumn( 3 ).xyz();

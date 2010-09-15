@@ -100,6 +100,10 @@ namespace GE
     Shader *curShader;
     Material *curMaterial;
     Light *curLight;
+
+    bool fullScreenInit;
+    Uint fullScreenVAO;
+    Uint fullScreenVBO;
     
     bool shadowInit;
     Uint32 shadowMap;
@@ -206,6 +210,7 @@ namespace GE
     void initTexture (Uint *texID, Uint format, Uint attachment, bool gen=false, int W=-1, int H=-1);
     void initBuffers ();
 
+    void fullScreenQuad ();
     void traverseScene (Scene3D *scene, RenderTarget::Enum target);
     void renderShadowMap (Light *light, Scene3D *scene);
     Shader* findShaderByKey (const ShaderKey &key);

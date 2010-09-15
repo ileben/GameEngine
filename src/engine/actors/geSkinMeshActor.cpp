@@ -330,8 +330,8 @@ namespace GE
 
     //This node applies skin to the vertex coordinate
     shader->composeNodeNew( ShaderType::Vertex );
-    shader->composeNodeSocket( SocketFlow::In, ShaderData::Coord4 );
-    shader->composeNodeSocket( SocketFlow::Out, ShaderData::Coord4 );
+    shader->composeNodeSocket( SocketFlow::In, ShaderData::Coord3 );
+    shader->composeNodeSocket( SocketFlow::Out, ShaderData::Coord3 );
     shader->composeNodeCode( skinCoordNode );
     shader->composeNodeEnd();
 
@@ -366,9 +366,13 @@ namespace GE
     for (UintSize b=0; b<curSubMesh->mesh2skinSize; ++b)
       meshMats[b] = skinMats[ curSubMesh->mesh2skinMap[b] ];
 
+    GLenum err = glGetError();
+
     //Pass joint matrices to the shader
     Int32 uniMatrix = shader->getUniformID( skinMatUniform );
     glUniformMatrix4fv( uniMatrix, curSubMesh->mesh2skinSize, GL_FALSE, (GLfloat*)meshMats );
+
+    err = glGetError();
   }
 
   void SkinMeshActor::render (RenderTarget::Enum target)

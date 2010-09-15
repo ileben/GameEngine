@@ -76,7 +76,9 @@ GL_VERSION_1_3
 #define GL_TEXTURE8                       0x84C8
 #define GL_TEXTURE9                       0x84C9
 #define GL_TEXTURE10                      0x84CA
-
+#define GL_COMPRESSED_RGB                 0x84ED
+#define GL_COMPRESSED_RGBA                0x84EE
+#define GL_TEXTURE_COMPRESSED             0x86A1
 #endif
 
 #ifndef GL_VERSION_1_3

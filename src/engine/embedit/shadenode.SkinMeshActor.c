@@ -1,7 +1,8 @@
 #begin skinCoordNode
-outCoord = vec4( 0,0,0,0 );
+vec4 inCoord4 = vec4( inCoord3, 1.0 );
+outCoord3 = vec3( 0,0,0 );
 for (int i=0; i<4; ++i)
-  outCoord += jointWeight[i] * (skinMatrix[ int(jointIndex[i]) ] * inCoord);
+  outCoord3 += jointWeight[i] * (skinMatrix[ int(jointIndex[i]) ] * inCoord4).xyz;
 #end
 
 

@@ -522,7 +522,5 @@ BoundingBox appProjectActor (Actor3D *actor, Camera *camera,
     }
   }
 
-  bboxOut.center = (bboxOut.min + bboxOut.max) * 0.5f;
-
   return bboxOut;
 }

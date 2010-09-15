@@ -25,11 +25,11 @@ namespace GE
     clickToLook = true;
 
     mouseDown = false;
-    moveSpeed = 15.0f;
+    moveSpeed = 100.0f;
     moveDir = 0;
-    strafeSpeed = 15.0f;
+    strafeSpeed = 100.0f;
     strafeDir = 0;
-    climbSpeed = 15.0f;
+    climbSpeed = 100.0f;
     climbDir = 0;
   }
 
@@ -70,15 +70,19 @@ namespace GE
     switch (key)
     {
     case 'e':
+    case 'E':
       moveDir = 1;
       break;
     case 'd':
+    case 'D':
       moveDir = -1;
       break;
     case 'f':
+    case 'F':
       strafeDir = 1;
       break;
     case 's':
+    case 'S':
       strafeDir = -1;
       break;
     case ' ':
@@ -92,15 +96,19 @@ namespace GE
     switch (key)
     {
     case 'e':
+    case 'E':
       if (moveDir == 1) moveDir = 0;
       break;
     case 'd':
+    case 'D':
       if (moveDir == -1) moveDir = 0;
       break;
     case 'f':
+    case 'F':
       if (strafeDir == 1) strafeDir = 0;
       break;
     case 's':
+    case 'S':
       if (strafeDir == -1) strafeDir = 0;
       break;
     case ' ':
@@ -129,8 +137,8 @@ namespace GE
     Vector2 diff = Vector2( (Float)x,(Float)y ) - lastMouse;
     lastMouse.set( (Float)x, (Float)y );
     
-    Float angleH = diff.x * (2*PI) / 500;
-    Float angleV = diff.y * (2*PI) / 500;
+    Float angleH = diff.x * (2*PI) / 1500;
+    Float angleV = diff.y * (2*PI) / 1500;
 
     cam->setCenter( cam->getEye() );
     cam->orbitH( angleH, true );

@@ -39,11 +39,19 @@ namespace GE
       break;
 
     case COLOR_FORMAT_RGB:
-      gluBuild2DMipmaps( GL_TEXTURE_2D, GL_RGB, width, height, GL_RGB, GL_UNSIGNED_BYTE, data );
+      //gluBuild2DMipmaps( GL_TEXTURE_2D, GL_RGB, width, height, GL_RGB, GL_UNSIGNED_BYTE, data );
+      gluBuild2DMipmaps( GL_TEXTURE_2D, GL_COMPRESSED_RGB, width, height, GL_RGB, GL_UNSIGNED_BYTE, data );
+
+      { int isCompressed = 0;
+        glGetTexLevelParameteriv( GL_TEXTURE_2D, 0, GL_TEXTURE_COMPRESSED, &isCompressed );
+        if (isCompressed != 0)
+          bool zomg = true;
+      }
       break;
 
     case COLOR_FORMAT_RGB_ALPHA:
-      gluBuild2DMipmaps( GL_TEXTURE_2D, GL_RGBA, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+      //gluBuild2DMipmaps( GL_TEXTURE_2D, GL_RGBA, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+      gluBuild2DMipmaps( GL_TEXTURE_2D, GL_COMPRESSED_RGBA, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
       break;
     }
   }

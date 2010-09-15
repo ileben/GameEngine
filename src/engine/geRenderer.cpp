@@ -26,6 +26,7 @@ namespace GE
     viewY = 0;
     viewW = 0;
     viewH = 0;
+    fullScreenInit = false;
     shadowInit = false;
     buffersInit = false;
     initShaders();
@@ -601,7 +602,7 @@ namespace GE
     delete[] pixels;*/
   }
 
-  void fullScreenQuad ()
+  void Renderer::fullScreenQuad ()
   {
     const GLfloat texCoords[] = {
       0,0,
@@ -615,7 +616,35 @@ namespace GE
       +1,+1,1,
       -1,+1,1 };
 
-    //glBindVertexArray( 0 );
+#if (0)
+
+    if (!fullScreenInit)
+    {
+      glGenVertexArrays( 1, &fullScreenVAO );
+      glBindVertexArray( fullScreenVAO );
+      fullScreenInit = true;
+
+      glGenBuffers( 1, &fullScreenVBO );
+      glBindBuffer( GL_ARRAY_BUFFER, fullScreenVBO );
+      glBufferData( GL_ARRAY_BUFFER, (4 * (2 + 3)) * sizeof( GLfloat ), NULL, GL_STATIC_DRAW );
+      glBufferSubData( GL_ARRAY_BUFFER, 0, 4 * 2 * sizeof( GLfloat ), texCoords );
+      glBufferSubData( GL_ARRAY_BUFFER, 4 * 2 * sizeof( GLfloat ), 4 * 3 * sizeof( GLfloat ), vertCoords );
+
+      //glTexCoordPointer( 2, GL_FLOAT, 0, texCoords );
+      //glVertexPointer( 3, GL_FLOAT, 0, vertCoords );
+      glTexCoordPointer( 2, GL_FLOAT, 2 * sizeof( GLfloat ), 0 );
+      glVertexPointer( 3, GL_FLOAT, 3 * sizeof( GLfloat ), Util::PtrOff( 0, 4 * 2 * sizeof( GLfloat ) ));
+
+      glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+      glEnableClientState( GL_VERTEX_ARRAY );
+    }
+    else
+      glBindVertexArray( fullScreenVAO );
+
+    glDrawArrays( GL_QUADS, 0, 4 );
+
+#else
+  
     glBindBuffer( GL_ARRAY_BUFFER, 0 );
     glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );
 
@@ -623,11 +652,13 @@ namespace GE
     glVertexPointer( 3, GL_FLOAT, 0, vertCoords );
     glEnableClientState( GL_TEXTURE_COORD_ARRAY );
     glEnableClientState( GL_VERTEX_ARRAY );
-    
+
     glDrawArrays( GL_QUADS, 0, 4 );
     
     glDisableClientState( GL_TEXTURE_COORD_ARRAY );
     glDisableClientState( GL_VERTEX_ARRAY );
+    
+#endif
   }
 
   void Renderer::beginDeferred()
@@ -661,6 +692,9 @@ namespace GE
     camera->updateProjection( (Float) viewW, (Float) viewH );
     camera->updateView();
 
+    //////////////////////////////////////////////////////////////////////////////
+    //Geometry pass
+
     //Render into geometry textures
     glBindFramebuffer( GL_FRAMEBUFFER, deferredFB );
 
@@ -688,12 +722,39 @@ namespace GE
     //glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
     glViewport( viewX, viewY, viewW, viewH );
 
+    /*
+    //Early-Z pass
+    static bool first = true;
+    if (first == false)
+    {
+      glDisable( GL_LIGHTING );
+      glDisable( GL_BLEND );
+      glDisable( GL_TEXTURE_2D );
+      glDisable( GL_STENCIL_TEST );
+      glEnable( GL_DEPTH_TEST );
+      glEnable( GL_CULL_FACE );
+      glColorMask( GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE );
+      glDepthFunc( GL_LEQUAL );
+
+      traverseScene( scene, RenderTarget::ShadowMap );
+
+      glColorMask( GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE );
+      glDepthMask( GL_FALSE );
+      glDepthFunc( GL_LEQUAL );
+    }
+    first = false;
+*/
+
+    //Render geometry with materials
     glEnable( GL_DEPTH_TEST );
     glDisable( GL_BLEND );
 
     traverseScene( scene, RenderTarget::GBuffer );
 
+
+    /////////////////////////////////////////////////////////////////////////
     //Ambient light pass
+
     shaderAmbient->use();
     glUniform3fv( uAmbientColor, 1, (GLfloat*) &scene->getAmbientColor() );
     glDrawBuffer( GL_COLOR_ATTACHMENT0 );
@@ -1372,29 +1433,34 @@ namespace GE
           if (node.actor->getCastShadow() == false)
             continue;
 
-        //Get bounding box
-        BoundingBox bbox = node.actor->getBoundingBox();
-        Matrix4x4 worldMat = node.actor->getGlobalMatrix();
-
-        //Maximum draw distance
-        Float maxDist = node.actor->getMaxDrawDistance();
-        if (maxDist >= 0.0f)
+        //TODO: code real solution (apply root bone transform to resulting
+        //box corners rather than min/max) for the skinned meshes)
+        if (ClassOf( node.actor ) != Class( SkinMeshActor ))
         {
-          //Check distance of bbox center to camera
-          Vector3 center = worldMat * ((bbox.min + bbox.max) * 0.5f);
-          Float dist = (center - eye).norm();
-          if (dist > maxDist) continue;
+          //Get bounding box
+          BoundingBox bbox = node.actor->getBoundingBox();
+          Matrix4x4 worldMat = node.actor->getGlobalMatrix();
+
+          //Maximum draw distance
+          Float maxDist = node.actor->getMaxDrawDistance();
+          if (maxDist >= 0.0f)
+          {
+            //Check distance of bbox center to camera
+            Vector3 center = worldMat * ((bbox.min + bbox.max) * 0.5f);
+            Float dist = (center - eye).norm();
+            if (dist > maxDist) continue;
+          }
+
+          //Transform bbox corners to world space
+          Vector3 bboxCorners[8];
+          bbox.getCorners( bboxCorners );
+          for (Uint c=0; c<8; ++c)
+            bboxCorners[ c ] = worldMat * bboxCorners[ c ];
+
+          //Frustum culling
+          if (frustum.testBox( bboxCorners ) == Frustum::Outside)
+            continue;
         }
-
-        //Transform bbox corners to world space
-        Vector3 bboxCorners[8];
-        bbox.getCorners( bboxCorners );
-        for (Uint c=0; c<8; ++c)
-          bboxCorners[ c ] = worldMat * bboxCorners[ c ];
-
-        //Frustum culling
-        if (frustum.testBox( bboxCorners ) == Frustum::Outside)
-          continue;
 
         //Render geometry
         node.actor->begin();

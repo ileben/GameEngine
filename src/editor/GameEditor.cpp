@@ -54,6 +54,191 @@ Vector3 center( 0,0,0 );
 Vector3 boundsMin( 0,0,0 );
 Vector3 boundsMax( 0,0,0 );
 
+DofParams defaultDof;
+Float defaultLum;
+
+
+//////////////////////////////////////////////////////////////
+// Menu Hack
+
+static Scene *menuScene = NULL;
+static Widget *menuWidget = NULL;
+static UICtrl *menuCtrl = NULL;
+static bool menuOn = false;
+
+Scene* appMenu ()
+{
+  //Create scene
+  menuScene = new Scene;
+  menuScene->setRoot( new Actor );
+
+  //Assign UI controller
+  menuCtrl = new UICtrl;
+  menuCtrl->bindScene( menuScene );
+
+  return menuScene;
+}
+
+void appMenuPage (Widget *menu)
+{
+  //Remove current page
+  if (menuWidget != NULL)
+    menuScene->getRoot()->removeChild( menuWidget );
+
+  //Add new page
+  menuScene->getRoot()->addChild( menu );
+  menuWidget = menu;
+}
+
+void appMenuToggle()
+{
+  menuOn = !menuOn;
+}
+
+Widget *menuMain = NULL;
+Label *menuOptHouse = NULL;
+Label *menuOptCity = NULL;
+Label *menuOptExit = NULL;
+Label *menuOptUsage = NULL;
+Widget *menuUsage = NULL;
+Label *menuUsageText = NULL;
+
+
+void alignMenu (Widget *w)
+{
+  Vector2 winSize = Kernel::GetInstance()->getRenderer()->getWindowSize();
+  Float spacing = 25.0f;
+
+  UintSize numChildren = w->getChildren().size();
+  Float topY = winSize.y * 0.5f - numChildren * spacing * 0.5f;
+  Float leftX = winSize.x * 0.5f - 50.0f;
+
+  for (UintSize m=0; m<numChildren; ++m)
+  {
+    w->getChildren().at( m )->setLoc( leftX, topY + m * spacing );
+  }
+}
+
+class MenuOpt : public Label
+{
+public:
+  MenuOpt (const CharString &text) {
+    setColor( Vector3( 1,1,1 ) );
+    setText( text );
+  }
+
+  virtual void onMouseEnter (MouseEnterEvent *e) {
+    setColor( Vector3( 1,1,0 ) );
+  }
+
+  virtual void onMouseLeave (MouseLeaveEvent *e) {
+    setColor( Vector3( 1,1,1 ) );
+  }
+};
+
+class MenuOptUsage : public MenuOpt
+{
+public:
+  MenuOptUsage (const CharString &text)
+    : MenuOpt (text) {}
+
+  virtual void onMouseClick (MouseClickEvent *e)
+  {
+    Vector2 winSize = Kernel::GetInstance()->getRenderer()->getWindowSize();
+    menuUsageText->setLoc( winSize.x * 0.5f - 100.0f, winSize.y * 0.5f - 200 );
+    appMenuPage( menuUsage );
+  }
+};
+
+class MenuOptHouse : public MenuOpt
+{
+public:
+  MenuOptHouse (const CharString &text)
+    : MenuOpt (text) {}
+
+  virtual void onMouseClick (MouseClickEvent *e)
+  {
+    CharString workDir = File("..\\House").getPathName();
+    CharString exeFile = File("..\\House\\House.exe").getPathName();
+    HINSTANCE inst = ShellExecute( 0, "open", exeFile.buffer(), "", workDir.buffer(), SW_SHOW );
+    
+    if (reinterpret_cast<int>( inst ) <= 32)
+    {
+      std::cout << "Failed starting the House application." << std::endl;
+      std::cout << "File: " << exeFile.buffer() << std::endl;
+      std::cout << "WorkDir: " << workDir.buffer() << std ::endl;
+    }
+    else
+      exit( 0 );
+  }
+};
+
+class MenuOptCity : public MenuOpt
+{
+public:
+  MenuOptCity (const CharString &text)
+    : MenuOpt (text) {}
+
+  virtual void onMouseClick (MouseClickEvent *e)
+  {
+    CharString workDir = File("..\\City").getPathName();
+    CharString exeFile = File("..\\City\\City.exe").getPathName();
+    HINSTANCE inst = ShellExecute( 0, "open", exeFile.buffer(), "", workDir.buffer(), SW_SHOW );
+    
+    if (reinterpret_cast<int>( inst ) <= 32)
+    {
+      std::cout << "Failed starting the City application." << std::endl;
+      std::cout << "File: " << exeFile.buffer() << std::endl;
+      std::cout << "WorkDir: " << workDir.buffer() << std ::endl;
+    }
+    else
+      exit( 0 );
+  }
+};
+
+class MenuOptExit : public MenuOpt
+{
+public:
+  MenuOptExit (const CharString &text)
+    : MenuOpt (text) {}
+
+  virtual void onMouseClick (MouseClickEvent *e)
+  {
+    exit(0);
+  }
+};
+
+class MenuWidget : public Widget
+{
+public:
+  virtual void draw()
+  {
+    Vector2 winSize = Kernel::GetInstance()->getRenderer()->getWindowSize();
+
+    glEnable( GL_BLEND );
+    glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+
+    glColor4f( 0,0,0, 0.5f );
+
+    glMatrixMode( GL_MODELVIEW );
+    glPushMatrix();
+    glScalef( winSize.x, winSize.y, 1 );
+
+    glBegin( GL_QUADS );
+    glVertex2f(0,0);
+    glVertex2f(1,0);
+    glVertex2f(1,1);
+    glVertex2f(0,1);
+    glEnd();
+
+    glPopMatrix();
+
+    glDisable( GL_BLEND );
+  }
+};
+
+//////////////////////////////////////////////////////////////
+
 
 //Makes toggling idle draw easier
 bool idleDraw = false;
@@ -143,58 +328,79 @@ void click3D (int button, int state, int x, int y)
   down3D = true;
 }
 
-void click (int button, int state, int x, int y)
+void mouseClick (int button, int state, int x, int y)
 {
-  if (button == GLUT_LEFT_BUTTON)
+  if (menuOn)
+  {
+    menuCtrl->mouseClick( button, state, x, y );
+    return;
+  }
+
+  //if (button == GLUT_LEFT_BUTTON)
     ctrl->mouseClick( button, state, x, y );
   
-  else if (button == GLUT_RIGHT_BUTTON)
-    click3D( button, state, x, y );
+  //else if (button == GLUT_RIGHT_BUTTON)
+    //click3D( button, state, x, y );
 }
 
-void drag (int x, int y)
+void mouseMove (int x, int y)
 {
+  if (menuOn)
+  {
+    menuCtrl->mouseMove( x, y );
+    return;
+  }
+
   //if (button == GLUT_LEFT_BUTTON)
     ctrl->mouseMove( x, y );
 
   //else if (button == GLUT_RIGHT_BUTTON)
-    drag3D( x, y );
+    //drag3D( x, y );
 }
 
 void keyDown (unsigned char key, int x, int y)
 {
+  if (key == 27)
+  {
+    alignMenu( menuMain );
+    appMenuPage( menuMain );
+    appMenuToggle();
+    return;
+  }
+
+  if (menuOn)
+    return;
+
   ctrl->keyDown( key );
   //return;
 
   switch (key)
   {
   case 9://tab
-    //renderer->setIsDofEnabled( !renderer->getIsDofEnabled() );
-    for (UintSize l=0; l<scene->getLights()->size(); ++l)
-      scene->getLights()->at( l )->setCastShadows( !scene->getLights()->at( l )->getCastShadows() );
+    camRender->setDofEnabled( !camRender->getDofEnabled() );
+
+    //for (UintSize l=0; l<scene->getLights()->size(); ++l)
+      //scene->getLights()->at( l )->setCastShadows( !scene->getLights()->at( l )->getCastShadows() );
     break;
 
   case 8://backspace
-    if (skinMeshActor == NULL) return;
-    skinMeshActor->loadPose();
+    camRender->setDofEnabled( true );
+    camRender->setDofParams( defaultDof );
+    renderer->setAvgLuminance( defaultLum );
+
+    //if (skinMeshActor == NULL) return;
+    //skinMeshActor->loadPose();
     break;
 
   case 13://return
     animCtrl->play(0, 0.7f); return;
-
+    /*
     if (skinMeshActor == NULL) return;
     if (!skinMeshActor->getAnimController()->isPlaying())
       skinMeshActor->getAnimController()->play( -1 );
     else skinMeshActor->getAnimController()->toggle();
     break;
-
-  case ' ':
-    if (skinMeshActor == NULL) return;
-    //if (!skinMeshActor->isAnimationPlaying())
-      //skinMeshActor->loopAnimation( animName, animSpeed );
-    //else skinMeshActor->pauseAnimation();
-    break;
-
+*/
   case '+':
     if (skinMeshActor == NULL) return;
     animSpeed += 0.1f;
@@ -211,7 +417,8 @@ void keyDown (unsigned char key, int x, int y)
 
   case 27:
     //Quit on escape
-    exit(0);
+    //exit(0);
+    ;
   }
 }
 
@@ -231,23 +438,23 @@ void specialKey (int key, int x, int y)
   {
   case GLUT_KEY_F1:
     l = renderer->getAvgLuminance();
-    l = Util::Max( l-lstep, 0.0f );
+    l = l * 1.1;
     renderer->setAvgLuminance( l );
     std::cout << "Luminance: " << l << std::endl;
     break;
   case GLUT_KEY_F2:
     l = renderer->getAvgLuminance();
-    l = l+lstep;
+    l = l /= 1.1;
     renderer->setAvgLuminance( l );
     std::cout << "Luminance: " << l << std::endl;
     break;
-  case GLUT_KEY_F4:
+  case GLUT_KEY_F3:
     dof = camRender->getDofParams();
     dof.focusCenter = Util::Max( dof.focusCenter-fstep, 0.0f );
     camRender->setDofParams( dof );
     std::cout << "Focus distance: " << dof.focusCenter << std::endl;
     break;
-  case GLUT_KEY_F5:
+  case GLUT_KEY_F4:
     dof = camRender->getDofParams();
     dof.focusCenter = dof.focusCenter + fstep;
     camRender->setDofParams( dof );
@@ -259,9 +466,9 @@ void specialKey (int key, int x, int y)
 
 void display ()
 {
-  //Matrix4x4 camWorld = camRender->getMatrix().affineNormalize();
-  //camWorld.setColumn( 3, Vector4( 0,0,0,1 ) );
-  //camSky->setMatrix( camWorld );
+  Matrix4x4 camWorld = camRender->getMatrix().affineNormalize();
+  camWorld.setColumn( 3, Vector4( 0,0,0,1 ) );
+  camSky->setMatrix( camWorld );
 
   //switch camera
   renderer->setViewport( 0,0,resX, resY );
@@ -269,13 +476,17 @@ void display ()
   
   //draw model
   renderer->beginDeferred();
-  //renderer->renderSceneDeferred( sceneSky, camSky );
+  renderer->renderSceneDeferred( sceneSky, camSky );
   renderer->renderSceneDeferred( sceneRender, camRender );
   renderer->endDeferred();
   
   //Frames per second
   renderer->setViewport( 0,0,resX, resY );
   renderer->renderWindow( window, cam2D );
+
+  //Menu
+  if (menuOn)
+    renderer->renderWindow( menuScene, cam2D );
   
   renderer->endFrame();
 }
@@ -344,14 +555,18 @@ void initGlut (int argc, char **argv)
   glutInitWindowPosition( 100,100 );
   glutInitWindowSize( resX,resY );
   glutCreateWindow( "Game Editor" );
+
+  //glutGameModeString( "1280x1024:32@60" );
+  //glutEnterGameMode();
   
   glutReshapeFunc( reshape );
   glutDisplayFunc( display );
   glutKeyboardFunc( keyDown );
   glutKeyboardUpFunc( keyUp );
   glutSpecialFunc( specialKey );
-  glutMouseFunc( click );
-  glutMotionFunc( drag );
+  glutMouseFunc( mouseClick );
+  glutMotionFunc( mouseMove );
+  glutPassiveMotionFunc( mouseMove );
   glutIdleFunc( animate );
   idleDraw = true;
 }
@@ -633,7 +848,7 @@ int main (int argc, char **argv)
   }
 */
   //Params
-  Float moveSpeed = 200.0f;
+  Float moveSpeed = 300.0f;
   //CharString strMoveSpeed = argv[2];
   //moveSpeed = strMoveSpeed.parseFloat();
 
@@ -647,14 +862,16 @@ int main (int argc, char **argv)
   printf( "Kernel loaded\n" );
 
   //Setup sky scene
-  //sceneSky = kernel.loadSceneFile( "Export/SkyBox.pak" );
-  //camSky = (Camera3D*) sceneSky->findFirstActorByClass( Class(Camera3D) );
+  sceneSky = kernel.loadSceneFile( "Export/SkyBox.pak" );
+  camSky = (Camera3D*) sceneSky->findFirstActorByClass( Class(Camera3D) );
 
 
   //Setup 3D scene
+  //scene = kernel.loadSceneFile( "Export/TestSkin.pak" );
   //scene = kernel.loadSceneFile( "Export/CityTex.pak" );
-  scene = kernel.loadSceneFile( "Export/CityPlain.pak" );
+  //scene = kernel.loadSceneFile( "Export/CityPlain.pak" );
   //scene = kernel.loadSceneFile( "Export/CityNight.pak" );
+  scene = kernel.loadSceneFile( "Export/CityShot2.pak" );
   //scene = kernel.loadSceneFile( argv[1] );
   //scene = kernel.loadSceneFile( "HousePointLights.pak" );
   //scene = kernel.loadSceneFile( "HouseSpotLights.pak" );
@@ -673,21 +890,18 @@ int main (int argc, char **argv)
   skinMeshActor = (SkinMeshActor*) scene->findFirstActorByClass( Class(SkinMeshActor) );
   if (skinMeshActor != NULL)
   {
-    //skinMeshActor->setParent( NULL );
-
-    /*
     //Find the name of the first animation
     if (!skinMeshActor->getCharacter()->anims.empty()) {
       Animation *anim = skinMeshActor->getCharacter()->anims.first();
       skinMeshActor->loadAnimation( anim->name );
-    }*/
+    }
   }
 
   //Bind first animation to the controller
   animCtrl = new AnimController;
   if (!scene->animations.empty()) {
-    //animCtrl->bindAnimation( scene->animations.first() );
-    //animCtrl->observeAt( 0.0f );
+    animCtrl->bindAnimation( scene->animations.first() );
+    animCtrl->observeAt( 0.0f );
   }
   
   //Bind event observer to the controller
@@ -695,7 +909,6 @@ int main (int argc, char **argv)
 
   //Find first camera in the scene
   cam3D = (Camera3D*) scene->findFirstActorByClass( Class(Camera3D) );
-  cam3D->setDofEnabled( false );
   if (cam3D == NULL)
   {
     //Create one if missing
@@ -704,6 +917,13 @@ int main (int argc, char **argv)
     cam3D->setNearClipPlane( 1.0f );
     cam3D->setFarClipPlane( 20000.0f );
   }
+
+  DofParams tempDof = cam3D->getDofParams();
+  tempDof.focusCenter = tempDof.focusRange;
+  cam3D->setDofParams( tempDof );
+
+  defaultDof = cam3D->getDofParams();
+  defaultLum = renderer->getAvgLuminance();
   
   //Setup 2D overlay
   Stage *stage = new Stage;
@@ -717,6 +937,47 @@ int main (int argc, char **argv)
 
   cam2D = new Camera2D;
 
+  //Menu Hack
+  menuMain = new MenuWidget;
+  
+  menuOptUsage = new MenuOptUsage( "Controls" );
+  menuMain->addChild( menuOptUsage );
+
+  menuOptHouse = new MenuOptHouse( "Play House" );
+  menuMain->addChild( menuOptHouse );
+
+  menuOptCity = new MenuOptCity( "Play City" );
+  menuMain->addChild( menuOptCity );
+
+  menuOptExit = new MenuOptExit( "Exit Game" );
+  menuMain->addChild( menuOptExit );
+
+  menuUsage = new MenuWidget;
+  menuUsageText = new Label;
+  menuUsage->addChild( menuUsageText );
+
+  menuUsageText->setColor( Vector3( 1,1,1 ));
+  menuUsageText->setText(
+    "Movement:\n"
+    "E - Forward\n"
+    "S - Left\n"
+    "D - Backward\n"
+    "F - Right\n"
+    "Space - Climb\n"
+    "\n"
+    "Look:\n"
+    "Right click + drag\n"
+    "\n"
+    "Effects:\n"
+    "F1 - lower brightness\n"
+    "F2 - higher brightness\n"
+    "F3 - closer focus distance (press & hold)\n"
+    "F4 - farther focus distance (press & hold)\n"
+    "Backspace - reset brightness and focus\n"
+    );
+
+  appMenu();
+
   //Start with Logo scene
   sceneRender = scene;
   camRender = cam3D;
@@ -725,8 +986,6 @@ int main (int argc, char **argv)
   ctrl = new FpsController;
   ctrl->attachCamera( cam3D );
   ctrl->setMoveSpeed( moveSpeed );
-  //ctrl->setMoveSpeed( 400 );
-  //ctrl->setMoveSpeed( 1000 );
 
   //Tick first time after all setup done
   Float time = (Float) glutGet( GLUT_ELAPSED_TIME ) * 0.001f;

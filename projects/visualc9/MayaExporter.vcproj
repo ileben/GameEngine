@@ -101,7 +101,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy $(TargetPath) &quot;C:\Program Files\Autodesk\Maya2009\bin\plug-ins\$(TargetName).mll&quot;"
+				CommandLine="copy $(TargetPath) &quot;C:\Program Files (x86)\Autodesk\Maya2009\bin\plug-ins\$(TargetName).mll&quot;"
 			/>
 		</Configuration>
 		<Configuration
@@ -186,7 +186,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="copy $(TargetPath) &quot;C:\Program Files\Autodesk\Maya2009\bin\plug-ins\$(TargetName).mll&quot;"
+				CommandLine="copy $(TargetPath) &quot;C:\Program Files (x86)\Autodesk\Maya2009\bin\plug-ins\$(TargetName).mll&quot;"
 			/>
 		</Configuration>
 		<Configuration

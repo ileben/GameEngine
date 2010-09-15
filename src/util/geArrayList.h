@@ -349,7 +349,7 @@ namespace GE
         copy( elements + i*eltSize, elements + (i+1)*eltSize, 1 );
       
       //Destruct the last element
-      destruct( elements + sz*eltSize, 1 );
+      destruct( at( sz-1 ), 1 );
       sz--;
     }
     
