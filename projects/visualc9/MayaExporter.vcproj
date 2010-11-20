@@ -48,14 +48,14 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../../src;&quot;C:\Program Files\Autodesk\Maya2009\include&quot;"
+				AdditionalIncludeDirectories="../../src;&quot;C:\Program Files (x86)\Autodesk\Maya2009\include&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;NT_PLUGIN"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="true"
+				Detect64BitPortabilityProblems="false"
 				DebugInformationFormat="4"
 			/>
 			<Tool
@@ -73,7 +73,7 @@
 				AdditionalDependencies="Foundation.lib OpenMaya.lib OpenMayaAnim.lib GameEngine.lib GameUtil.lib GameMath.lib GameIO.lib GameImage.lib jpeg.lib libpng.lib zlib.lib"
 				OutputFile="$(OutDir)/GameExporter4Maya09D.mll"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="Debug/bin;&quot;C:\Program Files\Autodesk\Maya2009\lib&quot;"
+				AdditionalLibraryDirectories="Debug/bin;&quot;C:\Program Files (x86)\Autodesk\Maya2009\lib&quot;"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(IntDir)/$(ProjectName).pdb"
 				SubSystem="1"
@@ -132,12 +132,12 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="../../src;&quot;C:\Program Files\Autodesk\Maya2009\include&quot;"
+				AdditionalIncludeDirectories="../../src;&quot;C:\Program Files (x86)\Autodesk\Maya2009\include&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;NT_PLUGIN"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="true"
+				Detect64BitPortabilityProblems="false"
 				DebugInformationFormat="3"
 			/>
 			<Tool
@@ -155,7 +155,7 @@
 				AdditionalDependencies="Foundation.lib OpenMaya.lib OpenMayaAnim.lib GameEngine.lib GameUtil.lib GameMath.lib GameIO.lib GameImage.lib jpeg.lib libpng.lib zlib.lib"
 				OutputFile="$(OutDir)/GameExporter4Maya09.mll"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="Release/bin;&quot;C:\Program Files\Autodesk\Maya2009\lib&quot;"
+				AdditionalLibraryDirectories="Release/bin;&quot;C:\Program Files (x86)\Autodesk\Maya2009\lib&quot;"
 				IgnoreDefaultLibraryNames=""
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(IntDir)/$(ProjectName).pdb"
@@ -217,12 +217,12 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="../../src;&quot;C:\Program Files\Autodesk\Maya2008\include&quot;"
+				AdditionalIncludeDirectories="../../src;&quot;C:\Program Files (x86)\Autodesk\Maya2008\include&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;NT_PLUGIN"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="true"
+				Detect64BitPortabilityProblems="false"
 				DebugInformationFormat="3"
 			/>
 			<Tool
@@ -240,7 +240,7 @@
 				AdditionalDependencies="Foundation.lib OpenMaya.lib OpenMayaAnim.lib GameEngine.lib GameUtil.lib GameMath.lib GameIO.lib GameImage.lib jpeg.lib libpng.lib zlib.lib"
 				OutputFile="$(OutDir)/GameExporter4Maya08.mll"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="Release/bin;&quot;C:\Program Files\Autodesk\Maya2008\lib&quot;"
+				AdditionalLibraryDirectories="Release/bin;&quot;C:\Program Files (x86)\Autodesk\Maya2008\lib&quot;"
 				IgnoreDefaultLibraryNames=""
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(IntDir)/$(ProjectName).pdb"
@@ -303,14 +303,14 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../../src;&quot;C:\Program Files\Autodesk\Maya2008\include&quot;"
+				AdditionalIncludeDirectories="../../src;&quot;C:\Program Files (x86)\Autodesk\Maya2008\include&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;NT_PLUGIN"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="true"
+				Detect64BitPortabilityProblems="false"
 				DebugInformationFormat="4"
 			/>
 			<Tool
@@ -328,7 +328,7 @@
 				AdditionalDependencies="Foundation.lib OpenMaya.lib OpenMayaAnim.lib GameEngine.lib GameUtil.lib GameMath.lib GameIO.lib GameImage.lib jpeg.lib libpng.lib zlib.lib"
 				OutputFile="$(OutDir)/GameExporter4Maya08D.mll"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="Debug/bin;&quot;C:\Program Files\Autodesk\Maya2008\lib&quot;"
+				AdditionalLibraryDirectories="Debug/bin;&quot;C:\Program Files (x86)\Autodesk\Maya2008\lib&quot;"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(IntDir)/$(ProjectName).pdb"
 				SubSystem="1"

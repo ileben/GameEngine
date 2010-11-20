@@ -84,14 +84,14 @@ void Convo::show()
       lbl->outColor = Vector3(1,1,1);
       lbl->inColor = Vector3(1,1,0);
       lbl->setText( opt->text );
-      lbl->setLoc( 10, 20 + o * 20 );
+      lbl->setLoc( 10, 20 + (float)o * 20 );
       lbl->setColor( lbl->outColor );
       lbl->setParent( grp );
     }
 
     ConvoBg *bg = new ConvoBg;
     bg->setLoc( 0, 0 );
-    bg->setSize( winSize.x, branch->options.size() * 20 + 40 );
+    bg->setSize( winSize.x, (float)branch->options.size() * 20 + 40 );
     bg->setParent( grp );
 
     actor = grp;
