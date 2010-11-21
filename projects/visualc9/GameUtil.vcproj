@@ -203,6 +203,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\util\geSerializer.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\util\geSerializer.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\util\geString.cpp"
 				>
 			</File>
