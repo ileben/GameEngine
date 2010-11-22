@@ -308,14 +308,14 @@ namespace GE
   Save Control
   ---------------------------------------------------------*/
 
-  void Serializer::StateSave::reset (bool realRun)
+  void Serializer::StateSave::reset (bool simulation)
   {
     objs.clear ();
     refs.clear();
     objects.clear();
 
     offset = 0;
-    simulate = !realRun;
+    simulate = simulation;
   }
 
   void Serializer::StateSave::run (Object **ppRoot)
@@ -329,8 +329,6 @@ namespace GE
       //Pop object node off the stack
       SaveObjNode o = objs.last();
       objs.popBack();
-
-      //Check if done
       if (o.done)
       {
         //Store object size now that it's known
@@ -339,15 +337,15 @@ namespace GE
         continue;
       }
 
-      //Enqueue object done node
-      SaveObjNode oDone = o;
-      oDone.done = true;
-      objs.pushBack( oDone );
-
       //Store object serial ID now that it's known
       o.p->serialID = objects.size();
       store( &o.p->serialID, o.idOffset, sizeof(UintSize) );
       objects.pushBack( o.p );
+
+      //Enqueue object done node
+      SaveObjNode oDone = o;
+      oDone.done = true;
+      objs.pushBack( oDone );
 
       //Serialize object
       o.p->serialize();
@@ -371,14 +369,14 @@ namespace GE
   Load Control
   ---------------------------------------------------------*/
 
-  void Serializer::StateLoad::reset (bool realRun)
+  void Serializer::StateLoad::reset (bool simulation)
   {
     objs.clear ();
     refs.clear();
     objects.clear();
 
     offset = 0;
-    simulate = !realRun;
+    simulate = simulation;
   }
 
   void Serializer::StateLoad::run (Object **ppRoot)
@@ -415,6 +413,44 @@ namespace GE
       //Map serial ID to object
       *r.pp = objects[ r.id ];
     }
+  }
+
+  /*
+  ---------------------------------------------------------
+  High-Level Control
+  ---------------------------------------------------------*/
+
+  void Serializer::serialize (Object *root, void **outData, UintSize *outSize)
+  {
+    //Enter saving state
+    state = &stateSave;
+    
+    //Simulation run
+    state->reset( true );
+    state->run( &root );
+    
+    //Allocate buffer
+    UintSize bufSize = state->offset;
+    state->buffer= (Uint8*) std::malloc( bufSize );
+    *outData = state->buffer;
+    *outSize = bufSize;
+    
+    //Real run
+    state->reset( false );
+    state->run( &root );
+  }
+
+  Object* Serializer::deserialize (const void *data)
+  {
+    //Enter loading state
+    state = &stateLoad;
+    state->buffer = (Uint8*) data;
+
+    //Run
+    Object *rootPtr = NULL;
+    state->run( &rootPtr );
+
+    return rootPtr;
   }
 
 }//namespace GE

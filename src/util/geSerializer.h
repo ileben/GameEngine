@@ -57,7 +57,7 @@ namespace GE
       virtual void objectPtrArray (GenericArrayList *a) {}
       virtual void objectRefArray (GenericArrayList *a) {}
 
-      virtual void reset (bool realRun) {}
+      virtual void reset (bool simulation) {}
       virtual void run (Object **ppRoot) {}
     };
 
@@ -76,7 +76,7 @@ namespace GE
       virtual void objectPtrArray (GenericArrayList *a);
       virtual void objectRefArray (GenericArrayList *a);
 
-      virtual void reset (bool realRun);
+      virtual void reset (bool simulation);
       virtual void run (Object **ppRoot);
     };
 
@@ -95,10 +95,12 @@ namespace GE
       virtual void objectPtrArray (GenericArrayList *a);
       virtual void objectRefArray (GenericArrayList *a);
 
-      virtual void reset (bool realRun);
+      virtual void reset (bool simulation);
       virtual void run (Object **ppRoot);
     };
 
+    StateSave stateSave;
+    StateLoad stateLoad;
     State *state;
 
   public:
