@@ -9,6 +9,7 @@
 #include "util/geArrayList.h"
 #include "util/geHeapArrayList.h"
 #include "util/geLinkedList.h"
+#include "util/geSerializer.h"
 #include "util/geString.h"
 #include "util/geTextParser.h"
 #include "util/geTime.h"
