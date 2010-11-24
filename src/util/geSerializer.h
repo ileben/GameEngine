@@ -3,55 +3,6 @@
 
 namespace GE
 {
-  /////////////////////////////////////////////////////////////////
-
-  class Serializer;
-
-  class MyObject
-  {
-    friend class Serializer;
-
-  private:
-    UintSize serialID;
-
-  public:
-    virtual ClassID uuid () = 0;
-    virtual Uint version () { return 1; }
-    virtual void serialize (Serializer *serializer, Uint version) = 0;
-  };
-
-  class BaseFactory
-  {
-  public:
-    virtual MyObject* produce() = 0;
-  };
-
-  template <class C>
-  class Factory : public BaseFactory
-  {
-  public:
-    virtual MyObject* produce() { return new C(); }
-  };
-
-  class ClassFactory
-  {
-    static std::map< ClassID, BaseFactory* > factories;
-
-  public:
-
-    template <class C> static void Register ()
-    {
-      factories[ C::Uuid() ] = new Factory<C>;
-    }
-
-    static MyObject* Produce (const ClassID &id)
-    {
-      return factories[ id ]->produce();
-    }
-  };
-
-  /////////////////////////////////////////////////////////////////
-
   class Serializer
   {
   private:
@@ -151,6 +102,7 @@ namespace GE
     State *state;
 
   public:
+
     void data (void *p, UintSize size);
     void dataPtr (void **pp, UintSize *size);
     void dataArray (GenericArrayList *a);

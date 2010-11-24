@@ -2,75 +2,6 @@
 
 namespace GE
 {
-  std::map< ClassID, BaseFactory* > ClassFactory::factories;
-
-#if(0)
-
-  //////////////////////////////////////////////
-  //Base
-
-  class Factory
-  {
-    ClassID id;
-    
-  public:
-    virtual ClassID uuid() { return id; }
-    virtual Uint version () { return 1; }
-    
-    virtual Object* create() = 0;
-    virtual void serialize (Serializer *s) = 0;
-  };
-
-  class Object
-  {
-    friend class Serializer;
-    UnitSize serialID;
-
-  public:
-    virtual Factory *factory() = 0;
-    virtual ~Object() {}
-  };
-
-  //////////////////////////////////////////////
-  //User with Factory
-
-
-  virtual Object* create() { return new A };
-
-  class TriMesh : public Mesh
-  {
-    struct Factory : public Factory< TriMesh > {
-      virtual void serialize (Serializer *s, Uint v) {
-        Mesh::Factory::serialize();
-        //...
-      }}
-
-    virtual void Factory* factory()
-    { const static AFactory f; return f; }
-
-    //static Object* factory () { return new A };
-    //virtual ClassID uuid () { return ClassID(0,0,0,0); }
-    //virtual void serialize (Serializer *s, Uint v) { B::serialize(); }
-  };
-
-  //////////////////////////////////////////////
-  //User inside class
-
-  class A : public B
-  {
-    virtual ClassID uuid ()
-    { return ClassID (0xc0db7169u, 0x65dd, 0x4375, 0xa4b2d9a505703db8ull ); }
-
-    static Object* factory ()
-    { return new A };
-
-    virtual void serialize (Serializer *s, Uint v) {
-      B::serialize();
-      //...
-    }
-  };
-#endif
-
   /*
   ---------------------------------------------------------
   Data management
@@ -177,35 +108,6 @@ namespace GE
     for (UintSize s=0; s<size; ++s)
       store( a->at( s ), a->elementSize() );
   }
-/*
-  void Serializer::StateSave::objectPtr (MyObject **pp)
-  {
-    //Store class ID
-    ClassID cid = (*pp)->uuid();
-    store( &cid, sizeof( ClassID ));
-
-    //Store object version
-    Uint version = (*pp)->version();
-    store( &version, sizeof( Uint ));
-
-    //Leave space for serial ID
-    UintSize idOffset = offset;
-    skip( sizeof( UintSize ));
-
-    //Leave space for object size
-    UintSize szOffset = offset;
-    skip( sizeof( UintSize ));
-
-    //Enqueue object
-    SaveObjNode o;
-    o.p = *pp;
-    o.idOffset = idOffset;
-    o.szOffset = szOffset;
-    o.offset = offset;
-    o.done = false;
-    objs.pushBack( o );
-  }
-*/
 
   void Serializer::StateSave::objectPtr (MyObject **pp)
   {
@@ -289,46 +191,7 @@ namespace GE
       skip( a->elementSize() );
     }
   }
-/*
-  void Serializer::StateLoad::objectPtr (MyObject **pp)
-  {
-    //Load class ID
-    ClassID cid;
-    load( &cid, sizeof( ClassID ));
 
-    //Load object version
-    Uint version = 0;
-    load( &version, sizeof( Uint ));
-
-    //Load serial ID
-    UintSize sid = 0;
-    load( &sid, sizeof( UintSize ));
-
-    //Load object size
-    UintSize size = 0;
-    load( &size, sizeof( UintSize ));
-
-    //Instantiate object
-    MyObject *obj = ClassFactory::Produce( cid );
-    *pp = obj;
-
-    //Check if object valid
-    if (obj != NULL)
-    {
-      //Enqueue object
-      LoadObjNode o;
-      o.p = obj;
-      o.id = sid;
-      o.version = version;
-      objs.pushBack( o );
-    }
-    else
-    {
-      //Skip object
-      skip( size );
-    }
-  }
-*/
   void Serializer::StateLoad::objectPtr (MyObject **pp)
   {
     //Enqueue reference

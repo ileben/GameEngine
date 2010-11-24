@@ -195,6 +195,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\util\geObject.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\util\geObject.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\util\geSerialize.cpp"
 				>
 			</File>
