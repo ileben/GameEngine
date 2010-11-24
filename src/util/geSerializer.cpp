@@ -4,6 +4,13 @@ namespace GE
 {
   /*
   ---------------------------------------------------------
+  Static members
+  ---------------------------------------------------------*/
+
+  std::map< ClassID, BaseFactory* > Serializer::factories;
+
+  /*
+  ---------------------------------------------------------
   Data management
   ---------------------------------------------------------*/
 
@@ -13,7 +20,7 @@ namespace GE
     offset += size;
   }
 
-  void Serializer::State::store (void *from, UintSize to, UintSize size)
+  void Serializer::State::store (const void *from, UintSize to, UintSize size)
   {
     if (!simulate)
     {
@@ -22,7 +29,7 @@ namespace GE
     }
   }
 
-  void Serializer::State::store (void *from, UintSize size)
+  void Serializer::State::store (const void *from, UintSize size)
   {
     if (!simulate)
     {
@@ -66,6 +73,12 @@ namespace GE
   void Serializer::dataArray (GenericArrayList *a)
   { state->dataArray( a ); }
 
+  void Serializer::string (CharString *s)
+  { state->string( s ); }
+
+  void Serializer::stringArray (ArrayList< CharString > *a)
+  { state->stringArray( a ); }
+
   void Serializer::objectPtr (MyObject **pp)
   { state->objectPtr( pp ); }
 
@@ -107,6 +120,27 @@ namespace GE
     //Store array elements
     for (UintSize s=0; s<size; ++s)
       store( a->at( s ), a->elementSize() );
+  }
+
+  void Serializer::StateSave::string (CharString *s)
+  {
+    //Store string length
+    UintSize len = s->length();
+    store( &len, sizeof( UintSize ));
+
+    //Store string buffer
+    store( s->buffer(), len * sizeof(char) );
+  }
+
+  void Serializer::StateSave::stringArray (ArrayList< CharString > *a)
+  {
+    //Store array size
+    UintSize size = a->size();
+    store( &size, sizeof( UintSize ));
+
+    //Store array elements
+    for (UintSize s=0; s<size; ++s)
+      string( &a->at( s ) );
   }
 
   void Serializer::StateSave::objectPtr (MyObject **pp)
@@ -185,11 +219,32 @@ namespace GE
     load( &size, sizeof( UintSize ));
 
     //Load array elements
-    a->reserve( size );
-    for (UintSize s=0; s<size; ++s) {
-      a->pushBack( pointer() );
-      skip( a->elementSize() );
-    }
+    a->resize( size );
+    for (UintSize s=0; s<size; ++s)
+      data( a->at(s), a->elementSize() );
+  }
+
+  void Serializer::StateLoad::string (CharString *s)
+  {
+    //Load string length
+    UintSize len = 0;
+    load( &len, sizeof( UintSize ));
+
+    //Load string buffer
+    s->assign( (char*) pointer(), len );
+    skip( len * sizeof( char ));
+  }
+
+  void Serializer::StateLoad::stringArray (ArrayList< CharString > *a)
+  {
+    //Load array size
+    UintSize size = 0;
+    load( &size, sizeof( UintSize ));
+
+    //Load array elements
+    a->resize( size );
+    for (UintSize s=0; s<size; ++s)
+      string( &a->at(s) );
   }
 
   void Serializer::StateLoad::objectPtr (MyObject **pp)
@@ -362,7 +417,7 @@ namespace GE
       load( &size, sizeof( UintSize ));
 
       //Instantiate object
-      MyObject *p = ClassFactory::Produce( cid );
+      MyObject *p = Serializer::Produce( cid );
 
       //Skip invalid object
       if (p == NULL) {

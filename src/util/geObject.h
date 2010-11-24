@@ -46,28 +46,6 @@ namespace GE
   };
 
   /*
-  --------------------------------------------------------------
-  ClassFactory registers objects by UUID for deserialization
-  --------------------------------------------------------------*/
-
-  class ClassFactory
-  {
-    static std::map< ClassID, BaseFactory* > factories;
-
-  public:
-
-    template <class C> static void Register ()
-    {
-      factories[ C::Uuid() ] = new Factory<C>;
-    }
-
-    static MyObject* Produce (const ClassID &id)
-    {
-      return factories[ id ]->produce();
-    }
-  };
-
-  /*
   ----------------------------------------------------------
   Helper macros for easier object definition
   ----------------------------------------------------------*/

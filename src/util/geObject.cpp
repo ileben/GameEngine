@@ -2,5 +2,4 @@
 
 namespace GE
 {
-  std::map< ClassID, BaseFactory* > ClassFactory::factories;
 }

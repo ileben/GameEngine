@@ -41,14 +41,17 @@ namespace GE
       ArrayList< MyObject* > objects;
 
       void skip (UintSize size);
-      void store (void *from, UintSize to, UintSize size);
-      void store (void *from, UintSize size);
+      void store (const void *from, UintSize to, UintSize size);
+      void store (const void *from, UintSize size);
       void load (void *to, UintSize size);
       void* pointer();
 
       virtual void data (void *p, UintSize size) {}
       virtual void dataPtr (void **pp, UintSize *size) {}
       virtual void dataArray (GenericArrayList *a) {}
+
+      virtual void string (CharString *s) {}
+      virtual void stringArray (ArrayList< CharString > *a) {}
 
       virtual void objectPtr (MyObject **pp) {}
       virtual void objectRef (MyObject **pp) {}
@@ -69,6 +72,9 @@ namespace GE
       virtual void dataPtr (void **pp, UintSize *size);
       virtual void dataArray (GenericArrayList *a);
 
+      virtual void string (CharString *s);
+      virtual void stringArray (ArrayList< CharString > *a);
+
       virtual void objectPtr (MyObject **pp);
       virtual void objectRef (MyObject **pp);
       virtual void objectPtrArray (GenericArrayList *a);
@@ -87,6 +93,9 @@ namespace GE
       virtual void data (void *p, UintSize size);
       virtual void dataPtr (void **pp, UintSize *size);
       virtual void dataArray (GenericArrayList *a);
+
+      virtual void string (CharString *s);
+      virtual void stringArray (ArrayList< CharString > *a);
 
       virtual void objectPtr (MyObject **pp);
       virtual void objectRef (MyObject **pp);
@@ -107,6 +116,9 @@ namespace GE
     void dataPtr (void **pp, UintSize *size);
     void dataArray (GenericArrayList *a);
 
+    void string (CharString *s);
+    void stringArray (ArrayList< CharString > *a);
+
     void objectPtr (MyObject **pp);
     void objectRef (MyObject **pp);
     void objectPtrArray (GenericArrayList *a);
@@ -114,7 +126,6 @@ namespace GE
 
     void serialize (MyObject *root, void **outData, UintSize *outSize);
     MyObject* deserialize (const void *data);
-
 
     template <class T>
     void data (const T *p) {
@@ -127,6 +138,23 @@ namespace GE
     template <class T>
     void objectRef (T **pp) {
       objectRef( (MyObject**) pp ); }
+
+  private:
+
+    //Maps object UUID to factory
+    static std::map< ClassID, BaseFactory* > factories;
+
+  public:
+
+    //Register object by UUID for production
+    template <class C> static void Register () {
+      factories[ C::Uuid() ] = new Factory<C>;
+    }
+
+    //Produce object matching given UUID
+    static MyObject* Produce (const ClassID &id) {
+      return factories[ id ]->produce();
+    }
   };
 
 }//namespace GE

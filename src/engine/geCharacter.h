@@ -52,19 +52,19 @@ namespace GE
     virtual void serialize (Serializer *s, Uint v)
     {
       Resource::serialize( s, v );
-      s->objectPtr( pose );
-      s->objectPtrArray( meshes );
-      s->objectPtrArray( anims );
+      s->objectPtr( &pose );
+      s->objectPtrArray( &meshes );
+      s->objectPtrArray( &anims );
     }
 
   public:
 
     SkinPose *pose;
-    ArrayList <SkinTriMesh> meshes;
-    ArrayList <Animation> anims;
+    ArrayList <SkinTriMesh*> meshes;
+    ArrayList <Animation*> anims;
     
     Character ();
-    ~Character ();
+    ~Character ();v
 
     Animation* findAnimByName (const CharString &name);
   };
