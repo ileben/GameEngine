@@ -42,6 +42,33 @@ namespace GE
     Animation* findAnimByName (const CharString &name);
   };
 
+  /*
+  class Character : public Resource
+  {
+  public:
+
+    UUID( 0xc0db7169u, 0x65dd, 0x4375, 0xa4b2d9a505703db8ull );
+
+    virtual void serialize (Serializer *s, Uint v)
+    {
+      Resource::serialize( s, v );
+      s->objectPtr( pose );
+      s->objectPtrArray( meshes );
+      s->objectPtrArray( anims );
+    }
+
+  public:
+
+    SkinPose *pose;
+    ArrayList <SkinTriMesh> meshes;
+    ArrayList <Animation> anims;
+    
+    Character ();
+    ~Character ();
+
+    Animation* findAnimByName (const CharString &name);
+  };
+*/
 
 }//namespace GE
 #endif//__GECHARACTER_H
