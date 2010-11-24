@@ -114,6 +114,19 @@ namespace GE
 
     void serialize (MyObject *root, void **outData, UintSize *outSize);
     MyObject* deserialize (const void *data);
+
+
+    template <class T>
+    void data (const T *p) {
+      data( (void*) p, sizeof(T) ); }
+
+    template <class T>
+    void objectPtr (T **pp) {
+      objectPtr( (MyObject**) pp ); }
+
+    template <class T>
+    void objectRef (T **pp) {
+      objectRef( (MyObject**) pp ); }
   };
 
 }//namespace GE
