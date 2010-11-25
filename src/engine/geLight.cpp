@@ -5,13 +5,6 @@
 
 namespace GE
 {
-  DEFINE_SERIAL_CLASS( Light,        ClassID( 0x89f9d379u, 0x0ed5, 0x4294, 0xa9c06ea3a38efcdbull ));
-  DEFINE_SERIAL_CLASS( SpotLight,    ClassID( 0xcce8f0fbu, 0xbac0, 0x4596, 0xa2db479d83cdb273ull ));
-  DEFINE_SERIAL_CLASS( PyramidLight, ClassID( 0xbf58eaa8u, 0x3ef1, 0x4885, 0x89ffaad24b3df257ull ));
-  DEFINE_SERIAL_CLASS( PointLight,   ClassID( 0xad22d8b9u, 0xac26, 0x4433, 0x836176166387df78ull ));
-  DEFINE_CLASS( DirLight );
-  DEFINE_CLASS( HeadLight );
-
   Light::Light()
   {
     shadowsOn = false;
@@ -21,14 +14,6 @@ namespace GE
     attEnd = 1000.0f;
     attStart = -1.0f;
 
-    uniformsInit = false;
-    volumeDLinit = false;
-    volumeChanged = true;
-    setIsRenderable( false );
-  }
-
-  Light::Light(SM *sm)
-  {
     uniformsInit = false;
     volumeDLinit = false;
     volumeChanged = true;

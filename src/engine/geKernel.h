@@ -51,11 +51,8 @@ namespace GE
   typedef std::map <std::string, Resource*> ResourceMap;
   typedef ResourceMap::iterator ResourceIter;
 
-  class Kernel : public Object
+  class Kernel
   {
-    DECLARE_SUBCLASS( Kernel, Object );
-    DECLARE_END;
-
     friend class Renderer;
     friend class TriMesh;
     
@@ -101,7 +98,7 @@ namespace GE
     void refBuffer (KernelBuffer* buf);
     void derefBuffer (KernelBuffer *buf);
     
-    void* spawn (ClassPtr classPtr);
+    void* spawn (Class cls);
     void* spawn (const char *classString);
     void enableVerticalSync (bool on);
     void tick (Float time);
@@ -126,27 +123,22 @@ namespace GE
 
   class ResourceRef : public Object
   {
-    DECLARE_SERIAL_SUBCLASS( ResourceRef, Object );
-    DECLARE_OBJVAR( name );
-    DECLARE_END;
+    CLASS( ResourceRef, 1f65556c,71dd,4cdf,9b3ae770526dfb65 );
+    virtual void serialize (Serializer *s, Uint v)
+    {
+      s->string( &name );
+    }
 
   public:
 
     void *ptr;
     CharString name;
-
-    ResourceRef (SM *sm) : name(sm)
-    { ptr = NULL; }
-
-    ResourceRef ()
-    { ptr = NULL; }
+    ResourceRef () { ptr = NULL; }
   };
 
   template <class T> class TResourceRef : public ResourceRef
   {
   public:
-    TResourceRef () {}
-    TResourceRef (SM *sm) : ResourceRef (sm) {}
     T* operator-> () { return (T*) ptr; }
     T& operator* () { return *( operator->() ); }
     void operator= (T *t) { ptr = t; name = (t != NULL) ? t->getResourceName() : ""; }

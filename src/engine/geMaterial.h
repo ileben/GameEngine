@@ -43,15 +43,13 @@ namespace GE
   
   class Material : public Resource
   {
-    DECLARE_SUBABSTRACT( Material, Resource );
-    DECLARE_END;
-
+    CLASS( Material, 624cc67c,8c0d,4da6,927f667e529bb996 );
     friend class Renderer;
     friend class MultiMaterial;
     
   public:
 
-    virtual ClassPtr getShaderComposingClass() { return Class(Material); }
+    virtual Class getShaderComposingClass() { return Material::GetClass(); }
     virtual void composeShader( Shader *shader ) {}
     
     Material () {}
@@ -74,18 +72,21 @@ namespace GE
   
   class StandardMaterial : public Material
   {
-    DECLARE_SERIAL_SUBCLASS( StandardMaterial, Material );
-    DECLARE_DATAVAR( diffuseColor );
-    DECLARE_DATAVAR( ambientColor );
-    DECLARE_DATAVAR( specularColor );
-    DECLARE_DATAVAR( specularity );
-    DECLARE_DATAVAR( glossiness );
-    DECLARE_DATAVAR( opacity );
-    DECLARE_DATAVAR( luminosity );
-    DECLARE_DATAVAR( lighting );
-    DECLARE_DATAVAR( culling );
-    DECLARE_DATAVAR( cell );
-    DECLARE_END;
+    CLASS( StandardMaterial, c2b106d9,8973,43ed,85a8ca336dd70d75 );
+    virtual void serialize( Serializer *s, Uint v )
+    {
+      Material::serialize( s, v );
+      s->data( &diffuseColor );
+      s->data( &ambientColor );
+      s->data( &specularColor );
+      s->data( &specularity );
+      s->data( &glossiness );
+      s->data( &opacity );
+      s->data( &luminosity );
+      s->data( &lighting );
+      s->data( &culling );
+      s->data( &cell );
+    }
 
     friend class Renderer;
     
@@ -110,10 +111,9 @@ namespace GE
 
   public:
 
-    virtual ClassPtr getShaderComposingClass() { return Class(StandardMaterial); }
+    virtual Class getShaderComposingClass() { return StandardMaterial::GetClass(); }
     virtual void composeShader( Shader *shader );
     
-    StandardMaterial (SM *sm);
     StandardMaterial ();
     
     void setDiffuseColor (const Vector3 &color);
@@ -162,9 +162,12 @@ namespace GE
 
   class DiffuseTexMat : public StandardMaterial
   {
-    DECLARE_SERIAL_SUBCLASS( DiffuseTexMat, StandardMaterial );
-    DECLARE_OBJVAR( texDiffuse );
-    DECLARE_END;
+    CLASS( DiffuseTexMat, efb36eb3,5397,4cdc,af19db7f9b1e6759 );
+    virtual void serialize( Serializer *s, Uint v )
+    {
+      StandardMaterial::serialize( s, v );
+      s->object( &texDiffuse );
+    }
 
   private:
 
@@ -174,10 +177,9 @@ namespace GE
 
   public:
 
-    virtual ClassPtr getShaderComposingClass() { return Class(DiffuseTexMat); }
+    virtual Class getShaderComposingClass() { return DiffuseTexMat::GetClass(); }
     virtual void composeShader (Shader *shader);
 
-    DiffuseTexMat (SM *sm);
     DiffuseTexMat ();
 
     void setDiffuseTexture (Texture *tex);
@@ -190,9 +192,12 @@ namespace GE
 
   class NormalTexMat : public DiffuseTexMat
   {
-    DECLARE_SERIAL_SUBCLASS (NormalTexMat, DiffuseTexMat);
-    DECLARE_OBJVAR( texNormal );
-    DECLARE_END;
+    CLASS( NormalTexMat, 61aa1181,a126,429a,881115d72ca6250e );
+    virtual void serialize( Serializer *s, Uint v )
+    {
+      DiffuseTexMat::serialize( s,v );
+      s->object( &texNormal );
+    }
 
   private:
 
@@ -202,10 +207,9 @@ namespace GE
 
   public:
 
-    virtual ClassPtr getShaderComposingClass() { return Class(NormalTexMat); }
+    virtual Class getShaderComposingClass() { return NormalTexMat::GetClass(); }
     virtual void composeShader( Shader *shader );
-
-    NormalTexMat (SM *sm);
+    
     NormalTexMat ();
 
     void setNormalTexture (Texture *tex);
@@ -226,19 +230,22 @@ namespace GE
   
   class MultiMaterial : public Material
   {
-    DECLARE_SERIAL_SUBCLASS (MultiMaterial, Material);
-    DECLARE_OBJVAR (subMaterials);
-    DECLARE_END;
+    CLASS( MultiMaterial, 65c8d297,17a8,4793,b1a6d21ca5bec028 );
+    virtual void serialize( Serializer *s, Uint v )
+    {
+      Material::serialize( s,v );
+      s->objectPtrArray( &subMaterials );
+    }
+
     friend class Renderer;
     
   private:
     UintSize selectedID;
-    ObjPtrArrayList <Material> subMaterials;
+    ArrayList <Material*> subMaterials;
     bool selectSubMaterial( MaterialID id );
     bool selectionValid();
     
   public:
-    MultiMaterial (SM *sm);
     MultiMaterial ();
 
     void setNumSubMaterials( UintSize n );

@@ -24,15 +24,8 @@ namespace GE
   Base template class
   ----------------------------------------*/
 
-  template <class C> class BasicString : public Object
+  template <class C> class BasicString
   {
-    DECLARE_SERIAL_SUBCLASS( BasicString, Object );
-    DECLARE_DATAVAR( size );
-    DECLARE_MEMBER_FUNC( buf, bufInfo );
-    DECLARE_CALLBACK( ClassEvent::Loaded, deserialized );
-    DECLARE_CALLBACK( ClassEvent::Deserialized, deserialized );
-    DECLARE_END;
-
     friend class File;
     friend class BasicString<char>;
     friend class BasicString<Byte>;
@@ -49,17 +42,6 @@ namespace GE
     int size;
     
   public:
-
-    MemberInfo bufInfo (SM *sm) {
-      return MEMBER_DATAPTR( (size+1) * sizeof(CharType) );
-    }
-
-    void deserialized (void *param) {
-      cap = size+1;
-    }
-
-    BasicString (SM *sm)
-    {}
 
     BasicString ()
     {

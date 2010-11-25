@@ -6,13 +6,7 @@
 #include "geGLHeaders.h"
 
 namespace GE
-{
-  DEFINE_SERIAL_CLASS( Material,         ClassID( 0xc3598aadu, 0x4bca, 0x455d, 0x99c9d3f6b15e4948ull ));
-  DEFINE_SERIAL_CLASS( StandardMaterial, ClassID( 0x619518d9u, 0x5540, 0x4e9e, 0x85dedc0cbb70b480ull ));
-  DEFINE_SERIAL_CLASS( MultiMaterial,    ClassID( 0x53fe780du, 0x23ea, 0x4fdb, 0x844d901a4ac5be39ull ));
-  DEFINE_SERIAL_CLASS( DiffuseTexMat,    ClassID( 0x2cbb66fdu, 0x4ce1, 0x4e01, 0x8b6765c546c5bbccull ));
-  DEFINE_SERIAL_CLASS( NormalTexMat,     ClassID( 0xdc2c8562u, 0xfe36, 0x4903, 0x9c494f8976323411ull ));
-  
+{  
   /*
   ============================================
   
@@ -62,12 +56,6 @@ namespace GE
     cell = false;
     wire = false;
 
-    gotUniforms = false;
-  }
-
-  StandardMaterial::StandardMaterial (SM *sm)
-  {
-    wire = false;
     gotUniforms = false;
   }
 
@@ -265,12 +253,6 @@ namespace GE
     gotUniforms = false;
   }
 
-  DiffuseTexMat::DiffuseTexMat (SM *sm)
-    : StandardMaterial (sm), texDiffuse (sm)
-  {
-    gotUniforms = false;
-  }
-
   void DiffuseTexMat::setDiffuseTexture (Texture *tex) {
     texDiffuse = tex;
   }
@@ -337,12 +319,6 @@ namespace GE
   NormalTexMat::NormalTexMat()
   {
     texNormal = NULL;
-    gotUniforms = false;
-  }
-
-  NormalTexMat::NormalTexMat (SM *sm)
-    : DiffuseTexMat(sm), texNormal (sm)
-  {
     gotUniforms = false;
   }
 
@@ -440,11 +416,6 @@ namespace GE
   ============================================*/
   
   MultiMaterial::MultiMaterial ()
-  {
-    selectedID = 0;
-  }
-
-  MultiMaterial::MultiMaterial (SM *sm)
   {
     selectedID = 0;
   }

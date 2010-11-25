@@ -10,9 +10,11 @@ namespace GE
 {
   class Resource : public Object
   {
-    DECLARE_SUBCLASS( Resource, Object );
-    DECLARE_OBJVAR( name );
-    DECLARE_END;
+    CLASS( Resource, ffc487f9,1a25,4fc6,b512e1cda7a74f46 );
+    virtual void serialize( Serializer *s, Uint v )
+    {
+      s->string( &name );
+    }
     
   protected:
     CharString name;
@@ -20,7 +22,6 @@ namespace GE
     
   public:
     Resource ();
-    Resource (SM *sm) {}
 
     int reference();
     int dereference();

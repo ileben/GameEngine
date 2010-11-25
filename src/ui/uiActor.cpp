@@ -2,9 +2,9 @@
 
 namespace GE
 {
-  DEFINE_SERIAL_CLASS( Actor, ClassID( 0x0acdcd40u, 0x9da9, 0x4dac, 0xac7bccbada6e4ee5ull ));
-  DEFINE_SERIAL_CLASS( Scene, ClassID( 0xb70776edu, 0x5881, 0x48fb, 0x8fc46f317579d987ull ));
-  DEFINE_CLASS( Event );
+  //DEFINE_SERIAL_CLASS( Actor, ClassID( 0x0acdcd40u, 0x9da9, 0x4dac, 0xac7bccbada6e4ee5ull ));
+  //DEFINE_SERIAL_CLASS( Scene, ClassID( 0xb70776edu, 0x5881, 0x48fb, 0x8fc46f317579d987ull ));
+  //DEFINE_CLASS( Event );
 
   Stage* Stage::instance = NULL;
 
@@ -19,11 +19,6 @@ namespace GE
     valid = true;
     parent = NULL;
     scene = NULL;
-  }
-
-  Actor::Actor (SM *sm) : children (sm), name (sm)
-  {
-    valid = true;
   }
 
   void Actor::setName (const CharString &n) {
@@ -127,13 +122,8 @@ namespace GE
 
   Scene::Scene()
   {
-    changed = false;
-    root = NULL;
-  }
-
-  Scene::Scene (SM *sm) : Object (sm)
-  {
     changed = true;
+    root = NULL;
   }
 
   void Scene::markChanged()
@@ -169,7 +159,7 @@ namespace GE
       traversal.pushBack( parent );
 
       //Push children onto stack
-      const ObjPtrArrayList <Actor> & children = parent->getChildren();
+      const ArrayList <Actor*> & children = parent->getChildren();
       for (UintSize c=0; c<children.size(); ++c)
         stack.pushBack( children[c] );
     }
@@ -312,11 +302,11 @@ namespace GE
 
     return NULL;
   }
-
-  Actor* Scene::findFirstActorByClass (ClassPtr cls)
+/*
+  Actor* Scene::findFirstActorByClass (const type_info &cls)
   {
     for (UintSize t=0; t<traversal.size(); ++t) {
-      Actor* a = (Actor*) SafeCastPtr( cls, traversal[t] );
+      Actor* a = (Actor*) dynamic_cast( cls, traversal[t] );
       if (a != NULL) return a;
     }
 
@@ -330,7 +320,7 @@ namespace GE
       if (a != NULL) outActors.pushBack( a );
     }
   }
-
+*/
   Actor* Scene::findFirstActorByName (const CharString &name)
   {
     for (UintSize t=0; t<traversal.size(); ++t) {

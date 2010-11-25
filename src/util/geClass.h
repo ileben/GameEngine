@@ -33,7 +33,7 @@ namespace GE
 
   class IMember;
   class IClass;
-  class Object;
+  class ObjectOld;
   class Property;
   class SerializeManager;
   
@@ -259,7 +259,7 @@ namespace GE
     //Utilities
     static ClassPtr FromString (const char *name);
     static ClassPtr FromID (ClassID id);
-    static void* Safecast (ClassPtr to, Object *instance);
+    static void* Safecast (ClassPtr to, ObjectOld *instance);
     /*
     static void SaveText (const ObjectPtr &ptr, ByteString &buf);
     static void SaveBinary (const ObjectPtr &ptr, ByteString &buf);
@@ -501,16 +501,16 @@ private:
 #define __GECLASS_H_TWO
 namespace GE
 {
-  class Object
+  class ObjectOld
   {
-    DECLARE_SERIAL_CLASS( Object );
+    DECLARE_SERIAL_CLASS( ObjectOld );
     DECLARE_END;
 
   public:
     UintSize serialID;
-    Object (SerializeManager *sm) : serialID(0) {}
-    Object () : serialID(0) {}
-    virtual ~Object() {}
+    ObjectOld (SerializeManager *sm) : serialID(0) {}
+    ObjectOld () : serialID(0) {}
+    virtual ~ObjectOld() {}
   };
 
   /*

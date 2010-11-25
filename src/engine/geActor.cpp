@@ -4,14 +4,6 @@
 
 namespace GE
 {
-  #define CLSID_ACTOR3D ClassID (0x040e6a35u, 0x9b4f, 0x48c8, 0xa52ef1169cc2a229ull)
-  DEFINE_SERIAL_CLASS( Actor3D, CLSID_ACTOR3D );
-
-  Actor3D::Actor3D (SM *sm) : Actor (sm)
-  {
-    material = NULL;
-  }
-
   Actor3D::Actor3D ()
   {
     material = NULL;

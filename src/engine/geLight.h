@@ -11,14 +11,17 @@ namespace GE
 
   class Light : public Actor3D
   {
-    DECLARE_SERIAL_SUBCLASS( Light, Actor3D );
-    DECLARE_DATAVAR( shadowsOn );
-    DECLARE_DATAVAR( diffuseColor );
-    DECLARE_DATAVAR( specularColor );
-    DECLARE_DATAVAR( shadowColor );
-    DECLARE_DATAVAR( attStart );
-    DECLARE_DATAVAR( attEnd );
-    DECLARE_END;
+    CLASS( Light, a55ed88c,c0b5,4f90,b04805dcdc32975f );
+    virtual void serialize( Serializer *s, Uint v )
+    {
+      Actor3D::serialize( s,v );
+      s->data( &shadowsOn );
+      s->data( &diffuseColor );
+      s->data( &specularColor );
+      s->data( &shadowColor );
+      s->data( &attStart );
+      s->data( &attEnd );
+    }
     
   protected:
     bool shadowsOn;
@@ -42,7 +45,6 @@ namespace GE
     
   public:
     Light ();
-    Light (SM *sm);
     virtual ~Light() {};
 
     void setDirection (const Vector3 &dir);
@@ -78,8 +80,7 @@ namespace GE
   
   class DirLight : public Light
   {
-    DECLARE_SUBCLASS( DirLight, Light );
-    DECLARE_END;
+    CLASS( DirLight, 816d73cb,bb3c,4e2d,94b8dc96a35eee34 );
 
   public:
     DirLight () {}
@@ -89,10 +90,13 @@ namespace GE
   
   class SpotLight : public Light
   {
-    DECLARE_SERIAL_SUBCLASS( SpotLight, Light );
-    DECLARE_DATAVAR( angleInner );
-    DECLARE_DATAVAR( angleOuter );
-    DECLARE_END;
+    CLASS( SpotLight, bb3c8a4f,8b92,40bd,83043b7ea071af74 );
+    virtual void serialize (Serializer *s, Uint v)
+    {
+      Light::serialize( s,v );
+      s->data( &angleInner );
+      s->data( &angleOuter );
+    }
 
   protected:
     Float angleInner;
@@ -100,7 +104,6 @@ namespace GE
     virtual void updateVolume ();
 
   public:
-    SpotLight (SM *sm) : Light(sm) {}
     SpotLight () : angleOuter( 30.0f ), angleInner( -1.0f ) {}
     SpotLight (const Vector3 &pos,
                const Vector3 &dir,
@@ -117,17 +120,20 @@ namespace GE
 
   class PyramidLight : public Light
   {
-    DECLARE_SERIAL_SUBCLASS( PyramidLight, Light );
-    DECLARE_DATAVAR( angle );
-    DECLARE_END;
+    CLASS( PyramidLight, a46d282c,8492,4dd4,a6100e93a09c6ba3 );
+    virtual void serialize( Serializer *s, Uint v )
+    {
+      Light::serialize( s,v );
+      s->data( &angle );
+    }
 
   protected:
+
     Float angle;
     virtual void updateVolume ();
 
   public:
 
-    PyramidLight (SM *sm) : Light (sm) {}
     PyramidLight () : angle (60.0f) {}
     PyramidLight (const Vector3 &pos,
                   const Vector3 &dir,
@@ -143,15 +149,17 @@ namespace GE
 
   class PointLight : public Light
   {
-    DECLARE_SERIAL_SUBCLASS( PointLight, Light );
-    DECLARE_OBJVAR( subLights );
-    DECLARE_END;
+    CLASS( PyramidLight, e684697c,c0a1,446b,927069f5eff3ad37 );
+    virtual void serialize( Serializer *s, Uint v )
+    {
+      Light::serialize( s,v );
+      s->objectRefArray( &subLights );
+    }
     
-    ObjRefArrayList< PyramidLight > subLights;
+  private:
+    ArrayList< PyramidLight* > subLights;
     
   public:
-
-    PointLight (SM *sm) : Light (sm) {}
     PointLight ();
     PointLight (const Vector3 &pos);
 
@@ -165,8 +173,7 @@ namespace GE
   
   class HeadLight : public PointLight
   {
-    DECLARE_SUBCLASS( HeadLight, Light );
-    DECLARE_END;
+    CLASS( HeadLight, 2467c1e8,bf8f,4e70,a63e32e47d5f07d6 );
 
   public:
     HeadLight () {}

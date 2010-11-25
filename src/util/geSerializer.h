@@ -5,11 +5,15 @@ namespace GE
 {
   class Serializer
   {
+    friend class State;
+    friend class SaveState;
+    friend class LoadState;
+
   private:
 
     struct SaveObjNode
     {
-      MyObject *p;
+      Object *p;
       UintSize offset;
       UintSize szOffset;
       bool done;
@@ -17,7 +21,7 @@ namespace GE
 
     struct SaveRefNode
     {
-      MyObject *p;
+      Object *p;
       UintSize offset;
     };
 
@@ -27,7 +31,7 @@ namespace GE
 
     struct LoadRefNode
     {
-      MyObject **pp;
+      Object **pp;
       UintSize id;
     };
 
@@ -38,7 +42,7 @@ namespace GE
       Uint8 *buffer;
       UintSize offset;
       bool simulate;
-      ArrayList< MyObject* > objects;
+      ArrayList< Object* > objMap;
 
       void skip (UintSize size);
       void store (const void *from, UintSize to, UintSize size);
@@ -53,20 +57,21 @@ namespace GE
       virtual void string (CharString *s) {}
       virtual void stringArray (ArrayList< CharString > *a) {}
 
-      virtual void objectPtr (MyObject **pp) {}
-      virtual void objectRef (MyObject **pp) {}
+      virtual void object (Object *p) {}
+      virtual void objectPtr (Object **pp) {}
+      virtual void objectRef (Object **pp) {}
       virtual void objectPtrArray (GenericArrayList *a) {}
       virtual void objectRefArray (GenericArrayList *a) {}
 
       virtual void reset (bool simulation) {}
-      virtual void run (MyObject **ppRoot) {}
+      virtual void run (Object **ppRoot) {}
     };
 
     class StateSave : public State
     {
     public:
-      ArrayList< SaveObjNode > objs;
-      ArrayList< SaveRefNode > refs;
+      ArrayList< SaveObjNode > objStack;
+      ArrayList< SaveRefNode > refStack;
 
       virtual void data (void *p, UintSize size);
       virtual void dataPtr (void **pp, UintSize *size);
@@ -75,20 +80,21 @@ namespace GE
       virtual void string (CharString *s);
       virtual void stringArray (ArrayList< CharString > *a);
 
-      virtual void objectPtr (MyObject **pp);
-      virtual void objectRef (MyObject **pp);
+      virtual void object (Object *p);
+      virtual void objectPtr (Object **pp);
+      virtual void objectRef (Object **pp);
       virtual void objectPtrArray (GenericArrayList *a);
       virtual void objectRefArray (GenericArrayList *a);
 
       virtual void reset (bool simulation);
-      virtual void run (MyObject **ppRoot);
+      virtual void run (Object **ppRoot);
     };
 
     class StateLoad : public State
     {
     public:
-      ArrayList< LoadObjNode > objs;
-      ArrayList< LoadRefNode > refs;
+      ArrayList< LoadObjNode > objStack;
+      ArrayList< LoadRefNode > refStack;
 
       virtual void data (void *p, UintSize size);
       virtual void dataPtr (void **pp, UintSize *size);
@@ -97,18 +103,23 @@ namespace GE
       virtual void string (CharString *s);
       virtual void stringArray (ArrayList< CharString > *a);
 
-      virtual void objectPtr (MyObject **pp);
-      virtual void objectRef (MyObject **pp);
+      virtual void object (Object *p);
+      virtual void objectPtr (Object **pp);
+      virtual void objectRef (Object **pp);
       virtual void objectPtrArray (GenericArrayList *a);
       virtual void objectRefArray (GenericArrayList *a);
 
       virtual void reset (bool simulation);
-      virtual void run (MyObject **ppRoot);
+      virtual void run (Object **ppRoot);
     };
 
+    //State
     StateSave stateSave;
     StateLoad stateLoad;
     State *state;
+
+    //Statistics
+    ArrayList< Object* > objects;
 
   public:
 
@@ -119,13 +130,14 @@ namespace GE
     void string (CharString *s);
     void stringArray (ArrayList< CharString > *a);
 
-    void objectPtr (MyObject **pp);
-    void objectRef (MyObject **pp);
+    void object (Object *p);
+    void objectPtr (Object **pp);
+    void objectRef (Object **pp);
     void objectPtrArray (GenericArrayList *a);
     void objectRefArray (GenericArrayList *a);
 
-    void serialize (MyObject *root, void **outData, UintSize *outSize);
-    MyObject* deserialize (const void *data);
+    void serialize (Object *root, void **outData, UintSize *outSize);
+    Object* deserialize (const void *data);
 
     template <class T>
     void data (const T *p) {
@@ -133,27 +145,34 @@ namespace GE
 
     template <class T>
     void objectPtr (T **pp) {
-      objectPtr( (MyObject**) pp ); }
+      objectPtr( (Object**) pp ); }
 
     template <class T>
     void objectRef (T **pp) {
-      objectRef( (MyObject**) pp ); }
+      objectRef( (Object**) pp ); }
 
   private:
 
-    //Maps object UUID to factory
-    static std::map< ClassID, BaseFactory* > factories;
+    //Maps UUID to class
+    typedef std::map< UUID, Class > ClassMap;
+    typedef ClassMap::iterator ClassMapIter;
+    static ClassMap classes;
 
   public:
 
-    //Register object by UUID for production
-    template <class C> static void Register () {
-      factories[ C::Uuid() ] = new Factory<C>;
+    //Register class by UUID for instantiation
+    template <class C> static void Register ()
+    {
+      Class c = C::GetClass();
+      classes[ c->uuid() ] = c;
     }
 
-    //Produce object matching given UUID
-    static MyObject* Produce (const ClassID &id) {
-      return factories[ id ]->produce();
+    //Instantiate object matching given UUID
+    static Object* Instantiate (const UUID &id)
+    {
+      ClassMapIter i = classes.find( id );
+      if (i == classes.end()) return NULL;
+      return i->second->instantiate();
     }
   };
 

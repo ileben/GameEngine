@@ -48,8 +48,8 @@ namespace GE
   struct ShaderKey
   {
     RenderTarget::Enum target;
-    ClassPtr matClass;
-    ClassPtr geomClass;
+    Class matClass;
+    Class geomClass;
     Shader *shader;
     
     bool operator == (const ShaderKey &k) const {
@@ -59,7 +59,7 @@ namespace GE
 
   struct LightShaderKey
   {
-    ClassPtr lightClass;
+    Class lightClass;
     Shader *shader;
 
     bool operator == (const LightShaderKey &k) const {
@@ -78,8 +78,7 @@ namespace GE
 
   class Renderer : public Object
   {
-    DECLARE_SUBCLASS( Renderer, Object );
-    DECLARE_END;
+    CLASS( Renderer, 4829379e,7482,45e3,8897cee5e9acbf59 );
     
   private:
 

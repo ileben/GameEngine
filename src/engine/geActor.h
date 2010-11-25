@@ -31,12 +31,15 @@ namespace GE
   
   class Actor3D : public Actor
   {
-    DECLARE_SERIAL_SUBCLASS( Actor3D, Actor );
-    DECLARE_DATAVAR( renderable );
-    DECLARE_DATAVAR( castShadow );
-    DECLARE_DATAVAR( maxDrawDistance );
-    DECLARE_OBJPTR( material );
-    DECLARE_END;
+    CLASS( Actor3D, 620e9697,5d6f,44d2,b643d6b9400c1085 );
+    virtual void serialize( Serializer *s, Uint v )
+    {
+      Actor::serialize( s,v );
+      s->data( &renderable );
+      s->data( &castShadow );
+      s->data( &maxDrawDistance );
+      s->objectPtr( &material );
+    }
     
     friend class Kernel;
     friend class Renderer;
@@ -50,7 +53,6 @@ namespace GE
 
   public:
 
-    Actor3D (SM *sm);
     Actor3D ();
     virtual ~Actor3D ();
 
@@ -85,7 +87,7 @@ namespace GE
     bool isRenderable ();
 
     //Shader composing
-    virtual ClassPtr getShaderComposingClass() { return Class(Actor3D); }
+    virtual Class getShaderComposingClass() { return Actor3D::GetClass(); }
     virtual void composeShader( Shader *shader ) {}
     
     //Rendering steps (as invoked by Renderer):

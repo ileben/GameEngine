@@ -19,10 +19,14 @@ namespace GE
 
   class Camera : public Actor3D
   {
-    DECLARE_SERIAL_SUBCLASS( Camera, Actor3D );
-    DECLARE_DATAVAR( farClip );
-    DECLARE_DATAVAR( nearClip );
-    DECLARE_END;
+    CLASS( Camera, 5d6e19f1,1408,4c3d,a5c20914b0da79a4 );
+    virtual void serialize( Serializer *s, Uint v)
+    {
+      Actor3D::serialize( s,v );
+      s->data( &farClip );
+      s->data( &nearClip );
+    }
+
     friend class Renderer;
     
   protected:
@@ -35,7 +39,6 @@ namespace GE
 
   public:
     Camera ();
-    Camera (SM *sm);
     virtual ~Camera() {};
 
     Vector3 getEye();
@@ -66,14 +69,18 @@ namespace GE
 
   class Camera3D : public Camera
   {
-    DECLARE_SERIAL_SUBCLASS (Camera3D, Camera);
-    DECLARE_DATAVAR( fov );
-    DECLARE_DATAVAR( dofParams );
-    DECLARE_DATAVAR( dofEnabled );
-    DECLARE_DATAVAR( center );
-    DECLARE_DATAVAR( cPlus );
-    DECLARE_DATAVAR( cMinus );
-    DECLARE_END;
+    CLASS( Camera3D, 73006e7d,53b2,4f15,82ea35735cc834fa );
+    virtual void serialize( Serializer *s, Uint v)
+    {
+      Camera::serialize( s,v );
+      s->data( &fov );
+      s->data( &dofParams );
+      s->data( &dofEnabled );
+      s->data( &center );
+      s->data( &cPlus );
+      s->data( &cMinus );
+    }
+
     friend class Renderer;
 
   private:
@@ -92,7 +99,6 @@ namespace GE
   public:
 
     Camera3D ();
-    Camera3D (SM *sm);
     void onDeserialized (void *param);
     
     void setFov (Float fieldOfView);
@@ -124,7 +130,7 @@ namespace GE
 
   class Camera2D : public Camera
   {
-    DECLARE_SUBCLASS (Camera2D, Camera); DECLARE_END;
+    CLASS( Camera2D, a224e13d,77bd,44bc,92f1177e20c1ac6a );
     friend class Renderer;
 
   private:

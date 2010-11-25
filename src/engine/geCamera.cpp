@@ -3,19 +3,11 @@
 
 namespace GE
 {
-  DEFINE_SERIAL_CLASS (Camera,   ClassID( 0x45278919u, 0x6c8c, 0x4bcc, 0x82471ea1180a6142ull ));
-  DEFINE_SERIAL_CLASS (Camera3D, ClassID( 0x8c63ffd7u, 0xdbb4, 0x41a4, 0x870babda1565b1eeull ));
-  DEFINE_CLASS (Camera2D);
-
   Camera::Camera ()
   {
     nearClip = 0.1f;
     farClip = 10000.0f;
     setIsRenderable( false );
-  }
-
-  Camera::Camera (SM *sm) : Actor3D (sm)
-  {
   }
 
   /*
@@ -80,10 +72,6 @@ namespace GE
     dofParams.falloffNear = 50.0f;
     dofParams.falloffFar = 50.0f;
     dofEnabled = false;
-  }
-
-  Camera3D::Camera3D (SM *sm) : Camera (sm)
-  {
   }
 
   void Camera3D::setFov (Float fieldOfView) {

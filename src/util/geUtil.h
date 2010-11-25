@@ -3,8 +3,8 @@
 
 #include "util/geDefs.h"
 #include "util/geMisc.h"
-#include "util/geClass.h"
-#include "util/geSerialize.h"
+//#include "util/geClass.h"
+//#include "util/geSerialize.h"
 #include "util/geArraySet.h"
 #include "util/geArrayList.h"
 #include "util/geHeapArrayList.h"

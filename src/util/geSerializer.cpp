@@ -7,7 +7,7 @@ namespace GE
   Static members
   ---------------------------------------------------------*/
 
-  std::map< ClassID, BaseFactory* > Serializer::factories;
+  Serializer::ClassMap Serializer::classes;
 
   /*
   ---------------------------------------------------------
@@ -79,10 +79,13 @@ namespace GE
   void Serializer::stringArray (ArrayList< CharString > *a)
   { state->stringArray( a ); }
 
-  void Serializer::objectPtr (MyObject **pp)
+  void Serializer::object (Object *p)
+  { state->object( p ); }
+
+  void Serializer::objectPtr (Object **pp)
   { state->objectPtr( pp ); }
 
-  void Serializer::objectRef (MyObject **pp)
+  void Serializer::objectRef (Object **pp)
   { state->objectRef( pp ); }
 
   void Serializer::objectPtrArray (GenericArrayList *a)
@@ -143,7 +146,7 @@ namespace GE
       string( &a->at( s ) );
   }
 
-  void Serializer::StateSave::objectPtr (MyObject **pp)
+  void Serializer::StateSave::objectPtr (Object **pp)
   {
     //Enqueue reference
     objectRef (pp);
@@ -152,16 +155,16 @@ namespace GE
     SaveObjNode o;
     o.p = *pp;
     o.done = false;
-    objs.pushBack( o );
+    objStack.pushBack( o );
   }
 
-  void Serializer::StateSave::objectRef (MyObject **pp)
+  void Serializer::StateSave::objectRef (Object **pp)
   {
     //Enqueue reference
     SaveRefNode r;
     r.p = *pp;
     r.offset = offset;
-    refs.pushBack( r );
+    refStack.pushBack( r );
 
     //Leave space for serial id
     skip( sizeof( UintSize ));
@@ -175,7 +178,7 @@ namespace GE
 
     //Store array elements
     for (UintSize s=0; s<size; ++s)
-      objectPtr( (MyObject**) a->at(s) );
+      objectPtr( (Object**) a->at(s) );
   }
 
   void Serializer::StateSave::objectRefArray (GenericArrayList *a)
@@ -186,7 +189,20 @@ namespace GE
 
     //Store array elements
     for (UintSize s=0; s<size; ++s)
-      objectRef( (MyObject**) a->at(s) );
+      objectRef( (Object**) a->at(s) );
+  }
+
+  void Serializer::StateSave::object (Object *p)
+  {
+    //Store object version
+    Uint version = p->version();
+    store( &version, sizeof( Uint ));
+
+    //Record all the objects
+    serializer->objects.pushBack( p );
+
+    //Serialize object members
+    p->serialize( serializer, version );
   }
 
   /*
@@ -247,17 +263,17 @@ namespace GE
       string( &a->at(s) );
   }
 
-  void Serializer::StateLoad::objectPtr (MyObject **pp)
+  void Serializer::StateLoad::objectPtr (Object **pp)
   {
     //Enqueue reference
     objectRef( pp );
 
     //Enqueue object
     LoadObjNode o;
-    objs.pushBack( o );
+    objStack.pushBack( o );
   };
 
-  void Serializer::StateLoad::objectRef (MyObject **pp)
+  void Serializer::StateLoad::objectRef (Object **pp)
   {
     //Load serial ID
     UintSize id = 0;
@@ -267,7 +283,7 @@ namespace GE
     LoadRefNode r;
     r.pp = pp;
     r.id = id;
-    refs.pushBack( r );
+    refStack.pushBack( r );
   }
 
   void Serializer::StateLoad::objectPtrArray (GenericArrayList *a)
@@ -279,7 +295,7 @@ namespace GE
     //Store array elements
     a->resize( size );
     for (UintSize s=0; s<size; ++s) {
-      objectPtr( (MyObject**) a->at(s) );
+      objectPtr( (Object**) a->at(s) );
     }
   }
 
@@ -292,7 +308,20 @@ namespace GE
     //Store array elements
     a->resize( size );
     for (UintSize s=0; s<size; ++s)
-      objectRef( (MyObject**) a->at(s) );
+      objectRef( (Object**) a->at(s) );
+  }
+
+  void Serializer::StateLoad::object (Object *p)
+  {
+    //Load object version
+    Uint version = 0;
+    load( &version, sizeof( Uint ));
+
+    //Record all the objects
+    serializer->objects.pushBack( p );
+
+    //Serialize object members
+    p->serialize( serializer, version );
   }
 
   /*
@@ -302,25 +331,27 @@ namespace GE
 
   void Serializer::StateSave::reset (bool simulation)
   {
-    objs.clear ();
-    refs.clear();
-    objects.clear();
+    serializer->objects.clear();
+
+    objStack.clear ();
+    refStack.clear();
+    objMap.clear();
 
     offset = 0;
     simulate = simulation;
   }
 
-  void Serializer::StateSave::run (MyObject **ppRoot)
+  void Serializer::StateSave::run (Object **ppRoot)
   {
     //Start with root object
     objectPtr( ppRoot );
 
     //Process objects
-    while (!objs.empty())
+    while (!objStack.empty())
     {
       //Pop object node off the stack
-      SaveObjNode o = objs.last();
-      objs.popBack();
+      SaveObjNode o = objStack.last();
+      objStack.popBack();
 
       //Insert object size when done
       if (o.done) {
@@ -330,12 +361,12 @@ namespace GE
       }
 
       //Map object to serial ID
-      o.p->serialID = objects.size();
-      objects.pushBack( o.p );
+      o.p->serialID = objMap.size();
+      objMap.pushBack( o.p );
 
       //Store class ID
-      ClassID cid = o.p->uuid();
-      store( &cid, sizeof( ClassID ));
+      UUID cid = o.p->getClass()->uuid();
+      store( &cid, sizeof( UUID ));
 
       //Store object version
       Uint version = o.p->version();
@@ -354,18 +385,21 @@ namespace GE
       oDone.done = true;
       oDone.szOffset = szOffset;
       oDone.offset = offset;
-      objs.pushBack( oDone );
+      objStack.pushBack( oDone );
+
+      //Record all the objects
+      serializer->objects.pushBack( o.p );
 
       //Serialize object members
       o.p->serialize( serializer, version );
     }
 
     //Process references
-    while (!refs.empty())
+    while (!refStack.empty())
     {
       //Pop reference node off the stack
-      SaveRefNode r = refs.last();
-      refs.popBack();
+      SaveRefNode r = refStack.last();
+      refStack.popBack();
 
       //Insert object serial ID
       UintSize serialID = r.p->serialID;
@@ -380,29 +414,31 @@ namespace GE
 
   void Serializer::StateLoad::reset (bool simulation)
   {
-    objs.clear ();
-    refs.clear();
-    objects.clear();
+    serializer->objects.clear();
+    
+    objStack.clear ();
+    refStack.clear();
+    objMap.clear();
 
     offset = 0;
     simulate = simulation;
   }
 
-  void Serializer::StateLoad::run (MyObject **ppRoot)
+  void Serializer::StateLoad::run (Object **ppRoot)
   {
     //Start with root object
     objectPtr( ppRoot );
 
     //Process objects
-    while (!objs.empty())
+    while (!objStack.empty())
     {
       //Pop object off the stack
-      LoadObjNode o = objs.last();
-      objs.popBack();
+      LoadObjNode o = objStack.last();
+      objStack.popBack();
 
       //Load class ID
-      ClassID cid;
-      load( &cid, sizeof( ClassID ));
+      UUID cid;
+      load( &cid, sizeof( UUID ));
 
       //Load object version
       Uint version = 0;
@@ -417,7 +453,7 @@ namespace GE
       load( &size, sizeof( UintSize ));
 
       //Instantiate object
-      MyObject *p = Serializer::Produce( cid );
+      Object *p = Serializer::Instantiate( cid );
 
       //Skip invalid object
       if (p == NULL) {
@@ -426,28 +462,31 @@ namespace GE
       }
 
       //Map object to serial ID
-      objects.resizeAndCopy( sid + 1 );
-      objects[ sid ] = p;
+      objMap.resizeAndCopy( sid + 100 );
+      objMap[ sid ] = p;
+
+      //Record all the objects
+      serializer->objects.pushBack( p );
 
       //Serialize object members
       p->serialize( serializer, version );
     }
 
     //Process references
-    while (!refs.empty())
+    while (!refStack.empty())
     {
       //Pop reference off the stack
-      LoadRefNode r = refs.last();
-      refs.popBack();
+      LoadRefNode r = refStack.last();
+      refStack.popBack();
 
       //Check for invalid serial ID
-      if (r.id >= objects.size()) {
+      if (r.id >= objMap.size()) {
         *r.pp = NULL;
         continue;
       }
 
       //Map serial ID to object
-      *r.pp = objects[ r.id ];
+      *r.pp = objMap[ r.id ];
     }
   }
 
@@ -456,7 +495,7 @@ namespace GE
   High-Level Control
   ---------------------------------------------------------*/
 
-  void Serializer::serialize (MyObject *root, void **outData, UintSize *outSize)
+  void Serializer::serialize (Object *root, void **outData, UintSize *outSize)
   {
     //Enter saving state
     state = &stateSave;
@@ -477,7 +516,7 @@ namespace GE
     state->run( &root );
   }
 
-  MyObject* Serializer::deserialize (const void *data)
+  Object* Serializer::deserialize (const void *data)
   {
     //Enter loading state
     state = &stateLoad;
@@ -485,7 +524,7 @@ namespace GE
     state->buffer = (Uint8*) data;
 
     //Run
-    MyObject *rootPtr = NULL;
+    Object *rootPtr = NULL;
     state->reset( false );
     state->run( &rootPtr );
 

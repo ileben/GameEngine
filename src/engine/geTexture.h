@@ -11,9 +11,7 @@ namespace GE
 
   class Texture : public Resource
   {
-    DECLARE_SUBCLASS (Texture, Resource);
-    DECLARE_END;
-
+    CLASS( Texture, 48373fd3,f969,45a1,ab0359580eb7be8e );
     friend class Renderer;
     friend class Material;
 

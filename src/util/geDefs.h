@@ -43,6 +43,8 @@
 #include <list>
 #include <vector>
 #include <deque>
+#include <map>
+#include <typeinfo>
 
 #ifndef WIN32
 #  include <sys/time.h>

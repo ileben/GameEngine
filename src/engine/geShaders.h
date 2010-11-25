@@ -23,11 +23,9 @@ namespace GE
       Any        =  2
     };};
 
-    class GLShader : public Object
+  class GLShader : public Object
   {
-    DECLARE_SUBCLASS( GLShader, Object );
-    DECLARE_END;
-
+    CLASS( GLShader, cac5feda,8e46,4279,a10cbe04e7c51b92 );
     friend class GLProgram;
     
   protected:
@@ -46,10 +44,9 @@ namespace GE
    * Shading program
    *==============================*/
 
-    class GLProgram : public Object
+  class GLProgram : public Object
   {
-    DECLARE_SUBCLASS( GLProgram, Object);
-    DECLARE_END;
+    CLASS( GLProgram, e01dce7d,6d00,4ee5,914d6cba969bec91 );
     
   protected:
     Uint32 handle;

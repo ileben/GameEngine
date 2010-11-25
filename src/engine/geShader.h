@@ -101,9 +101,9 @@ namespace GE
       Bitangent
     };}
   
-  class GE_API_ENTRY Shader : public Resource
+  class Shader : public Resource
   {
-    DECLARE_SUBCLASS (Shader, Resource); DECLARE_END;
+    CLASS( Shader, d3c5406f,0544,429e,bb11e4d70e95e11e );
     friend class Material;
     
   private:

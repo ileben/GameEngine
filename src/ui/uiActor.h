@@ -42,11 +42,8 @@ namespace GE
   Event
   ----------------------------------------------*/
 
-  class Event : public Object
+  class Event
   {
-    DECLARE_SUBCLASS( Event, Object );
-    DECLARE_END;
-
   private:
     Actor *target;
 
@@ -85,13 +82,17 @@ namespace GE
   class Actor : public Object
   {
     friend class Scene;
-    DECLARE_SERIAL_SUBCLASS( Actor, Object );
-    DECLARE_OBJVAR( name );
-    DECLARE_OBJREF( scene );
-    DECLARE_OBJREF( parent );
-    DECLARE_OBJVAR( children );
-    DECLARE_DATAVAR( mat );
-    DECLARE_END;
+
+    CLASS( Actor, 0acdcd40,9da9,4dac,ac7bccbada6e4ee5 );
+    virtual void serialize (Serializer *s, Uint v)
+    {
+      Object::serialize( s,v );
+      s->string( &name );
+      s->objectRef( &scene );
+      s->objectRef( &parent );
+      s->objectPtrArray( &children );
+      s->data( &mat );
+    }
 
   private:
     bool valid;
@@ -103,10 +104,9 @@ namespace GE
     Vector2 loc;
     Vector2 box;
     Matrix4x4 mat;
-    ObjPtrArrayList <Actor> children;
+    ArrayList <Actor*> children;
 
   public:
-    Actor (SM *sm); 
     Actor ();
     virtual ~Actor() {}
 
@@ -144,7 +144,7 @@ namespace GE
     void removeChild (Actor* c);
     void setParent (Actor* c);
     void getAncestors (ArrayList<Actor*> &list);
-    const ObjPtrArrayList<Actor> & getChildren () { return children; }
+    const ArrayList<Actor*> & getChildren () { return children; }
 
     bool isRoot () { return scene != NULL; }
     Actor* getParent () { return parent; }
@@ -161,9 +161,12 @@ namespace GE
 
   class Scene : public Object
   {
-    DECLARE_SERIAL_SUBCLASS( Scene, Object );
-    DECLARE_OBJPTR( root );
-    DECLARE_END;
+    CLASS( Scene, b70776ed,5881,48fb,8fc46f317579d987 );
+    virtual void serialize (Serializer *s, Uint v)
+    {
+      Object::serialize( s,v );
+      s->objectPtr( &root );
+    }
 
   private:
     bool changed;
@@ -172,7 +175,6 @@ namespace GE
 
   public:
     Scene ();
-    Scene (SM *sm);
     virtual ~Scene() {};
 
     void setRoot (Actor *actor);
@@ -185,8 +187,14 @@ namespace GE
     Actor* findTopActorAt (float x, float y);
     const ArrayList<Actor*> & getTraversal () { return traversal; }
     
-    Actor* findFirstActorByClass (ClassPtr cls);
-    void findActorsByClass (ClassPtr cls, ArrayList< Actor* > &outActors);
+    //Actor* findFirstActorByClass (ClassPtr cls);
+    //void findActorsByClass (ClassPtr cls, ArrayList< Actor* > &outActors);
+
+    template <class C>
+    Actor* findFirstActorByClass ();
+
+    template <class C>
+    void findActorsByClass (ArrayList< Actor* > &outActors);
 
     Actor* findFirstActorByName (const CharString &name);
   };
@@ -218,6 +226,27 @@ namespace GE
 
   Vector2 Actor::getBottomRight ()
     { return Vector2( getRight(), getBottom() ); }
+
+
+  template <class C>
+  Actor* Scene::findFirstActorByClass ()
+  {
+    for (UintSize t=0; t<traversal.size(); ++t) {
+      Actor* a = (Actor*) dynamic_cast< C >( traversal[t] );
+      if (a != NULL) return a;
+    }
+
+    return NULL;
+  }
+
+  template <class C>
+  void Scene::findActorsByClass (ArrayList< Actor* > &outActors)
+  {
+    for (UintSize t=0; t<traversal.size(); ++t) {
+      Actor* a = (Actor*) dynamic_cast< C >( traversal[t] );
+      if (a != NULL) outActors.pushBack( a );
+    }
+  }
 
 }//namespace GE
 #endif//__UIACTOR_H

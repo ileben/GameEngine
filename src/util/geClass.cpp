@@ -4,7 +4,7 @@ namespace GE
 {
   using namespace TextParserCommon;
 
-  DEFINE_SERIAL_CLASS( Object, CLSID_OBJECT );
+  DEFINE_SERIAL_CLASS( ObjectOld, CLSID_OBJECT );
   CTable* IClass::classes = NULL;
   ITable* IClass::classesByID = NULL;
   
@@ -108,7 +108,7 @@ namespace GE
     return it->second;
   }
 
-  void* IClass::Safecast (ClassPtr to, Object *instance)
+  void* IClass::Safecast (ClassPtr to, ObjectOld *instance)
   {
     //Return early if same class
     ClassPtr from = instance->GetInstanceClassPtr();
