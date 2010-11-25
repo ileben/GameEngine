@@ -53,7 +53,7 @@ namespace GE
     -----------------------------------------------------------*/
 
     class Vertex : public VertexBase <PolyMeshTraits,HMesh> {
-      DECLARE_SUBCLASS (Vertex, HMesh::Vertex); DECLARE_END;
+      CLASS( PolyMeshTraits::Vertex, ce0336ca,33cf,4f59,97d11d6d77826aed );
     public:
       Vector3 point;
     };
@@ -65,7 +65,7 @@ namespace GE
     ----------------------------------------------------------*/
 
     class Edge : public EdgeBase <PolyMeshTraits,HMesh> {
-      DECLARE_SUBCLASS (Edge, HMesh::Edge); DECLARE_END;
+      CLASS( PolyMeshTraits::Edge, 81e7dcda,cd5f,475d,b72af28ceb4f2822 );
     public:
       bool isSmooth;
       Edge() : isSmooth( false ) {}
@@ -81,7 +81,7 @@ namespace GE
     -------------------------------------------------------*/
 
     class HalfEdge : public HalfEdgeBase <PolyMeshTraits,HMesh> {
-      DECLARE_SUBCLASS (HalfEdge, HMesh::HalfEdge); DECLARE_END;
+      CLASS( PolyMeshTraits::HalfEdge, 849dc863,7529,4c2b,a748058c8479d410 );
     public:
       VertexNormal *vnormal;
       VertexTangent *vtangent;
@@ -98,7 +98,7 @@ namespace GE
     -------------------------------------------------*/
 
     class Face : public FaceBase <PolyMeshTraits,HMesh> {
-      DECLARE_SUBCLASS (Face, HMesh::Face); DECLARE_END;
+      CLASS( PolyMeshTraits::Face, a384c0b7,48e3,4a8e,9388843322a63390 );
       friend class PolyMesh;
 
     private:
@@ -117,8 +117,7 @@ namespace GE
     };
 
     class Triangle : public Object {
-      DECLARE_SUBCLASS( Triangle, Object );
-      DECLARE_END;
+      CLASS( PolyMeshTraits::Triangle, 67c50ff4,1c93,44e9,a6782780c5ac49fe );
 
     public:
       Triangle* next;
@@ -172,11 +171,11 @@ namespace GE
 
   class PolyMesh : public MeshBase <PolyMeshTraits,HMesh>
   {
+    CLASS( PolyMesh, 3810ed9f,68b8,49b0,9cc38e89c6507ac2 );
+
     friend class TriMesh;
     friend class LoaderObj;
     friend class Renderer;
-    DECLARE_SUBCLASS( PolyMesh, HMesh );
-    DECLARE_END;
     
   public:
 

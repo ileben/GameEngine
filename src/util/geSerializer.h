@@ -60,6 +60,7 @@ namespace GE
       virtual void object (Object *p) {}
       virtual void objectPtr (Object **pp) {}
       virtual void objectRef (Object **pp) {}
+      virtual void objectArray (GenericArrayList *a) {}
       virtual void objectPtrArray (GenericArrayList *a) {}
       virtual void objectRefArray (GenericArrayList *a) {}
 
@@ -83,6 +84,7 @@ namespace GE
       virtual void object (Object *p);
       virtual void objectPtr (Object **pp);
       virtual void objectRef (Object **pp);
+      virtual void objectArray (GenericArrayList *a);
       virtual void objectPtrArray (GenericArrayList *a);
       virtual void objectRefArray (GenericArrayList *a);
 
@@ -106,6 +108,7 @@ namespace GE
       virtual void object (Object *p);
       virtual void objectPtr (Object **pp);
       virtual void objectRef (Object **pp);
+      virtual void objectArray (GenericArrayList *a);
       virtual void objectPtrArray (GenericArrayList *a);
       virtual void objectRefArray (GenericArrayList *a);
 
@@ -133,6 +136,7 @@ namespace GE
     void object (Object *p);
     void objectPtr (Object **pp);
     void objectRef (Object **pp);
+    void objectArray (GenericArrayList *a);
     void objectPtrArray (GenericArrayList *a);
     void objectRefArray (GenericArrayList *a);
 
@@ -154,25 +158,25 @@ namespace GE
   private:
 
     //Maps UUID to class
-    typedef std::map< UUID, Class > ClassMap;
+    typedef std::map< UUID, IFactory* > ClassMap;
     typedef ClassMap::iterator ClassMapIter;
     static ClassMap classes;
 
   public:
 
-    //Register class by UUID for instantiation
+    //Register factory by UUID for instantiation
     template <class C> static void Register ()
     {
       Class c = C::GetClass();
-      classes[ c->uuid() ] = c;
+      classes[ c->uuid() ] = new Factory<C>;
     }
 
-    //Instantiate object matching given UUID
-    static Object* Instantiate (const UUID &id)
+    //Produce object matching given UUID
+    static Object* Produce (const UUID &id)
     {
       ClassMapIter i = classes.find( id );
       if (i == classes.end()) return NULL;
-      return i->second->instantiate();
+      return i->second->produce();
     }
   };
 

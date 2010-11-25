@@ -83,9 +83,11 @@ namespace GE
 
   class AnimTrack : public Object
   {
-    DECLARE_SUBABSTRACT( AnimTrack, Object );
-    DECLARE_DATAVAR( firstKey );
-    DECLARE_END;
+    ABSTRACT( AnimTrack, 491ab1fb,63c6,492c,877d6e1266a8e6bc );
+    virtual void serialize( Serializer *s, Uint v )
+    {
+      s->data( &firstKey );
+    }
 
     friend class Animation;
     friend class AnimController;
@@ -96,9 +98,7 @@ namespace GE
 
   public:
 
-    AnimTrack (SM *sm) : Object (sm) {}
     AnimTrack () : firstKey (0) {}
-
     virtual Int getNumKeys () = 0;
     virtual void evalAt (Int key1, Int key2, Float keyT) = 0;
     virtual void getValue (void *value) {}
@@ -106,16 +106,16 @@ namespace GE
   
   template <class Traits> class AnimTrackT : public AnimTrack
   {
-    DECLARE_SERIAL_SUBCLASS( AnimTrackT, AnimTrack );
-    DECLARE_OBJVAR( keys );
-    DECLARE_END;
+    CLASS( AnimTrackT, 0,0,0,0 );
+    virtual void serialize( Serializer *s, Uint v ) {
+      s->dataArray( &keys );
+    };
     
   private:
     typename Traits::Value value;
     ArrayList <typename Traits::Value> keys;
 
   public:
-    AnimTrackT (SM *sm) : AnimTrack(sm), keys(sm) {}
     AnimTrackT () {}
 
     void addKey( typename Traits::Value value );
@@ -212,6 +212,17 @@ namespace GE
   typedef AnimTrackT< FloatTrackTraits > FloatAnimTrack;
   typedef AnimTrackT< BoolTrackTraits > BoolAnimTrack;
 
+  TEMPLATE_CLASS( QuatAnimTrack,  8ff2d758,a624,445a,87197d3e14bb22c5 );
+  TEMPLATE_CLASS( Vec3AnimTrack,  d4b943cd,5cce,4b50,8cb7f4f2806c8637 );
+  TEMPLATE_CLASS( FloatAnimTrack, 3412ea4f,2111,481b,bded7f3c19a3b1f1 );
+  TEMPLATE_CLASS( BoolAnimTrack,  9430611b,8001,47fe,8f4045e94c48b1ad );
+  /*
+  template <> Class QuatAnimTrack::GetClass() {
+    static IClass2<QuatAnimTrack> c( UUID(1,1,1,1), "QuatAnimTrack" );
+    return Class( &c );
+  }
+  */
+
 
   Quat QuatTrackTraits::Interpolate (Quat q1, Quat q2, Float t)
   {
@@ -252,17 +263,18 @@ namespace GE
   
   class AnimEvent : public Object
   {
-    DECLARE_SERIAL_SUBCLASS( AnimEvent, Object );
-    DECLARE_OBJVAR( name );
-    DECLARE_DATAVAR( time );
-    DECLARE_END;
+    CLASS( AnimEvent, 57fbbfa8,750d,4548,9760d20c00d91f58 );
+    virtual void serialize( Serializer *s, Uint v )
+    {
+      s->string( &name );
+      s->data( &time );
+    }
 
   private:
     CharString name;
     Float time;
 
   public:
-    AnimEvent (SM *sm) : Object (sm), name (sm) {}
     AnimEvent () : time (0.0f) {}
     AnimEvent (const CharString& newName, Float newTime)
       : name (newName), time (newTime) {}
@@ -277,22 +289,24 @@ namespace GE
   
   class Animation : public Object
   {
-    DECLARE_SERIAL_SUBCLASS( Animation, Object );
-    DECLARE_DATAVAR( kps );
-    DECLARE_DATAVAR( duration );
-    DECLARE_OBJVAR( name );
-    DECLARE_OBJVAR( tracks );
-    DECLARE_OBJVAR( events );
-    DECLARE_OBJVAR( observers );
-    DECLARE_END;
-
-    friend class AnimController;
+    CLASS( Animation, 94b92ac2,05c3,445a,b70f764c1e76c7ac );
+    virtual void serialize( Serializer *s, Uint v )
+    {
+      s->data( &kps );
+      s->data( &duration );
+      s->string( &name );
+      s->objectPtrArray( &tracks );
+      s->objectPtrArray( &events );
+      s->objectPtrArray( &observers );
+    }
 
   private:
 
-    ObjPtrArrayList <AnimTrack> tracks;
-    ObjPtrArrayList <AnimObserver> observers;
-    ObjPtrArrayList <AnimEvent> events;
+    friend class AnimController;
+
+    ArrayList <AnimTrack*> tracks;
+    ArrayList <AnimObserver*> observers;
+    ArrayList <AnimEvent*> events;
 
   public:
 
@@ -300,7 +314,6 @@ namespace GE
     Float duration;
     CharString name;
 
-    Animation (SM *sm) : Object(sm), name(sm), tracks(sm), events(sm), observers(sm) {}
     Animation () {}
     virtual ~Animation ();
 
@@ -322,20 +335,20 @@ namespace GE
 
   class AnimTrackBinding : public Object
   {
-    DECLARE_SERIAL_SUBCLASS( AnimTrackBinding, Object );
-    DECLARE_OBJREF( anim );
-    DECLARE_DATAVAR( track );
-    DECLARE_DATAVAR( param );
-    DECLARE_END;
+    CLASS( AnimTrackBinding, 3862134c,e0bc,4283,8eaed509b567cc09 );
+    virtual void serialize( Serializer *s, Uint v )
+    {
+      s->objectRef( &anim );
+      s->data( &track );
+      s->data( &param );
+    }
 
   public:
 
     Animation *anim;
     UintSize track;
     Int param;
-
     AnimTrackBinding () : anim (NULL), track (0), param (0) {};
-    AnimTrackBinding (SM *sm) : Object (sm) {};
   };
 
   /*
@@ -346,19 +359,19 @@ namespace GE
 
   class AnimObserver : public Object
   {
-    DECLARE_SERIAL_SUBCLASS( AnimObserver, Object );
-    DECLARE_OBJVAR( bindings );
-    DECLARE_END
-
-    friend class AnimController;
+    CLASS( AnimObserver, d889cd5e,3c49,48a1,96c371a1ae4a4cfc );
+    virtual void serialize( Serializer *s, Uint v ) {
+      s->objectPtrArray( &bindings );
+    }
 
   private:
+    friend class AnimController;
+
     bool change;
-    ObjPtrArrayList< AnimTrackBinding > bindings;
+    ArrayList< AnimTrackBinding* > bindings;
 
   public:
     AnimObserver () : change (false) {};
-    AnimObserver (SM *sm) : Object (sm), change (false) {}
     virtual ~AnimObserver();
 
     void bindTrack (Animation *anim, UintSize track, Int param = 0);
@@ -374,18 +387,18 @@ namespace GE
 
   class AnimObserverBinding : public Object
   {
-    DECLARE_SERIAL_SUBCLASS( AnimObserverBinding, Object );
-    DECLARE_OBJREF( observer );
-    DECLARE_DATAVAR( param );
-    DECLARE_END;
+    CLASS( AnimObserverBinding, 54bbbb8a,1c80,4267,acfd988242b0e707 );
+    virtual void serialize( Serializer *s, Uint v )
+    {
+      s->objectRef( &observer );
+      s->data( &param );
+    }
 
   public:
 
     AnimObserver *observer;
     Int param;
-
     AnimObserverBinding () : observer (NULL), param (0) {};
-    AnimObserverBinding (SM *sm) : Object (sm) {}
   };
 
 
@@ -400,17 +413,21 @@ namespace GE
 
   class AnimController : public Object
   {
-    DECLARE_SERIAL_SUBCLASS( AnimController, Object );
-    DECLARE_DATAVAR( maxTime );
-    DECLARE_DATAVAR( animTime );
-    DECLARE_DATAVAR( playSpeed );
-    DECLARE_DATAVAR( maxLoops );
-    DECLARE_DATAVAR( numLoops );
-    DECLARE_DATAVAR( playing );
-    DECLARE_DATAVAR( paused );
-    DECLARE_OBJVAR( bindings );
-    DECLARE_OBJREF( anim );
-    DECLARE_END;
+    CLASS( AnimController, 13849919,ea1d,48e4,b00abe0f05d623d2 );
+    virtual void serialize( Serializer *s, Uint v )
+    {
+      s->data( &maxTime );
+      s->data( &animTime );
+      s->data( &playSpeed );
+      s->data( &maxLoops );
+      s->data( &numLoops );
+      s->data( &playing );
+      s->data( &paused );
+      s->objectRef( &anim );
+      s->objectPtrArray( &bindings );
+    }
+
+  private:
 
     //Time control
     Float maxTime;
@@ -423,7 +440,7 @@ namespace GE
 
     //Animation bindings
     Animation *anim;
-    ObjPtrArrayList< AnimObserverBinding > bindings;
+    ArrayList< AnimObserverBinding* > bindings;
     void freeBindings();
     void createBindings();
 
@@ -447,7 +464,6 @@ namespace GE
   public:
 
     AnimController ();
-    AnimController (SM *sm);
     virtual ~AnimController ();
 
     void bindAnimation (Animation *a);

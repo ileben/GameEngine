@@ -3,15 +3,7 @@
 
 namespace GE
 {
-  DEFINE_SERIAL_CLASS (Scene3D, ClassID( 0x847aa932u, 0xf887, 0x475b, 0xa94d9a9b017e1f7aull ));
-
   Scene3D::Scene3D()
-  {
-    cam = NULL;
-  }
-
-  Scene3D::Scene3D (SM *sm)
-    : Scene (sm), animations (sm)
   {
     cam = NULL;
   }
@@ -50,12 +42,15 @@ namespace GE
       traversal.pushBack( node );
       if (node.event == TravEvent::End )
         continue;
+
+      //Notify actory
+      node.actor->prepare();
       
       //Store lights
-      Light *l = SafeCast( Light, a );
+      Light *l = dynamic_cast< Light* >( a );
       if (l != NULL)
-        if (ClassOf( l ) != Class( PointLight ))
-        lights.pushBack( l );
+        if (l->getClass() != PointLight::GetClass())
+          lights.pushBack( l );
       
       //Put children actors onto the stack
       stack.pushBack( TravNode( a, TravEvent::End ));

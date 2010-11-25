@@ -36,8 +36,7 @@ namespace GE
 
     class Vertex : public Object
     {
-      DECLARE_SUBCLASS (Vertex, Object);
-      DECLARE_END;
+      CLASS( HMeshTraits::Vertex, 6da81035,8edf,491f,b2a58d863f633da4 );
 
     public:
       ItemTag tag;
@@ -62,8 +61,7 @@ namespace GE
 
     class HalfEdge : public Object
     {
-      DECLARE_SUBCLASS (HalfEdge, Object);
-      DECLARE_END;
+      CLASS( HMeshTraits::HalfEdge, 2365db29,50d0,4fb0,a9f3f07bea48003a );
 
     public:
       ItemTag tag;
@@ -102,8 +100,7 @@ namespace GE
     
     class Edge : public Object
     {
-      DECLARE_SUBCLASS (Edge, Object);
-      DECLARE_END;
+      CLASS( HMeshTraits::Edge, c63a61e3,cab1,4368,976cb0479d571042 );
 
     public:
       ItemTag tag;
@@ -126,10 +123,9 @@ namespace GE
     Face class
     ------------------------------------------*/
 
-    class Face
+    class Face : public Object
     {
-      DECLARE_SUBCLASS( Face, Object );
-      DECLARE_END;
+      CLASS( HMeshTraits::Face, 1927ce5e,7b0b,43fc,8a0284be116a5d5d );
       
     public:
       ItemTag tag;
@@ -155,8 +151,7 @@ namespace GE
 
   class HMesh : public Resource
   {
-    DECLARE_SUBCLASS( HMesh, Resource );
-    DECLARE_END;
+    CLASS( HMesh, 3455344a,7fb0,4574,8ecbcad5ea485182 );
     
   public:
 
@@ -175,14 +170,14 @@ namespace GE
     ------------------------------------------------*/
     
   private:
-    ClassPtr classVertex;
-    ClassPtr classHalfEdge;
-    ClassPtr classEdge;
-    ClassPtr classFace;
+    Class classVertex;
+    Class classHalfEdge;
+    Class classEdge;
+    Class classFace;
     
   public:
-    void setClasses(ClassPtr cnVertex, ClassPtr cnHedge,
-                    ClassPtr cnEdge, ClassPtr cnFace);
+    void setClasses(Class cnVertex, Class cnHedge,
+                    Class cnEdge, Class cnFace);
     
     /*
     -------------------------------------------------
@@ -219,10 +214,10 @@ namespace GE
 
     HMesh()
     {
-      classVertex = Class(Vertex);
-      classHalfEdge = Class(HalfEdge);
-      classEdge = Class(Edge);
-      classFace = Class(Face);
+      classVertex = Vertex::GetClass();
+      classHalfEdge = HalfEdge::GetClass();
+      classEdge = Edge::GetClass();
+      classFace = Face::GetClass();
     }
     
     /*

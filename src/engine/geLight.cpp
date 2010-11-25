@@ -107,7 +107,7 @@ namespace GE
     return attStart;
   }
 
-  PointLight::PointLight()
+  PointLight::PointLight ()
   {
     Vector3 subDirs[6] =
     {

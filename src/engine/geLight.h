@@ -150,6 +150,9 @@ namespace GE
   class PointLight : public Light
   {
     CLASS( PyramidLight, e684697c,c0a1,446b,927069f5eff3ad37 );
+
+    PointLight (bool producing) {}
+    static PointLight* produce() { return new PointLight(true); }
     virtual void serialize( Serializer *s, Uint v )
     {
       Light::serialize( s,v );

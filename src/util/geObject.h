@@ -50,10 +50,9 @@ namespace GE
     }
   };
 
-#if (1)
   /*
   ---------------------------------------------
-  Class holds the UUID and acts as a factory
+  IClass holds the UUID and acts as a factory
   ---------------------------------------------*/
 
   class IClass
@@ -70,7 +69,7 @@ namespace GE
 
     const UUID& uuid() { return id; }
     const CharString& name() { return n; }
-    virtual Object* instantiate() = 0;
+    virtual Object* instantiate() { return NULL; }
   };
 
   template <class C>
@@ -82,9 +81,10 @@ namespace GE
   };
 
   /*
-  ---------------------------------------------------------
-  ClassPtr is a comparable wrapper for class based on UUID
-  ---------------------------------------------------------*/
+  ----------------------------------------------
+  Class is a wrapper for IClass pointer which
+  implements comparison by UUID.
+  ----------------------------------------------*/
 
   class Class
   {
@@ -108,6 +108,10 @@ namespace GE
       return ptr->uuid() == other.ptr->uuid();
     }
 
+    bool operator!= (const Class &other) const {
+      return !operator==( other );
+    }
+
     bool operator< (const Class &other) const {
       return ptr->uuid() < other.ptr->uuid();
     }
@@ -121,24 +125,42 @@ namespace GE
     }
   };
 
-#else
+  /*
+  ------------------------------------------------------------
+  Factory uses type dispatching to instantiate objects using
+  either the default constructor or custom one if specified.
+  ------------------------------------------------------------*/
 
-  class FactoryBase
+  class IFactory
   {
   public:
     virtual Object* produce() = 0;
   };
 
   template <class C>
-  class Factory
+  class Factory : public IFactory
   {
   public:
+
+    //This uses the return type of produce function to determine
+    //whether a custom one has been defined for this class
     virtual Object* produce() {
+      return produceDispatch( &C::produce );
+    };
+
+  private:
+
+    //This will match produce function with correct return type
+    Object* produceDispatch (C* (*funcPtr) ()) {
+      return C::produce();
+    }
+
+    //This will match produce function with any other return type
+    template <class Other>
+    Object* produceDispatch (Other* (*funcPtr) ()) {
       return new C();
     }
   };
-
-#endif
 
   /*
   ---------------------------------------------
@@ -153,10 +175,10 @@ namespace GE
     UintSize serialID;
 
   public:
-    //virtual UUID uuid() = 0;
     virtual Class getClass() = 0;
     virtual Uint version () { return 1; }
     virtual void serialize (Serializer *serializer, Uint version) {}
+    static Object* produce() { return NULL; }
   };
 
   /*
@@ -164,25 +186,39 @@ namespace GE
   Helper macros for easier object definition
   ----------------------------------------------------------*/
 
-#if(1)
+#define MAKEUUID( A,B,C,D ) \
+  UUID( 0x ## A ## u, 0x ## B ## u, 0x ## C ## u, 0x ## D ## ull)
 
-  #define CLASS( Name, A,B,C,D ) \
-    public: \
+
+#define __CLASS( Interface, Name, A,B,C,D ) \
+  public: \
+  \
+  static Class GetClass() { \
+  static Interface c( MAKEUUID(A,B,C,D), #Name); \
+    return Class( &c ); } \
     \
-    static Class GetClass() { \
-      static IClass2<Name> c( UUID( 0xAu, 0xBu, 0xCu, 0xDull), #Name); \
-      return Class( &c ); } \
-      \
-    virtual Class getClass() { \
-      return Name::GetClass(); }
-#else
-  
-  #define CLASSID( a,b,c,d ) \
-    public: \
-    static UUID Uuid() { return UUID( a, b, c, d ); } \
-    virtual UUID uuid() { return UUID( a, b, c, d ); }
+  virtual Class getClass() { \
+    return Name::GetClass(); }
 
-#endif
+
+#define __TEMPLATE_CLASS( Interface, Name, A,B,C,D ) \
+  template <> Class Name::GetClass() { \
+    static Interface c( MAKEUUID(A,B,C,D), #Name ); \
+    return Class( &c ); }
+
+
+#define CLASS( Name, A,B,C,D ) \
+  __CLASS( IClass2<Name>, Name, A,B,C,D )
+
+#define ABSTRACT( Name, A,B,C,D ) \
+  __CLASS( IClass, Name, A,B,C,D );
+
+#define TEMPLATE_CLASS( Name, A,B,C,D ) \
+  __TEMPLATE_CLASS( IClass2<Name>, Name, A,B,C,D )
+
 
 }//namespace GE
+
+using GE::UUID;
+
 #endif//__GEOBJECT_H

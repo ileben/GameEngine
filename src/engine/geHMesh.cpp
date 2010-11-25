@@ -2,13 +2,6 @@
 
 namespace GE
 {
-
-  DEFINE_CLASS (HMesh);
-  DEFINE_CLASS (HMesh::Vertex);
-  DEFINE_CLASS (HMesh::HalfEdge);
-  DEFINE_CLASS (HMesh::Edge);
-  DEFINE_CLASS (HMesh::Face);
-  
   typedef HMesh::Vertex         Vertex;
   typedef HMesh::HalfEdge       HalfEdge;
   typedef HMesh::Edge           Edge;
@@ -148,8 +141,8 @@ namespace GE
   Sets classes to be used when entities are constructed
   ------------------------------------------------------*/
 
-  void HMesh::setClasses(ClassPtr cnVertex, ClassPtr cnHedge,
-                         ClassPtr cnEdge, ClassPtr cnFace)
+  void HMesh::setClasses (Class cnVertex, Class cnHedge,
+                          Class cnEdge, Class cnFace)
   {
     classVertex = cnVertex;
     classHalfEdge = cnHedge;
@@ -421,28 +414,28 @@ namespace GE
     //generate vertices
     Vertex **pointerVert = new Vertex*[countVert];
     for (v=0; v<countVert; ++v) {
-      pointerVert[v] = (Vertex*)New(classVertex);
+      pointerVert[v] = (Vertex*)classVertex->instantiate();
       insertVert(pointerVert[v]);
     }
     
     //generate half-edges
     HalfEdge **pointerHedge = new HalfEdge*[countHedge];
     for (he=0; he<countHedge; ++he) {
-      pointerHedge[he] = (HalfEdge*)New(classHalfEdge);
+      pointerHedge[he] = (HalfEdge*)classHalfEdge->instantiate();
       insertHalfEdge(pointerHedge[he]);
     }
     
     //generate edges
     Edge **pointerEdge = new Edge*[countEdge];
     for (e=0; e<countEdge; ++e) {
-      pointerEdge[e] = (Edge*)New(classEdge);
+      pointerEdge[e] = (Edge*)classEdge->instantiate();
       insertEdge(pointerEdge[e]);
     }
     
     //generate faces
     Face **pointerFace = new Face*[countFace];
     for (f=0; f<countFace; ++f) {
-      pointerFace[f] = (Face*)New(classFace);
+      pointerFace[f] = (Face*)classFace->instantiate();
       insertFace(pointerFace[f]);
     }
     
@@ -537,7 +530,7 @@ namespace GE
 
   Vertex* HMesh::addVertex()
   {
-    Vertex *vert = (Vertex*)New(classVertex);
+    Vertex *vert = (Vertex*)classVertex->instantiate();
     vert->hedge = NULL;
     insertVert(vert);
     return vert;
@@ -726,7 +719,7 @@ namespace GE
     }
     
     //Create new face of specified class
-    Face *face = (Face*)New(classFace);
+    Face *face = (Face*)classFace->instantiate();
         
     //these lists hold outgoing adjacent edges with no face
     //for each vertex after generation of new edges
@@ -767,8 +760,8 @@ namespace GE
       }else{
         
         //create two half-edges
-        HalfEdge *eIn = (HalfEdge*)New(classHalfEdge);
-        HalfEdge *eOut = (HalfEdge*)New(classHalfEdge);
+        HalfEdge *eIn = (HalfEdge*)classHalfEdge->instantiate();
+        HalfEdge *eOut = (HalfEdge*)classHalfEdge->instantiate();
         eIn->vert = vertices[i1];
         eOut->vert = vertices[i2];
         eIn->twin = eOut;
@@ -778,7 +771,7 @@ namespace GE
         insertHalfEdge(eIn);
         insertHalfEdge(eOut);
         //create full-edge
-        Edge *edge = (Edge*)New(classEdge);
+        Edge *edge = (Edge*)classEdge->instantiate();
         edge->hedge = eOut;
         eIn->edge = edge;
         eOut->edge = edge;
@@ -861,10 +854,10 @@ namespace GE
       return false;
 
     //Create new entities
-    HalfEdge *newHedge1 = (HalfEdge*) New( classHalfEdge );
-    HalfEdge *newHedge2 = (HalfEdge*) New( classHalfEdge );
-    Edge *newEdge = (Edge*) New( classEdge );
-    Face *newFace = (Face*) New( classFace );
+    HalfEdge *newHedge1 = (HalfEdge*) classHalfEdge->instantiate();
+    HalfEdge *newHedge2 = (HalfEdge*) classHalfEdge->instantiate();
+    Edge *newEdge = (Edge*) classEdge->instantiate();
+    Face *newFace = (Face*) classFace->instantiate();
 
     //Setup new entities
     newHedge1->vert = vert1;

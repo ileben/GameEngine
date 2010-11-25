@@ -3,21 +3,6 @@
 
 namespace GE
 {
-
-  DEFINE_CLASS( AnimTrack );
-  DEFINE_SERIAL_TEMPL_CLASS( QuatAnimTrack,  ClassID (0x8ff2d758u, 0xa624, 0x445a, 0x87197d3e14bb22c5ull ));
-  DEFINE_SERIAL_TEMPL_CLASS( Vec3AnimTrack,  ClassID (0xd4b943cdu, 0x5cce, 0x4b50, 0x8cb7f4f2806c8637ull ));
-  DEFINE_SERIAL_TEMPL_CLASS( FloatAnimTrack, ClassID (0x3412ea4fu, 0x2111, 0x481b, 0xbded7f3c19a3b1f1ull ));
-  DEFINE_SERIAL_TEMPL_CLASS( BoolAnimTrack,  ClassID (0x9430611bu, 0x8001, 0x47fe, 0x8f4045e94c48b1adull ));
-  
-  DEFINE_SERIAL_CLASS( Animation,           ClassID( 0x974f85e5u, 0x72dd, 0x475c, 0x97e5e2d6e7711a61ull ));
-  DEFINE_SERIAL_CLASS( AnimEvent,           ClassID( 0xd744289fu, 0xd525, 0x40de, 0x9b4e90de7fa22742ull ));
-  DEFINE_SERIAL_CLASS( AnimObserver,        ClassID( 0x396b2925u, 0x502d, 0x45d6, 0xaf50f072f0eef03dull ));
-  DEFINE_SERIAL_CLASS( AnimTrackBinding,    ClassID( 0x6ed45538u, 0x0d1d, 0x46d0, 0xa9515a77ffd53b37ull ));
-  DEFINE_SERIAL_CLASS( AnimObserverBinding, ClassID( 0xe12e3c68u, 0x289d, 0x45ff, 0x98f3607fe1c29b1dull ));
-  DEFINE_SERIAL_CLASS( AnimController,      ClassID( 0x9cfdb22eu, 0xe70f, 0x4211, 0x90003ba27feade9eull ));
-
-
   Animation::~Animation ()
   {
     for (UintSize t=0; t<tracks.size(); ++t)
@@ -84,14 +69,6 @@ namespace GE
     endFunc = NULL;
 
     anim = NULL;
-    trackIndex = 0;
-    eventIndex = 0;
-  }
-
-  AnimController::AnimController (SM *sm)
-    : Object (sm), bindings (sm)
-  {
-    endFunc = NULL;
     trackIndex = 0;
     eventIndex = 0;
   }

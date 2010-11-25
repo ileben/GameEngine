@@ -43,27 +43,30 @@ namespace GE
 
   class Scene3D : public Scene
   {
-    DECLARE_SERIAL_SUBCLASS (Scene3D, Scene);
-    DECLARE_DATAVAR( ambientColor );
-    DECLARE_OBJVAR( animations );
-    DECLARE_OBJVAR( resources );
-    DECLARE_END;
-    friend class Renderer;
+    CLASS( Scene3D, 935538c5,5cff,4949,86a3fe35a672c019 );
+    virtual void serialize( Serializer *s, Uint v )
+    {
+      s->data( &ambientColor );
+      s->objectPtrArray( &animations );
+      s->objectPtrArray( &resources );
+    }
 
   private:
+    friend class Renderer;
+
     Camera *cam;
     ArrayList< Light* > lights;
     ArrayList< TravNode > traversal;
 
   private:
     Vector3 ambientColor;
+
   public:
-    ObjPtrArrayList< Animation > animations;
-    ObjPtrArrayList< Resource > resources;
+    ArrayList< Animation* > animations;
+    ArrayList< Resource* > resources;
 
   public:
     Scene3D ();
-    Scene3D (SM *sm);
     ~Scene3D ();
 
     void bindCamera( Camera *cam );

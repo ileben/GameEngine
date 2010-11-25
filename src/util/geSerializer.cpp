@@ -88,6 +88,9 @@ namespace GE
   void Serializer::objectRef (Object **pp)
   { state->objectRef( pp ); }
 
+  void Serializer::objectArray (GenericArrayList *a)
+  { state->objectArray( a ); }
+
   void Serializer::objectPtrArray (GenericArrayList *a)
   { state->objectPtrArray( a ); }
 
@@ -205,6 +208,17 @@ namespace GE
     p->serialize( serializer, version );
   }
 
+  void Serializer::StateSave::objectArray (GenericArrayList *a)
+  {
+    //Store array size
+    UintSize size = a->size();
+    store( &size, sizeof( UintSize ));
+
+    //Store array elements
+    for (UintSize s=0; s<size; ++s)
+      object( (Object*) a->at(s) );
+  }
+
   /*
   ---------------------------------------------------------
   Load Callbacks
@@ -292,7 +306,7 @@ namespace GE
     UintSize size = 0;
     load( &size, sizeof( UintSize ));
 
-    //Store array elements
+    //Load array elements
     a->resize( size );
     for (UintSize s=0; s<size; ++s) {
       objectPtr( (Object**) a->at(s) );
@@ -305,7 +319,7 @@ namespace GE
     UintSize size = 0;
     load( &size, sizeof( UintSize ));
 
-    //Store array elements
+    //Load array elements
     a->resize( size );
     for (UintSize s=0; s<size; ++s)
       objectRef( (Object**) a->at(s) );
@@ -322,6 +336,18 @@ namespace GE
 
     //Serialize object members
     p->serialize( serializer, version );
+  }
+
+  void Serializer::StateLoad::objectArray (GenericArrayList *a)
+  {
+    //Load array size
+    UintSize size = 0;
+    load( &size, sizeof( UintSize ));
+
+    //Load array elements
+    a->resize( size );
+    for (UintSize s=0; s<size; ++s)
+      object( (Object*) a->at(s) );
   }
 
   /*
@@ -453,7 +479,7 @@ namespace GE
       load( &size, sizeof( UintSize ));
 
       //Instantiate object
-      Object *p = Serializer::Instantiate( cid );
+      Object *p = Serializer::Produce( cid );
 
       //Skip invalid object
       if (p == NULL) {

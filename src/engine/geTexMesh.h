@@ -8,32 +8,32 @@
 namespace GE
 {
 
-  class GE_API_ENTRY TexMeshTraits : public HMesh
+  class TexMeshTraits : public HMesh
   {
   public:
 
-    class GE_API_ENTRY Vertex : public VertexBase <TexMeshTraits,HMesh> {
-      DECLARE_SUBCLASS (Vertex, HMesh::Vertex); DECLARE_END;
+    class Vertex : public VertexBase <TexMeshTraits,HMesh> {
+      CLASS( TexMeshTraits::Vertex, c6e741d5,5105,4831,aa53a87962500bfb );
     public:
       Vector2 point;
     };
 
-    class GE_API_ENTRY HalfEdge : public HalfEdgeBase <TexMeshTraits,HMesh> {
-      DECLARE_SUBCLASS (HalfEdge, HMesh::HalfEdge); DECLARE_END;
+    class HalfEdge : public HalfEdgeBase <TexMeshTraits,HMesh> {
+      CLASS( TexMeshTraits::HalfEdge, c16493f7,ece6,4dba,ae0783d0f3ba7b55 );
     };
     
-    class GE_API_ENTRY Edge : public EdgeBase <TexMeshTraits,HMesh> {
-      DECLARE_SUBCLASS (Edge, HMesh::Edge); DECLARE_END;
+    class Edge : public EdgeBase <TexMeshTraits,HMesh> {
+      CLASS( TexMeshTraits::Edge, ffe54ba4,62a7,4b98,9c7610a3b0f78708 );
     };
     
-    class GE_API_ENTRY Face : public FaceBase <TexMeshTraits,HMesh> {
-      DECLARE_SUBCLASS (Face, HMesh::Face); DECLARE_END;
+    class Face : public FaceBase <TexMeshTraits,HMesh> {
+      CLASS( TexMeshTraits::Face, 0a57e38a,1e88,4c51,9ec02cc86e789ee4 );
     };
   };
 
   class TexMesh : public MeshBase <TexMeshTraits,HMesh>
   {
-    DECLARE_SUBCLASS (TexMesh, HMesh); DECLARE_END;
+    CLASS( TexMesh, 21674b6b,1ac5,441b,8800656097790a96 );
   };
 
 }/* namespace GE */

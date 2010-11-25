@@ -22,15 +22,17 @@ namespace GE
 
   class FormatMember : public Object
   {
-    DECLARE_SERIAL_SUBCLASS( FormatMember, Object );
-    DECLARE_DATAVAR( data );
-    DECLARE_DATAVAR( unit );
-    DECLARE_DATAVAR( size );
-    DECLARE_DATAVAR( offset );
-    DECLARE_OBJVAR( attribName );
-    DECLARE_DATAVAR( attribUnit );
-    DECLARE_DATAVAR( attribNorm );
-    DECLARE_END;
+    CLASS( FormatMember, 2bbbf581,6115,4079,92d4cd4adca55145 );
+    virtual void serialize( Serializer *s, Uint v )
+    {
+      s->data( &data );
+      s->data( &unit );
+      s->data( &size );
+      s->data( &offset );
+      s->string( &attribName );
+      s->data( &attribUnit );
+      s->data( &attribNorm );
+    }
 
   public:
     ShaderData::Enum data;
@@ -42,29 +44,29 @@ namespace GE
     bool attribNorm;
 
     FormatMember () {}
-    FormatMember (SM *sm) : attribName(sm) {}
     bool operator == (const FormatMember &other) const;
     void resolveKnownData();
   };
 
   class VertexFormat : public Object
   {
-    DECLARE_SERIAL_SUBCLASS( VertexFormat, Object );
-    DECLARE_DATAVAR( size );
-    DECLARE_OBJVAR( members );
-    DECLARE_END;
+    CLASS( VertexFormat, a9e2d1db,0f6c,4f31,a061acb2742da9bc );
+    virtual void serialize( Serializer *s, Uint v )
+    {
+      s->data( &size );
+      s->objectArray( &members );
+    }
 
   private:
     UintSize size;
-    ObjArrayList <FormatMember> members;
+    ArrayList <FormatMember> members;
 
   public:
 
-    VertexFormat (SM *sm) : members (sm) {}
     VertexFormat () { size = 0; }
 
     UintSize getByteSize() const;
-    const ObjArrayList <FormatMember> * getMembers () const;
+    const ArrayList <FormatMember> * getMembers () const;
     VertexFormat& operator= (const VertexFormat &f);
     bool operator == (const VertexFormat &other) const;
 
