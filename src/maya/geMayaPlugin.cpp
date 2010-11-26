@@ -9,12 +9,6 @@
 #include "mel.embedded"
 
 
-DEFINE_SERIAL_CLASS( MayaAnimDummy,  ClassID ( 0x3a64a0f5u, 0x8ba7, 0x43bd, 0x98bc949ecfa7fb74ull ));
-DEFINE_SERIAL_CLASS( MayaClipDummy,  ClassID ( 0x251dd070u, 0x6d0b, 0x496a, 0x9a6eb10676a6da3eull ));
-DEFINE_SERIAL_CLASS( MayaEventDummy, ClassID ( 0x00b10b6cu, 0x1332, 0x4c20, 0xae0b14e6440d55e5ull ));
-DEFINE_SERIAL_CLASS( MayaSceneDummy, ClassID ( 0xd5c205c0u, 0xd846, 0x416b, 0x82ae7f337b15aee1ull ));
-
-
 bool g_chkExportSkin = false;
 bool g_chkExportTangents = false;
 CharString g_outFileName;
@@ -333,14 +327,14 @@ bool writePackageFile (void *data, UintSize size, File &file)
   }
   
   //Write data
-  SerializeManager sm;
-  file.write( sm.getSignature(), sm.getSignatureSize() );
-  file.write( data, (int)size );
+  Serializer s;
+  file.write( s.getSignature(), s.getSignatureSize() );
+  file.write( data, size );
   file.close();
   return true;
 }
 
-bool readPackageFile (File &file, Object **outObj, ClassPtr *outCls)
+bool readPackageFile (File &file, Object **outObj)
 {
   //Open the file
   if (!file.open( FileAccess::Read, FileCondition::MustExist )) {
@@ -348,22 +342,22 @@ bool readPackageFile (File &file, Object **outObj, ClassPtr *outCls)
     return false; }
 
   //Check the file signature
-  SerializeManager sm;
-  if (file.getSize() < sm.getSignatureSize()) {
+  Serializer s;
+  if (file.getSize() < s.getSignatureSize()) {
     file.close();
     return false; }
 
-  ByteString sig = file.read( sm.getSignatureSize() );
-  if ((UintSize) sig.length() < sm.getSignatureSize()) {
+  ByteString sig = file.read( s.getSignatureSize() );
+  if ((UintSize) sig.length() < s.getSignatureSize()) {
     file.close();
     return false; }
 
-  if ( ! sm.checkSignature( sig.buffer() )) {
+  if ( ! s.checkSignature( sig.buffer() )) {
     file.close();
     return false; }
 
   //Read the rest of the file
-  ByteString data = file.read( file.getSize() - sm.getSignatureSize() );
+  ByteString data = file.read( file.getSize() - s.getSignatureSize() );
   if (data.length() == 0) {
     file.close();
     return false; }
@@ -372,7 +366,7 @@ bool readPackageFile (File &file, Object **outObj, ClassPtr *outCls)
   file.close();
 
   //Load the scene data
-  *outObj = (Object*) sm.load( data.buffer(), outCls );
+  *outObj = s.deserialize( data.buffer(), data.length() );
   return true;
 }
 
@@ -497,8 +491,8 @@ public:
     }
 
     //Serialize and free data
-    SerializeManager sm;
-    sm.save( res, &outData, &outSize );
+    Serializer s;
+    s.serialize( res, &outData, &outSize );
     delete res;
 
     //Write to file
@@ -808,8 +802,8 @@ public:
     //Export scene data
     void *outData = NULL;
     UintSize outSize = 0;
-    SerializeManager sm;
-    sm.save( scene, &outData, &outSize );
+    Serializer s;
+    s.serialize( scene, &outData, &outSize );
 
     //Write to file
     writePackageFile( outData, outSize, outFile );
@@ -954,22 +948,22 @@ class CmdBrowseSkinFile : public MPxCommand
       return MStatus::kFailure; }
 
     //Check the file signature
-    SerializeManager sm;
-    if (file.getSize() < sm.getSignatureSize()) {
+    Serializer s;
+    if (file.getSize() < s.getSignatureSize()) {
       file.close(); setStatus( "Invalid file!" );
       return MStatus::kFailure; }
 
-    ByteString sig = file.read( sm.getSignatureSize() );
-    if ((UintSize) sig.length() < sm.getSignatureSize()) {
+    ByteString sig = file.read( s.getSignatureSize() );
+    if ((UintSize) sig.length() < s.getSignatureSize()) {
       file.close(); setStatus( "Invalid file!" );
       return MStatus::kFailure; }
 
-    if ( ! sm.checkSignature( sig.buffer() )) {
+    if ( ! s.checkSignature( sig.buffer() )) {
       file.close(); setStatus( "Invalid file!" );
       return MStatus::kFailure; }
 
     //Read the rest of the file
-    ByteString data = file.read( file.getSize() - sm.getSignatureSize() );
+    ByteString data = file.read( file.getSize() - s.getSignatureSize() );
     if (data.length() == 0) {
       file.close(); setStatus( "Invalid file!" );
       return MStatus::kFailure; }
@@ -978,11 +972,18 @@ class CmdBrowseSkinFile : public MPxCommand
     file.close();
 
     //Load the character data
-    ClassPtr newCls;
-    Character *newChar = (Character*) sm.load( data.buffer(), &newCls );
-    if (newCls != Class(Character) || newChar == NULL) {
+    Object *newObject = s.deserialize( data.buffer(), data.length() );
+    if (newObject == NULL) {
       setStatus( "Invalid file!" );
-      return MStatus::kFailure; }
+      return MStatus::kFailure;
+    }
+
+    //Check if Character loaded
+    Character *newChar = Class::SafeCast< Character >( newObject );
+    if (newChar == NULL) {
+      setStatus( "Invalid file!" );
+      return MStatus::kFailure;
+    }
 
     //Swap old data with new
     if (g_character != NULL)
@@ -1098,9 +1099,8 @@ class CmdSaveChar : public MPxCommand
     }
 
     //Export character
-    void *outData; UintSize outSize=0;
-    SerializeManager sm;
-    sm.save( g_character, &outData, &outSize );
+    Serializer s; void *outData; UintSize outSize=0;
+    s.serialize( g_character, &outData, &outSize );
     
     //Make sure something was actually exported
     if (outSize == 0) {
@@ -1117,8 +1117,8 @@ class CmdSaveChar : public MPxCommand
     }
 
     //Write to file
-    outFile.write( sm.getSignature(), sm.getSignatureSize() );
-    outFile.write( outData, (int)outSize );
+    outFile.write( s.getSignature(), s.getSignatureSize() );
+    outFile.write( outData, outSize );
     outFile.close();
 
     setStatus( "Done." );
@@ -1271,7 +1271,7 @@ MayaEventDummy* getSelectedSceneEvent()
 }
 
 template <class E>
-void sortListItems (ObjPtrArrayList< E > *list)
+void sortListItems (ArrayList< E* > *list)
 {
   for (UintSize i=0; i<list->size(); ++i)
   {
@@ -1431,15 +1431,16 @@ class CmdSceneBrowse : public MPxCommand
       setStatus( "No file selected" );
       return MStatus::kFailure; }
 
-    File file( result.asChar() );
-
-    //Load the scene data
-    ClassPtr newCls = INVALID_CLASS_PTR;
-    MayaSceneDummy *newScene = NULL;
-    readPackageFile( File( result.asChar() ), (Object**) &newScene, &newCls );
-    if (newCls != Class(MayaSceneDummy) || newScene == NULL) {
+    //Load the file
+    Object *object;
+    readPackageFile( File( result.asChar() ), &object );
+    
+    //Check if Scene loaded
+    MayaSceneDummy *newScene = Class::SafeCast< MayaSceneDummy >( object );
+    if (newScene == NULL) {
       setStatus( "Invalid file!" );
-      return MStatus::kFailure; }
+      return MStatus::kFailure;
+    }
 
     //Swap old data with new
     if (g_scene != NULL) delete g_scene;
@@ -1497,9 +1498,8 @@ class CmdSceneSave : public MPxCommand
   MStatus saveIt (File &file)
   {
     //Export scene
-    void *outData; UintSize outSize=0;
-    SerializeManager sm;
-    sm.save( g_scene, &outData, &outSize );
+    Serializer s; void *outData; UintSize outSize=0;
+    s.serialize( g_scene, &outData, &outSize );
     
     //Make sure something was actually exported
     if (outSize == 0) {

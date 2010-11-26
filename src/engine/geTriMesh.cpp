@@ -3,17 +3,12 @@
 
 namespace GE
 {
-  DEFINE_SERIAL_CLASS( FormatMember, CLSID_FORMATMEMBER );
-  DEFINE_SERIAL_CLASS( VertexFormat, CLSID_VERTEXFORMAT );
-  DEFINE_SERIAL_CLASS( TriMesh, CLSID_TRIMESH );
-  DEFINE_CLASS( TriVertex );
-
 
   UintSize VertexFormat::getByteSize() const {
     return size;
   }
 
-  const ObjArrayList <FormatMember> * VertexFormat::getMembers () const {
+  const ArrayList <FormatMember> * VertexFormat::getMembers () const {
     return &members;
   }
 
@@ -56,6 +51,8 @@ namespace GE
 
   VertexFormat& VertexFormat::operator= (const VertexFormat &f)
   {
+    if (f == *this) return *this;
+
     size = f.size;
     members.clear();
     
@@ -503,7 +500,6 @@ namespace GE
     //Prepare vertex binding
     VertexBinding <TriVertex> vertBind;
     vertBind.init( &format );
-    TriVertex vert;
 
     //Walk the vertices
     for (UintSize v=0; v<getVertexCount(); ++v)

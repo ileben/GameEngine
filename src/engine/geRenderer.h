@@ -78,7 +78,8 @@ namespace GE
 
   class Renderer : public Object
   {
-    CLASS( Renderer, 4829379e,7482,45e3,8897cee5e9acbf59 );
+    CLASS( Renderer, Object,
+      4829379e,7482,45e3,8897cee5e9acbf59 );
     
   private:
 

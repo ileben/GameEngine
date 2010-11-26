@@ -10,9 +10,12 @@ namespace GE
 {
   class Resource : public Object
   {
-    CLASS( Resource, ffc487f9,1a25,4fc6,b512e1cda7a74f46 );
+    CLASS( Resource, Object,
+      ffc487f9,1a25,4fc6,b512e1cda7a74f46 );
+
     virtual void serialize( Serializer *s, Uint v )
     {
+      Object::serialize( s,v );
       s->string( &name );
     }
     

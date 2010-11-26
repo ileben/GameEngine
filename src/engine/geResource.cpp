@@ -2,8 +2,6 @@
 
 namespace GE
 {
-  DEFINE_CLASS (Resource);
-  
   Resource::Resource() {
     refcount = 0;
   }

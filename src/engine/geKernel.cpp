@@ -1,4 +1,5 @@
 #include <iostream>
+#include "util/geUtil.h"
 #include "io/geFile.h"
 #include "image/geImage.h"
 #include "engine/geTexture.h"
@@ -152,8 +153,6 @@ GE_PFGLSWAPINTERVAL glSwapInterval = NULL;
 
 namespace GE
 {
-  DEFINE_CLASS( Kernel );
-  DEFINE_SERIAL_CLASS( ResourceRef, ClassID( 0x3436e0f8, 0xb564, 0x408e, 0x83a76fea87f15c6dull ));
 
   /*
   -------------------------------------
@@ -654,18 +653,20 @@ namespace GE
     IClass::FromFile (cn);
   }
   */
-  void* Kernel::spawn (ClassPtr cn)
+  void* Kernel::spawn (Class cn)
   {
-    void *obj = New( cn );
-    objects.pushBack( (Object*) cn );
+    void *obj = cn->instantiate();
+    objects.pushBack( (Object*) obj );
     return obj;
   }
   
   void* Kernel::spawn (const char *classString)
-  {
-    ClassPtr cn = ClassFromString (classString);
+  {/*
+    Class cn = ClassFromString (classString);
     if (cn == NULL) return NULL;
     return spawn (cn);
+    */
+    return NULL;
   }
   
   void Kernel::enableVerticalSync(bool on)
@@ -713,22 +714,22 @@ namespace GE
       return false; }
 
     //Check the file signature
-    SerializeManager sm;
-    if (file.getSize() < sm.getSignatureSize()) {
+    Serializer s;
+    if (file.getSize() < s.getSignatureSize()) {
       file.close(); std::cout << "Invalid file " << filename.buffer() << "!" << std::endl;
       return false; }
 
-    ByteString sig = file.read( sm.getSignatureSize() );
-    if ((UintSize) sig.length() < sm.getSignatureSize()) {
+    ByteString sig = file.read( s.getSignatureSize() );
+    if ((UintSize) sig.length() < s.getSignatureSize()) {
       file.close(); std::cout << "Invalid file " << filename.buffer() << "!" << std::endl;
       return false; }
 
-    if ( ! sm.checkSignature( sig.buffer() )) {
+    if ( ! s.checkSignature( sig.buffer() )) {
       file.close(); std::cout << "Invalid file " << filename.buffer() << "!" << std::endl;
       return false; }
 
     //Read the rest of the file
-    file.read( data, file.getSize() - sm.getSignatureSize() );
+    file.read( data, file.getSize() - s.getSignatureSize() );
     if (data.length() == 0) {
       file.close(); std::cout << "Invalid file " << filename.buffer() << "!" << std::endl;
       return false; }
@@ -747,7 +748,7 @@ namespace GE
   Resource* Kernel::getResource (const CharString &name)
   {
     //Search for the resource in the cache
-    ResourceIter iter = resources.find( name.buffer() );
+    ResourceIter iter = resources.find( name );
     if (iter != resources.end()) return iter->second;
 
     //Load missing resource
@@ -779,16 +780,15 @@ namespace GE
         return NULL;
 
       //Deserialize resource
-      ClassPtr cls;
-      SerializeManager sm;
-      Resource *res = (Resource*) sm.load( data.buffer(), &cls );
-      ClassPtr ccls = res->GetInstanceClassPtr();
+      Serializer s;
+      Resource *res = (Resource*) s.deserialize( data.buffer(), data.length() );
 
       //Send meshes to GPU
-      TriMesh *mesh = SafeCast( TriMesh, res );
+      TriMesh *mesh = Class::SafeCast< TriMesh >( res );
       if (mesh != NULL) mesh->sendToGpu();
 
-      Character *character = SafeCast( Character, res );
+      //Send character meshes to GPU
+      Character *character = Class::SafeCast< Character >( res );
       if (character != NULL) {
         for (UintSize m=0; m<character->meshes.size(); ++m)
           character->meshes[ m ]->sendToGpu();
@@ -808,19 +808,17 @@ namespace GE
     MultiMaterial *material;
   };
 
-  class MergeVertex : public Object
+  struct MergeVertex
   {
-  public:
     Vector3 *normal;
     Vector3 *coord;
 
-    DECLARE_SUBCLASS( MergeVertex, Object );
-    DECLARE_MEMBER_DATA( normal, new BindTarget( "Normal" ) );
-    DECLARE_MEMBER_DATA( coord, new BindTarget( "Coord" ) );
-    DECLARE_END;
+    void bind (VertexBinding<MergeVertex> *b)
+    {
+      b->bind( &normal, ShaderData::Normal );
+      b->bind( &coord, ShaderData::Coord3 );
+    }
   };
-
-  DEFINE_CLASS( MergeVertex );
 
   void mergeMeshes (Scene3D *scene)
   {
@@ -831,7 +829,7 @@ namespace GE
     
     //Walk the list of mesh actors
     ArrayList< Actor* > actors;
-    scene->findActorsByClass( Class(TriMeshActor), actors );
+    scene->findActorsByClass( ClassName( TriMeshActor ), actors );
     for (UintSize a=0; a<actors.size(); ++a)
     {
       //Get source mesh from the actor
@@ -868,7 +866,7 @@ namespace GE
 
       //Copy materials
       MaterialID startMat = (MaterialID) out.material->getNumSubMaterials();
-      if (ClassOf( srcMat ) == Class( MultiMaterial )) {
+      if (ClassOf( srcMat ) == ClassName( MultiMaterial )) {
 
         MultiMaterial* multiMat = (MultiMaterial*) srcMat;
         out.material->setNumSubMaterials( startMat + multiMat->getNumSubMaterials() );
@@ -937,13 +935,15 @@ namespace GE
     }
   }
 
-  Scene3D* Kernel::loadSceneData (void *data)
+  Scene3D* Kernel::loadSceneData (const void *data, UintSize size)
   {
-    //Deserialize actors
-    ClassPtr cls;
-    SerializeManager sm;
-    Scene3D *scene = (Scene3D*) sm.load( data, &cls );
-    if (cls != Class( Scene3D )) {
+    //Deserialize data
+    Serializer s;
+    Object *obj = s.deserialize( data, size );
+    
+    //Check if Scene3D loaded
+    Scene3D *scene = Class::SafeCast< Scene3D >( obj );
+    if (scene == NULL) {
       std::cout << "Invalid file content!" << std::endl;
       return NULL;
     }
@@ -969,10 +969,11 @@ namespace GE
       cacheResource( res, res->getResourceName() );
 
       //Send meshes to GPU
-      TriMesh *mesh = SafeCast( TriMesh, res );
+      TriMesh *mesh = Class::SafeCast< TriMesh >( res );
       if (mesh != NULL) mesh->sendToGpu();
 
-      Character *character = SafeCast( Character, res );
+      //Send character meshes to GPU
+      Character *character = Class::SafeCast< Character >( res );
       if (character != NULL) {
         for (UintSize m=0; m<character->meshes.size(); ++m)
           character->meshes[ m ]->sendToGpu();
@@ -980,11 +981,11 @@ namespace GE
     }
 
     //Assign resources / load missing
-    const SM::ObjectList &objects = sm.getObjects();
+    const ArrayList< Object* > &objects = s.getObjects();
     for (UintSize o=0; o<objects.size(); ++o)
     {
       Object *obj = objects.at(o);
-      if (ClassOf(obj) == Class(ResourceRef))
+      if (ClassOf( obj ) == ClassName( ResourceRef ))
       {
         ResourceRef *ref = (ResourceRef*) obj;
         ref->ptr = getResource( ref->name );
@@ -993,7 +994,7 @@ namespace GE
 
     //Invoke loaded events
     for (UintSize o=0; o<objects.size(); ++o) {
-      Actor3D *actor = SafeCast( Actor3D, objects.at(o) );
+      Actor3D *actor = Class::SafeCast< Actor3D >( objects.at(o) );
       if (actor != NULL) actor->onResourcesLoaded();
     }
 
@@ -1012,7 +1013,7 @@ namespace GE
       return NULL;
     
     //Process data
-    return loadSceneData( (void*) data.buffer() );
+    return loadSceneData( data.buffer(), data.length() );
   }
 
 }//namespace GE

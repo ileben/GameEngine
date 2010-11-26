@@ -11,10 +11,10 @@
 
 namespace GE
 {
-  class GE_API_ENTRY Label : public Widget
+  class Label : public Widget
   {
-    DECLARE_SUBCLASS (Label, Widget);
-    DECLARE_END;
+    CLASS( Label, Widget,
+      3e6873eb,9602,4838,b4bbe297cca8ee01 );
     
   protected:
     String text;

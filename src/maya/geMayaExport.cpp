@@ -870,9 +870,8 @@ public:
   }
 };
 
-class OmniVertex : public Object
+struct OmniVertex
 {
-public:
   Vector2 *texcoord;
   Vector3 *coord;
   Vector3 *normal;
@@ -881,18 +880,17 @@ public:
   Float32 *jointWeight;
   Float32 *jointIndex;
 
-  DECLARE_SUBCLASS( OmniVertex, Object );
-  DECLARE_MEMBER_DATA( texcoord, new BindTarget( ShaderData::TexCoord2 ) );
-  DECLARE_MEMBER_DATA( normal, new BindTarget( ShaderData::Normal ) );
-  DECLARE_MEMBER_DATA( coord, new BindTarget( ShaderData::Coord3 ) );
-  DECLARE_MEMBER_DATA( tangent, new BindTarget( ShaderData::Tangent ) );
-  DECLARE_MEMBER_DATA( bitangent, new BindTarget( ShaderData::Bitangent ) );
-  DECLARE_MEMBER_DATA( jointWeight, new BindTarget( ShaderData::JointWeight ) );
-  DECLARE_MEMBER_DATA( jointIndex, new BindTarget( ShaderData::JointIndex ) );
-  DECLARE_END;
+  void bind (VertexBinding< OmniVertex > *b)
+  {
+    b->bind( &texcoord, ShaderData::TexCoord2 );
+    b->bind( &normal, ShaderData::Normal );
+    b->bind( &coord, ShaderData::Coord3 );
+    b->bind( &tangent, ShaderData::Tangent );
+    b->bind( &bitangent, ShaderData::Bitangent );
+    b->bind( &jointWeight, ShaderData::JointWeight );
+    b->bind( &jointIndex, ShaderData::JointIndex );
+  }
 };
-
-DEFINE_CLASS( OmniVertex );
 
 class TriMeshExporter : public MeshExporter
 {
@@ -1880,7 +1878,7 @@ Animation* exportAnimation (int kps, MayaAnimDummy *anim)
     Float clipEndTime = anim->startTime + (Float) clipLocalEndKey / kps;
 
     //Check if it's an actor with skin
-    SkinMeshActor *skinActor = SafeCast( SkinMeshActor, actor );    
+    SkinMeshActor *skinActor = Class::SafeCast< SkinMeshActor >( actor );
     if (skinActor != NULL)
     {
       //Create an observer for this object
@@ -1909,7 +1907,7 @@ Animation* exportAnimation (int kps, MayaAnimDummy *anim)
     }
 
     //Check if it's a camera
-    Camera3D *camera = SafeCast( Camera3D, actor );
+    Camera3D *camera = Class::SafeCast< Camera3D >( actor );
     if (camera != NULL)
     {
       //Create a DOF observer for it

@@ -3,7 +3,6 @@
 
 namespace GE
 {
-  DEFINE_CLASS (FpsLabel);
 
   void FpsLabel::draw()
   {

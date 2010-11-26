@@ -2,6 +2,8 @@
 #define __GEKERNEL_H
 
 #include "util/geUtil.h"
+//#include <string>
+#include <map>
 
 #pragma warning(push)
 #pragma warning(disable:4251)
@@ -28,7 +30,7 @@ namespace GE
   Kernel-managed memory
   -------------------------------------*/
 
-  class GE_API_ENTRY KernelBuffer
+  class KernelBuffer
   {
     friend class Kernel;
 
@@ -48,7 +50,7 @@ namespace GE
   Kernel interface (singleton!)
   --------------------------------------------*/
   
-  typedef std::map <std::string, Resource*> ResourceMap;
+  typedef std::map <CharString, Resource*> ResourceMap;
   typedef ResourceMap::iterator ResourceIter;
 
   class Kernel
@@ -82,7 +84,7 @@ namespace GE
     ArrayList<Object*> objects;
     ArraySet<KernelBuffer*> buffers;
 
-    std::map< std::string, Resource* > resources;
+    ResourceMap resources;
     Renderer *renderer;
 
     bool timeInit;
@@ -113,7 +115,7 @@ namespace GE
     void cacheResource (Resource *res, const CharString &name);
     Resource* getResource (const CharString &name);
     Scene3D* loadSceneFile (const CharString &filename);
-    Scene3D* loadSceneData (void *data);
+    Scene3D* loadSceneData (const void *data, UintSize size);
   };
 
   /*
@@ -123,9 +125,12 @@ namespace GE
 
   class ResourceRef : public Object
   {
-    CLASS( ResourceRef, 1f65556c,71dd,4cdf,9b3ae770526dfb65 );
+    CLASS( ResourceRef, Object,
+      1f65556c,71dd,4cdf,9b3ae770526dfb65 );
+
     virtual void serialize (Serializer *s, Uint v)
     {
+      Object::serialize( s,v );
       s->string( &name );
     }
 
@@ -133,7 +138,7 @@ namespace GE
 
     void *ptr;
     CharString name;
-    ResourceRef () { ptr = NULL; }
+    ResourceRef() : ptr(NULL) {}
   };
 
   template <class T> class TResourceRef : public ResourceRef

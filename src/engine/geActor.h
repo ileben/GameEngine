@@ -31,7 +31,9 @@ namespace GE
   
   class Actor3D : public Actor
   {
-    CLASS( Actor3D, 620e9697,5d6f,44d2,b643d6b9400c1085 );
+    CLASS( Actor3D, Actor,
+      620e9697,5d6f,44d2,b643d6b9400c1085 );
+
     virtual void serialize( Serializer *s, Uint v )
     {
       Actor::serialize( s,v );
@@ -87,7 +89,7 @@ namespace GE
     bool isRenderable ();
 
     //Shader composing
-    virtual Class getShaderComposingClass() { return Actor3D::GetClass(); }
+    virtual Class getShaderComposingClass() { return ClassName( Actor3D ); }
     virtual void composeShader( Shader *shader ) {}
     
     //Rendering steps (as invoked by Renderer):

@@ -3,8 +3,6 @@
 
 namespace GE
 {
-  DEFINE_CLASS (GLShader);
-  DEFINE_CLASS (GLProgram);
 
   /*==============================================
    *

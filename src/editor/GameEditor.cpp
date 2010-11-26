@@ -438,13 +438,13 @@ void specialKey (int key, int x, int y)
   {
   case GLUT_KEY_F1:
     l = renderer->getAvgLuminance();
-    l = l * 1.1;
+    l = l * 1.1f;
     renderer->setAvgLuminance( l );
     std::cout << "Luminance: " << l << std::endl;
     break;
   case GLUT_KEY_F2:
     l = renderer->getAvgLuminance();
-    l = l /= 1.1;
+    l = l /= 1.1f;
     renderer->setAvgLuminance( l );
     std::cout << "Luminance: " << l << std::endl;
     break;
@@ -628,31 +628,30 @@ bool loadPackage (const CharString &fileName)
   }
 
   //Read signature
-  SerializeManager sm;
-  ByteString sig = file.read( sm.getSignatureSize() );
-  if (sig.length() != sm.getSignatureSize()) {
+  Serializer s;
+  ByteString sig = file.read( s.getSignatureSize() );
+  if (sig.length() != s.getSignatureSize()) {
     printf( "Missing file signature!\n" );
     file.close();
     return false;
   }
 
   //Check signature
-  if ( ! sm.checkSignature( sig.buffer() )) {
+  if ( ! s.checkSignature( sig.buffer() )) {
     printf( "Invalid file signature!\n" );
     file.close();
     return false;
   }
   
   //Read the rest of the file
-  data = file.read( file.getSize() - sm.getSignatureSize() );
+  data = file.read( file.getSize() - s.getSignatureSize() );
   file.close();
 
   //Deserialize
-  ClassPtr cls;
-  void *object = sm.load( (void*)data.buffer(), &cls );
+  Object *object = s.deserialize( data.buffer() );
 
   //Check object class
-  if (cls == Class(TriMesh))
+  if (ClassOf( object ) == ClassName( TriMesh ))
   {
     mesh = (TriMesh*) object;
     mesh->sendToGpu();
@@ -662,7 +661,7 @@ bool loadPackage (const CharString &fileName)
             mesh->getVertexCount(),
             mesh->getFaceCount());
   }
-  else if (cls == Class(Character))
+  else if (ClassOf( object ) == ClassName( Character ))
   {
     character = (Character*) object;
     
@@ -863,7 +862,7 @@ int main (int argc, char **argv)
 
   //Setup sky scene
   sceneSky = kernel.loadSceneFile( "Export/SkyBox.pak" );
-  camSky = (Camera3D*) sceneSky->findFirstActorByClass( Class(Camera3D) );
+  camSky = (Camera3D*) sceneSky->findFirstActorByClass( ClassName(Camera3D) );
 
 
   //Setup 3D scene
@@ -887,7 +886,7 @@ int main (int argc, char **argv)
   }
 
   //Find first skin actor
-  skinMeshActor = (SkinMeshActor*) scene->findFirstActorByClass( Class(SkinMeshActor) );
+  skinMeshActor = (SkinMeshActor*) scene->findFirstActorByClass( ClassName(SkinMeshActor) );
   if (skinMeshActor != NULL)
   {
     //Find the name of the first animation
@@ -908,7 +907,7 @@ int main (int argc, char **argv)
   animCtrl->bindObserver( new EventObserver() );
 
   //Find first camera in the scene
-  cam3D = (Camera3D*) scene->findFirstActorByClass( Class(Camera3D) );
+  cam3D = (Camera3D*) scene->findFirstActorByClass( ClassName(Camera3D) );
   if (cam3D == NULL)
   {
     //Create one if missing

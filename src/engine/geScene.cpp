@@ -49,7 +49,7 @@ namespace GE
       //Store lights
       Light *l = dynamic_cast< Light* >( a );
       if (l != NULL)
-        if (l->getClass() != PointLight::GetClass())
+        if (ClassOf( l ) != ClassName( PointLight ))
           lights.pushBack( l );
       
       //Put children actors onto the stack

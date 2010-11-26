@@ -43,13 +43,15 @@ namespace GE
   
   class Material : public Resource
   {
-    CLASS( Material, 624cc67c,8c0d,4da6,927f667e529bb996 );
+    CLASS( Material, Resource,
+      624cc67c,8c0d,4da6,927f667e529bb996 );
+
     friend class Renderer;
     friend class MultiMaterial;
     
   public:
 
-    virtual Class getShaderComposingClass() { return Material::GetClass(); }
+    virtual Class getShaderComposingClass() { return ClassName( Material ); }
     virtual void composeShader( Shader *shader ) {}
     
     Material () {}
@@ -72,7 +74,9 @@ namespace GE
   
   class StandardMaterial : public Material
   {
-    CLASS( StandardMaterial, c2b106d9,8973,43ed,85a8ca336dd70d75 );
+    CLASS( StandardMaterial, Material,
+      c2b106d9,8973,43ed,85a8ca336dd70d75 );
+
     virtual void serialize( Serializer *s, Uint v )
     {
       Material::serialize( s, v );
@@ -111,7 +115,7 @@ namespace GE
 
   public:
 
-    virtual Class getShaderComposingClass() { return StandardMaterial::GetClass(); }
+    virtual Class getShaderComposingClass() { return ClassName( StandardMaterial ); }
     virtual void composeShader( Shader *shader );
     
     StandardMaterial ();
@@ -162,7 +166,9 @@ namespace GE
 
   class DiffuseTexMat : public StandardMaterial
   {
-    CLASS( DiffuseTexMat, efb36eb3,5397,4cdc,af19db7f9b1e6759 );
+    CLASS( DiffuseTexMat, StandardMaterial,
+      efb36eb3,5397,4cdc,af19db7f9b1e6759 );
+
     virtual void serialize( Serializer *s, Uint v )
     {
       StandardMaterial::serialize( s, v );
@@ -177,7 +183,7 @@ namespace GE
 
   public:
 
-    virtual Class getShaderComposingClass() { return DiffuseTexMat::GetClass(); }
+    virtual Class getShaderComposingClass() { return ClassName( DiffuseTexMat ); }
     virtual void composeShader (Shader *shader);
 
     DiffuseTexMat ();
@@ -192,7 +198,9 @@ namespace GE
 
   class NormalTexMat : public DiffuseTexMat
   {
-    CLASS( NormalTexMat, 61aa1181,a126,429a,881115d72ca6250e );
+    CLASS( NormalTexMat, DiffuseTexMat,
+      61aa1181,a126,429a,881115d72ca6250e );
+
     virtual void serialize( Serializer *s, Uint v )
     {
       DiffuseTexMat::serialize( s,v );
@@ -207,7 +215,7 @@ namespace GE
 
   public:
 
-    virtual Class getShaderComposingClass() { return NormalTexMat::GetClass(); }
+    virtual Class getShaderComposingClass() { return ClassName( NormalTexMat ); }
     virtual void composeShader( Shader *shader );
     
     NormalTexMat ();
@@ -230,7 +238,9 @@ namespace GE
   
   class MultiMaterial : public Material
   {
-    CLASS( MultiMaterial, 65c8d297,17a8,4793,b1a6d21ca5bec028 );
+    CLASS( MultiMaterial, Material,
+      65c8d297,17a8,4793,b1a6d21ca5bec028 );
+
     virtual void serialize( Serializer *s, Uint v )
     {
       Material::serialize( s,v );

@@ -39,17 +39,20 @@ namespace MayaClipType {
 
 class MayaEventDummy : public Object
 {
-  DECLARE_SERIAL_SUBCLASS( MayaEventDummy, Object );
-  DECLARE_OBJVAR( name );
-  DECLARE_DATAVAR( time );
-  DECLARE_END;
+  CLASS( MayaEventDummy, Object,
+    567d5635,60b4,4fdd,84c0987700408c35 );
+
+  virtual void serialize( Serializer *s, Uint v )
+  {
+    Object::serialize( s,v );
+    s->string( &name );
+    s->data( &time );
+  }
 
 public:
 
   CharString name;
   Float time;
-
-  MayaEventDummy (SM *sm) : Object (sm), name (sm) {}
   MayaEventDummy () : time (0.0f) {}
 
   bool operator < (const MayaEventDummy &other) {
@@ -59,12 +62,17 @@ public:
 
 class MayaClipDummy : public Object
 {
-  DECLARE_SERIAL_SUBCLASS( MayaClipDummy, Object );
-  DECLARE_DATAVAR( type );
-  DECLARE_OBJVAR( nodePath );
-  DECLARE_DATAVAR( startTime );
-  DECLARE_DATAVAR( endTime );
-  DECLARE_END;
+  CLASS( MayaClipDummy, Object,
+    6dd377d3,23e7,4066,8bb01fdc059f138c );
+
+  virtual void serialize( Serializer *s, Uint v )
+  {
+    Object::serialize( s,v );
+    s->data( &type );
+    s->string( &nodePath );
+    s->data( &startTime );
+    s->data( &endTime );
+  }
 
 public:
 
@@ -73,9 +81,6 @@ public:
   Float startTime;
   Float endTime;
 
-  MayaClipDummy () {}
-  MayaClipDummy (SM *sm) : Object (sm), nodePath (sm) {}
-
   bool operator < (const MayaClipDummy &other) {
     return startTime < other.startTime;
   }
@@ -83,24 +88,31 @@ public:
 
 class MayaAnimDummy : public Object
 {
-  DECLARE_SERIAL_SUBCLASS( MayaAnimDummy, Object );
-  DECLARE_OBJVAR( name );
-  DECLARE_DATAVAR( startTime );
-  DECLARE_DATAVAR( endTime );
-  DECLARE_OBJVAR( clips );
-  DECLARE_OBJVAR( events );
-  DECLARE_END;
+  CLASS( MayaAnimDummy, Object,
+    24191b03,bc6e,4320,b5d59502ebce394b );
+
+  virtual void serialize( Serializer *s, Uint v )
+  {
+    Object::serialize( s,v );
+    s->string( &name );
+    s->data( &startTime );
+    s->data( &endTime );
+    s->objectPtrArray( &clips );
+    s->objectPtrArray( &events );
+  }
 
 public:
 
   CharString name;
   Float startTime;
   Float endTime;
-  ObjPtrArrayList< MayaClipDummy > clips;
-  ObjPtrArrayList< MayaEventDummy > events;
+  ArrayList< MayaClipDummy* > clips;
+  ArrayList< MayaEventDummy* > events;
 
-  MayaAnimDummy () {}
-  MayaAnimDummy (SM *sm) : Object (sm), name (sm), clips (sm), events (sm) {}
+  bool operator < (const MayaAnimDummy &other) {
+    return startTime < other.startTime;
+  }
+
   virtual ~MayaAnimDummy ()
   {
     for (UintSize c=0; c<clips.size(); ++c)
@@ -108,24 +120,23 @@ public:
     for (UintSize e=0; e<events.size(); ++e)
       delete events[ e ];
   }
-
-  bool operator < (const MayaAnimDummy &other) {
-    return startTime < other.startTime;
-  }
 };
 
 class MayaSceneDummy : public Object
 {
-  DECLARE_SERIAL_SUBCLASS( MayaSceneDummy, Object );
-  DECLARE_OBJVAR( anims );
-  DECLARE_END;
+  CLASS( MayaSceneDummy, Object,
+    88693913,d9a5,4229,ae06cb3659bf492f );
+
+  virtual void serialize( Serializer *s, Uint v )
+  {
+    Object::serialize( s,v );
+    s->objectPtrArray( &anims );
+  }
 
 public:
 
-  ObjPtrArrayList< MayaAnimDummy > anims;
+  ArrayList< MayaAnimDummy* > anims;
 
-  MayaSceneDummy () {}
-  MayaSceneDummy (SM *sm) : Object (sm), anims (sm) {}
   virtual ~MayaSceneDummy ()
   {
     for (UintSize a=0; a<anims.size(); ++a)

@@ -18,8 +18,8 @@ typedef void (*ConvoFunc) (Convo *convo, ConvoNode *convoNode);
 
 class ConvoNode : public Object
 {
-  DECLARE_SUBCLASS( ConvoNode, Object );
-  DECLARE_END;
+  CLASS( ConvoNode, Object,
+    bf5809db,fd3a,4b51,bab7e4c8fb9bd3fd );
 
 public:
   Float duration;
@@ -37,8 +37,8 @@ public:
 
 class ConvoSpeach : public ConvoNode
 {
-  DECLARE_SUBCLASS( ConvoSpeach, ConvoNode );
-  DECLARE_END;
+  CLASS( ConvoSpeach, ConvoNode,
+    4e7798d3,5106,4282,a4bc370e47c90cca );
 
 public:
   ConvoSpeaker *speaker;
@@ -52,8 +52,8 @@ public:
 
 class ConvoBranch : public ConvoNode
 {
-  DECLARE_SUBCLASS( ConvoBranch, ConvoNode );
-  DECLARE_END;
+  CLASS( ConvoBranch, ConvoNode,
+    d11da53e,f35d,4124,a432e714f4934124 );
 
 public:
   ArrayList <ConvoOpt*> options;

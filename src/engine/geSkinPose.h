@@ -9,14 +9,19 @@ namespace GE
 {
   class SkinJoint : public Object
   {
-    DECLARE_SERIAL_SUBCLASS( SkinJoint, Object );
-    DECLARE_OBJVAR( name );
-    DECLARE_DATAVAR( numChildren );
-    DECLARE_DATAVAR( worldInv );
-    DECLARE_DATAVAR( localR );
-    DECLARE_DATAVAR( localT );
-    DECLARE_DATAVAR( localS );
-    DECLARE_END;
+    CLASS( SkinJoint, Object,
+      7662f9e6,93c7,4c70,a7b3b6d516583c73 );
+
+    virtual void serialize( Serializer *s, Uint v )
+    {
+      Object::serialize( s,v );
+      s->string( &name );
+      s->data( &numChildren );
+      s->data( &worldInv );
+      s->data( &localR );
+      s->data( &localT );
+      s->data( &localS );
+    }
 
   public:
 
@@ -26,23 +31,22 @@ namespace GE
     Quat       localR;
     Vector3    localT;
     Matrix4x4  localS;
-
-    SkinJoint (SM *sm) : name(sm) {}
-    SkinJoint () {}
   };
   
   class SkinPose : public Object
   {
-    DECLARE_SERIAL_SUBCLASS( SkinPose, Object );
-    DECLARE_OBJVAR( joints );
-    DECLARE_END;
+    CLASS( SkinPose, Object,
+      14c0b93b,c4af,43d7,8056eb512f9be69e );
+
+    virtual void serialize( Serializer *s, Uint v )
+    {
+      Object::serialize( s,v );
+      s->objectArray( &joints );
+    }
     
   public:
 
-    ObjArrayList <SkinJoint> joints;
-    
-    SkinPose (SM *sm) : joints (sm) {}
-    SkinPose () {}
+    ArrayList <SkinJoint> joints;
   };
   
 }//namespace GE

@@ -3,12 +3,6 @@
 
 namespace GE
 {
-  DEFINE_CLASS( MouseEvent );
-  DEFINE_CLASS( MouseClickEvent );
-  DEFINE_CLASS( MouseEnterEvent );
-  DEFINE_CLASS( MouseLeaveEvent );
-  DEFINE_CLASS (Widget);
-
 
   UICtrl::UICtrl()
   {
@@ -67,13 +61,13 @@ namespace GE
 
   void Widget::onEvent (Event *e)
   {
-    MouseClickEvent *eClick = SafeCast( MouseClickEvent, e );
+    MouseClickEvent *eClick = Class::SafeCast< MouseClickEvent >( e );
     if (eClick != NULL) onMouseClick( eClick );
 
-    MouseEnterEvent *eEnter = SafeCast( MouseEnterEvent, e );
+    MouseEnterEvent *eEnter = Class::SafeCast< MouseEnterEvent >( e );
     if (eEnter != NULL) onMouseEnter( eEnter );
 
-    MouseLeaveEvent *eLeave = SafeCast( MouseLeaveEvent, e );
+    MouseLeaveEvent *eLeave = Class::SafeCast< MouseLeaveEvent >( e );
     if (eLeave != NULL) onMouseLeave( eLeave );
   }
 

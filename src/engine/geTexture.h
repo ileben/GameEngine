@@ -11,11 +11,13 @@ namespace GE
 
   class Texture : public Resource
   {
-    CLASS( Texture, 48373fd3,f969,45a1,ab0359580eb7be8e );
+    CLASS( Texture, Resource,
+      48373fd3,f969,45a1,ab0359580eb7be8e );
+
+  private:
     friend class Renderer;
     friend class Material;
 
-  private:
     Uint32 handle;
     ColorFormat format;
 

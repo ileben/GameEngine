@@ -3,6 +3,8 @@
 
 namespace GE
 {
+  #define INVALID_SERIAL_ID 0xFFFFFFFF
+
   class Serializer
   {
     friend class State;
@@ -25,10 +27,6 @@ namespace GE
       UintSize offset;
     };
 
-    struct LoadObjNode
-    {
-    };
-
     struct LoadRefNode
     {
       Object **pp;
@@ -41,6 +39,7 @@ namespace GE
       Serializer *serializer;
       Uint8 *buffer;
       UintSize offset;
+      UintSize maxoffset;
       bool simulate;
       ArrayList< Object* > objMap;
 
@@ -64,7 +63,7 @@ namespace GE
       virtual void objectPtrArray (GenericArrayList *a) {}
       virtual void objectRefArray (GenericArrayList *a) {}
 
-      virtual void reset (bool simulation) {}
+      virtual void reset (bool simulation, UintSize offset, UintSize maxoffset) {}
       virtual void run (Object **ppRoot) {}
     };
 
@@ -88,14 +87,13 @@ namespace GE
       virtual void objectPtrArray (GenericArrayList *a);
       virtual void objectRefArray (GenericArrayList *a);
 
-      virtual void reset (bool simulation);
+      virtual void reset (bool simulation, UintSize offset, UintSize maxoffset);
       virtual void run (Object **ppRoot);
     };
 
     class StateLoad : public State
     {
     public:
-      ArrayList< LoadObjNode > objStack;
       ArrayList< LoadRefNode > refStack;
 
       virtual void data (void *p, UintSize size);
@@ -112,7 +110,7 @@ namespace GE
       virtual void objectPtrArray (GenericArrayList *a);
       virtual void objectRefArray (GenericArrayList *a);
 
-      virtual void reset (bool simulation);
+      virtual void reset (bool simulation, UintSize offset, UintSize maxoffset);
       virtual void run (Object **ppRoot);
     };
 
@@ -140,9 +138,7 @@ namespace GE
     void objectPtrArray (GenericArrayList *a);
     void objectRefArray (GenericArrayList *a);
 
-    void serialize (Object *root, void **outData, UintSize *outSize);
-    Object* deserialize (const void *data);
-
+    
     template <class T>
     void data (const T *p) {
       data( (void*) p, sizeof(T) ); }
@@ -154,6 +150,18 @@ namespace GE
     template <class T>
     void objectRef (T **pp) {
       objectRef( (Object**) pp ); }
+
+    bool saving() { return state == &stateSave; }
+    bool loading() { return state == &stateLoad; }
+
+    void serialize (Object *root, void **outData, UintSize *outSize);
+    Object* deserialize (const void *data, UintSize size);
+
+    const void* getSignature ();
+    UintSize getSignatureSize ();
+    bool checkSignature (const void *data);
+
+    const ArrayList< Object* > getObjects() { return objects; }
 
   private:
 

@@ -3,8 +3,7 @@
 
 namespace GE
 {
-  DEFINE_CLASS (Label);
-  
+
   void Label::setText (const String &newText) {
     text = newText;
     ByteString cstr = newText;

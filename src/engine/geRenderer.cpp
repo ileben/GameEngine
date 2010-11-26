@@ -16,8 +16,6 @@
 
 namespace GE
 {
-  DEFINE_CLASS (Renderer);
-  
   Renderer::Renderer()
   {
     winW = 0;
@@ -108,7 +106,7 @@ namespace GE
   Shader* Renderer::getLightShader (Light *light)
   {
     LightShaderKey key;
-    key.lightClass = ClassOf( light );
+    key.lightClass = light->getClass();
 
     Shader *shader = findLightShaderByKey( key );
     if (shader != NULL) return shader;
@@ -118,7 +116,7 @@ namespace GE
     printf( "==============================\n");
     printf( "    Composing Light Shader    \n" );
     printf( "==============================\n");
-    printf( "Light: %s\n", key.lightClass->getString() );
+    printf( "Light: %s\n", key.lightClass->name() );
     printf( "\n" );
 
     shader = new Shader();
@@ -147,10 +145,10 @@ namespace GE
     ShaderKey key;
     key.target = target;
     
-    if (geometry == NULL) key.geomClass = Class(Actor3D);
+    if (geometry == NULL) key.geomClass = ClassName( Actor3D );
     else key.geomClass = geometry->getShaderComposingClass();
     
-    if (material == NULL) key.matClass = Class(Material);
+    if (material == NULL) key.matClass = ClassName( Material );
     else key.matClass = material->getShaderComposingClass();
 
     Shader* shader = findShaderByKey( key );
@@ -164,8 +162,8 @@ namespace GE
     printf( "    Composing Geometry Shader    \n" );
     printf( "=================================\n" );
     printf( "Target: %s\n", target == RenderTarget::GBuffer ? "GBuffer" : "ShadowMap" );
-    printf( "Geometry: %s\n", key.geomClass->getString() );
-    printf( "Material: %s\n", key.matClass->getString() );
+    printf( "Geometry: %s\n", key.geomClass->name() );
+    printf( "Material: %s\n", key.matClass->name() );
     printf( "\n" );
 
     shader = new Shader;
@@ -1435,7 +1433,7 @@ namespace GE
 
         //TODO: code real solution (apply root bone transform to resulting
         //box corners rather than min/max) for the skinned meshes)
-        if (ClassOf( node.actor ) != Class( SkinMeshActor ))
+        if (ClassOf( node.actor ) != ClassName( SkinMeshActor ))
         {
           //Get bounding box
           BoundingBox bbox = node.actor->getBoundingBox();
@@ -1510,7 +1508,7 @@ namespace GE
     //Render the widgets
     for (UintSize t=0; t<traversal.size(); ++t)
     {
-      Widget *widget = SafeCast( Widget, traversal[t] );
+      Widget *widget = Class::SafeCast< Widget >( traversal[t] );
       if (widget == NULL) continue;
 
       Matrix4x4 g = widget->getGlobalMatrix();

@@ -44,6 +44,7 @@
 #include <vector>
 #include <deque>
 #include <map>
+#include <string>
 #include <typeinfo>
 
 #ifndef WIN32

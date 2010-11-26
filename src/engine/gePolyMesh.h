@@ -52,8 +52,11 @@ namespace GE
     Vertex holds the point in 3D space
     -----------------------------------------------------------*/
 
-    class Vertex : public VertexBase <PolyMeshTraits,HMesh> {
-      CLASS( PolyMeshTraits::Vertex, ce0336ca,33cf,4f59,97d11d6d77826aed );
+    class Vertex : public VertexBase <PolyMeshTraits,HMesh>
+    {  
+      CLASS( PolyMeshTraits::Vertex, HMesh::Vertex,
+        ce0336ca,33cf,4f59,97d11d6d77826aed );
+
     public:
       Vector3 point;
     };
@@ -64,8 +67,11 @@ namespace GE
     for edge-based normal calculation.
     ----------------------------------------------------------*/
 
-    class Edge : public EdgeBase <PolyMeshTraits,HMesh> {
-      CLASS( PolyMeshTraits::Edge, 81e7dcda,cd5f,475d,b72af28ceb4f2822 );
+    class Edge : public EdgeBase <PolyMeshTraits,HMesh>
+    {
+      CLASS( PolyMeshTraits::Edge, HMesh::Edge,
+        81e7dcda,cd5f,475d,b72af28ceb4f2822 );
+
     public:
       bool isSmooth;
       Edge() : isSmooth( false ) {}
@@ -80,8 +86,11 @@ namespace GE
     two faces are not in the same smoothing group
     -------------------------------------------------------*/
 
-    class HalfEdge : public HalfEdgeBase <PolyMeshTraits,HMesh> {
-      CLASS( PolyMeshTraits::HalfEdge, 849dc863,7529,4c2b,a748058c8479d410 );
+    class HalfEdge : public HalfEdgeBase <PolyMeshTraits,HMesh>
+    {
+      CLASS( PolyMeshTraits::HalfEdge, HMesh::HalfEdge,
+        849dc863,7529,4c2b,a748058c8479d410 );
+
     public:
       VertexNormal *vnormal;
       VertexTangent *vtangent;
@@ -97,11 +106,13 @@ namespace GE
     is an index into material's sub-material array.
     -------------------------------------------------*/
 
-    class Face : public FaceBase <PolyMeshTraits,HMesh> {
-      CLASS( PolyMeshTraits::Face, a384c0b7,48e3,4a8e,9388843322a63390 );
-      friend class PolyMesh;
+    class Face : public FaceBase <PolyMeshTraits,HMesh>
+    {
+      CLASS( PolyMeshTraits::Face, HMesh::Face,
+        a384c0b7,48e3,4a8e,9388843322a63390 );
 
     private:
+      friend class PolyMesh;
       MaterialID matId;
       Triangle *triangle;
 
@@ -116,8 +127,10 @@ namespace GE
       Face() { smoothGroups = 0; matId = 0; triangle = NULL; }
     };
 
-    class Triangle : public Object {
-      CLASS( PolyMeshTraits::Triangle, 67c50ff4,1c93,44e9,a6782780c5ac49fe );
+    class Triangle : public Object
+    {
+      CLASS( PolyMeshTraits::Triangle, Object,
+        67c50ff4,1c93,44e9,a6782780c5ac49fe );
 
     public:
       Triangle* next;
@@ -171,7 +184,8 @@ namespace GE
 
   class PolyMesh : public MeshBase <PolyMeshTraits,HMesh>
   {
-    CLASS( PolyMesh, 3810ed9f,68b8,49b0,9cc38e89c6507ac2 );
+    CLASS( PolyMesh, HMesh,
+      3810ed9f,68b8,49b0,9cc38e89c6507ac2 );
 
     friend class TriMesh;
     friend class LoaderObj;

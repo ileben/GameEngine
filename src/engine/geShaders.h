@@ -25,10 +25,11 @@ namespace GE
 
   class GLShader : public Object
   {
-    CLASS( GLShader, cac5feda,8e46,4279,a10cbe04e7c51b92 );
-    friend class GLProgram;
+    CLASS( GLShader, Object,
+      cac5feda,8e46,4279,a10cbe04e7c51b92 );
     
   protected:
+    friend class GLProgram;
     Uint32 handle;
     ShaderType::Enum type;
     
@@ -46,7 +47,8 @@ namespace GE
 
   class GLProgram : public Object
   {
-    CLASS( GLProgram, e01dce7d,6d00,4ee5,914d6cba969bec91 );
+    CLASS( GLProgram, Object,
+      e01dce7d,6d00,4ee5,914d6cba969bec91 );
     
   protected:
     Uint32 handle;

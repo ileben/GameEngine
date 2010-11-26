@@ -3,13 +3,6 @@
 
 namespace GE
 {
-  DEFINE_CLASS (PolyMesh);
-  DEFINE_CLASS (PolyMesh::Vertex);
-  DEFINE_CLASS (PolyMesh::HalfEdge);
-  DEFINE_CLASS (PolyMesh::Edge);
-  DEFINE_CLASS (PolyMesh::Face);
-  DEFINE_CLASS (PolyMesh::Triangle);
-
   typedef PolyMesh::Vertex Vertex;
   typedef PolyMesh::HalfEdge HalfEdge;
   typedef PolyMesh::Edge Edge;

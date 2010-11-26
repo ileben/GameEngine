@@ -6,14 +6,19 @@ namespace GE
   //Forward declarations
   class Serializer;
   class Object;
+  class IClass;
+  class Class;
 
   /*
-  -----------------------------------------------
-  ClassID is a UUID
-  -----------------------------------------------*/
+  ------------------------------------------------------------------
+  UUID is used to identify classes. It is safter than built-in RTTI,
+  because in some implementations typeid() == typeid() does pointer
+  comparison which breaks in DLLs. It is faster than built-in RTTI,
+  because in some implementations typeid() uses string comparison.
+  ------------------------------------------------------------------*/
   
-  class UUID
-  { public:
+  struct UUID
+  {
     Uint32 d1;
     Uint16 d2;
     Uint16 d3;
@@ -52,7 +57,7 @@ namespace GE
 
   /*
   ---------------------------------------------
-  IClass holds the UUID and acts as a factory
+  IClass level-1 provides UUID and name
   ---------------------------------------------*/
 
   class IClass
@@ -67,27 +72,22 @@ namespace GE
       this->n = name;
     }
 
-    const UUID& uuid() { return id; }
-    const CharString& name() { return n; }
-    virtual Object* instantiate() { return NULL; }
-  };
-
-  template <class C>
-  class IClass2 : public IClass
-  {
-  public:
-    IClass2 (const UUID &id, const CharString &name) : IClass(id, name) {}
-    virtual Object* instantiate() { return new C(); }
+    const UUID& uuid() const { return id; }
+    const CharString& name() const { return n; }
+    
+    virtual Class super() const = 0;
+    virtual Object* instantiate() const = 0;
   };
 
   /*
-  ----------------------------------------------
-  Class is a wrapper for IClass pointer which
-  implements comparison by UUID.
-  ----------------------------------------------*/
+  ----------------------------------------------------
+  Class is a wrapper for IClass pointer which forces
+  comparison by UUID and implements safe casting.
+  ----------------------------------------------------*/
 
   class Class
   {
+    friend class IClass;
     IClass *ptr;
 
   public:
@@ -100,8 +100,8 @@ namespace GE
       this->ptr = ptr;
     }
 
-    void operator= (IClass *ptr) {
-      this->ptr = ptr;
+    void operator= (const IClass *ptr) {
+      this->ptr = const_cast< IClass* >(ptr);
     }
 
     bool operator== (const Class &other) const {
@@ -116,13 +116,54 @@ namespace GE
       return ptr->uuid() < other.ptr->uuid();
     }
 
-    IClass* operator-> () {
+    const IClass* operator-> () const {
       return ptr;
     }
 
-    IClass& operator* () {
+    const IClass& operator* () const {
       return *ptr;
     }
+
+    static Object* SafeCast( const Class &to, Object *instance );
+
+    template <class T>
+    static T* SafeCast( Object *instance ) {
+      return (T*) SafeCast( T::GetClass(), instance );
+    }
+  };
+
+  /*
+  -----------------------------------------------
+  IClass level-2 provides access to super class
+  -----------------------------------------------*/
+
+  template <class ThisClass, class SuperClass>
+  class IClass2 : public IClass
+  {
+  public:
+    IClass2 (const UUID &id, const CharString &name) : IClass(id,name) {}
+    virtual Class super() const { return SuperClass::GetClass(); }
+  };
+
+  /*
+  ---------------------------------------------
+  IClass level-3 provides UUID and name
+  ---------------------------------------------*/
+
+  template <class ThisClass, class SuperClass>
+  class IConcrete: public IClass2< ThisClass, SuperClass >
+  {
+  public:
+    IConcrete (const UUID &id, const CharString &name) : IClass2(id,name) {}
+    virtual Object* instantiate() const { return new ThisClass(); }
+  };
+
+  template <class ThisClass, class SuperClass>
+  class IAbstract: public IClass2< ThisClass, SuperClass >
+  {
+  public:
+    IAbstract (const UUID &id, const CharString &name) : IClass2(id,name) {}
+    virtual Object* instantiate() const { return NULL; }
   };
 
   /*
@@ -163,6 +204,50 @@ namespace GE
   };
 
   /*
+  ----------------------------------------------------------
+  Helper macros for object definition
+  ----------------------------------------------------------*/
+
+#define MAKEUUID( A,B,C,D ) \
+  UUID( 0x ## A ## u, 0x ## B ## u, 0x ## C ## u, 0x ## D ## ull)
+
+
+#define __CLASS( Interface, Name, Super, A,B,C,D ) \
+  public: \
+  \
+  static Class GetClass() { \
+    static Interface< Name, Super > c( MAKEUUID(A,B,C,D), #Name); \
+    return Class( &c ); } \
+    \
+  virtual Class getClass() { \
+    return Name::GetClass(); }
+
+
+#define __TEMPLATE_CLASS( Interface, Name, Super, A,B,C,D ) \
+  template <> Class Name::GetClass() { \
+    static Interface< Name, Super > c( MAKEUUID(A,B,C,D), #Name ); \
+    return Class( &c ); }
+
+
+#define CLASS( Name, Super, A,B,C,D ) \
+  __CLASS( IConcrete, Name, Super, A,B,C,D )
+
+#define ABSTRACT( Name, Super, A,B,C,D ) \
+  __CLASS( IAbstract, Name, Super, A,B,C,D );
+
+#define TEMPLATE_CLASS( Name, Super, A,B,C,D ) \
+  __TEMPLATE_CLASS( IConcrete, Name, Super, A,B,C,D )
+
+  /*
+  ----------------------------------------------------------
+  Helper macros for access of Class
+  ----------------------------------------------------------*/
+
+#define ClassOf( o ) o->getClass()
+#define ClassName( C ) C::GetClass()
+
+
+  /*
   ---------------------------------------------
   Base Object class for serialization
   ---------------------------------------------*/
@@ -175,47 +260,12 @@ namespace GE
     UintSize serialID;
 
   public:
-    virtual Class getClass() = 0;
+    ABSTRACT( Object, Object, 0,0,0,0 );
+
     virtual Uint version () { return 1; }
-    virtual void serialize (Serializer *serializer, Uint version) {}
     static Object* produce() { return NULL; }
+    virtual void serialize (Serializer *serializer, Uint version) {}
   };
-
-  /*
-  ----------------------------------------------------------
-  Helper macros for easier object definition
-  ----------------------------------------------------------*/
-
-#define MAKEUUID( A,B,C,D ) \
-  UUID( 0x ## A ## u, 0x ## B ## u, 0x ## C ## u, 0x ## D ## ull)
-
-
-#define __CLASS( Interface, Name, A,B,C,D ) \
-  public: \
-  \
-  static Class GetClass() { \
-  static Interface c( MAKEUUID(A,B,C,D), #Name); \
-    return Class( &c ); } \
-    \
-  virtual Class getClass() { \
-    return Name::GetClass(); }
-
-
-#define __TEMPLATE_CLASS( Interface, Name, A,B,C,D ) \
-  template <> Class Name::GetClass() { \
-    static Interface c( MAKEUUID(A,B,C,D), #Name ); \
-    return Class( &c ); }
-
-
-#define CLASS( Name, A,B,C,D ) \
-  __CLASS( IClass2<Name>, Name, A,B,C,D )
-
-#define ABSTRACT( Name, A,B,C,D ) \
-  __CLASS( IClass, Name, A,B,C,D );
-
-#define TEMPLATE_CLASS( Name, A,B,C,D ) \
-  __TEMPLATE_CLASS( IClass2<Name>, Name, A,B,C,D )
-
 
 }//namespace GE
 

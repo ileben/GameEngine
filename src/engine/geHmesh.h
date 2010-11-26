@@ -36,7 +36,8 @@ namespace GE
 
     class Vertex : public Object
     {
-      CLASS( HMeshTraits::Vertex, 6da81035,8edf,491f,b2a58d863f633da4 );
+      CLASS( HMeshTraits::Vertex, Object,
+        6da81035,8edf,491f,b2a58d863f633da4 );
 
     public:
       ItemTag tag;
@@ -61,7 +62,8 @@ namespace GE
 
     class HalfEdge : public Object
     {
-      CLASS( HMeshTraits::HalfEdge, 2365db29,50d0,4fb0,a9f3f07bea48003a );
+      CLASS( HMeshTraits::HalfEdge, Object,
+        2365db29,50d0,4fb0,a9f3f07bea48003a );
 
     public:
       ItemTag tag;
@@ -100,7 +102,8 @@ namespace GE
     
     class Edge : public Object
     {
-      CLASS( HMeshTraits::Edge, c63a61e3,cab1,4368,976cb0479d571042 );
+      CLASS( HMeshTraits::Edge, Object,
+        c63a61e3,cab1,4368,976cb0479d571042 );
 
     public:
       ItemTag tag;
@@ -125,7 +128,8 @@ namespace GE
 
     class Face : public Object
     {
-      CLASS( HMeshTraits::Face, 1927ce5e,7b0b,43fc,8a0284be116a5d5d );
+      CLASS( HMeshTraits::Face, Object,
+        1927ce5e,7b0b,43fc,8a0284be116a5d5d );
       
     public:
       ItemTag tag;
@@ -151,7 +155,8 @@ namespace GE
 
   class HMesh : public Resource
   {
-    CLASS( HMesh, 3455344a,7fb0,4574,8ecbcad5ea485182 );
+    CLASS( HMesh, Resource,
+      3455344a,7fb0,4574,8ecbcad5ea485182 );
     
   public:
 
@@ -214,10 +219,10 @@ namespace GE
 
     HMesh()
     {
-      classVertex = Vertex::GetClass();
-      classHalfEdge = HalfEdge::GetClass();
-      classEdge = Edge::GetClass();
-      classFace = Face::GetClass();
+      classVertex = ClassName( Vertex );
+      classHalfEdge = ClassName( HalfEdge );
+      classEdge = ClassName( Edge );
+      classFace = ClassName( Face );
     }
     
     /*
@@ -366,10 +371,10 @@ namespace GE
     MeshBase ()
     {
       setClasses(
-        Class( Vertex ),
-        Class( HalfEdge ),
-        Class( Edge ),
-        Class( Face ));
+        ClassName( Vertex ),
+        ClassName( HalfEdge ),
+        ClassName( Edge ),
+        ClassName( Face ));
     }
   };
 

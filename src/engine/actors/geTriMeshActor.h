@@ -23,14 +23,20 @@ namespace GE
   
   class TriMeshActor : public Actor3D
   {
-    DECLARE_SERIAL_SUBCLASS( TriMeshActor, Actor3D );
-    DECLARE_OBJVAR( mesh );
-    DECLARE_END;
+    CLASS( TriMeshActor, Actor3D,
+      726c0f2f,b78c,45a9,a4e708961c699d5b );
 
+    virtual void serialize( Serializer *s, Uint v )
+    {
+      Actor3D::serialize( s,v );
+      s->object( mesh );
+    }
+
+  protected:
+    
     friend class Renderer;
     friend class SaverObj;
 
-  protected:
     MeshRef mesh;
     
     Uint meshVAO;
@@ -47,11 +53,11 @@ namespace GE
     void renderShadow ();
     
   public:
-    virtual ClassPtr getShaderComposingClass() { return Class(TriMeshActor); }
+
+    virtual Class getShaderComposingClass() { return ClassName( TriMeshActor ); }
     virtual void composeShader( Shader *shader );
 
     TriMeshActor ();
-    TriMeshActor (SM *sm);
     virtual ~TriMeshActor();
 
     void setMesh (TriMesh *mesh);

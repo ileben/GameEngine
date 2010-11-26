@@ -15,7 +15,8 @@ namespace GE
 
   class MouseEvent : public Event
   {
-    CLASS( MouseEvent, c0327bc1,d74a,4369,ac4f56419ca834c3 );
+    CLASS( MouseEvent, Event,
+      c0327bc1,d74a,4369,ac4f56419ca834c3 );
 
   public:
     int x;
@@ -24,7 +25,8 @@ namespace GE
 
   class MouseClickEvent : public MouseEvent
   {
-    CLASS( MouseClickEvent, d082540c,2ad0,4757,85f311a1e70a00cd );
+    CLASS( MouseClickEvent, MouseEvent,
+      d082540c,2ad0,4757,85f311a1e70a00cd );
 
   public:
     int button;
@@ -33,12 +35,14 @@ namespace GE
 
   class MouseLeaveEvent : public MouseEvent
   {
-    CLASS( MouseLeaveEvent, 24d401ef,58e6,410d,bf98462ff7fc0672 );
+    CLASS( MouseLeaveEvent, MouseEvent,
+      24d401ef,58e6,410d,bf98462ff7fc0672 );
   };
 
   class MouseEnterEvent : public MouseEvent
   {
-    CLASS( MouseEnterEvent, c9b294cf,6881,432a,86bce8b2820a17f1 );
+    CLASS( MouseEnterEvent, MouseEvent,
+      c9b294cf,6881,432a,86bce8b2820a17f1 );
   };
 
   /*
@@ -102,7 +106,8 @@ namespace GE
 
   class Widget : public Actor
   {
-    CLASS( Widget, 84d2920d,755a,4e22,89e785cf99967d93 );
+    ABSTRACT( Widget, Actor,
+      84d2920d,755a,4e22,89e785cf99967d93 );
 
     friend class Renderer;
     friend class UICtrl;

@@ -6,9 +6,7 @@
 
 namespace GE
 {
-  DEFINE_CLASS (Shader);
-  
-  
+
   Shader::Shader ()
   {
     program = NULL;

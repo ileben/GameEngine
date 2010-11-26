@@ -248,8 +248,11 @@ namespace GE
     UintSize size = 0;
     load( &size, sizeof( UintSize ));
 
-    //Load array elements
+    //Insert array elements
+    a->clear();
     a->resize( size );
+
+    //Load array elements
     for (UintSize s=0; s<size; ++s)
       data( a->at(s), a->elementSize() );
   }
@@ -271,8 +274,11 @@ namespace GE
     UintSize size = 0;
     load( &size, sizeof( UintSize ));
 
-    //Load array elements
+    //Insert array elements
+    a->clear();
     a->resize( size );
+
+    //Load array elements
     for (UintSize s=0; s<size; ++s)
       string( &a->at(s) );
   }
@@ -281,10 +287,6 @@ namespace GE
   {
     //Enqueue reference
     objectRef( pp );
-
-    //Enqueue object
-    LoadObjNode o;
-    objStack.pushBack( o );
   };
 
   void Serializer::StateLoad::objectRef (Object **pp)
@@ -306,8 +308,11 @@ namespace GE
     UintSize size = 0;
     load( &size, sizeof( UintSize ));
 
-    //Load array elements
+    //Insert array elements
+    a->clear();
     a->resize( size );
+
+    //Load array elements
     for (UintSize s=0; s<size; ++s) {
       objectPtr( (Object**) a->at(s) );
     }
@@ -319,8 +324,11 @@ namespace GE
     UintSize size = 0;
     load( &size, sizeof( UintSize ));
 
-    //Load array elements
+    //Insert array elements
+    a->clear();
     a->resize( size );
+
+    //Load array elements
     for (UintSize s=0; s<size; ++s)
       objectRef( (Object**) a->at(s) );
   }
@@ -334,7 +342,7 @@ namespace GE
     //Record all the objects
     serializer->objects.pushBack( p );
 
-    //Serialize object members
+    //Deserialize object members
     p->serialize( serializer, version );
   }
 
@@ -344,8 +352,11 @@ namespace GE
     UintSize size = 0;
     load( &size, sizeof( UintSize ));
 
-    //Load array elements
+    //Insert array elements
+    a->clear();
     a->resize( size );
+
+    //Load array elements
     for (UintSize s=0; s<size; ++s)
       object( (Object*) a->at(s) );
   }
@@ -355,7 +366,8 @@ namespace GE
   Save Control
   ---------------------------------------------------------*/
 
-  void Serializer::StateSave::reset (bool simulation)
+  void Serializer::StateSave::reset
+    (bool simulate, UintSize offset, UintSize maxoffset)
   {
     serializer->objects.clear();
 
@@ -363,8 +375,9 @@ namespace GE
     refStack.clear();
     objMap.clear();
 
-    offset = 0;
-    simulate = simulation;
+    this->offset = offset;
+    this->maxoffset = maxoffset;
+    this->simulate = simulate;
   }
 
   void Serializer::StateSave::run (Object **ppRoot)
@@ -385,6 +398,10 @@ namespace GE
         store( &size, o.szOffset, sizeof(UintSize) );
         continue;
       }
+
+      //Check for null pointer
+      if (o.p == NULL)
+        continue;
 
       //Map object to serial ID
       o.p->serialID = objMap.size();
@@ -420,12 +437,22 @@ namespace GE
       o.p->serialize( serializer, version );
     }
 
+
     //Process references
     while (!refStack.empty())
     {
       //Pop reference node off the stack
       SaveRefNode r = refStack.last();
       refStack.popBack();
+
+      //Check for null pointer
+      if (r.p == NULL)
+      {
+        //Insert invalid serial ID
+        UintSize invalidID = INVALID_SERIAL_ID;
+        store( &invalidID, r.offset, sizeof(UintSize) );
+        continue;
+      }
 
       //Insert object serial ID
       UintSize serialID = r.p->serialID;
@@ -438,16 +465,17 @@ namespace GE
   Load Control
   ---------------------------------------------------------*/
 
-  void Serializer::StateLoad::reset (bool simulation)
+  void Serializer::StateLoad::reset
+    (bool simulate, UintSize offset, UintSize maxoffset)
   {
     serializer->objects.clear();
     
-    objStack.clear ();
     refStack.clear();
     objMap.clear();
 
-    offset = 0;
-    simulate = simulation;
+    this->offset = offset;
+    this->maxoffset = maxoffset;
+    this->simulate = simulate;
   }
 
   void Serializer::StateLoad::run (Object **ppRoot)
@@ -456,12 +484,8 @@ namespace GE
     objectPtr( ppRoot );
 
     //Process objects
-    while (!objStack.empty())
+    while (offset < maxoffset)
     {
-      //Pop object off the stack
-      LoadObjNode o = objStack.last();
-      objStack.popBack();
-
       //Load class ID
       UUID cid;
       load( &cid, sizeof( UUID ));
@@ -481,20 +505,21 @@ namespace GE
       //Instantiate object
       Object *p = Serializer::Produce( cid );
 
-      //Skip invalid object
+      //Check for invalid class ID
       if (p == NULL) {
         skip( size );
         continue;
       }
 
       //Map object to serial ID
-      objMap.resizeAndCopy( sid + 100 );
+      if (sid >= objMap.size())
+        objMap.resizeAndCopy( sid + 100 );
       objMap[ sid ] = p;
 
       //Record all the objects
       serializer->objects.pushBack( p );
 
-      //Serialize object members
+      //Deserialize object members
       p->serialize( serializer, version );
     }
 
@@ -528,7 +553,7 @@ namespace GE
     state->serializer = this;
     
     //Simulation run
-    state->reset( true );
+    state->reset( true, 0, 0 );
     state->run( &root );
     
     //Allocate buffer
@@ -538,11 +563,11 @@ namespace GE
     *outSize = bufSize;
     
     //Real run
-    state->reset( false );
+    state->reset( false, 0, 0 );
     state->run( &root );
   }
 
-  Object* Serializer::deserialize (const void *data)
+  Object* Serializer::deserialize (const void *data, UintSize size)
   {
     //Enter loading state
     state = &stateLoad;
@@ -551,10 +576,35 @@ namespace GE
 
     //Run
     Object *rootPtr = NULL;
-    state->reset( false );
+    state->reset( false, 0, size );
     state->run( &rootPtr );
 
     return rootPtr;
+  }
+
+  /*
+  --------------------------------------------------
+  Signature management
+  --------------------------------------------------*/
+
+  const void* Serializer::getSignature ()
+  {
+    static const UUID sigID = MAKEUUID( b4c0ad4f,1e5b,453e,be8a9bde08a550ab );
+    return &sigID;
+  }
+
+  UintSize Serializer::getSignatureSize ()
+  {
+    //Signature is a UUID
+    return sizeof( UUID );
+  }
+
+  bool Serializer::checkSignature (const void *data)
+  {
+    //Compare data to signature
+    UUID *dataID = (UUID*) data;
+    UUID *sigID = (UUID*) getSignature();
+    return (*dataID == *sigID);
   }
 
 }//namespace GE

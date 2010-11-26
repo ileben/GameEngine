@@ -2,9 +2,6 @@
 
 namespace GE
 {
-  DEFINE_CLASS( CubeMesh );
-  DEFINE_CLASS( SphereMesh );
-  
 
   void CubeMesh::addQuad (const Vector3 &normal,
                           int i1, int i2, int i3, int i4,

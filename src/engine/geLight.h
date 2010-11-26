@@ -11,7 +11,9 @@ namespace GE
 
   class Light : public Actor3D
   {
-    CLASS( Light, a55ed88c,c0b5,4f90,b04805dcdc32975f );
+    CLASS( Light, Actor3D,
+      a55ed88c,c0b5,4f90,b04805dcdc32975f );
+
     virtual void serialize( Serializer *s, Uint v )
     {
       Actor3D::serialize( s,v );
@@ -80,7 +82,8 @@ namespace GE
   
   class DirLight : public Light
   {
-    CLASS( DirLight, 816d73cb,bb3c,4e2d,94b8dc96a35eee34 );
+    CLASS( DirLight, Light,
+      816d73cb,bb3c,4e2d,94b8dc96a35eee34 );
 
   public:
     DirLight () {}
@@ -90,7 +93,9 @@ namespace GE
   
   class SpotLight : public Light
   {
-    CLASS( SpotLight, bb3c8a4f,8b92,40bd,83043b7ea071af74 );
+    CLASS( SpotLight, Light,
+      bb3c8a4f,8b92,40bd,83043b7ea071af74 );
+
     virtual void serialize (Serializer *s, Uint v)
     {
       Light::serialize( s,v );
@@ -120,7 +125,9 @@ namespace GE
 
   class PyramidLight : public Light
   {
-    CLASS( PyramidLight, a46d282c,8492,4dd4,a6100e93a09c6ba3 );
+    CLASS( PyramidLight, Light,
+      a46d282c,8492,4dd4,a6100e93a09c6ba3 );
+
     virtual void serialize( Serializer *s, Uint v )
     {
       Light::serialize( s,v );
@@ -149,7 +156,8 @@ namespace GE
 
   class PointLight : public Light
   {
-    CLASS( PyramidLight, e684697c,c0a1,446b,927069f5eff3ad37 );
+    CLASS( PointLight, Light,
+      e684697c,c0a1,446b,927069f5eff3ad37 );
 
     PointLight (bool producing) {}
     static PointLight* produce() { return new PointLight(true); }
@@ -176,7 +184,8 @@ namespace GE
   
   class HeadLight : public PointLight
   {
-    CLASS( HeadLight, 2467c1e8,bf8f,4e70,a63e32e47d5f07d6 );
+    CLASS( HeadLight, PointLight,
+      2467c1e8,bf8f,4e70,a63e32e47d5f07d6 );
 
   public:
     HeadLight () {}

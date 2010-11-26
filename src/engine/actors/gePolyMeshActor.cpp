@@ -5,8 +5,7 @@
 
 namespace GE
 {
-  DEFINE_CLASS (PolyMeshActor);
-  
+
   PolyMeshActor::PolyMeshActor()
   {
     texMesh = NULL;

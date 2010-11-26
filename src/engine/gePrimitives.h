@@ -9,7 +9,8 @@ namespace GE
 {
   class CubeMesh : public TriMesh
   {
-    DECLARE_SUBCLASS( CubeMesh, TriMesh ); DECLARE_END;
+    CLASS( CubeMesh, TriMesh,
+      793c7557,40c5,41ae,a186ff82879d24b2 );
 
   private:
 
@@ -24,7 +25,8 @@ namespace GE
   
   class SphereMesh : public TriMesh
   {
-    DECLARE_SUBCLASS( SphereMesh, TriMesh ); DECLARE_END;
+    CLASS( SphereMesh, TriMesh,
+      cac5cc04,6632,49bf,9dc19bf7e3a7b232 );
     
   public:
     

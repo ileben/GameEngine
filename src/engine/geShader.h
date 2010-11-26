@@ -103,10 +103,12 @@ namespace GE
   
   class Shader : public Resource
   {
-    CLASS( Shader, d3c5406f,0544,429e,bb11e4d70e95e11e );
-    friend class Material;
+    CLASS( Shader, Resource,
+      d3c5406f,0544,429e,bb11e4d70e95e11e );
     
   private:
+
+    friend class Material;
 
     struct VertexAttrib
     {

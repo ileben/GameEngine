@@ -25,9 +25,13 @@ namespace GE
 
   class SkinMeshActor : public TriMeshActor
   {
-    DECLARE_SERIAL_SUBCLASS( SkinMeshActor, TriMeshActor );
-    DECLARE_OBJVAR( character );
-    DECLARE_END;
+    CLASS( SkinMeshActor, TriMeshActor,
+      ab4bef78,7eba,4391,a8c93ede5d34c641 );
+
+    virtual void serialize( Serializer *s, Uint v ) {
+      TriMeshActor::serialize( s,v );
+      s->object( &character );
+    }
 
   private:
     BoundingBox charBBox;
@@ -57,11 +61,10 @@ namespace GE
     virtual void bindFormat (Shader *shader, VertexFormat *format);
 
   public:
-    virtual ClassPtr getShaderComposingClass() { return Class(SkinMeshActor); }
+    virtual Class getShaderComposingClass() { return ClassName( SkinMeshActor ); }
     virtual void composeShader( Shader *shader );
 
     SkinMeshActor ();
-    SkinMeshActor (SM *sm);
     virtual void onResourcesLoaded();
     virtual ~SkinMeshActor ();
 

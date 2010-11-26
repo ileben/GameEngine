@@ -83,9 +83,12 @@ namespace GE
 
   class AnimTrack : public Object
   {
-    ABSTRACT( AnimTrack, 491ab1fb,63c6,492c,877d6e1266a8e6bc );
+    ABSTRACT( AnimTrack, Object,
+      491ab1fb,63c6,492c,877d6e1266a8e6bc );
+
     virtual void serialize( Serializer *s, Uint v )
     {
+      Object::serialize( s,v );
       s->data( &firstKey );
     }
 
@@ -106,17 +109,20 @@ namespace GE
   
   template <class Traits> class AnimTrackT : public AnimTrack
   {
-    CLASS( AnimTrackT, 0,0,0,0 );
-    virtual void serialize( Serializer *s, Uint v ) {
+    CLASS( AnimTrackT, AnimTrack,  0,0,0,0 );
+
+    virtual void serialize( Serializer *s, Uint v )
+    {
+      AnimTrack::serialize( s,v );
       s->dataArray( &keys );
     };
     
   private:
+
     typename Traits::Value value;
     ArrayList <typename Traits::Value> keys;
 
   public:
-    AnimTrackT () {}
 
     void addKey( typename Traits::Value value );
     virtual Int getNumKeys ();
@@ -212,16 +218,10 @@ namespace GE
   typedef AnimTrackT< FloatTrackTraits > FloatAnimTrack;
   typedef AnimTrackT< BoolTrackTraits > BoolAnimTrack;
 
-  TEMPLATE_CLASS( QuatAnimTrack,  8ff2d758,a624,445a,87197d3e14bb22c5 );
-  TEMPLATE_CLASS( Vec3AnimTrack,  d4b943cd,5cce,4b50,8cb7f4f2806c8637 );
-  TEMPLATE_CLASS( FloatAnimTrack, 3412ea4f,2111,481b,bded7f3c19a3b1f1 );
-  TEMPLATE_CLASS( BoolAnimTrack,  9430611b,8001,47fe,8f4045e94c48b1ad );
-  /*
-  template <> Class QuatAnimTrack::GetClass() {
-    static IClass2<QuatAnimTrack> c( UUID(1,1,1,1), "QuatAnimTrack" );
-    return Class( &c );
-  }
-  */
+  TEMPLATE_CLASS( QuatAnimTrack,  AnimTrack, 8ff2d758,a624,445a,87197d3e14bb22c5 );
+  TEMPLATE_CLASS( Vec3AnimTrack,  AnimTrack, d4b943cd,5cce,4b50,8cb7f4f2806c8637 );
+  TEMPLATE_CLASS( FloatAnimTrack, AnimTrack, 3412ea4f,2111,481b,bded7f3c19a3b1f1 );
+  TEMPLATE_CLASS( BoolAnimTrack,  AnimTrack, 9430611b,8001,47fe,8f4045e94c48b1ad );
 
 
   Quat QuatTrackTraits::Interpolate (Quat q1, Quat q2, Float t)
@@ -263,9 +263,12 @@ namespace GE
   
   class AnimEvent : public Object
   {
-    CLASS( AnimEvent, 57fbbfa8,750d,4548,9760d20c00d91f58 );
+    CLASS( AnimEvent, Object,
+      57fbbfa8,750d,4548,9760d20c00d91f58 );
+
     virtual void serialize( Serializer *s, Uint v )
     {
+      Object::serialize( s,v );
       s->string( &name );
       s->data( &time );
     }
@@ -289,9 +292,12 @@ namespace GE
   
   class Animation : public Object
   {
-    CLASS( Animation, 94b92ac2,05c3,445a,b70f764c1e76c7ac );
+    CLASS( Animation, Object,
+      94b92ac2,05c3,445a,b70f764c1e76c7ac );
+
     virtual void serialize( Serializer *s, Uint v )
     {
+      Object::serialize( s,v );
       s->data( &kps );
       s->data( &duration );
       s->string( &name );
@@ -335,9 +341,12 @@ namespace GE
 
   class AnimTrackBinding : public Object
   {
-    CLASS( AnimTrackBinding, 3862134c,e0bc,4283,8eaed509b567cc09 );
+    CLASS( AnimTrackBinding, Object,
+      3862134c,e0bc,4283,8eaed509b567cc09 );
+
     virtual void serialize( Serializer *s, Uint v )
     {
+      Object::serialize( s,v );
       s->objectRef( &anim );
       s->data( &track );
       s->data( &param );
@@ -359,8 +368,12 @@ namespace GE
 
   class AnimObserver : public Object
   {
-    CLASS( AnimObserver, d889cd5e,3c49,48a1,96c371a1ae4a4cfc );
-    virtual void serialize( Serializer *s, Uint v ) {
+    CLASS( AnimObserver, Object,
+      d889cd5e,3c49,48a1,96c371a1ae4a4cfc );
+
+    virtual void serialize( Serializer *s, Uint v )
+    {
+      Object::serialize( s,v );
       s->objectPtrArray( &bindings );
     }
 
@@ -387,9 +400,12 @@ namespace GE
 
   class AnimObserverBinding : public Object
   {
-    CLASS( AnimObserverBinding, 54bbbb8a,1c80,4267,acfd988242b0e707 );
+    CLASS( AnimObserverBinding, Object,
+      54bbbb8a,1c80,4267,acfd988242b0e707 );
+
     virtual void serialize( Serializer *s, Uint v )
     {
+      Object::serialize( s,v );
       s->objectRef( &observer );
       s->data( &param );
     }
@@ -413,9 +429,12 @@ namespace GE
 
   class AnimController : public Object
   {
-    CLASS( AnimController, 13849919,ea1d,48e4,b00abe0f05d623d2 );
+    CLASS( AnimController, Object,
+      13849919,ea1d,48e4,b00abe0f05d623d2 );
+
     virtual void serialize( Serializer *s, Uint v )
     {
+      Object::serialize( s,v );
       s->data( &maxTime );
       s->data( &animTime );
       s->data( &playSpeed );

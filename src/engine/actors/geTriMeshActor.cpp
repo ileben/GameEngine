@@ -8,17 +8,10 @@
 
 namespace GE
 {
-  DEFINE_SERIAL_CLASS (TriMeshActor, ClassID( 0x94263b78u, 0xc1e9, 0x4e4a, 0x9f89fd667eadc891ull ));
-  
+
   TriMeshActor::TriMeshActor()
   {
     mesh = NULL;
-    meshVAO = 0;
-    meshVAOInit = false;
-  }
-
-  TriMeshActor::TriMeshActor (SM *sm) : Actor3D(sm), mesh(sm)
-  {
     meshVAO = 0;
     meshVAOInit = false;
   }
@@ -277,7 +270,7 @@ namespace GE
     }
     else if (target == RenderTarget::GBuffer)
     {
-      MultiMaterial *multiMat = SafeCast( MultiMaterial, material );
+      MultiMaterial *multiMat = Class::SafeCast< MultiMaterial >( material );
       if (multiMat == NULL) renderSingleMat();
       else renderMultiMat();
     }

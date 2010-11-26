@@ -19,7 +19,9 @@ namespace GE
 
   class Camera : public Actor3D
   {
-    CLASS( Camera, 5d6e19f1,1408,4c3d,a5c20914b0da79a4 );
+    CLASS( Camera, Actor3D,
+      5d6e19f1,1408,4c3d,a5c20914b0da79a4 );
+
     virtual void serialize( Serializer *s, Uint v)
     {
       Actor3D::serialize( s,v );
@@ -69,7 +71,9 @@ namespace GE
 
   class Camera3D : public Camera
   {
-    CLASS( Camera3D, 73006e7d,53b2,4f15,82ea35735cc834fa );
+    CLASS( Camera3D, Camera,
+      73006e7d,53b2,4f15,82ea35735cc834fa );
+
     virtual void serialize( Serializer *s, Uint v)
     {
       Camera::serialize( s,v );
@@ -130,7 +134,9 @@ namespace GE
 
   class Camera2D : public Camera
   {
-    CLASS( Camera2D, a224e13d,77bd,44bc,92f1177e20c1ac6a );
+    CLASS( Camera2D, Camera,
+      a224e13d,77bd,44bc,92f1177e20c1ac6a );
+
     friend class Renderer;
 
   private:

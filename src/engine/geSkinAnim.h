@@ -13,10 +13,15 @@ namespace GE
 
   class ActorAnimObserver : public AnimObserver
   {
-    DECLARE_SERIAL_SUBCLASS( ActorAnimObserver, AnimObserver );
-    DECLARE_DATAVAR( valueS );
-    DECLARE_OBJREF( actor );
-    DECLARE_END;
+    CLASS( ActorAnimObserver, AnimObserver,
+      d03e90b5,be96,41c8,beb31606ad9ec84f );
+
+    virtual void serialize( Serializer *s, Uint v )
+    {
+      AnimObserver::serialize( s,v );
+      s->data( &valueS );
+      s->objectRef( &actor );
+    }
 
   public:
 
@@ -24,16 +29,14 @@ namespace GE
     Vector3 valueT;
     Quat    valueR;
     Actor3D *actor;
-
     ActorAnimObserver () : actor (NULL) {}
-    ActorAnimObserver (SM *sm) : AnimObserver (sm) {}
     
     virtual void onValueChanged (AnimTrack *track, Int param)
     {
-      if (ClassOf( track ) == Class (Vec3AnimTrack ))
+      if (ClassOf( track ) == ClassName( Vec3AnimTrack ))
         valueT = ((Vec3AnimTrack*) track)->getValue();
       
-      else if (ClassOf( track ) == Class (QuatAnimTrack))
+      else if (ClassOf( track ) == ClassName( QuatAnimTrack ))
         valueR = ((QuatAnimTrack*) track)->getValue();
     }
 
@@ -48,25 +51,28 @@ namespace GE
 
   class SkinAnimObserver : public AnimObserver
   {
-    DECLARE_SERIAL_SUBCLASS( SkinAnimObserver, AnimObserver );
-    DECLARE_OBJREF( actor );
-    DECLARE_END;
+    CLASS( SkinAnimObserver, AnimObserver,
+      89d4c1bb,9d12,481c,9329d0f78a6e4d01 );
+
+    virtual void serialize( Serializer *s, Uint v )
+    {
+      AnimObserver::serialize( s,v );
+      s->objectRef( &actor );
+    }
 
   public:
 
     SkinMeshActor *actor;
-
     SkinAnimObserver () : actor (NULL) {}
-    SkinAnimObserver (SM *sm) : AnimObserver (sm) {}
 
     virtual void onValueChanged (AnimTrack *track, Int param)
     {
-      if (ClassOf( track ) == Class( Vec3AnimTrack ))
+      if (ClassOf( track ) == ClassName( Vec3AnimTrack ))
       {
         Vec3AnimTrack* vtrack = (Vec3AnimTrack*) track;
         actor->setJointTranslation( param, vtrack->getValue() );
       }
-      else if (ClassOf( track ) == Class (QuatAnimTrack ))
+      else if (ClassOf( track ) == ClassName( QuatAnimTrack ))
       {
         QuatAnimTrack* qtrack = (QuatAnimTrack*) track;
         actor->setJointRotation( param, qtrack->getValue() );
@@ -76,20 +82,23 @@ namespace GE
 
   class DofAnimObserver : public AnimObserver
   {
-    DECLARE_SERIAL_SUBCLASS( DofAnimObserver, AnimObserver );
-    DECLARE_OBJREF( camera );
-    DECLARE_END;
+    CLASS( DofAnimObserver, AnimObserver,
+      ef012909,a311,43a8,b7632dabff49bc37 );
+
+    virtual void serialize( Serializer *s, Uint v )
+    {
+      AnimObserver::serialize( s,v );
+      s->objectRef( &camera );
+    }
 
   public:
 
     Camera3D *camera;
-
     DofAnimObserver () : camera (NULL) {}
-    DofAnimObserver (SM *sm) : AnimObserver (sm) {}
 
     virtual void onValueChanged (AnimTrack *track, Int param)
     {
-      if (ClassOf( track ) == Class( FloatAnimTrack ))
+      if (ClassOf( track ) == ClassName( FloatAnimTrack ))
       {
         DofParams dofParams = camera->getDofParams();
         FloatAnimTrack *ftrack = (FloatAnimTrack*) track;
@@ -102,7 +111,7 @@ namespace GE
 
         camera->setDofParams( dofParams );
       }
-      else if (ClassOf( track ) == Class( BoolAnimTrack ))
+      else if (ClassOf( track ) == ClassName( BoolAnimTrack ))
       {
         BoolAnimTrack *btrack = (BoolAnimTrack*) track;
         //camera->setDofEnabled( btrack->getValue() );

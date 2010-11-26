@@ -2,9 +2,6 @@
 
 namespace GE
 {
-  //DEFINE_SERIAL_CLASS( Actor, ClassID( 0x0acdcd40u, 0x9da9, 0x4dac, 0xac7bccbada6e4ee5ull ));
-  //DEFINE_SERIAL_CLASS( Scene, ClassID( 0xb70776edu, 0x5881, 0x48fb, 0x8fc46f317579d987ull ));
-  //DEFINE_CLASS( Event );
 
   Stage* Stage::instance = NULL;
 
@@ -302,25 +299,25 @@ namespace GE
 
     return NULL;
   }
-/*
-  Actor* Scene::findFirstActorByClass (const type_info &cls)
+
+  Actor* Scene::findFirstActorByClass (Class cls)
   {
     for (UintSize t=0; t<traversal.size(); ++t) {
-      Actor* a = (Actor*) dynamic_cast( cls, traversal[t] );
+      Actor* a = (Actor*) Class::SafeCast( cls, traversal[t] );
       if (a != NULL) return a;
     }
 
     return NULL;
   }
 
-  void Scene::findActorsByClass (ClassPtr cls, ArrayList<Actor*> &outActors)
+  void Scene::findActorsByClass (Class cls, ArrayList< Actor* > &outActors)
   {
     for (UintSize t=0; t<traversal.size(); ++t) {
-      Actor* a = (Actor*) SafeCastPtr( cls, traversal[t] );
+      Actor* a = (Actor*) Class::SafeCast( cls, traversal[t] );
       if (a != NULL) outActors.pushBack( a );
     }
   }
-*/
+
   Actor* Scene::findFirstActorByName (const CharString &name)
   {
     for (UintSize t=0; t<traversal.size(); ++t) {

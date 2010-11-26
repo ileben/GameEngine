@@ -13,23 +13,9 @@
 namespace GE
 {
 
-  DEFINE_SERIAL_CLASS( SkinMeshActor, ClassID( 0x208f56c3u, 0x4ce3, 0x4dee, 0xaafe9c235e6d42f3ull ));
-
-
   SkinMeshActor::SkinMeshActor()
   {
     character = NULL;
-    skinVertices = NULL;
-    skinNormals = NULL;
-    jointRotations = NULL;
-    jointTranslations = NULL;
-    jointChange = false;
-    numJoints = 0;
-  }
-
-  SkinMeshActor::SkinMeshActor(SM *sm)
-    : TriMeshActor(sm), character(sm)
-  {
     skinVertices = NULL;
     skinNormals = NULL;
     jointRotations = NULL;

@@ -3,8 +3,6 @@
 
 namespace GE
 {
-  DEFINE_CLASS (Texture);
-  
   
   Texture::Texture()
   {

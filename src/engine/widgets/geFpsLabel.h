@@ -7,10 +7,10 @@
 namespace GE
 {
 
-  class GE_API_ENTRY FpsLabel : public Label
+  class FpsLabel : public Label
   {
-    DECLARE_SUBCLASS (FpsLabel, Label);
-    DECLARE_END;
+    CLASS( FpsLabel, Label,
+      533bfe43,3fc2,4baa,bb36d7b791924291 );
     
   protected:
     virtual void draw();

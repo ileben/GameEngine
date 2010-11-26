@@ -18,23 +18,32 @@ namespace GE
   public:
     class Vertex; class HalfEdge; class Edge; class Face;
 
-    class Vertex : public VertexBase <SPolyMeshTraits,PolyMesh> {
-      DECLARE_SUBCLASS( Vertex, PolyMesh::Vertex ); DECLARE_END;
+    class Vertex : public VertexBase <SPolyMeshTraits,PolyMesh>
+    {  
+      CLASS( Vertex, PolyMesh::Vertex,
+        8525e796,ef4c,406a,a610a0f58b1c8284 );
+
     public:
       Uint32 boneIndex [4];
       Float boneWeight [4];
     };
     
-    class HalfEdge : public HalfEdgeBase <SPolyMeshTraits,PolyMesh> {
-      DECLARE_SUBCLASS( HalfEdge, PolyMesh::HalfEdge ); DECLARE_END;
+    class HalfEdge : public HalfEdgeBase <SPolyMeshTraits,PolyMesh>
+    {
+      CLASS( HalfEdge, PolyMesh::HalfEdge,
+        4d55f281,ba03,40da,a6ed7ca5bf23acf0 );
     };
     
-    class Edge : public EdgeBase <SPolyMeshTraits,PolyMesh>  {
-      DECLARE_SUBCLASS( Edge, PolyMesh::Edge ); DECLARE_END;
+    class Edge : public EdgeBase <SPolyMeshTraits,PolyMesh>
+    {
+      CLASS( Edge, PolyMesh::Edge,
+        1e36eede,e3ab,46c5,9a85e73b83d19aa5 );
     };
     
-    class Face : public FaceBase <SPolyMeshTraits,PolyMesh> {
-      DECLARE_SUBCLASS( Face, PolyMesh::Face ); DECLARE_END;
+    class Face : public FaceBase <SPolyMeshTraits,PolyMesh>
+    {
+      CLASS( Face, PolyMesh::Face,
+        f64f2b5f,db3e,42d0,b01fdca37f02833a );
     };
 
     typedef PolyMesh::VertexNormal VertexNormal;
@@ -43,7 +52,8 @@ namespace GE
 
   class SPolyMesh : public PolyMeshBase <SPolyMeshTraits,PolyMesh>
   {
-    DECLARE_SUBCLASS( SPolyMesh, PolyMesh ); DECLARE_END;
+    CLASS( SPolyMesh, PolyMesh,
+      4b87e6ad,c85c,4863,93de87ef8577a609 );
   };
 
   /*
@@ -51,38 +61,41 @@ namespace GE
   Tri mesh with skin data
   ==========================================================*/
 
-  class SkinVertex : public Object
+  struct SkinVertex
   {
-  public:
     Vector2 *texcoord;
     Vector3 *normal;
     Vector3 *coord;
     Uint32 *jointIndex;
     Float32 *jointWeight;
 
-    DECLARE_SUBCLASS( SkinVertex, Object );
-    DECLARE_MEMBER_DATA( texcoord, new BindTarget( ShaderData::TexCoord2 ) );
-    DECLARE_MEMBER_DATA( normal, new BindTarget( ShaderData::Normal ) );
-    DECLARE_MEMBER_DATA( coord, new BindTarget( ShaderData::Coord3 ) );
-    DECLARE_MEMBER_DATA( jointIndex, new BindTarget( ShaderData::JointIndex ) );
-    DECLARE_MEMBER_DATA( jointWeight, new BindTarget( ShaderData::JointWeight ) );
-    DECLARE_END;
+    void bind (VertexBinding<SkinVertex> *b)
+    {
+      b->bind( &texcoord, ShaderData::TexCoord2 );
+      b->bind( &normal, ShaderData::Normal );
+      b->bind( &coord, ShaderData::Coord3 );
+      b->bind( &jointIndex, ShaderData::JointIndex );
+      b->bind( &jointWeight, ShaderData::JointWeight );
+    }
   };
 
   class SkinTriMesh : public TriMesh
   {
-    DECLARE_SERIAL_SUBCLASS( SkinTriMesh, TriMesh );
-    DECLARE_DATAVAR( mesh2skinMap );
-    DECLARE_DATAVAR( mesh2skinSize );
-    DECLARE_END;
+    CLASS( SkinTriMesh, TriMesh,
+      69dcb64f,c761,4069,870a002a3470a7e9 );
+
+    virtual void serialize( Serializer *s, Uint v )
+    {
+      TriMesh::serialize( s,v );
+      s->data( &mesh2skinSize );
+      s->data( &mesh2skinMap );
+    }
 
   public:
 
     Uint32 mesh2skinSize;
     Uint32 mesh2skinMap[24];
     VertexBinding <SkinVertex> binding;
-
-    SkinTriMesh (SerializeManager *sm) : TriMesh (sm) {}
     SkinTriMesh () : mesh2skinSize(0) {}
     
   protected:

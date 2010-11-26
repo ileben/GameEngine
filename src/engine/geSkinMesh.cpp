@@ -2,15 +2,6 @@
 
 namespace GE
 {
-  DEFINE_CLASS( SPolyMesh );
-  DEFINE_CLASS( SPolyMesh::Vertex );
-  DEFINE_CLASS( SPolyMesh::HalfEdge );
-  DEFINE_CLASS( SPolyMesh::Edge );
-  DEFINE_CLASS( SPolyMesh::Face );
-  
-  DEFINE_SERIAL_CLASS( SkinTriMesh, CLSID_SKINTRIMESH );
-  DEFINE_CLASS( SkinVertex );
-
 
   void SkinTriMesh::fromPoly (PolyMesh *m, TexMesh *um)
   {

@@ -43,9 +43,12 @@ namespace GE
 
   class Scene3D : public Scene
   {
-    CLASS( Scene3D, 935538c5,5cff,4949,86a3fe35a672c019 );
+    CLASS( Scene3D, Scene,
+      935538c5,5cff,4949,86a3fe35a672c019 );
+
     virtual void serialize( Serializer *s, Uint v )
     {
+      Scene::serialize( s,v );
       s->data( &ambientColor );
       s->objectPtrArray( &animations );
       s->objectPtrArray( &resources );

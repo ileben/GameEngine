@@ -42,7 +42,7 @@ namespace GE
   Event
   ----------------------------------------------*/
 
-  class Event
+  class Event : public Object
   {
   private:
     Actor *target;
@@ -83,7 +83,9 @@ namespace GE
   {
     friend class Scene;
 
-    CLASS( Actor, 0acdcd40,9da9,4dac,ac7bccbada6e4ee5 );
+    CLASS( Actor, Object,
+      0acdcd40,9da9,4dac,ac7bccbada6e4ee5 );
+
     virtual void serialize (Serializer *s, Uint v)
     {
       Object::serialize( s,v );
@@ -161,7 +163,9 @@ namespace GE
 
   class Scene : public Object
   {
-    CLASS( Scene, b70776ed,5881,48fb,8fc46f317579d987 );
+    CLASS( Scene, Object,
+      b70776ed,5881,48fb,8fc46f317579d987 );
+
     virtual void serialize (Serializer *s, Uint v)
     {
       Object::serialize( s,v );
@@ -186,15 +190,9 @@ namespace GE
 
     Actor* findTopActorAt (float x, float y);
     const ArrayList<Actor*> & getTraversal () { return traversal; }
-    
-    //Actor* findFirstActorByClass (ClassPtr cls);
-    //void findActorsByClass (ClassPtr cls, ArrayList< Actor* > &outActors);
 
-    template <class C>
-    Actor* findFirstActorByClass ();
-
-    template <class C>
-    void findActorsByClass (ArrayList< Actor* > &outActors);
+    Actor* findFirstActorByClass (Class cls);
+    void findActorsByClass (Class cls, ArrayList< Actor* > &outActors);
 
     Actor* findFirstActorByName (const CharString &name);
   };
@@ -227,26 +225,6 @@ namespace GE
   Vector2 Actor::getBottomRight ()
     { return Vector2( getRight(), getBottom() ); }
 
-
-  template <class C>
-  Actor* Scene::findFirstActorByClass ()
-  {
-    for (UintSize t=0; t<traversal.size(); ++t) {
-      Actor* a = (Actor*) dynamic_cast< C >( traversal[t] );
-      if (a != NULL) return a;
-    }
-
-    return NULL;
-  }
-
-  template <class C>
-  void Scene::findActorsByClass (ArrayList< Actor* > &outActors)
-  {
-    for (UintSize t=0; t<traversal.size(); ++t) {
-      Actor* a = (Actor*) dynamic_cast< C >( traversal[t] );
-      if (a != NULL) outActors.pushBack( a );
-    }
-  }
 
 }//namespace GE
 #endif//__UIACTOR_H
