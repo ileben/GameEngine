@@ -16,6 +16,7 @@ namespace GE
     Uint32 cap;
     Uint32 eltSize;
     Uint8 *elements;
+    void *temp;
     
   public:
     
@@ -38,7 +39,7 @@ namespace GE
     /*
     --------------------------------------
     Simple constructor. Initializes the
-    array with storage for 1 element
+    array with capacity for 1 element
     --------------------------------------*/
     
     GenericArrayList (UintSize eltSize)
@@ -48,6 +49,7 @@ namespace GE
       sz = 0;
       cap = 1;
       elements = (Uint8*) std::malloc( cap * eltSize );
+      temp = std::malloc( eltSize );
     }
 
     /*
@@ -63,8 +65,27 @@ namespace GE
       sz = 0;
       cap = (Uint32) (newCap > 0 ? newCap : 1);
       elements = (Uint8*) std::malloc( cap * eltSize );
+      temp = std::malloc( eltSize );
     }
-      
+
+    /*
+    ------------------------------------
+    Copy constructor
+    ------------------------------------*/
+
+    GenericArrayList (const GenericArrayList &other)
+    {
+      this->eltSize = other.eltSize;
+
+      sz = other.sz;
+      cap = other.cap;
+      elements = (Uint8*) std::malloc( cap * eltSize );
+      temp = std::malloc( eltSize );
+
+      //Can't call virtuals in constructor!
+      std::memcpy( elements, other.elements, sz * eltSize );
+    }
+    
     /*
     -------------------------------------
     Dtor
@@ -74,6 +95,7 @@ namespace GE
     {
       //Can't call virtuals in destructor!
       std::free( elements );
+      std::free( temp );
     }
 
   protected:
@@ -134,7 +156,9 @@ namespace GE
 
       //Free old memory and allocate new
       std::free( elements );
+      std::free( temp );
       elements = (Uint8*) std::malloc( cap * eltSize );
+      temp = std::malloc( eltSize );
     }
     
     /*
@@ -243,32 +267,46 @@ namespace GE
       construct( at( sz ), n-sz );
       sz = (Uint32) n;
     }
-    
+
     /*
     ------------------------------------------------------
     Enlarges the array capacity at element insertion by
     the factor of 2. This yields an ammortized complexity
     of O(1) for element insertion.
     ------------------------------------------------------*/
+
+    void pushBack( const void *newElt )
+    {
+      //Make sure we got enough space
+      if( sz == cap ) reserveAndCopy( cap * 2 );
+      
+      //Construct an element at the back
+      construct( at(sz), 1 );
+
+      //Copy the new element at the back
+      copy( at(sz), newElt, 1 );
+      sz++;
+    }
+
+    void pushBack()
+    {
+      //Make sure we got enough space
+      if( sz == cap ) reserveAndCopy( cap * 2 );
+
+      //Construct an element at the back
+      construct( at(sz), 1 );
+      sz++;
+    }
     
     void insertAt( UintSize index, const void *newElt )
     {
-      void *copyElt = (void*) newElt;     
-      bool cloned = false;
-      
       //Clamp insertion point to size
       if( index > sz ) index = sz;
       
-      //Will any moving take place?
-      if( sz == cap || index < sz )
-      {
-        //It might be a reference to our own element
-        //so better clone it before reallocation
-        copyElt = std::malloc( eltSize );
-        construct( copyElt, 1 );
-        copy( copyElt, newElt, 1 );
-        cloned = true;
-      }
+      //It might be a reference to our own element
+      //so better clone it before reallocation
+      construct( temp, 1 );
+      copy( temp, newElt, 1 );
       
       //Make sure we got enough space
       if( sz == cap ) reserveAndCopy( cap * 2 );
@@ -281,15 +319,12 @@ namespace GE
         for( UintSize i=sz-1; i>=index; --i )
           copy( at(i+1), at(i), 1 );
       
-      //Copy the new element at [index]
-      copy( at(index), copyElt, 1 );
+      //Copy the new element at index
+      copy( at(index), temp, 1 );
       sz++;
       
-      //Delete the clone
-      if( cloned ){
-        destruct( copyElt, 1 );
-        std::free( copyElt );
-      }
+      //Destruct the clone
+      destruct( temp, 1 );
     }
 
     void insertAt( UintSize index )
@@ -310,6 +345,21 @@ namespace GE
 
       sz++;
     }
+
+    /*
+    --------------------------------------------------------
+    Removal functions
+    --------------------------------------------------------*/
+
+    void popBack()
+    {
+      //Prevent invalid removal
+      if (sz == 0) return;
+
+      //Destruct the last element
+      destruct( at( sz-1 ), 1 );
+      sz--;
+    }
     
     void removeAt( UintSize index )
     {
@@ -324,18 +374,14 @@ namespace GE
       destruct( at( sz-1 ), 1 );
       sz--;
     }
+
+    /*
+    ----------------------------------------------------
+    Accessor and utility functions
+    ----------------------------------------------------*/
     
     void setAt( UintSize index, const void *newElt )
     { copy( at( index ), newElt, 1 ); }
-    
-    void pushBack( const void *newElt )
-    { insertAt( sz, newElt ); }
-
-    void pushBack()
-    { insertAt( sz ); }
-    
-    void popBack()
-    { removeAt( sz-1 ); }
 
     void* at( UintSize index ) const
     { return elements + index * eltSize; }
@@ -363,14 +409,25 @@ namespace GE
 
     void insertListAt( UintSize index, const GenericArrayList *list )
     {
+      assert( elementSize() == list->elementSize() );
+
       for (UintSize i=0; i<list->size(); ++i, ++index)
         insertAt( index, list->at( i ) );
     }
 
     void pushListBack( const GenericArrayList *list )
     {
+      assert( elementSize() == list->elementSize() );
+
       for (UintSize i=0; i<list->size(); ++i)
         pushBack( list->at( i ) );
+    }
+
+    GenericArrayList& operator= (const GenericArrayList &other)
+    {
+      resetElementSize( other.elementSize() );
+      pushListBack( &other );
+      return *this;
     }
   };
 
@@ -388,6 +445,39 @@ namespace GE
 
     ArrayList (UintSize newCap)
       : GenericArrayList (newCap, sizeof(T)) {}
+
+    ArrayList (const ArrayList &other)
+      : GenericArrayList (other.cap, sizeof(T))
+    {
+      pushListBack( &other );
+    }
+
+    ~ArrayList ()
+    {
+      destruct( elements, sz );
+    }
+
+    virtual void construct( void *dst, UintSize n )
+    {
+      T *tdst = (T*)dst;
+      for( UintSize i=0; i<n; ++i )
+        new( &tdst[i] )T;
+    }
+    
+    virtual void destruct( void *dst, UintSize n )
+    {
+      T *tdst = (T*)dst;
+      for( UintSize i=0; i<n; ++i )
+        tdst[i].~T();
+    }
+    
+    virtual void copy( void *dst, const void *src, UintSize n )
+    {
+      T *tdst = (T*)dst;
+      T *tsrc = (T*)src;
+      for( UintSize i=0; i<n; ++i )
+        tdst[i] = tsrc[i];
+    }
     
     T& first() const
     { return ((T*)elements)[ 0 ]; }
@@ -434,26 +524,10 @@ namespace GE
       if (i > -1) removeAt( (UintSize) i );
     }
 
-    virtual void construct( void *dst, UintSize n )
+    ArrayList<T>& operator= (const ArrayList<T> &other)
     {
-      T *tdst = (T*)dst;
-      for( UintSize i=0; i<n; ++i )
-        new( &tdst[i] )T;
-    }
-    
-    virtual void destruct( void *dst, UintSize n )
-    {
-      T *tdst = (T*)dst;
-      for( UintSize i=0; i<n; ++i )
-        tdst[i].~T();
-    }
-    
-    virtual void copy( void *dst, const void *src, UintSize n )
-    {
-      T *tdst = (T*)dst;
-      T *tsrc = (T*)src;
-      for( UintSize i=0; i<n; ++i )
-        tdst[i] = tsrc[i];
+      clear();
+      pushListBack( other );
     }
   };
 

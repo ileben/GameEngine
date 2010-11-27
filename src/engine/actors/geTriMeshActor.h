@@ -29,7 +29,7 @@ namespace GE
     virtual void serialize( Serializer *s, Uint v )
     {
       Actor3D::serialize( s,v );
-      s->object( mesh );
+      s->object( &mesh );
     }
 
   protected:

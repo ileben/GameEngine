@@ -161,7 +161,7 @@ namespace GE
     UintSize getSignatureSize ();
     bool checkSignature (const void *data);
 
-    const ArrayList< Object* > getObjects() { return objects; }
+    const ArrayList< Object* >& getObjects() { return objects; }
 
   private:
 
