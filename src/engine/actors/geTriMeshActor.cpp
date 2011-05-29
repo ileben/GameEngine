@@ -156,8 +156,9 @@ namespace GE
     }
   }
 
-  void TriMeshActor::renderShadow ()
+  void TriMeshActor::renderShadowSingle ()
   {
+    Material *material = getMaterial();
     VertexFormat *format = (VertexFormat*) mesh->getFormat();
     Renderer *renderer = Kernel::GetInstance()->getRenderer();
     Shader *shader = renderer->getShader( RenderTarget::ShadowMap, this, NULL );
@@ -165,6 +166,8 @@ namespace GE
     shader->use();
     bindBuffers();
     bindFormat( shader, format );
+
+    material->beginShadow();
 
     //Walk material index groups
     for (UintSize g=0; g<mesh->groups.size(); ++g)
@@ -174,7 +177,47 @@ namespace GE
       renderGroup( grp );
     }
 
+    material->endShadow();
+
     unbindFormat( shader, format );
+  }
+
+  void TriMeshActor::renderShadowMulti()
+  {
+    Material *material = getMaterial();
+    VertexFormat *format = (VertexFormat*) mesh->getFormat();
+    MultiMaterial *multiMat = (MultiMaterial*) material;
+    Renderer *renderer = Kernel::GetInstance()->getRenderer();
+    Shader *shader = NULL;
+
+    bindBuffers();
+
+    //Walk material index groups
+    for (UintSize g=0; g<mesh->groups.size(); ++g)
+    {
+      //Get sub-material of this group
+      TriMesh::IndexGroup &grp = mesh->groups[ g ];
+      Material *subMat = multiMat->getSubMaterial( grp.materialID );
+      if (subMat == NULL) continue;
+
+      //Find shader for this material
+      Shader *subShader = renderer->getShader( RenderTarget::ShadowMap, this, subMat );
+      if (subShader != shader)
+      {
+        //If different, resend format data
+        shader = subShader;
+        shader->use();
+        bindFormat( shader, format );
+      }
+      
+      //Render current group
+      subMat->beginShadow();
+      renderGroup( grp );
+      subMat->endShadow();
+    }
+    
+    unbindFormat( shader, format );
+    unbindBuffers();
   }
 
   void TriMeshActor::renderSingleMat ()
@@ -266,7 +309,9 @@ namespace GE
     if (material == NULL) return;
     if (target == RenderTarget::ShadowMap)
     {
-      renderShadow();
+      MultiMaterial *multiMat = Class::SafeCast< MultiMaterial >( material );
+      if (multiMat == NULL) renderShadowSingle();
+      else renderShadowMulti();
     }
     else if (target == RenderTarget::GBuffer)
     {

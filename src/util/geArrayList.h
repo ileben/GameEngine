@@ -275,7 +275,7 @@ namespace GE
     of O(1) for element insertion.
     ------------------------------------------------------*/
 
-    void pushBack( const void *newElt )
+    void pushBack (const void *newElt)
     {
       //Make sure we got enough space
       if( sz == cap ) reserveAndCopy( cap * 2 );
@@ -298,7 +298,7 @@ namespace GE
       sz++;
     }
     
-    void insertAt( UintSize index, const void *newElt )
+    void insertAt (UintSize index, const void *newElt)
     {
       //Clamp insertion point to size
       if( index > sz ) index = sz;
@@ -327,7 +327,7 @@ namespace GE
       destruct( temp, 1 );
     }
 
-    void insertAt( UintSize index )
+    void insertAt (UintSize index)
     {
       //Clamp insertion point to size
       if( index > sz ) index = sz;
@@ -361,7 +361,7 @@ namespace GE
       sz--;
     }
     
-    void removeAt( UintSize index )
+    void removeAt (UintSize index)
     {
       //Prevent invalid removal
       if( index >= sz ) return;
@@ -380,13 +380,13 @@ namespace GE
     Accessor and utility functions
     ----------------------------------------------------*/
     
-    void setAt( UintSize index, const void *newElt )
+    void setAt (UintSize index, const void *newElt)
     { copy( at( index ), newElt, 1 ); }
 
-    void* at( UintSize index ) const
+    void* at (UintSize index) const
     { return elements + index * eltSize; }
     
-    void* operator[]( UintSize index ) const
+    void* operator[] (UintSize index) const
     { return elements + index * eltSize; }
 
     void* last() const
@@ -407,7 +407,7 @@ namespace GE
     UintSize elementSize() const
     { return eltSize; }
 
-    void insertListAt( UintSize index, const GenericArrayList *list )
+    void insertListAt (UintSize index, const GenericArrayList *list)
     {
       assert( elementSize() == list->elementSize() );
 
@@ -415,7 +415,7 @@ namespace GE
         insertAt( index, list->at( i ) );
     }
 
-    void pushListBack( const GenericArrayList *list )
+    void pushListBack (const GenericArrayList *list)
     {
       assert( elementSize() == list->elementSize() );
 
@@ -457,21 +457,21 @@ namespace GE
       destruct( elements, sz );
     }
 
-    virtual void construct( void *dst, UintSize n )
+    virtual void construct (void *dst, UintSize n)
     {
       T *tdst = (T*)dst;
       for( UintSize i=0; i<n; ++i )
         new( &tdst[i] )T;
     }
     
-    virtual void destruct( void *dst, UintSize n )
+    virtual void destruct (void *dst, UintSize n)
     {
       T *tdst = (T*)dst;
       for( UintSize i=0; i<n; ++i )
         tdst[i].~T();
     }
     
-    virtual void copy( void *dst, const void *src, UintSize n )
+    virtual void copy (void *dst, const void *src, UintSize n)
     {
       T *tdst = (T*)dst;
       T *tsrc = (T*)src;
@@ -485,31 +485,31 @@ namespace GE
     T& last() const
     { return ((T*)elements)[ sz-1 ]; }
     
-    T& elementAt( UintSize index ) const
+    T& elementAt (UintSize index) const
     { return ((T*)elements)[ index ]; }
     
-    T& at( UintSize index ) const
+    T& at (UintSize index) const
     { return ((T*)elements)[ index ]; }
     
-    T& operator[]( UintSize index ) const
+    T& operator[] (UintSize index) const
     { return ((T*)elements)[ index ]; }
     
     T* buffer() const
     { return (T*)elements; }
 
-    void insertAt( UintSize index, const T &newElt )
+    void insertAt (UintSize index, const T &newElt)
     { GenericArrayList::insertAt( index, &newElt ); }
     
-    void pushBack( const T &newElt )
+    void pushBack (const T &newElt)
     { GenericArrayList::pushBack( &newElt ); }
     
-    void setAt( UintSize index, const T &newElt )
+    void setAt (UintSize index, const T &newElt)
     { GenericArrayList::setAt( index, &newElt ); }
 
-    bool contains( const T &el ) const
+    bool contains (const T &el) const
     { return (indexOf( el ) != -1); }
     
-    int indexOf( const T &el ) const
+    int indexOf (const T &el) const
     {
       for (UintSize i=0; i<sz; i++)
         if (((T*)elements)[i] == el)
@@ -518,7 +518,7 @@ namespace GE
       return -1;
     }
     
-    void remove( const T &el )
+    void remove (const T &el)
     {
       int i = indexOf( el );
       if (i > -1) removeAt( (UintSize) i );

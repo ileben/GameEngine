@@ -256,7 +256,7 @@ namespace GE
           numLoops++;
         }
 
-      } else {
+      }else{
 
         //Single-key animation cannot be looped
         stop = true;

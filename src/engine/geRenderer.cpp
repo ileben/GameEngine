@@ -116,7 +116,7 @@ namespace GE
     printf( "==============================\n");
     printf( "    Composing Light Shader    \n" );
     printf( "==============================\n");
-    printf( "Light: %s\n", key.lightClass->name() );
+    printf( "Light: %s\n", key.lightClass->name().buffer() );
     printf( "\n" );
 
     shader = new Shader();
@@ -162,8 +162,8 @@ namespace GE
     printf( "    Composing Geometry Shader    \n" );
     printf( "=================================\n" );
     printf( "Target: %s\n", target == RenderTarget::GBuffer ? "GBuffer" : "ShadowMap" );
-    printf( "Geometry: %s\n", key.geomClass->name() );
-    printf( "Material: %s\n", key.matClass->name() );
+    printf( "Geometry: %s\n", key.geomClass->name().buffer() );
+    printf( "Material: %s\n", key.matClass->name().buffer() );
     printf( "\n" );
 
     shader = new Shader;
@@ -545,7 +545,9 @@ namespace GE
     glEnable( GL_CULL_FACE );
     
     glEnable( GL_POLYGON_OFFSET_FILL );
-    glPolygonOffset( 5.0f, 2.0f );
+    //glPolygonOffset( 0.1f, 0.1f );
+    glPolygonOffset( 20.0f, 0.0f );
+    //glPolygonOffset( 5.0f, 2.0f );
     
     glBindFramebuffer( GL_FRAMEBUFFER, shadowFB );
     glClear( GL_DEPTH_BUFFER_BIT );

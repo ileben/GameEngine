@@ -202,10 +202,6 @@ namespace GE
   void TriMesh::setDefaultFormat()
   {
     VertexFormat f;
-    //f.addMember( ShaderData::Coord, DataUnit::Vec3, sizeof(Vector3) );
-    //f.addMember( ShaderData::Normal, DataUnit::Vec3, sizeof(Vector3) );
-    //f.addMember( ShaderData::Attribute, DataUnit::Vec3, sizeof(Vector3), "Coord", DataUnit::Vec3 );
-    //f.addMember( ShaderData::Attribute, DataUnit::Vec3, sizeof(Vector3), "Normal", DataUnit::Vec3, true );
     f.addMember( ShaderData::Coord3 );
     f.addMember( ShaderData::Normal );
     setFormat( f );

@@ -50,7 +50,8 @@ namespace GE
 
     void renderSingleMat ();
     void renderMultiMat ();
-    void renderShadow ();
+    void renderShadowSingle ();
+    void renderShadowMulti ();
     
   public:
 

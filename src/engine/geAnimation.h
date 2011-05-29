@@ -14,6 +14,7 @@ namespace GE
 
   class Animation;
   class AnimTrack;
+  class AnimEvent;
   class AnimObserver;
   class AnimController;
 
@@ -77,9 +78,9 @@ namespace GE
   */
 
   /*
-  -----------------------------------
-  Track is a set of keys
-  -----------------------------------*/
+  -----------------------------------------------------
+  Base AnimTrack interface. A "track" is a set of keys
+  -----------------------------------------------------*/
 
   class AnimTrack : public Object
   {
@@ -106,6 +107,13 @@ namespace GE
     virtual void evalAt (Int key1, Int key2, Float keyT) = 0;
     virtual void getValue (void *value) {}
   };
+
+  /*
+  ----------------------------------------------------------
+  Template AnimTrack interface allows strong-typed storage
+  and access to track keys. Traits class defines key type
+  and interpolation function.
+  ----------------------------------------------------------*/
   
   template <class Traits> class AnimTrackT : public AnimTrack
   {
@@ -133,9 +141,9 @@ namespace GE
   };
 
   /*
-  -------------------------------------------
-  Template implementations
-  -------------------------------------------*/
+  ----------------------------------------------------------
+  Template AnimTrack definitions.
+  ----------------------------------------------------------*/
 
   template <class Traits>
   typename void AnimTrackT<Traits>::evalAt (Int key1, Int key2, Float keyT)
@@ -213,17 +221,6 @@ namespace GE
     inline static bool Interpolate (bool v1, bool v2, Float t);
   };
 
-  typedef AnimTrackT< Vec3TrackTraits > Vec3AnimTrack;
-  typedef AnimTrackT< QuatTrackTraits > QuatAnimTrack;
-  typedef AnimTrackT< FloatTrackTraits > FloatAnimTrack;
-  typedef AnimTrackT< BoolTrackTraits > BoolAnimTrack;
-
-  TEMPLATE_CLASS( QuatAnimTrack,  AnimTrack, 8ff2d758,a624,445a,87197d3e14bb22c5 );
-  TEMPLATE_CLASS( Vec3AnimTrack,  AnimTrack, d4b943cd,5cce,4b50,8cb7f4f2806c8637 );
-  TEMPLATE_CLASS( FloatAnimTrack, AnimTrack, 3412ea4f,2111,481b,bded7f3c19a3b1f1 );
-  TEMPLATE_CLASS( BoolAnimTrack,  AnimTrack, 9430611b,8001,47fe,8f4045e94c48b1ad );
-
-
   Quat QuatTrackTraits::Interpolate (Quat q1, Quat q2, Float t)
   {
     //Check for sign flip in the adjacent keys
@@ -256,38 +253,19 @@ namespace GE
     return v1;
   }
 
-  /*
-  --------------------------------------------------
-  Anim event
-  --------------------------------------------------*/
-  
-  class AnimEvent : public Object
-  {
-    CLASS( AnimEvent, Object,
-      57fbbfa8,750d,4548,9760d20c00d91f58 );
+  typedef AnimTrackT< Vec3TrackTraits > Vec3AnimTrack;
+  typedef AnimTrackT< QuatTrackTraits > QuatAnimTrack;
+  typedef AnimTrackT< FloatTrackTraits > FloatAnimTrack;
+  typedef AnimTrackT< BoolTrackTraits > BoolAnimTrack;
 
-    virtual void serialize( Serializer *s, Uint v )
-    {
-      Object::serialize( s,v );
-      s->string( &name );
-      s->data( &time );
-    }
-
-  private:
-    CharString name;
-    Float time;
-
-  public:
-    AnimEvent () : time (0.0f) {}
-    AnimEvent (const CharString& newName, Float newTime)
-      : name (newName), time (newTime) {}
-    const CharString& getName() { return name; }
-    Float getTime() { return time; }
-  };
+  TEMPLATE_CLASS( QuatAnimTrack,  AnimTrack, 8ff2d758,a624,445a,87197d3e14bb22c5 );
+  TEMPLATE_CLASS( Vec3AnimTrack,  AnimTrack, d4b943cd,5cce,4b50,8cb7f4f2806c8637 );
+  TEMPLATE_CLASS( FloatAnimTrack, AnimTrack, 3412ea4f,2111,481b,bded7f3c19a3b1f1 );
+  TEMPLATE_CLASS( BoolAnimTrack,  AnimTrack, 9430611b,8001,47fe,8f4045e94c48b1ad );
 
   /*
   --------------------------------------------------
-  Animation is a group of tracks
+  Animation is a collection of tracks.
   --------------------------------------------------*/
   
   class Animation : public Object
@@ -331,6 +309,41 @@ namespace GE
     void addEvent (AnimEvent *e);
   };
 
+  /*
+  ------------------------------------------------------------
+  Animation event is just a named marker at a specified time
+  in animation. Animation observers are notified whenever an
+  animation even occurs.
+  ------------------------------------------------------------*/
+  
+  class AnimEvent : public Object
+  {
+    CLASS( AnimEvent, Object,
+      57fbbfa8,750d,4548,9760d20c00d91f58 );
+
+    virtual void serialize( Serializer *s, Uint v )
+    {
+      Object::serialize( s,v );
+      s->string( &name );
+      s->data( &time );
+    }
+
+  private:
+    CharString name;
+    Float time;
+
+  public:
+    
+    AnimEvent ()
+      : time (0.0f) {}
+    
+    AnimEvent (const CharString& newName, Float newTime)
+      : name (newName), time (newTime) {}
+
+    const CharString& getName() { return name; }
+    Float getTime() { return time; }
+  };
+
 
   /*
   --------------------------------------------------------
@@ -358,6 +371,32 @@ namespace GE
     UintSize track;
     Int param;
     AnimTrackBinding () : anim (NULL), track (0), param (0) {};
+  };
+
+  /*
+  ---------------------------------------------------------
+  ObserverBinding is an inverse of TrackBinding. It binds
+  an observer to an animation track. An animation can have
+  multiple different observer bounds to its tracks.
+  ---------------------------------------------------------*/
+
+  class AnimObserverBinding : public Object
+  {
+    CLASS( AnimObserverBinding, Object,
+      54bbbb8a,1c80,4267,acfd988242b0e707 );
+
+    virtual void serialize( Serializer *s, Uint v )
+    {
+      Object::serialize( s,v );
+      s->objectRef( &observer );
+      s->data( &param );
+    }
+
+  public:
+
+    AnimObserver *observer;
+    Int param;
+    AnimObserverBinding () : observer (NULL), param (0) {};
   };
 
   /*
@@ -391,30 +430,6 @@ namespace GE
     virtual void onValueChanged (AnimTrack *track, Int param) {}
     virtual void onAnyValueChanged () {}
     virtual void onEvent (AnimEvent *e) {}
-  };
-
-  /*
-  ---------------------------------------------------------
-  ObserverBinding is an inverse of a TrackBinding.
-  ---------------------------------------------------------*/
-
-  class AnimObserverBinding : public Object
-  {
-    CLASS( AnimObserverBinding, Object,
-      54bbbb8a,1c80,4267,acfd988242b0e707 );
-
-    virtual void serialize( Serializer *s, Uint v )
-    {
-      Object::serialize( s,v );
-      s->objectRef( &observer );
-      s->data( &param );
-    }
-
-  public:
-
-    AnimObserver *observer;
-    Int param;
-    AnimObserverBinding () : observer (NULL), param (0) {};
   };
 
 

@@ -222,7 +222,7 @@ namespace GE
       glEnable (GL_CULL_FACE);
     }else glDisable (GL_CULL_FACE);
 
-    //Wirefrace
+    //Wireframe
     if (wire)
       glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
     
@@ -236,6 +236,29 @@ namespace GE
 
   void StandardMaterial::end()
   {
+    if (wire)
+      glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+  }
+
+  void StandardMaterial::beginShadow()
+  {
+    Material::beginShadow();
+
+    //Back-face culling
+    if(culling) {
+      glEnable (GL_CULL_FACE);
+    }else glDisable (GL_CULL_FACE);
+
+    //Wireframe
+    if (wire)
+      glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+  }
+
+  void StandardMaterial::endShadow()
+  {
+    Material::endShadow();
+
+    //Wireframe
     if (wire)
       glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
   }

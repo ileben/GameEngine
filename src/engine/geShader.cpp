@@ -403,6 +403,9 @@ namespace GE
     CharString shaderStr;
     int nID = 0;
 
+    //Output preprocessor directives
+    //shaderStr += "#version 130\n\n";
+
     //Output uniforms
     for (UintSize u=0; u<uniforms.size(); ++u) {
       Uniform &su = uniforms[u];

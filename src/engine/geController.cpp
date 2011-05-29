@@ -69,20 +69,20 @@ namespace GE
   {
     switch (key)
     {
-    case 'e':
-    case 'E':
+    case 'w':
+    case 'W':
       moveDir = 1;
-      break;
-    case 'd':
-    case 'D':
-      moveDir = -1;
-      break;
-    case 'f':
-    case 'F':
-      strafeDir = 1;
       break;
     case 's':
     case 'S':
+      moveDir = -1;
+      break;
+    case 'd':
+    case 'D':
+      strafeDir = 1;
+      break;
+    case 'a':
+    case 'A':
       strafeDir = -1;
       break;
     case ' ':
@@ -95,20 +95,20 @@ namespace GE
   {
     switch (key)
     {
-    case 'e':
-    case 'E':
+    case 'w':
+    case 'W':
       if (moveDir == 1) moveDir = 0;
-      break;
-    case 'd':
-    case 'D':
-      if (moveDir == -1) moveDir = 0;
-      break;
-    case 'f':
-    case 'F':
-      if (strafeDir == 1) strafeDir = 0;
       break;
     case 's':
     case 'S':
+      if (moveDir == -1) moveDir = 0;
+      break;
+    case 'd':
+    case 'D':
+      if (strafeDir == 1) strafeDir = 0;
+      break;
+    case 'a':
+    case 'A':
       if (strafeDir == -1) strafeDir = 0;
       break;
     case ' ':
@@ -137,8 +137,8 @@ namespace GE
     Vector2 diff = Vector2( (Float)x,(Float)y ) - lastMouse;
     lastMouse.set( (Float)x, (Float)y );
     
-    Float angleH = diff.x * (2*PI) / 1500;
-    Float angleV = diff.y * (2*PI) / 1500;
+    Float angleH = diff.x * (2*PI) / 2000;
+    Float angleV = diff.y * (2*PI) / 2000;
 
     cam->setCenter( cam->getEye() );
     cam->orbitH( angleH, true );

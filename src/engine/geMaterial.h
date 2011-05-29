@@ -59,6 +59,9 @@ namespace GE
     
     virtual void begin () {}
     virtual void end () {}
+
+    virtual void beginShadow() {}
+    virtual void endShadow() {}
     
     static void BeginDefault ();
     static void EndDefault ();
@@ -155,6 +158,9 @@ namespace GE
     
     virtual void begin();
     virtual void end();
+
+    virtual void beginShadow();
+    virtual void endShadow();
   };
 
   /*
