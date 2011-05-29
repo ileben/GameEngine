@@ -19,11 +19,9 @@ missing
 *.la
 *~
 *.exe
-*.dll
 TestSkin
 TestShadow
 TexPainter
-*.lib
 *.ncb
 *.Ivan.user
 *.Eneaa.user
