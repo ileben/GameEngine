@@ -516,6 +516,7 @@
 							>
 							<Tool
 								Name="Embedit"
+								Preprocess="true"
 							/>
 						</FileConfiguration>
 					</File>
@@ -534,6 +535,7 @@
 							>
 							<Tool
 								Name="Embedit"
+								Preprocess="true"
 							/>
 						</FileConfiguration>
 					</File>
@@ -552,6 +554,7 @@
 							>
 							<Tool
 								Name="Embedit"
+								Preprocess="true"
 							/>
 						</FileConfiguration>
 					</File>
@@ -570,6 +573,7 @@
 							>
 							<Tool
 								Name="Embedit"
+								Preprocess="true"
 							/>
 						</FileConfiguration>
 					</File>
@@ -588,6 +592,7 @@
 							>
 							<Tool
 								Name="Embedit"
+								Preprocess="true"
 							/>
 						</FileConfiguration>
 					</File>
@@ -606,6 +611,7 @@
 							>
 							<Tool
 								Name="Embedit"
+								Preprocess="true"
 							/>
 						</FileConfiguration>
 					</File>
@@ -624,6 +630,7 @@
 							>
 							<Tool
 								Name="Embedit"
+								Preprocess="true"
 							/>
 						</FileConfiguration>
 					</File>
@@ -642,6 +649,7 @@
 							>
 							<Tool
 								Name="Embedit"
+								Preprocess="true"
 							/>
 						</FileConfiguration>
 					</File>
